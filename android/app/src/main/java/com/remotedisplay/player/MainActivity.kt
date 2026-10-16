@@ -84,6 +84,8 @@ class MainActivity : AppCompatActivity() {
     private var wallZones: WallZoneRenderer? = null
     // #473: walk-up interactive web pages (fullscreen only; passive in zones, walls and groups).
     private var kiosk: com.remotedisplay.player.kiosk.KioskSession? = null
+    private var hybrid: com.remotedisplay.player.kiosk.HybridKiosk? = null
+    private var signagePublication: com.remotedisplay.player.data.SignagePublication? = null
     private lateinit var wallController: WallController
     private lateinit var groupSchedule: GroupScheduleController
     private lateinit var pipOverlay: PipOverlay // #109: PiP overlay layer
@@ -233,6 +235,12 @@ class MainActivity : AppCompatActivity() {
             socketAlive = { wsService?.isConnected() == true },
             onAck = { cid, status -> ackContentOnce(cid, status) },
             siteCache = { siteCacheConfig }
+        )
+        signagePublication = com.remotedisplay.player.data.SignagePublication(
+            java.io.File(filesDir, "fil-signage-publications"), contentCache, downloadCoordinator,
+            { hybrid?.sessionActive == true || kiosk?.sessionActive == true },
+            { data -> wsService?.onPlaylistUpdate?.invoke(data) },
+            { wsService?.sendKioskError("fil_signage_stage_failed", "Signage update could not be staged; previous publication retained") },
         )
         screenshotCapture = ScreenshotCapture()
         touchInjector = TouchInjector()
@@ -392,11 +400,19 @@ class MainActivity : AppCompatActivity() {
                 wsService?.flushKioskSessions()
             },
         )
+        hybrid = com.remotedisplay.player.kiosk.HybridKiosk(
+            this, rootView as ViewGroup,
+            { config.serverUrl }, { config.deviceId }, { config.deviceToken },
+            onEnter = { kiosk?.hide(); playlistController.hold(); mediaPlayer.stop() },
+            onExit = { playlistController.release() },
+            onApplied = { version, sha -> wsService?.sendFilKioskApplied(version, sha) },
+            onError = { reason, detail -> wsService?.sendKioskError(reason, detail) },
+        )
         // Screen-resilience: an item is playable only when its content is actually available —
         // a widget, a remote stream, or a fully-downloaded local file. A not-yet/failed download is
         // skipped (kept in the background) instead of blanking the screen on a loading state.
         playlistController.setContentReadyCheck { item ->
-            item.isWidget || item.isRemote || contentCache.isContentCached(item.contentId, item.contentRev)
+            item.isWidget || item.isRemote || signagePublication?.activeFile(item.contentId,item.contentRev) != null || contentCache.isContentCached(item.contentId, item.contentRev)
         }
         /*
          * ⚠️ AND THE LAST-RESORT ANSWER, consulted only when nothing above passes.
@@ -517,7 +533,7 @@ class MainActivity : AppCompatActivity() {
             onPreloadNext = { idx ->
                 val next = playlistController.itemAt(idx)
                 if (next != null && !next.isRemote && next.mimeType.startsWith("video/")) {
-                    contentCache.getCachedFile(next.contentId)?.let { mediaPlayer.preloadVideo(it) }
+                    (signagePublication?.activeFile(next.contentId,next.contentRev) ?: contentCache.getCachedFile(next.contentId))?.let { mediaPlayer.preloadVideo(it) }
                 }
             }
         )
@@ -528,7 +544,9 @@ class MainActivity : AppCompatActivity() {
         // Catch Throwable (not just Exception) so an OOM or corrupt entry can't kill the app
         // before the WebSocket connects — that's the crash-loop scenario. If the cache is
         // unusable for any reason, drop it and continue; the server will resend on connect.
+        signagePublication?.restoredPayload()?.let { config.cachedPlaylist = it.toString() }
         val cachedJson = config.cachedPlaylist
+        try { hybrid?.configure(org.json.JSONObject(cachedJson).optJSONObject("fil_kiosk")) } catch (_: Exception) {}
         if (cachedJson.isNotEmpty()) {
             try {
                 val cached = JSONObject(cachedJson)
@@ -956,8 +974,10 @@ class MainActivity : AppCompatActivity() {
             if (::downloadCoordinator.isInitialized) downloadCoordinator.resetAllBackoff()
         }
 
-        wsService?.onPlaylistUpdate = { data ->
+        wsService?.onPlaylistUpdate = update@{ data ->
             try {
+            hybrid?.configure(data.optJSONObject("fil_kiosk"))
+            if (signagePublication?.offer(data) == false) return@update
             // ⚠️ Adopt triggers on EVERY payload, before anything else can early-return. The device
             // learns its listener config and its trigger definitions here and nowhere else, and the
             // media they need is pinned by the same message that pins the base playlist — which is
@@ -1314,7 +1334,7 @@ class MainActivity : AppCompatActivity() {
         // is included in remote-view screenshots.
         // #473: while a visitor uses an interactive page the operator sees a blank frame and cannot
         // inject input — they would otherwise watch (or type into) a stranger's form.
-        wsService?.privacyActive = { kiosk?.sessionActive == true }
+        wsService?.privacyActive = { kiosk?.sessionActive == true || hybrid?.sessionActive == true }
         // The HDMI input is a hardware plane no capture can read (LiveInput): the service sends a
         // placeholder card while one is up, full screen or in any zone.
         wsService?.isShowingLiveInput = {
@@ -1576,7 +1596,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean {
+        if (hybrid?.dispatch(event) == true) return true
+        return super.dispatchTouchEvent(event)
+    }
+
     private fun playItem(item: PlaylistItem) {
+        hybrid?.finish()
         hideStatus()
         com.remotedisplay.player.util.DebugLog.i("Player", "playItem: ${item.filename} mime=${item.mimeType} widget=${item.widgetId ?: "-"} zone=fullscreen")
 
@@ -1588,7 +1614,7 @@ class MainActivity : AppCompatActivity() {
         // Fullscreen only: in a wall or a synced group one screen cannot hold the shared timeline, so
         // there the item renders passively through the normal widget path below.
         val kioskCfg = if (item.isWidget) com.remotedisplay.player.kiosk.KioskConfig.parse(item.widgetType, item.widgetConfig) else null
-        val kioskAllowed = kioskCfg != null && !playlistController.isFollower &&
+        val kioskAllowed = kioskCfg != null && hybrid?.managedSignageOnly != true && !playlistController.isFollower &&
             !(::wallController.isInitialized && wallController.isActive) &&
             !(::groupSchedule.isInitialized && groupSchedule.isActive)
         if (kioskAllowed && kiosk != null) {
@@ -1670,7 +1696,7 @@ class MainActivity : AppCompatActivity() {
         // keep whatever is on screen and move on; the background download loop (onPlaylistUpdate)
         // fetches it and it plays once fully + validly downloaded. Content update is a BACKGROUND
         // operation; we only ever SWAP to fully-downloaded content.
-        val file = contentCache.getCachedFile(item.contentId)
+        val file = signagePublication?.activeFile(item.contentId,item.contentRev) ?: contentCache.getCachedFile(item.contentId)
         if (file == null) {
             Log.i("MainActivity", "Content not ready at play time (${item.filename}) — keeping screen, advancing (bg download continues)")
             downloadCoordinator.ensure(item.contentId, item.filename, item.contentRev) // ensure it's being fetched (single-flight)
@@ -2008,10 +2034,14 @@ class MainActivity : AppCompatActivity() {
             .setTitle(getString(R.string.settings_pin_title))
             .setView(container)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                if (input.text.toString() == config.settingsPin) {
-                    showSettingsDialog()
-                } else {
-                    Toast.makeText(this, getString(R.string.settings_pin_wrong), Toast.LENGTH_SHORT).show()
+                val pinPrefs = getSharedPreferences("fil-pin-throttle", Context.MODE_PRIVATE)
+                val gate = com.remotedisplay.player.kiosk.PinThrottle(pinPrefs.getInt("failures", 0), pinPrefs.getLong("blocked_until", 0L))
+                val verdict = gate.attempt(System.currentTimeMillis(), input.text.toString() == config.settingsPin)
+                pinPrefs.edit().putInt("failures", gate.failures).putLong("blocked_until", gate.blockedUntil).apply()
+                when (verdict) {
+                    com.remotedisplay.player.kiosk.PinThrottle.Result.ALLOWED -> showSettingsDialog()
+                    com.remotedisplay.player.kiosk.PinThrottle.Result.LOCKED -> Toast.makeText(this, "Çok fazla deneme. 30 saniye bekleyin.", Toast.LENGTH_LONG).show()
+                    else -> Toast.makeText(this, getString(R.string.settings_pin_wrong), Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
@@ -2332,6 +2362,7 @@ class MainActivity : AppCompatActivity() {
      * permission prompt, and pausing playback for those would be a visible stutter on a wall.
      */
     override fun onStop() {
+        hybrid?.finish()
         super.onStop()
         if (::mediaPlayer.isInitialized) mediaPlayer.onAppBackgrounded()
         // The camera runs only while the player is on screen.
@@ -2373,6 +2404,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        signagePublication?.close()
+        hybrid?.close()
         // ⚠️ Stop the listeners and the sweep. A bound socket and a self-re-arming Runnable both
         // outlive the Activity otherwise — the socket then holds the port against the next launch,
         // which presents as "triggers stopped working after an app restart".

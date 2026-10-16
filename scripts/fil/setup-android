@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+FIL_REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+FIL_HOME="${FIL_HOME:-$(dirname "$FIL_REPO")}"
+FIL_TOOLS="$FIL_HOME/toolchain"
+mkdir -p "$FIL_TOOLS/downloads" "$FIL_TOOLS/jdk17" "$FIL_TOOLS/android-sdk/cmdline-tools"
+if [ ! -x "$FIL_TOOLS/jdk17/bin/java" ]; then
+ curl -fsSL --retry 2 'https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz' -o "$FIL_TOOLS/downloads/jdk17.tar.gz"
+ printf '%s  %s\n' 3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e "$FIL_TOOLS/downloads/jdk17.tar.gz" | sha256sum -c -
+ tar -xzf "$FIL_TOOLS/downloads/jdk17.tar.gz" --strip-components=1 -C "$FIL_TOOLS/jdk17"
+fi
+if [ ! -x "$FIL_TOOLS/android-sdk/cmdline-tools/latest/bin/sdkmanager" ]; then
+ curl -fsSL --retry 2 https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o "$FIL_TOOLS/downloads/android-cli.zip"
+ printf '%s  %s\n' 2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258 "$FIL_TOOLS/downloads/android-cli.zip" | sha256sum -c -
+ unzip -q "$FIL_TOOLS/downloads/android-cli.zip" -d "$FIL_TOOLS/android-sdk/cmdline-tools"
+ mv "$FIL_TOOLS/android-sdk/cmdline-tools/cmdline-tools" "$FIL_TOOLS/android-sdk/cmdline-tools/latest"
+fi
+export JAVA_HOME="$FIL_TOOLS/jdk17" ANDROID_HOME="$FIL_TOOLS/android-sdk"
+export PATH="$JAVA_HOME/bin:$PATH"
+# Read and accept the vendor licences interactively if they are not already accepted.
+"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses
+"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" 'platform-tools' 'platforms;android-34' 'build-tools;34.0.0'

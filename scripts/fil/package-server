@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+FIL_REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+FIL_OUT="${1:?Usage: package-server /absolute/output/directory}"
+mkdir -p "$FIL_OUT"
+cd "$FIL_REPO"
+FIL_COMMIT="$(git rev-parse HEAD)"
+if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then echo 'Commit the reviewed tree before packaging.' >&2; exit 1; fi
+git archive --format=tar.gz -o "$FIL_OUT/fil-signage-$FIL_COMMIT.tar.gz" HEAD
+sha256sum "$FIL_OUT/fil-signage-$FIL_COMMIT.tar.gz" > "$FIL_OUT/fil-signage-$FIL_COMMIT.tar.gz.sha256"
+printf '%s\n' "$FIL_COMMIT"

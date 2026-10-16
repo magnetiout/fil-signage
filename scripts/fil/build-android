@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+FIL_REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+FIL_HOME="${FIL_HOME:-$(dirname "$FIL_REPO")}"
+export JAVA_HOME="${JAVA_HOME:-$FIL_HOME/toolchain/jdk17}"
+export ANDROID_HOME="${ANDROID_HOME:-$FIL_HOME/toolchain/android-sdk}"
+export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$FIL_HOME/toolchain/gradle}"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
+set -a
+source "$FIL_HOME/private/signing.env"
+set +a
+cd "$FIL_REPO/android"
+exec ./gradlew --no-daemon --max-workers=2 '-Dorg.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m' "$@"

@@ -48,6 +48,7 @@ const PUBLIC_ROUTERS = [
   { path: '/api/approvals',   mod: './routes/approvals' },
   { path: '/api/revisions',   mod: './routes/revisions' },
   { path: '/api/activity',    mod: './routes/activity' },
+  { path: '/api/fil-kiosk',   mod: './routes/fil-kiosk' },
   { path: '/api/kiosk',       mod: './routes/kiosk', renderBypass: true },
   { path: '/api/pip',         mod: './routes/pip' },
   // Data Sources (iCal, APIs, etc.) for dynamic slide template interpolation

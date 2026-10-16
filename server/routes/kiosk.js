@@ -125,6 +125,34 @@ router.get('/:id/render', (req, res) => {
   const page = db.prepare('SELECT * FROM kiosk_pages WHERE id = ?').get(req.params.id);
   if (!page) return res.status(404).send('Page not found');
 
+  if (JSON.parse(page.config || '{}').schema === 'fil-menu-v1') {
+    const store = require('../lib/fil-kiosk/store');
+    store.init();
+    if (req.query.preview_token) {
+      try {
+        const grant = require('jsonwebtoken').verify(req.query.preview_token, require('../config').jwtSecret,
+          { algorithms: ['HS256'], audience: 'fil-menu-preview' });
+        if (grant.page_id !== page.id) return res.status(403).send('Wrong preview');
+        res.setHeader('Cache-Control', 'private, no-store');
+        res.setHeader('Referrer-Policy', 'no-referrer');
+        res.removeHeader('X-Frame-Options');
+        return res.type('html').send(store.build(page));
+      } catch (_) { return res.status(403).send('Preview expired'); }
+    }
+    const device = db.prepare('SELECT * FROM devices WHERE id = ?').get(req.query.device || '');
+    const token = (req.headers.authorization || '').replace(/^Bearer /, '');
+    const profile = device && db.prepare('SELECT * FROM fil_device_profiles WHERE device_id = ?').get(device.id);
+    if (!device || !require('../ws/deviceSocket').validateDeviceToken(device.id, token) ||
+      device.workspace_id !== page.workspace_id || (!profile || profile.page_id !== page.id) || profile.mode !== 'hybrid_kiosk') {
+      return res.status(403).send('Device authorization required');
+    }
+    const version = Number(req.query.fil_version);
+    const publication = db.prepare('SELECT 1 FROM fil_kiosk_publications WHERE page_id = ? AND version = ?').get(page.id, version);
+    if (!publication) return res.status(404).send('Publication not found');
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.sendFile(store.bundlePath(page.id, version));
+  }
+
   const config = JSON.parse(page.config || '{}');
   const buttons = config.buttons || [];
   const style = config.style || {};
@@ -241,6 +269,10 @@ router.post('/', (req, res) => {
   if (denyReadOnly(req, res)) return;
   const { name, config: pageConfig } = req.body;
   if (!name) return res.status(400).json({ error: 'name required' });
+  if (pageConfig && pageConfig.schema === 'fil-menu-v1') {
+    try { require('../lib/fil-kiosk/store').validate({ workspace_id: req.workspaceId }, pageConfig); }
+    catch (e) { return res.status(400).json({ error: e.message }); }
+  }
 
   const id = uuidv4();
   db.prepare('INSERT INTO kiosk_pages (id, user_id, workspace_id, name, config) VALUES (?, ?, ?, ?, ?)')
@@ -255,6 +287,10 @@ router.put('/:id', (req, res) => {
   if (!page) return;
 
   const { name, config: pageConfig } = req.body;
+  if (pageConfig && (pageConfig.schema === 'fil-menu-v1' || JSON.parse(page.config || '{}').schema === 'fil-menu-v1')) {
+    try { require('../lib/fil-kiosk/store').validate(page, pageConfig); }
+    catch (e) { return res.status(400).json({ error: e.message }); }
+  }
   if (name) db.prepare('UPDATE kiosk_pages SET name = ? WHERE id = ?').run(name, req.params.id);
   if (pageConfig) db.prepare('UPDATE kiosk_pages SET config = ?, updated_at = strftime(\'%s\',\'now\') WHERE id = ?')
     .run(JSON.stringify(pageConfig), req.params.id);
@@ -266,6 +302,11 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const page = checkKioskWrite(req, res);
   if (!page) return;
+  require('../lib/fil-kiosk/store').init();
+  if (db.prepare('SELECT 1 FROM fil_kiosk_publications WHERE page_id = ?').get(page.id) ||
+      db.prepare('SELECT 1 FROM fil_device_profiles WHERE page_id = ?').get(page.id)) {
+    return res.status(409).json({ error: 'Yayınlanmış veya cihaza atanmış menü silinemez.' });
+  }
   db.prepare('DELETE FROM kiosk_pages WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });

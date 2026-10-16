@@ -1191,6 +1191,8 @@ function buildPlaylistPayloadUnchecked(deviceId, opts = {}) {
    * missed the change still stops counting on its next payload.
    */
   assembled.audience = require('../lib/audience').payloadConfig(deviceId);
+  assembled.fil_kiosk = (!wall_config && !group_sync)
+    ? require('../lib/fil-kiosk/store').payload(deviceId) : { mode: 'signage_only' };
   /*
    * 3.0 CAMPAIGNS (lib/campaign.js, docs/layouts-and-campaigns.md): a player that declares
    * layout.campaign also gets the structure — whole layouts switching with full-screen items — while
@@ -1697,6 +1699,7 @@ function eventTimeMs(data, ctx) {
 }
 
 const EVENT_APPLIERS = Object.freeze({
+  'fil-kiosk-applied'(deviceId, data) { require('../lib/fil-kiosk/store').applied(deviceId, data); },
   'info'(deviceId, data, ctx) {
     const di = data && data.device_info;
     if (di) { try { applyDeviceInfo(deviceId, di); } catch (e) { /* never crash the socket on a bad info blob */ } }
@@ -3494,6 +3497,8 @@ module.exports = function setupDeviceSocket(io) {
     socket.on('device:http-result', (data) => dispatch('http-result', data));
 
     socket.on('device:shell-result', (data) => dispatch('shell-result', data));
+
+    socket.on('device:fil-kiosk-applied', (data) => dispatch('fil-kiosk-applied', data));
 
     socket.on('device:content-ack', (data) => dispatch('content-ack', data));
 

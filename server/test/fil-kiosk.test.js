@@ -1,0 +1,57 @@
+'use strict';
+const { test, after } = require('node:test');
+const assert = require('node:assert/strict');
+const fs=require('fs'),os=require('os'),path=require('path');
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'fil-menu-'));
+process.env.DATA_DIR=tmp;
+const {db}=require('../db/database');
+const store=require('../lib/fil-kiosk/store');
+const {validateMenu}=require('../lib/fil-kiosk/model');
+const config=require('../config');
+db.prepare("INSERT INTO users(id,email,name,role) VALUES('fil-u','fil@test.invalid','FIL','platform_admin')").run();
+db.prepare("INSERT INTO organizations(id,name,owner_user_id) VALUES('fil-o','FIL','fil-u')").run();
+db.prepare("INSERT INTO workspaces(id,name,organization_id) VALUES('fil-w','FIL','fil-o'),('fil-other','Other','fil-o')").run();
+db.prepare("INSERT INTO kiosk_pages(id,user_id,workspace_id,name,config) VALUES('fil-menu','fil-u','fil-w','FIL','{}')").run();
+db.prepare("INSERT INTO devices(id,name,workspace_id,status) VALUES('fil-d','Tablet','fil-w','offline')").run();
+store.init();
+const base=()=>({schema:'fil-menu-v1',title:'Türkçe menü',items:[{id:'root',type:'category',label:'Hizmetler'},{id:'child',parent:'root',type:'page',label:'Çözüm',description:'Açıklama <script>evil()</script>'}]});
+after(()=>{db.close();fs.rmSync(tmp,{recursive:true,force:true})});
+test('hierarchy rejects cycles, missing parent, invalid media and unlisted URLs',()=>{
+ assert.equal(validateMenu(base(),()=>null).items[1].label,'Çözüm');
+ const cycle=base();cycle.items[0].parent='child';assert.throws(()=>validateMenu(cycle,()=>null));
+ const missing=base();missing.items[1].parent='missing';assert.throws(()=>validateMenu(missing,()=>null));
+ const media=base();media.items[1].type='video';media.items[1].media=['unknown'];assert.throws(()=>validateMenu(media,()=>null));
+ const link=base();link.items[1].type='url';link.items[1].url='javascript:alert(1)';assert.throws(()=>validateMenu(link,()=>null));
+ link.items[1].url='https://example.com/';assert.throws(()=>validateMenu(link,()=>null));
+ link.allowedHosts=['example.com'];assert.doesNotThrow(()=>validateMenu(link,()=>null));
+});
+test('publication is immutable, idempotent, retained and atomically complete',()=>{
+ let page=db.prepare('SELECT * FROM kiosk_pages WHERE id=?').get('fil-menu');page.config=JSON.stringify(base());
+ db.prepare('UPDATE kiosk_pages SET config=? WHERE id=?').run(page.config,page.id);
+ const p=store.publish(page);assert.equal(p.version,1);assert.equal(store.publish(page).version,1);
+ const bytes=fs.readFileSync(store.bundlePath(page.id,1),'utf8');assert.ok(bytes.includes('Türkçe menü'));assert.ok(!bytes.includes('<script>evil()'));
+ const changed=base();changed.title='Yeni menü';page.config=JSON.stringify(changed);
+ assert.equal(store.publish(page).version,2);assert.equal(fs.readFileSync(store.bundlePath(page.id,1),'utf8'),bytes);
+ db.prepare("INSERT INTO fil_device_profiles(device_id,mode,page_id) VALUES('fil-d','hybrid_kiosk','fil-menu')").run();
+ assert.equal(store.payload('fil-d').version,2);assert.equal(store.payload('unknown').mode,'signage_only');
+ assert.throws(()=>db.prepare("DELETE FROM kiosk_pages WHERE id='fil-menu'").run(),/FOREIGN KEY/);
+ assert.throws(()=>store.bundlePath('../../escape',1));
+});
+test('media is self-contained; missing asset leaves the previous publication intact',()=>{
+ fs.mkdirSync(config.contentDir,{recursive:true});fs.writeFileSync(path.join(config.contentDir,'test.png'),Buffer.from('fixture'));
+ db.prepare("INSERT INTO content(id,user_id,workspace_id,filename,filepath,mime_type,file_size) VALUES('fil-media','fil-u','fil-w','test.png','test.png','image/png',7)").run();
+ const menu=base();menu.items[1].type='image';menu.items[1].media=['fil-media'];
+ const page=db.prepare('SELECT * FROM kiosk_pages WHERE id=?').get('fil-menu');page.config=JSON.stringify(menu);
+ const p=store.publish(page);assert.equal(p.version,3);assert.match(fs.readFileSync(store.bundlePath(page.id,3),'utf8'),/data:image\/png;base64/);
+ fs.unlinkSync(path.join(config.contentDir,'test.png'));assert.throws(()=>store.publish(page));
+ assert.equal(store.payload('fil-d').version,3);assert.ok(fs.existsSync(store.bundlePath(page.id,3)));
+ const other={...page,workspace_id:'fil-other'};assert.throws(()=>store.publish(other),/Medya/);
+});
+test('rollback verifies bytes and applied status cannot be forged for an unrelated publication',()=>{
+ assert.equal(store.activate('fil-menu',1).version,1);assert.equal(store.payload('fil-d').version,1);
+ assert.equal(store.applied('fil-d',{version:999,sha256:'a'.repeat(64)}),false);
+ const p=store.payload('fil-d');assert.equal(store.applied('fil-d',{version:p.version,sha256:p.sha256}),true);
+ assert.equal(store.state('fil-d').version,1);assert.equal(store.state('unknown'),null);
+ fs.writeFileSync(store.bundlePath('fil-menu',2),'corrupt');assert.throws(()=>store.activate('fil-menu',2),/doğrulanamadı/);
+ assert.equal(store.payload('fil-d').version,1);
+});

@@ -529,6 +529,11 @@ class KioskSession(
             DebugLog.i(TAG, if (siteData) "web storage wiped" else "session reset (cookies + site storage kept: wipe_site_data off)")
         }
 
+        fun markManagedSession(ctx: Context) {
+            saveKeepSpec(ctx, null)
+            markDirty(ctx, true)
+        }
+
         private fun markDirty(ctx: Context, dirty: Boolean) {
             try { ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(DIRTY, dirty).apply() } catch (_: Throwable) {}
         }

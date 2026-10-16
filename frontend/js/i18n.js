@@ -11,11 +11,12 @@ import it from './i18n/it.js';
 import ja from './i18n/ja.js';
 import zh from './i18n/zh.js';
 import nl from './i18n/nl.js';
+import tr from './i18n/tr.js';
 
 const fallback = en;
-const registry = { en, es, fr, de, pt, hi, it, ja, zh, nl };
+const registry = { en, es, fr, de, pt, hi, it, ja, zh, nl, tr };
 
-let currentLang = localStorage.getItem('rd_lang') || navigator.language?.split('-')[0] || 'en';
+let currentLang = localStorage.getItem('rd_lang') || 'tr';
 if (!registry[currentLang]) currentLang = 'en';
 
 function lookup(key) {
@@ -89,6 +90,7 @@ export function getLanguage() {
 
 export function getAvailableLanguages() {
   return [
+    { code: 'tr', name: 'Türkçe' },
     { code: 'en', name: 'English' },
     { code: 'ja', name: '日本語' },
     { code: 'zh', name: '简体中文' },

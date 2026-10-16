@@ -1,3 +1,4 @@
+import { renderManaged, emptyMenu } from './fil-kiosk.js';
 import { showToast } from '../components/toast.js';
 import { t } from '../i18n.js';
 import { esc } from '../utils.js';
@@ -52,7 +53,7 @@ async function renderList(container) {
   document.getElementById('newKioskBtn').onclick = async () => {
     const name = prompt(t('kiosk.prompt_name'));
     if (!name) return;
-    const page = await API('/kiosk', { method: 'POST', body: JSON.stringify({ name }) });
+    const page = await API('/kiosk', { method: 'POST', body: JSON.stringify({ name, config: emptyMenu() }) });
     window.location.hash = `#/kiosk/${page.id}`;
   };
 
@@ -103,6 +104,7 @@ async function renderEditor(container, rawPageId) {
   let page;
   try { page = await API(`/kiosk/${pageId}`); } catch { container.innerHTML = `<div class="empty-state"><h3>${t('kiosk.not_found')}</h3></div>`; return; }
 
+  if (JSON.parse(page.config || '{}').schema === 'fil-menu-v1') return renderManaged(container, page);
   let config = JSON.parse(page.config || '{}');
   if (Array.isArray(config.buttons)) config.buttons.forEach(b => { if (b && b.icon) b.icon = decodeIcon(b.icon); });
   if (!config.buttons) config.buttons = [];

@@ -1,0 +1,23 @@
+[Unit]
+Description=FIL Signage CMS
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+User=fil-signage
+Group=fil-signage
+WorkingDirectory=/opt/fil-signage/current/server
+EnvironmentFile=/etc/fil-signage/runtime.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fil-signage
+MemoryMax=768M
+CPUQuota=100%
+[Install]
+WantedBy=multi-user.target

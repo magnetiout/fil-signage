@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+FIL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+FIL_HOME="${FIL_HOME:-$(dirname "$FIL_ROOT")}"
+case "${1:-status}" in
+ start|stop|restart|status) systemctl --user "$1" fil-signage.service ;;
+ logs) journalctl --user -u fil-signage.service -n 100 -f ;;
+ backup) python3 "$FIL_ROOT/scripts/fil/backup.py" --data "$FIL_HOME/runtime" --output "$FIL_HOME/private/backups" --env "$FIL_HOME/private/local.env" --service fil-signage.service --user-service ;;
+ restore) python3 "$FIL_ROOT/scripts/fil/restore.py" "${2:?archive required}" "${3:?new isolated target required}" ;;
+ *) echo 'Usage: localctl start|stop|restart|status|logs|backup|restore ARCHIVE NEW_TARGET' >&2; exit 2 ;;
+esac

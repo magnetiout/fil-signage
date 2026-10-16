@@ -41,18 +41,18 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.remotedisplay.player"
+        applicationId = "com.fil.signage.player"
         minSdk = 23
         targetSdk = 34
         // Env-overridable so device-owner reinstalls (which require an ever-increasing
         // versionCode — downgrades are blocked) don't churn this file each build.
-        versionCode = (System.getenv("VERSION_CODE") ?: findProperty("VERSION_CODE") as String? ?: "180").toInt()
-        versionName = System.getenv("VERSION_NAME") ?: findProperty("VERSION_NAME") as String? ?: "3.0.1"
+        versionCode = (System.getenv("VERSION_CODE") ?: findProperty("VERSION_CODE") as String? ?: "10001").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: findProperty("VERSION_NAME") as String? ?: "1.0.0-fil"
     }
 
     signingConfigs {
         create("release") {
-            storeFile = file("../release-key.jks")
+            storeFile = file(System.getenv("FIL_KEYSTORE") ?: "../release-key.jks")
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: findProperty("KEYSTORE_PASSWORD") as String? ?: ""
             keyAlias = System.getenv("KEY_ALIAS") ?: findProperty("KEY_ALIAS") as String? ?: "remotedisplay"
             keyPassword = System.getenv("KEY_PASSWORD") ?: findProperty("KEY_PASSWORD") as String? ?: ""
@@ -224,10 +224,10 @@ tasks.register<Exec>("resignReleaseV1") {
             ?: throw GradleException("#81 resign: no build-tools found under $sdkDir")
         commandLine(
             File(buildTools, "apksigner").absolutePath, "sign",
-            "--ks", file("../release-key.jks").absolutePath,
+            "--ks", file(System.getenv("FIL_KEYSTORE") ?: "../release-key.jks").absolutePath,
             "--ks-key-alias", (System.getenv("KEY_ALIAS") ?: "remotedisplay"),
-            "--ks-pass", "pass:" + (System.getenv("KEYSTORE_PASSWORD") ?: ""),
-            "--key-pass", "pass:" + (System.getenv("KEY_PASSWORD") ?: ""),
+            "--ks-pass", "env:KEYSTORE_PASSWORD",
+            "--key-pass", "env:KEY_PASSWORD",
             "--v1-signing-enabled", "true",
             "--v2-signing-enabled", "true",
             "--v3-signing-enabled", "true",

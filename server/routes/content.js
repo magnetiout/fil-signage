@@ -894,6 +894,11 @@ function scrubCorporate(id, workspaceId, affected, scrubbed) {
 }
 
 function purgeContentRow(content) {
+  if (require('../lib/fil-kiosk/store').references(content.id)) {
+    const error = new Error('Medya bir kiosk menüsünde kullanılıyor. Önce menüdeki bağlantıyı kaldırın.');
+    error.status = 409;
+    throw error;
+  }
   const id = content.id;
   // Copies in storage backends (lib/storage): their rows go with the content row, in this
   // transaction; the objects go after it commits, refcounted against what survives.

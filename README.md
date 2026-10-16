@@ -1,3 +1,7 @@
+# FIL Signage
+
+Self-hosted signage and managed tablet kiosk fork of ScreenTinker. See [FIL setup, publishing, Android and operations](docs/fil/OPERATIONS.md). Upstream MIT copyright and notices are preserved below. Physical hardware and production acceptance are recorded separately from software tests.
+
 # ScreenTinker — Open-Source, Self-Hosted Digital Signage Software
 
 <p align="center">

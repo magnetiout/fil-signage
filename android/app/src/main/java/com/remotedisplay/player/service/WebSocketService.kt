@@ -1492,6 +1492,11 @@ class WebSocketService : Service() {
         }.start()
     }
 
+    fun sendFilKioskApplied(version: Int, sha: String) {
+        if (socket?.connected() != true) return
+        socket?.emit("device:fil-kiosk-applied", JSONObject().put("device_id", config.deviceId).put("version", version).put("sha256", sha))
+    }
+
     fun sendContentAck(contentId: String, status: String) {
         if (socket?.connected() != true) return
         try {
