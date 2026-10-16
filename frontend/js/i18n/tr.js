@@ -1,5 +1,7 @@
 // Turkish primary workflows; advanced features use the existing English fallback.
 export default {
+  'migrate.ph_pair_title': '“{name}” cihazını eşleştir',
+  'creq.reject_title': 'İsteği reddet',
   'nav.displays': "Cihazlar",
   'nav.content': "Medya kütüphanesi",
   'nav.playlists': "Oynatma listeleri",
