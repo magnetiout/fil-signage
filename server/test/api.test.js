@@ -142,6 +142,10 @@ test('partition: the public token surface is exactly the reviewed set (snapshot 
     '/api/devices', '/api/content', '/api/folders', '/api/assignments', '/api/layouts',
     '/api/widgets', '/api/schedules', '/api/walls', '/api/reports', '/api/groups',
     '/api/playlists', '/api/activity', '/api/kiosk', '/api/pip',
+    // FIL managed menu/profile API: workspace-scoped reads, scope-gated writes and
+    // editor/viewer checks are exercised by fil-kiosk-e2e.test.js. Device bundle
+    // access uses a separate device token and never accepts an admin/API bearer.
+    '/api/fil-kiosk',
     // Trigger DEFINITIONS, added deliberately: an AV integrator provisioning a site configures these
     // from their own tooling, so the token door is the point. Writes carry the same requireScope
     // ('full') + role pairing as /api/pip, and reads are workspace-scoped like every sibling.
