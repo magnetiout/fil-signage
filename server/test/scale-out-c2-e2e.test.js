@@ -219,10 +219,14 @@ test('primary killed: playback continues, heartbeats are acked by the replica, a
   player.close();
   player = openPlayer(replica.base);
   await player.connected;
+  // Register can synchronously deliver both messages in one transport batch. Arm both
+  // listeners before emitting: waiting for registered first can miss the playlist.
+  const regP = player.next('device:registered');
+  const plP = player.next('device:playlist-update');
   player.sock.emit('device:register', { device_id: deviceId, device_token: deviceToken, device_info: { app_version: 'e2e-player' } });
-  const reg = await player.next('device:registered');
+  const reg = await regP;
   assert.equal(reg.device_id, deviceId);
-  const pl = await player.next('device:playlist-update');
+  const pl = await plP;
   assert.ok(JSON.stringify(pl).includes(contentId), 'the mirror still serves the playlist with the primary gone');
   const st = await (await fetch(replica.base + '/api/status')).json();
   const r = st.scale_out.replica_of.find((x) => x.node_id === primaryNodeId);
