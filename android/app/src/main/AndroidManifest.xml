@@ -67,7 +67,7 @@
         android:name=".RemoteDisplayApp"
         android:allowBackup="false"
         android:icon="@drawable/fil_logo"
-        android:label="FIL Signage"
+        android:label="@string/app_name"
         android:largeHeap="true"
         android:theme="@style/Theme.RemoteDisplay"
         android:usesCleartextTraffic="true"

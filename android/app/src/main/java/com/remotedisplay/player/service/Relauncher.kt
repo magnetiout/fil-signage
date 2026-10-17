@@ -89,7 +89,7 @@ object Relauncher {
             // case; otherwise a LOW-importance channel so the transient notice never heads-up over content.
             val channel = if (failLoud) RemoteDisplayApp.BOOT_CHANNEL_ID else RemoteDisplayApp.RELAUNCH_QUIET_CHANNEL_ID
             val builder = NotificationCompat.Builder(context, channel)
-                .setContentTitle(if (isUpdate) "ScreenTinker updated" else "ScreenTinker")
+                .setContentTitle(if (isUpdate) "FILSign updated" else "FILSign")
                 .setContentText(if (isUpdate) "Tap to resume the display" else "Starting display...")
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 .setPriority(if (failLoud) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW)

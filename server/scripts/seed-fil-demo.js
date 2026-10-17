@@ -24,12 +24,12 @@ for(const portrait of [false,true]){
 }
 const pageId=id('menu');
 const item=(key,type,label,parent=null,media=[],description='')=>({id:key,type,label,parent,media,description,order:0,active:true});
-const menu={schema:'fil-menu-v1',title:'FIL Signage Demo',theme:{primary:'#237c94',background:'#102230',text:'#ffffff'},allowedHosts:[],items:[
+const menu={schema:'fil-menu-v1',title:'FILSign Demo',theme:{primary:'#237c94',background:'#102230',text:'#ffffff'},allowedHosts:[],items:[
  item('services','category','Hizmetler'),item('consulting','category','Danışmanlık','services'),item('service-detail','page','Dijital deneyim','consulting',[id('hizmetler.png')],'İçerikleri tek merkezden yönetin. Bu sayfa sentetik örnektir.'),
- item('products','page','Ürünler',null,[id('duyuru.png')],'TV yayını ve tablet menüsü aynı merkezden yönetilir.'),item('gallery','gallery','Galeri',null,files.slice(0,3).map(id)),item('about','page','Hakkımızda',null,[],'FIL Signage Demo · Tamamı sentetik tanıtım içeriği.'),item('contact','page','İletişim Bilgileri',null,[],'Bu bir örnek sayfadır. Gerçek kişi bilgisi veya iletişim formu içermez.'),item('video','video','Tanıtım videosu','services',[id('tanitim.mp4')]) ]};
+ item('products','page','Ürünler',null,[id('duyuru.png')],'TV yayını ve tablet menüsü aynı merkezden yönetilir.'),item('gallery','gallery','Galeri',null,files.slice(0,3).map(id)),item('about','page','Hakkımızda',null,[],'FILSign Demo · Tamamı sentetik tanıtım içeriği.'),item('contact','page','İletişim Bilgileri',null,[],'Bu bir örnek sayfadır. Gerçek kişi bilgisi veya iletişim formu içermez.'),item('video','video','Tanıtım videosu','services',[id('tanitim.mp4')]) ]};
 db.prepare('INSERT OR IGNORE INTO kiosk_pages(id,user_id,workspace_id,name,config) VALUES(?,?,?,?,?)').run(pageId,owner.id,workspace,'ÖRNEK · FIL tablet menüsü',JSON.stringify(menu));
 const store=require('../lib/fil-kiosk/store');store.publish(db.prepare('SELECT * FROM kiosk_pages WHERE id=?').get(pageId));
 // First-party brand only in this explicitly selected synthetic workspace.
-if(!db.prepare('SELECT 1 FROM white_labels WHERE workspace_id=?').get(workspace))db.prepare('INSERT INTO white_labels(id,user_id,workspace_id,brand_name,primary_color) VALUES(?,?,?,?,?)').run(id('brand'),owner.id,workspace,'FIL Signage','#237c94');
+if(!db.prepare('SELECT 1 FROM white_labels WHERE workspace_id=?').get(workspace))db.prepare('INSERT INTO white_labels(id,user_id,workspace_id,brand_name,primary_color) VALUES(?,?,?,?,?)').run(id('brand'),owner.id,workspace,'FILSign','#237c94');
 console.log(JSON.stringify({workspace,media:files.length,playlists:2,menu:pageId,devices:'none; pair physical hardware before assigning a profile'}));
 db.close();

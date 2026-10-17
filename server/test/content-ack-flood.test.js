@@ -4,7 +4,7 @@
 // dedup misses) is rate-limited; an under-budget device passes every ack. Observed
 // via the server log: passing acks log `Device <id> content <cid>: ready`; over-
 // budget drops are silent except ONE `[content-ack] shedding device <id>` line.
-// Normal band (default lag thresholds), unique PORT 3985.
+// Explicit NORMAL band: this tests the per-device budget. The separate content-ack-valve test forces CRITICAL.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -37,6 +37,8 @@ before(async () => {
     cwd: path.join(__dirname, '..'),
     env: {
       ...process.env, DATA_DIR, SELF_HOSTED: 'true', PORT: String(PORT), NODE_ENV: 'test',
+      // Host CPU contention must not turn this NORMAL-band budget test into the independent critical-valve test.
+      LAG_ELEVATED_MS: '10000', LAG_CRITICAL_MS: '20000',
       CONTENT_ACK_MAX_PER_WINDOW: '5', CONTENT_ACK_RATE_WINDOW_MS: '10000', CONTENT_ACK_DEDUP_MS: '50',
     },
     stdio: ['ignore', logFd, logFd],
@@ -72,6 +74,7 @@ function openRegistered(dev) {
     setTimeout(() => reject(new Error('register timeout')), REGISTER_TIMEOUT_MS);
   });
 }
+async function untilLogged(id,count){const end=Date.now()+5000;while(Date.now()<end){if(linesFor(id,'content ')>=count)return;await sleep(50)}}
 const linesFor = (id, needle) => fs.readFileSync(LOG, 'utf8').split('\n').filter(l => l.includes(id) && l.includes(needle)).length;
 
 test('#143: cycling 4 different content ids at high rate is rate-limited (dedup misses it)', async () => {
@@ -82,7 +85,8 @@ test('#143: cycling 4 different content ids at high rate is rate-limited (dedup 
   // 15 acks, ~100ms apart -> each id repeats every ~400ms (> 50ms dedup) so dedup
   // never fires; budget is 5/10s, so only 5 pass and the rest are shed.
   for (let i = 0; i < 15; i++) { sock.emit('device:content-ack', { device_id: dev.id, content_id: ids[i % 4], status: 'ready' }); await sleep(100); }
-  await sleep(400);
+  await untilLogged(dev.id,5);
+  await sleep(100);
   try { sock.close(); } catch { /* */ }
 
   const passed = linesFor(dev.id, 'content ');     // `Device <id> content <cid>: ready`
@@ -96,7 +100,8 @@ test('a device under budget has every ack processed', async () => {
   const dev = await provision();
   const sock = await openRegistered(dev);
   for (const id of ['p', 'q', 'r', 's']) { sock.emit('device:content-ack', { device_id: dev.id, content_id: id, status: 'ready' }); await sleep(60); }
-  await sleep(300);
+  await untilLogged(dev.id,4);
+  await sleep(100);
   try { sock.close(); } catch { /* */ }
   assert.equal(linesFor(dev.id, 'content '), 4, 'all 4 under-budget acks processed');
   assert.equal(linesFor(dev.id, 'shedding device'), 0, 'no shedding for an under-budget device');
