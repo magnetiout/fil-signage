@@ -1,3 +1,5 @@
+import { renderHTML, uiText, bindAttribute } from '../../lib/i18n-bindings.js';
+
 // An overflow ("…") menu: a menu button and a list of actions, operable from the keyboard.
 //
 // The button carries aria-haspopup/aria-expanded; the list is role="menu" with role="menuitem"
@@ -26,11 +28,11 @@ export function openMenu(anchor, items, { label = '' } = {}) {
   const menu = document.createElement('ul');
   menu.className = 'lib-menu';
   menu.setAttribute('role', 'menu');
-  if (label) menu.setAttribute('aria-label', label);
+  if (label) bindAttribute(menu, 'aria-label', label);
   menu.innerHTML = items.filter(Boolean).map((it, i) => `
-    ${it.separatorBefore ? '<li role="separator" class="lib-menu-sep"></li>' : ''}
+    ${renderHTML(it.separatorBefore ? `<li role="separator" class="lib-menu-sep"></li>` : '')}
     <li role="none"><button type="button" role="menuitem" class="lib-menu-item${it.danger ? ' is-danger' : ''}" data-i="${i}" tabindex="-1" ${it.disabled ? 'aria-disabled="true"' : ''}>
-      <span>${esc(it.label)}</span>${it.hint ? `<span class="lib-menu-hint">${esc(it.hint)}</span>` : ''}
+      <span>${uiText(it.label)}</span>${renderHTML(it.hint ? `<span class="lib-menu-hint">${uiText(it.hint)}</span>` : '')}
     </button></li>`).join('');
   const list = items.filter(Boolean);
   // Inside the dialog or drawer the anchor lives in, so `inert` and focus traps treat it as theirs.

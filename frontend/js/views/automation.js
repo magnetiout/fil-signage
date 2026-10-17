@@ -1,7 +1,10 @@
+import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding } from '../lib/i18n-bindings.js';
+
+import { displayValue, message as t, messageCount as tn } from '../i18n.js';
+
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t, tn } from '../i18n.js';
 
 /*
  * Automation — inbound hooks and Zapier (server: lib/automation, routes/automation.js, routes/zapier.js).
@@ -77,23 +80,23 @@ function hookCard(h) {
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
       <div style="min-width:0">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <strong style="font-size:15px">${esc(h.name)}</strong>
-          <span class="corp-help" style="font-size:12px">${esc(KIND_LABEL()[h.kind] || h.kind)}</span>
-          ${h.enabled ? '' : `<span class="corp-help" style="font-size:12px">${esc(t('capf.disabled'))}</span>`}
-          ${h.live_alerts ? `<span style="font-size:12px;font-weight:700;color:#dc2626">${esc(tn('capf.live_count', h.live_alerts))}</span>` : ''}
-          ${h.screens_overridden ? `<span style="font-size:12px;font-weight:700;color:#dc2626">${esc(tn('auto.overridden', h.screens_overridden))}</span>` : ''}
-          ${h.has_signing_secret ? `<span class="corp-help" style="font-size:12px">🔏 ${esc(t('auto.signed'))}</span>` : ''}
+          <strong style="font-size:15px">${uiText(h.name)}</strong>
+          <span class="corp-help" style="font-size:12px">${uiText(KIND_LABEL()[h.kind] || h.kind)}</span>
+          ${renderHTML(h.enabled ? '' : `<span class="corp-help" style="font-size:12px">${uiText(t('capf.disabled'))}</span>`)}
+          ${renderHTML(h.live_alerts ? `<span style="font-size:12px;font-weight:700;color:#dc2626">${uiText(tn('capf.live_count', h.live_alerts))}</span>` : '')}
+          ${renderHTML(h.screens_overridden ? `<span style="font-size:12px;font-weight:700;color:#dc2626">${uiText(tn('auto.overridden', h.screens_overridden))}</span>` : '')}
+          ${renderHTML(h.has_signing_secret ? `<span class="corp-help" style="font-size:12px">🔏 ${uiText(t('auto.signed'))}</span>` : '')}
         </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">${esc(summary(h))}</div>
-        <div class="corp-help" style="font-size:12px;margin-top:4px;word-break:break-all">${esc(h.url_hint)}</div>
-        <div class="corp-help" style="font-size:12px;margin-top:4px">${esc(tn('auto.last_called', h.call_count, { when: ago(h.last_called_at) }))}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">${uiText(summary(h))}</div>
+        <div class="corp-help" style="font-size:12px;margin-top:4px;word-break:break-all">${uiText(h.url_hint)}</div>
+        <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(tn('auto.last_called', h.call_count, { when: ago(h.last_called_at) }))}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" data-act="test">${esc(t('auto.test'))}</button>
-        <button class="btn btn-secondary btn-sm" data-act="calls">${esc(t('auto.calls'))}</button>
-        <button class="btn btn-secondary btn-sm" data-act="rotate">${esc(t('auto.rotate'))}</button>
-        <button class="btn btn-secondary btn-sm" data-act="edit">${esc(t('common.edit'))}</button>
-        <button class="btn btn-secondary btn-sm" data-act="del" style="color:var(--danger)">${esc(t('common.delete'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="test">${uiText(t('auto.test'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="calls">${uiText(t('auto.calls'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="rotate">${uiText(t('auto.rotate'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="edit">${uiText(t('common.edit'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="del" style="color:var(--danger)">${uiText(t('common.delete'))}</button>
       </div>
     </div>
     <div class="auto-calls" hidden style="margin-top:12px"></div>
@@ -106,12 +109,12 @@ function showUrl(url, name) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1001;padding:16px';
   overlay.innerHTML = `
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:640px;max-width:100%">
-    <h3 style="margin-bottom:8px">${esc(t('auto.url_title', { name }))}</h3>
-    <p class="corp-help" style="font-size:13px;margin-bottom:12px">${esc(t('auto.url_once'))}</p>
-    <code id="auUrl" style="display:block;word-break:break-all;padding:10px;background:var(--bg-input);border-radius:var(--radius);font-size:12px">${esc(url)}</code>
+    <h3 style="margin-bottom:8px">${uiText(t('auto.url_title', { name }))}</h3>
+    <p class="corp-help" style="font-size:13px;margin-bottom:12px">${uiText(t('auto.url_once'))}</p>
+    <code id="auUrl" style="display:block;word-break:break-all;padding:10px;background:var(--bg-input);border-radius:var(--radius);font-size:12px">${uiText(url)}</code>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
-      <button class="btn btn-secondary" id="auCopy">${esc(t('auto.copy'))}</button>
-      <button class="btn btn-primary" id="auDone">${esc(t('auto.done'))}</button>
+      <button class="btn btn-secondary" id="auCopy">${uiText(t('auto.copy'))}</button>
+      <button class="btn btn-primary" id="auDone">${uiText(t('auto.done'))}</button>
     </div>
   </div>`;
   document.body.appendChild(overlay);
@@ -123,8 +126,8 @@ function showUrl(url, name) {
 }
 
 export async function render(app) {
-  app.innerHTML = `<div class="page-header"><div><h1>${esc(t('nav.automation'))}</h1>
-    <div class="subtitle">${esc(t('auto.intro'))}</div></div></div><div id="autoBody"></div>`;
+  app.innerHTML = `<div class="page-header"><div><h1>${uiText(t('nav.automation'))}</h1>
+    <div class="subtitle">${uiText(t('auto.intro'))}</div></div></div><div id="autoBody"></div>`;
   const body = document.getElementById('autoBody');
   try {
     const [hk, pls, devs, grps, trg, ds, subs] = await Promise.all([
@@ -140,31 +143,31 @@ export async function render(app) {
       subs: Array.isArray(subs) ? subs : [],
     };
   } catch (e) {
-    body.innerHTML = `<p class="corp-notice corp-notice-danger">${esc((e && e.message) || t('common.error'))}</p>`;
+    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`;
     return;
   }
   body.innerHTML = `
-    <div class="corp-toolbar"><button class="btn btn-primary" id="autoNew">${esc(t('auto.new'))}</button></div>
-    ${cache.hooks.length ? cache.hooks.map(hookCard).join('') : `<div class="corp-empty">${esc(t('auto.empty'))}</div>`}
-    <h2 style="margin-top:28px;font-size:18px">${esc(t('auto.zapier_title'))}</h2>
-    <p class="corp-help" style="font-size:13px">${esc(t('auto.zapier_intro'))}</p>
+    <div class="corp-toolbar"><button class="btn btn-primary" id="autoNew">${uiText(t('auto.new'))}</button></div>
+    ${renderHTML(cache.hooks.length ? cache.hooks.map(hookCard).join('') : `<div class="corp-empty">${uiText(t('auto.empty'))}</div>`)}
+    <h2 style="margin-top:28px;font-size:18px">${uiText(t('auto.zapier_title'))}</h2>
+    <p class="corp-help" style="font-size:13px">${uiText(t('auto.zapier_intro'))}</p>
     <div class="corp-card" style="padding:16px;margin-bottom:12px;font-size:13px">
-      <div>${esc(t('auto.zapier_base'))}</div>
-      <code style="display:block;word-break:break-all;padding:8px;background:var(--bg-input);border-radius:var(--radius);margin:6px 0">${esc(cache.api_base)}</code>
-      <div class="corp-help">${esc(t('auto.zapier_token'))}</div>
+      <div>${uiText(t('auto.zapier_base'))}</div>
+      <code style="display:block;word-break:break-all;padding:8px;background:var(--bg-input);border-radius:var(--radius);margin:6px 0">${uiText(cache.api_base)}</code>
+      <div class="corp-help">${uiText(t('auto.zapier_token'))}</div>
     </div>
-    <h3 style="font-size:15px;margin:12px 0 8px">${esc(t('auto.subs_title'))}</h3>
-    ${cache.subs.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>${esc(t('auto.col.event'))}</th><th>${esc(t('auto.col.receiver'))}</th><th>${esc(t('auto.col.delivered'))}</th><th></th></tr></thead><tbody>
-      ${cache.subs.map((s) => `<tr data-sub="${esc(s.id)}"><td>${esc(EVENT_LABEL()[s.event] || s.event)}</td><td>${esc(s.target_host)}${s.token_name ? ` <span class="corp-help">(${esc(s.token_name)})</span>` : ''}</td>
-        <td>${esc(t('auto.delivered', { ok: (s.deliveries || {}).ok || 0, failed: (s.deliveries || {}).failed || 0, pending: (s.deliveries || {}).pending || 0 }))}${s.last_error ? `<div style="color:#ca8a04;font-size:12px">${esc(s.last_error)}</div>` : ''}</td>
-        <td><button class="btn btn-secondary btn-sm" data-unsub="${esc(s.id)}" style="color:var(--danger)">${esc(t('auto.unsubscribe'))}</button></td></tr>`).join('')}
-      </tbody></table></div>` : `<p class="corp-help" style="font-size:13px">${esc(t('auto.subs_empty'))}</p>`}`;
+    <h3 style="font-size:15px;margin:12px 0 8px">${uiText(t('auto.subs_title'))}</h3>
+    ${renderHTML(cache.subs.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>${uiText(t('auto.col.event'))}</th><th>${uiText(t('auto.col.receiver'))}</th><th>${uiText(t('auto.col.delivered'))}</th><th></th></tr></thead><tbody>
+      ${renderHTML(cache.subs.map((s) => `<tr data-sub="${esc(s.id)}"><td>${uiText(EVENT_LABEL()[s.event] || s.event)}</td><td>${uiText(s.target_host)}${renderHTML(s.token_name ? ` <span class="corp-help">(${uiText(s.token_name)})</span>` : '')}</td>
+        <td>${renderHTML(t('auto.delivered', { ok: (s.deliveries || {}).ok || 0, failed: (s.deliveries || {}).failed || 0, pending: (s.deliveries || {}).pending || 0 }))}${renderHTML(s.last_error ? `<div style="color:#ca8a04;font-size:12px">${uiText(s.last_error)}</div>` : '')}</td>
+        <td><button class="btn btn-secondary btn-sm" data-unsub="${esc(s.id)}" style="color:var(--danger)">${uiText(t('auto.unsubscribe'))}</button></td></tr>`).join(''))}
+      </tbody></table></div>` : `<p class="corp-help" style="font-size:13px">${uiText(t('auto.subs_empty'))}</p>`)}`;
 
   document.getElementById('autoNew').addEventListener('click', () => openForm(app, null));
   body.querySelectorAll('[data-unsub]').forEach((b) => b.addEventListener('click', async () => {
     if (!confirm(t('auto.confirm_unsub'))) return;
     try { await api.delete(`/automation/subscriptions/${b.dataset.unsub}`); render(app); }
-    catch (e) { showToast((e && e.message) || t('common.error'), 'error'); }
+    catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
   }));
   body.querySelectorAll('.corp-card[data-id]').forEach((card) => {
     const h = cache.hooks.find((x) => x.id === card.dataset.id);
@@ -172,12 +175,12 @@ export async function render(app) {
     card.querySelector('[data-act="del"]').addEventListener('click', async () => {
       if (!confirm(t('auto.confirm_delete', { name: h.name }))) return;
       try { await api.delete(`/automation/${h.id}`); showToast(t('auto.deleted'), 'success'); render(app); }
-      catch (e) { showToast((e && e.message) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
     });
     card.querySelector('[data-act="rotate"]').addEventListener('click', async () => {
       if (!confirm(t('auto.confirm_rotate'))) return;
       try { const r = await api.post(`/automation/${h.id}/rotate`, {}); showUrl(r.url, h.name); }
-      catch (e) { showToast((e && e.message) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
     });
     card.querySelector('[data-act="test"]').addEventListener('click', async (ev) => {
       const takesOver = ['emergency', 'mass_notification', 'playlist', 'trigger'].includes(h.kind);
@@ -187,20 +190,20 @@ export async function render(app) {
         const r = await api.post(`/automation/${h.id}/test`, {});
         showToast(r.outcome || t('auto.tested'), r.ok ? 'success' : 'error');
         render(app);
-      } catch (e) { showToast((e && e.message) || t('common.error'), 'error'); ev.target.disabled = false; }
+      } catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); ev.target.disabled = false; }
     });
     card.querySelector('[data-act="calls"]').addEventListener('click', async () => {
       const box = card.querySelector('.auto-calls');
       if (!box.hidden) { box.hidden = true; return; }
       box.hidden = false;
-      box.innerHTML = '<span class="corp-help">…</span>';
+      box.innerHTML = `<span class="corp-help">…</span>`;
       try {
         const rows = await api.get(`/automation/${h.id}/calls`);
-        box.innerHTML = rows.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>${esc(t('auto.col.when'))}</th><th>${esc(t('auto.col.status'))}</th><th>${esc(t('auto.col.result'))}</th></tr></thead><tbody>
-          ${rows.map((c) => `<tr><td>${esc(new Date(c.at * 1000).toLocaleString())}${c.test ? ` <span class="corp-help">(${esc(t('auto.test_mark'))})</span>` : ''}</td>
-            <td style="color:${c.status < 300 ? 'inherit' : '#dc2626'}">${esc(String(c.status))}</td><td>${esc(c.outcome || '')}</td></tr>`).join('')}
-          </tbody></table></div>` : `<span class="corp-help">${esc(t('auto.no_calls'))}</span>`;
-      } catch (e) { box.innerHTML = `<span style="color:var(--danger)">${esc((e && e.message) || t('common.error'))}</span>`; }
+        box.innerHTML = rows.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>${uiText(t('auto.col.when'))}</th><th>${uiText(t('auto.col.status'))}</th><th>${uiText(t('auto.col.result'))}</th></tr></thead><tbody>
+          ${renderHTML(rows.map((c) => `<tr><td>${uiText(displayValue(new Date(c.at * 1000), "toLocaleString", undefined))}${renderHTML(c.test ? ` <span class="corp-help">(${uiText(t('auto.test_mark'))})</span>` : '')}</td>
+            <td style="color:${c.status < 300 ? 'inherit' : '#dc2626'}">${uiText(String(c.status))}</td><td>${uiText(c.outcome || '')}</td></tr>`).join(''))}
+          </tbody></table></div>` : `<span class="corp-help">${uiText(t('auto.no_calls'))}</span>`;
+      } catch (e) { box.innerHTML = `<span style="color:var(--danger)">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</span>`; }
     });
   });
 }
@@ -213,14 +216,14 @@ function scopePicker(prefix, scopes) {
   const chosen = new Set(s.map((x) => x.scope_id));
   const tag = kind === 'tag' ? (s[0] || {}).scope_id || '' : '';
   return `
-    <div class="form-group"><label>${esc(t('capf.f.scope'))}</label>
+    <div class="form-group"><label>${uiText(t('capf.f.scope'))}</label>
       <select id="${prefix}Scope" class="input" style="width:auto">
-        <option value="workspace" ${kind === 'workspace' ? 'selected' : ''}>${esc(t('capf.scope.workspace'))}</option>
-        <option value="group" ${kind === 'group' ? 'selected' : ''}>${esc(t('capf.scope.group'))}</option>
-        <option value="device" ${kind === 'device' ? 'selected' : ''}>${esc(t('capf.scope.device'))}</option>
-        <option value="tag" ${kind === 'tag' ? 'selected' : ''}>${esc(t('auto.scope.tag'))}</option>
+        <option value="workspace" ${kind === 'workspace' ? 'selected' : ''}>${uiText(t('capf.scope.workspace'))}</option>
+        <option value="group" ${kind === 'group' ? 'selected' : ''}>${uiText(t('capf.scope.group'))}</option>
+        <option value="device" ${kind === 'device' ? 'selected' : ''}>${uiText(t('capf.scope.device'))}</option>
+        <option value="tag" ${kind === 'tag' ? 'selected' : ''}>${uiText(t('auto.scope.tag'))}</option>
       </select>
-      <input id="${prefix}Tag" class="input" style="margin-top:8px" placeholder="lobby" value="${esc(tag)}" ${kind === 'tag' ? '' : 'hidden'}>
+      <input id="${prefix}Tag" class="input" style="margin-top:8px" ${translatedAttribute("placeholder", "ui.automation.placeholder_lobby_4b5dc0")} value="${esc(tag)}" ${kind === 'tag' ? '' : 'hidden'}>
       <div id="${prefix}ScopeList" style="margin-top:8px;max-height:160px;overflow:auto;display:flex;flex-direction:column;gap:4px" data-chosen="${esc([...chosen].join(','))}"></div>
     </div>`;
 }
@@ -234,7 +237,7 @@ function wireScope(root, prefix) {
     tag.hidden = k !== 'tag';
     const items = k === 'group' ? cache.groups : k === 'device' ? cache.devices : [];
     list.innerHTML = items.map((x) => `<label style="display:flex;gap:8px;align-items:center;font-size:13px">
-      <input type="checkbox" value="${esc(x.id)}" ${chosen.has(x.id) ? 'checked' : ''}> ${esc(x.name)}</label>`).join('');
+      <input type="checkbox" value="${esc(x.id)}" ${chosen.has(x.id) ? 'checked' : ''}> ${uiText(x.name)}</label>`).join('');
   };
   sel.addEventListener('change', paint);
   paint();
@@ -245,10 +248,10 @@ function wireScope(root, prefix) {
     return [...list.querySelectorAll('input:checked')].map((i) => ({ scope_kind: k, scope_id: i.value }));
   };
 }
-const field = (id, label, value, { ph = '', hint = '' } = {}) => `<div class="form-group"><label>${esc(label)}</label>
-  <input id="${id}" class="input" value="${esc(value == null ? '' : value)}" placeholder="${esc(ph)}">${hint ? `<div class="corp-help" style="font-size:12px;margin-top:4px">${esc(hint)}</div>` : ''}</div>`;
-const select = (id, label, options, value) => `<div class="form-group"><label>${esc(label)}</label>
-  <select id="${id}" class="input">${options.map(([v, l]) => `<option value="${esc(v)}" ${String(value) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>`;
+const field = (id, label, value, { ph = '', hint = '' } = {}) => `<div class="form-group"><label>${uiText(label)}</label>
+  <input id="${id}" class="input" value="${esc(value == null ? '' : value)}" placeholder="${esc(ph)}"${attributeBinding("placeholder", ph)}>${renderHTML(hint ? `<div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(hint)}</div>` : '')}</div>`;
+const select = (id, label, options, value) => `<div class="form-group"><label>${uiText(label)}</label>
+  <select id="${id}" class="input">${renderHTML(options.map(([v, l]) => `<option value="${esc(v)}" ${String(value) === String(v) ? 'selected' : ''}>${uiText(l)}</option>`).join(''))}</select></div>`;
 
 function kindFields(kind, c) {
   const showOpts = [['', t('capf.f.show_card')], ...cache.playlists.map((p) => [p.id, t('capf.f.show_pl', { name: p.name })])];
@@ -268,24 +271,24 @@ function kindFields(kind, c) {
   if (kind === 'mass_notification') {
     const m = c.mapping || {};
     return `
-      <p class="corp-help" style="font-size:12px">${esc(t('auto.mn_explain'))}</p>
-      ${select('afSeverity', t('auto.f.default_severity'), Object.entries(SEV()), c.severity || 'Extreme')}
-      ${field('afExpires', t('auto.f.expires'), c.expires_min || 120)}
-      ${scopePicker('af', c.scopes)}
-      ${select('afShow', t('capf.f.show'), showOpts, c.playlist_id || '')}
-      <details style="margin:8px 0"><summary style="cursor:pointer;font-size:13px">${esc(t('auto.mapping'))}</summary>
-        <p class="corp-help" style="font-size:12px">${esc(t('auto.mapping_hint'))}</p>
-        ${field('afMapId', t('auto.f.map_id'), m.id || '', { ph: '{{body.alertId}}' })}
-        ${field('afMapHeadline', t('auto.f.map_headline'), m.headline || '', { ph: '{{body.title}}' })}
-        ${field('afMapMessage', t('auto.f.map_message'), m.message || '', { ph: '{{body.message}}' })}
-        ${field('afMapClear', t('auto.f.map_clear'), m.clear || '', { ph: '{{body.status}}' })}
+      <p class="corp-help" style="font-size:12px">${uiText(t('auto.mn_explain'))}</p>
+      ${renderHTML(select('afSeverity', t('auto.f.default_severity'), Object.entries(SEV()), c.severity || 'Extreme'))}
+      ${renderHTML(field('afExpires', t('auto.f.expires'), c.expires_min || 120))}
+      ${renderHTML(scopePicker('af', c.scopes))}
+      ${renderHTML(select('afShow', t('capf.f.show'), showOpts, c.playlist_id || ''))}
+      <details style="margin:8px 0"><summary style="cursor:pointer;font-size:13px">${uiText(t('auto.mapping'))}</summary>
+        <p class="corp-help" style="font-size:12px">${uiText(t('auto.mapping_hint'))}</p>
+        ${renderHTML(field('afMapId', t('auto.f.map_id'), m.id || '', { ph: '{{body.alertId}}' }))}
+        ${renderHTML(field('afMapHeadline', t('auto.f.map_headline'), m.headline || '', { ph: '{{body.title}}' }))}
+        ${renderHTML(field('afMapMessage', t('auto.f.map_message'), m.message || '', { ph: '{{body.message}}' }))}
+        ${renderHTML(field('afMapClear', t('auto.f.map_clear'), m.clear || '', { ph: '{{body.status}}' }))}
       </details>`;
   }
   if (kind === 'trigger') {
     return `
-      ${select('afTrigger', t('auto.f.trigger'), cache.triggers.map((x) => [x.id, x.name]), c.trigger_id || '')}
-      ${select('afOp', t('auto.f.op'), [['fire', t('auto.op.fire')], ['clear', t('auto.op.clear')]], c.op || 'fire')}
-      <p class="corp-help" style="font-size:12px">${esc(t('auto.trigger_note'))}</p>`;
+      ${renderHTML(select('afTrigger', t('auto.f.trigger'), cache.triggers.map((x) => [x.id, x.name]), c.trigger_id || ''))}
+      ${renderHTML(select('afOp', t('auto.f.op'), [['fire', t('auto.op.fire')], ['clear', t('auto.op.clear')]], c.op || 'fire'))}
+      <p class="corp-help" style="font-size:12px">${uiText(t('auto.trigger_note'))}</p>`;
   }
   if (kind === 'data') {
     return `
@@ -324,23 +327,23 @@ function openForm(app, hook) {
   const kinds = Object.entries(KIND_LABEL());
   overlay.innerHTML = `
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:720px;max-width:100%;max-height:92vh;overflow:auto">
-    <h3 style="margin-bottom:12px">${esc(hook ? t('auto.edit_title', { name: hook.name }) : t('auto.new'))}</h3>
-    ${field('afName', t('capf.f.name'), hook ? hook.name : '', { ph: t('auto.f.name_ph') })}
-    ${hook ? '' : select('afKind', t('auto.f.kind'), kinds, 'emergency')}
+    <h3 style="margin-bottom:12px">${uiText(hook ? t('auto.edit_title', { name: hook.name }) : t('auto.new'))}</h3>
+    ${renderHTML(field('afName', t('capf.f.name'), hook ? hook.name : '', { ph: t('auto.f.name_ph') }))}
+    ${renderHTML(hook ? '' : select('afKind', t('auto.f.kind'), kinds, 'emergency'))}
     <p class="corp-help" id="afKindHint" style="font-size:12px;margin:-4px 0 8px"></p>
     <div id="afKindFields"></div>
-    <details style="margin:8px 0"><summary style="cursor:pointer;font-size:13px">${esc(t('auto.signing'))}</summary>
-      <p class="corp-help" style="font-size:12px">${esc(t('auto.signing_hint'))}</p>
+    <details style="margin:8px 0"><summary style="cursor:pointer;font-size:13px">${uiText(t('auto.signing'))}</summary>
+      <p class="corp-help" style="font-size:12px">${uiText(t('auto.signing_hint'))}</p>
       <input id="afSigning" class="input" type="password" autocomplete="new-password" placeholder="${esc(hook && hook.has_signing_secret ? t('auto.signing_set') : t('auto.signing_none'))}">
-      ${hook && hook.has_signing_secret ? `<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin-top:6px"><input type="checkbox" id="afSigningClear"> ${esc(t('auto.signing_remove'))}</label>` : ''}
+      ${renderHTML(hook && hook.has_signing_secret ? `<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin-top:6px"><input type="checkbox" id="afSigningClear"> ${uiText(t('auto.signing_remove'))}</label>` : '')}
     </details>
-    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0"><input type="checkbox" id="afEnabled" ${!hook || hook.enabled ? 'checked' : ''}> ${esc(t('auto.f.enabled'))}</label>
-    ${hook && hook.config && hook.config.via ? '' : `<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0 0"><input type="checkbox" id="afAllowGet" ${hook && hook.config && hook.config.allow_get ? 'checked' : ''}> ${esc(t('auto.f.allow_get'))}</label>
-    <p class="corp-help" style="font-size:12px;margin:2px 0 8px 24px">${esc(t('auto.f.allow_get_hint'))}</p>`}
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0"><input type="checkbox" id="afEnabled" ${!hook || hook.enabled ? 'checked' : ''}> ${uiText(t('auto.f.enabled'))}</label>
+    ${renderHTML(hook && hook.config && hook.config.via ? '' : `<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0 0"><input type="checkbox" id="afAllowGet" ${hook && hook.config && hook.config.allow_get ? 'checked' : ''}> ${uiText(t('auto.f.allow_get'))}</label>
+    <p class="corp-help" style="font-size:12px;margin:2px 0 8px 24px">${uiText(t('auto.f.allow_get_hint'))}</p>`)}
     <div id="afError" style="color:var(--danger);font-size:13px;min-height:18px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px">
-      <button class="btn btn-secondary" id="afCancel">${esc(t('common.cancel'))}</button>
-      <button class="btn btn-primary" id="afSave">${esc(t('common.save'))}</button>
+      <button class="btn btn-secondary" id="afCancel">${uiText(t('common.cancel'))}</button>
+      <button class="btn btn-primary" id="afSave">${uiText(t('common.save'))}</button>
     </div>
   </div>`;
   document.body.appendChild(overlay);
@@ -348,7 +351,7 @@ function openForm(app, hook) {
   let kind = hook ? hook.kind : 'emergency';
   let getScopes = () => [{ scope_kind: 'workspace' }];
   const paint = () => {
-    $('afKindHint').textContent = KIND_HINT()[kind] || '';
+    bindMessage($('afKindHint'), KIND_HINT()[kind] || '');
     $('afKindFields').innerHTML = kindFields(kind, hook && hook.kind === kind ? hook.config || {} : {});
     if (overlay.querySelector('#afScope')) getScopes = wireScope(overlay, 'af');
   };
@@ -367,7 +370,7 @@ function openForm(app, hook) {
       if (hook) { await api.put(`/automation/${hook.id}`, body); overlay.remove(); showToast(t('auto.saved'), 'success'); render(app); }
       else { const r = await api.post('/automation', body); overlay.remove(); render(app); showUrl(r.url, r.name); }
     } catch (e) {
-      $('afError').textContent = (e && e.message) || t('common.error');
+      bindMessage($('afError'), (e && (e.uiMessage || e.message)) || t('common.error'));
       $('afSave').disabled = false;
     }
   });

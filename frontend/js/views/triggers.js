@@ -1,7 +1,9 @@
+import { uiText, renderHTML, bindMessage, bindAttribute, binding } from '../lib/i18n-bindings.js';
+
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { chip } from '../components/corporate-ui.js';
 
 /*
@@ -38,7 +40,7 @@ function targetName(tr) {
 
 function assignmentSummary(tr) {
   const a = tr.assignments || [];
-  if (!a.length) return `<span class="corp-chip corp-chip-hq">${esc(t('trigger.unassigned'))}</span>`;
+  if (!a.length) return `<span class="corp-chip corp-chip-hq">${uiText(t('trigger.unassigned'))}</span>`;
   const names = a.map((x) => {
     const list = x.target_type === 'device' ? cache.devices : cache.groups;
     const hit = list.find(i => i.id === x.target_id);
@@ -52,18 +54,18 @@ function rowHtml(tr) {
   return `
     <tr data-id="${esc(tr.id)}">
       <td>
-        <strong>${esc(tr.name)}</strong>
-        ${tr.enabled ? '' : `<span class="corp-chip corp-chip-muted">${esc(t('trigger.disabled'))}</span>`}
+        <strong>${uiText(tr.name)}</strong>
+        ${renderHTML(tr.enabled ? '' : `<span class="corp-chip corp-chip-muted">${uiText(t('trigger.disabled'))}</span>`)}
       </td>
-      <td><code>${esc(tr.match_token)}</code>${tr.clear_token ? ` / <code>${esc(tr.clear_token)}</code>` : ''}</td>
-      <td>${esc(targetName(tr))}</td>
-      <td>${esc(modeLabel(tr.mode))}${risk ? ` <span class="corp-chip corp-chip-hq" title="${esc(t('trigger.lease_risk'))}">${esc(t('trigger.no_lease'))}</span>` : ''}</td>
-      <td>${tr.source_http ? 'HTTP' : ''}${tr.source_http && tr.source_udp ? ' + ' : ''}${tr.source_udp ? 'UDP' : ''}</td>
-      <td>${tr.priority}</td>
-      <td>${assignmentSummary(tr)}</td>
+      <td><code>${uiText(tr.match_token)}</code>${renderHTML(tr.clear_token ? ` / <code>${uiText(tr.clear_token)}</code>` : '')}</td>
+      <td>${uiText(targetName(tr))}</td>
+      <td>${uiText(modeLabel(tr.mode))}${renderHTML(risk ? ` <span class="corp-chip corp-chip-hq" title="${esc(t('trigger.lease_risk'))}" data-fil-i18n-title="${binding('trigger.lease_risk', undefined)}">${uiText(t('trigger.no_lease'))}</span>` : '')}</td>
+      <td>${renderHTML(tr.source_http ? 'HTTP' : '')}${renderHTML(tr.source_http && tr.source_udp ? ' + ' : '')}${renderHTML(tr.source_udp ? 'UDP' : '')}</td>
+      <td>${renderHTML(tr.priority)}</td>
+      <td>${renderHTML(assignmentSummary(tr))}</td>
       <td class="corp-actions-cell">
-        <button class="btn btn-secondary btn-sm" data-act="edit">${esc(t('common.edit'))}</button>
-        <button class="btn btn-sm btn-danger" data-act="del">${esc(t('common.delete'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="edit">${uiText(t('common.edit'))}</button>
+        <button class="btn btn-sm btn-danger" data-act="del">${uiText(t('common.delete'))}</button>
       </td>
     </tr>`;
 }
@@ -71,7 +73,7 @@ function rowHtml(tr) {
 function formHtml(tr) {
   const isNew = !tr.id;
   const opt = (list, sel) => list.map(x =>
-    `<option value="${esc(x.id)}"${x.id === sel ? ' selected' : ''}>${esc(x.name)}</option>`).join('');
+    `<option value="${esc(x.id)}"${x.id === sel ? ' selected' : ''}>${uiText(x.name)}</option>`).join('');
 
   /*
    * ⚠️ ONLY PLAYLISTS THAT CAN ACTUALLY FIRE.
@@ -94,8 +96,8 @@ function formHtml(tr) {
   const checks = (list, type) => list.map(x => `
       <label class="check">
         <input type="checkbox" data-assign="${type}:${esc(x.id)}"
-               ${assigned.has(`${type}:${x.id}`) ? 'checked' : ''}> ${esc(x.name)}
-      </label>`).join('') || `<p class="corp-help">${esc(t('trigger.none_available'))}</p>`;
+               ${assigned.has(`${type}:${x.id}`) ? 'checked' : ''}> ${uiText(x.name)}
+      </label>`).join('') || `<p class="corp-help">${uiText(t('trigger.none_available'))}</p>`;
 
   /*
    * ⚠️ `.modal-overlay`, NOT `.modal-backdrop`. This dialog spent its whole life using a class name
@@ -106,24 +108,24 @@ function formHtml(tr) {
    */
   const field = (id, label, control, hint, hintId) =>
     `<div class="form-group">
-       <label for="${id}">${esc(label)}</label>
-       ${control}
-       ${hint ? `<div class="tg-hint"${hintId ? ` id="${hintId}"` : ''}>${esc(hint)}</div>` : ''}
+       <label for="${id}">${uiText(label)}</label>
+       ${renderHTML(control)}
+       ${renderHTML(hint ? `<div class="tg-hint"${hintId ? ` id="${hintId}"` : ''}>${uiText(hint)}</div>` : '')}
      </div>`;
 
   const section = (title, inner, blurb) =>
     `<section class="tg-section">
-       <h4 class="tg-legend">${esc(title)}</h4>
-       ${blurb ? `<p class="tg-blurb">${esc(blurb)}</p>` : ''}
-       ${inner}
+       <h4 class="tg-legend">${uiText(title)}</h4>
+       ${renderHTML(blurb ? `<p class="tg-blurb">${uiText(blurb)}</p>` : '')}
+       ${renderHTML(inner)}
      </section>`;
 
   return `
   <div class="modal-overlay" id="trigModal">
     <div class="modal tg-modal">
       <div class="modal-header">
-        <h3>${esc(isNew ? t('trigger.new') : t('trigger.edit'))}</h3>
-        <button class="btn-icon" type="button" id="tgClose" aria-label="${esc(t('common.close'))}">
+        <h3>${uiText(isNew ? t('trigger.new') : t('trigger.edit'))}</h3>
+        <button class="btn-icon" type="button" id="tgClose" aria-label="${esc(t('common.close'))}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -131,11 +133,11 @@ function formHtml(tr) {
       </div>
 
       <div class="modal-body">
-        ${section(t('trigger.sec_identity'),
+        ${renderHTML(section(t('trigger.sec_identity'),
           field('tgName', t('trigger.name'),
-            `<input class="input" id="tgName" value="${esc(tr.name || '')}" maxlength="200">`))}
+            `<input class="input" id="tgName" value="${esc(tr.name || '')}" maxlength="200">`)))}
 
-        ${section(t('trigger.sec_match'),
+        ${renderHTML(section(t('trigger.sec_match'),
           field('tgToken', t('trigger.match_token'),
             `<input class="input" id="tgToken" value="${esc(tr.match_token || '')}" maxlength="64">`,
             t('trigger.token_hint'))
@@ -144,52 +146,52 @@ function formHtml(tr) {
           + `<div class="tg-sources">
                <label class="tg-check"><input type="checkbox" id="tgHttp" ${tr.source_http === false ? '' : 'checked'}> HTTP</label>
                <label class="tg-check"><input type="checkbox" id="tgUdp" ${tr.source_udp ? 'checked' : ''}> UDP</label>
-             </div>`)}
+             </div>`))}
 
-        ${section(t('trigger.sec_shows'),
+        ${renderHTML(section(t('trigger.sec_shows'),
           (firable.length
             ? field('tgTarget', t('trigger.target'),
-                `<select class="input" id="tgTarget">${opt(firable, tr.target_ref)}</select>`,
+                `<select class="input" id="tgTarget">${renderHTML(opt(firable, tr.target_ref))}</select>`,
                 t('trigger.target_hint'))
             /*
              * A disabled empty select with a hint underneath reads as a broken form. If nothing can
              * be chosen, say why and what to do — the operator has playlists, they are just not
              * published yet, and nothing else on this screen would tell them that.
              */
-            : `<div class="tg-empty">${esc(t('trigger.no_published'))}</div>`)
+            : `<div class="tg-empty">${uiText(t('trigger.no_published'))}</div>`)
           + (unpublishedCount > 0 && firable.length
-            ? `<div class="tg-hint">${esc(tn('trigger.unpublished_hidden', unpublishedCount))}</div>`
-            : ''))}
+            ? `<div class="tg-hint">${uiText(tn('trigger.unpublished_hidden', unpublishedCount))}</div>`
+            : '')))}
 
-        ${section(t('trigger.sec_behaviour'),
+        ${renderHTML(section(t('trigger.sec_behaviour'),
           field('tgMode', t('trigger.mode'),
             `<select class="input" id="tgMode">
-               <option value="once"${tr.mode === 'once' ? ' selected' : ''}>${esc(t('trigger.mode_once'))}</option>
-               <option value="until_cleared"${tr.mode === 'until_cleared' ? ' selected' : ''}>${esc(t('trigger.mode_until_cleared'))}</option>
+               <option value="once"${tr.mode === 'once' ? ' selected' : ''}>${uiText(t('trigger.mode_once'))}</option>
+               <option value="until_cleared"${tr.mode === 'until_cleared' ? ' selected' : ''}>${uiText(t('trigger.mode_until_cleared'))}</option>
              </select>`)
           + `<div class="tg-row">
-               ${field('tgMaxDur', t('trigger.max_duration'),
+               ${renderHTML(field('tgMaxDur', t('trigger.max_duration'),
                  `<input class="input" id="tgMaxDur" type="number" min="0" max="86400" value="${tr.max_duration_sec || 0}">`,
-                 t('trigger.max_duration_hint'))}
-               ${field('tgLease', t('trigger.lease'),
+                 t('trigger.max_duration_hint')))}
+               ${renderHTML(field('tgLease', t('trigger.lease'),
                  `<input class="input" id="tgLease" type="number" min="5" max="86400" value="${tr.lease_sec == null ? '' : tr.lease_sec}">`,
-                 t('trigger.lease_hint'), 'tgLeaseHint')}
+                 t('trigger.lease_hint'), 'tgLeaseHint'))}
              </div>`
           + field('tgPriority', t('trigger.priority'),
-            `<input class="input" id="tgPriority" type="number" min="-1000" max="1000" value="${tr.priority || 0}">`))}
+            `<input class="input" id="tgPriority" type="number" min="-1000" max="1000" value="${tr.priority || 0}">`)))}
 
-        ${section(t('trigger.assign'),
+        ${renderHTML(section(t('trigger.assign'),
           `<div class="assign-grid">
-             <div><h5 class="tg-col">${esc(t('nav.displays'))}</h5>${checks(cache.devices, 'device')}</div>
-             <div><h5 class="tg-col">${esc(t('trigger.groups'))}</h5>${checks(cache.groups, 'group')}</div>
+             <div><h5 class="tg-col">${uiText(t('nav.displays'))}</h5>${renderHTML(checks(cache.devices, 'device'))}</div>
+             <div><h5 class="tg-col">${uiText(t('trigger.groups'))}</h5>${renderHTML(checks(cache.groups, 'group'))}</div>
            </div>`,
-          t('trigger.assign_hint'))}
+          t('trigger.assign_hint')))}
       </div>
 
       <div class="modal-footer">
-        <label class="tg-check tg-enabled"><input type="checkbox" id="tgEnabled" ${tr.enabled === 0 ? '' : 'checked'}> ${esc(t('trigger.enabled'))}</label>
-        <button class="btn btn-secondary" type="button" id="tgCancel">${esc(t('common.cancel'))}</button>
-        <button class="btn btn-primary" type="button" id="tgSave">${esc(t('common.save'))}</button>
+        <label class="tg-check tg-enabled"><input type="checkbox" id="tgEnabled" ${tr.enabled === 0 ? '' : 'checked'}> ${uiText(t('trigger.enabled'))}</label>
+        <button class="btn btn-secondary" type="button" id="tgCancel">${uiText(t('common.cancel'))}</button>
+        <button class="btn btn-primary" type="button" id="tgSave">${uiText(t('common.save'))}</button>
       </div>
     </div>
   </div>`;
@@ -245,8 +247,7 @@ function openForm(app, tr) {
   const syncLease = () => {
     const risky = mode.value === 'until_cleared' && udp.checked;
     if (risky && lease.value === '' && !tr?.id) lease.value = '90';
-    document.getElementById('tgLeaseHint').textContent =
-      risky && lease.value === '' ? t('trigger.lease_risk') : t('trigger.lease_hint');
+    bindMessage(document.getElementById('tgLeaseHint'), risky && lease.value === '' ? t('trigger.lease_risk') : t('trigger.lease_hint'));
     lease.disabled = mode.value !== 'until_cleared';
   };
   udp.addEventListener('change', syncLease);
@@ -282,7 +283,7 @@ function openForm(app, tr) {
   if (!targetSel) {
     const save = document.getElementById('tgSave');
     save.disabled = true;
-    save.title = t('trigger.no_published');
+    bindAttribute(save, "title", t('trigger.no_published'));
   }
 
   document.getElementById('tgCancel').addEventListener('click', close);
@@ -297,7 +298,7 @@ function openForm(app, tr) {
     } catch (e) {
       // The server's message is the useful one — it names the actual rule (token charset, a
       // cross-workspace playlist, a duplicate token) far better than anything generic here.
-      showToast((e && e.message) || t('common.error'), 'error');
+      showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error');
     }
   });
 }
@@ -312,23 +313,23 @@ function headOfficeHtml() {
   const h = cache.headOffice || {};
   const parts = [];
   const p = h.store_trigger_policy;
-  if (p && p.policy === 'leased') parts.push(`<div class="corp-notice">${esc(t('corp.trig.policy_note_leased', { n: Math.round((p.cap_sec || 300) / 60) }))}</div>`);
-  if (p && p.policy === 'off') parts.push(`<div class="corp-notice">${esc(t('corp.trig.policy_note_off'))}</div>`);
-  if (cache.hqAlerts) parts.push(`<div class="corp-notice">${esc(tn('corp.trig.hq_alerts', cache.hqAlerts))} <a href="#/corporate/emergency">${esc(t('corp.em.title'))}</a></div>`);
+  if (p && p.policy === 'leased') parts.push(`<div class="corp-notice">${uiText(t('corp.trig.policy_note_leased', { n: Math.round((p.cap_sec || 300) / 60) }))}</div>`);
+  if (p && p.policy === 'off') parts.push(`<div class="corp-notice">${uiText(t('corp.trig.policy_note_off'))}</div>`);
+  if (cache.hqAlerts) parts.push(`<div class="corp-notice">${renderHTML(tn('corp.trig.hq_alerts', cache.hqAlerts))} <a href="#/corporate/emergency">${uiText(t('corp.em.title'))}</a></div>`);
   if ((h.emergency || []).length) {
-    parts.push(`<div class="corp-card"><div class="corp-card-head"><strong class="corp-card-title">${esc(t('corp.trig.hq_title'))}</strong></div>
-      <div class="corp-help" style="margin-bottom:6px">${esc(t('corp.trig.hq_help'))}</div>
-      ${h.emergency.map((e) => `<div class="corp-row" style="padding:4px 0">${chip(t('corp.badge.emergency'), 'emergency')} <strong>${esc(e.name)}</strong>
-        ${e.live ? chip(t('corp.em.live'), 'emergency') : e.enabled ? '' : chip(t('corp.em.off'), 'muted')}
-        <span class="corp-help">${esc(e.mode === 'once' ? t('corp.em.mode_once_short') : t('corp.em.mode_until_short'))}</span></div>`).join('')}
+    parts.push(`<div class="corp-card"><div class="corp-card-head"><strong class="corp-card-title">${uiText(t('corp.trig.hq_title'))}</strong></div>
+      <div class="corp-help" style="margin-bottom:6px">${uiText(t('corp.trig.hq_help'))}</div>
+      ${renderHTML(h.emergency.map((e) => `<div class="corp-row" style="padding:4px 0">${renderHTML(chip(t('corp.badge.emergency'), 'emergency'))} <strong>${uiText(e.name)}</strong>
+        ${renderHTML(e.live ? chip(t('corp.em.live'), 'emergency') : e.enabled ? '' : chip(t('corp.em.off'), 'muted'))}
+        <span class="corp-help">${uiText(e.mode === 'once' ? t('corp.em.mode_once_short') : t('corp.em.mode_until_short'))}</span></div>`).join(''))}
     </div>`);
   }
   return parts.join('');
 }
 
 export async function render(app) {
-  app.innerHTML = `<div class="page-header"><div><h1>${esc(t('nav.triggers'))}</h1>
-    <div class="subtitle">${esc(t('trigger.intro'))}</div></div></div><div id="trigBody"></div>`;
+  app.innerHTML = `<div class="page-header"><div><h1>${uiText(t('nav.triggers'))}</h1>
+    <div class="subtitle">${uiText(t('trigger.intro'))}</div></div></div><div id="trigBody"></div>`;
   const body = document.getElementById('trigBody');
 
   try {
@@ -346,27 +347,27 @@ export async function render(app) {
       groups: Array.isArray(grps) ? grps : (grps.groups || []),
     };
   } catch (e) {
-    body.innerHTML = `<p class="corp-notice corp-notice-danger">${esc((e && e.message) || t('common.error'))}</p>`;
+    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`;
     return;
   }
 
   const risky = cache.triggers.filter(leaseRisk).length;
   body.innerHTML = `
-    ${headOfficeHtml()}
+    ${renderHTML(headOfficeHtml())}
     <div class="corp-toolbar">
-      <button class="btn btn-primary" id="tgNew">${esc(t('trigger.new'))}</button>
+      <button class="btn btn-primary" id="tgNew">${uiText(t('trigger.new'))}</button>
     </div>
-    ${risky ? `<div class="corp-notice corp-notice-warn">${esc(t('trigger.lease_risk_banner'))}</div>` : ''}
-    ${cache.triggers.length ? `
+    ${renderHTML(risky ? `<div class="corp-notice corp-notice-warn">${uiText(t('trigger.lease_risk_banner'))}</div>` : '')}
+    ${renderHTML(cache.triggers.length ? `
     <div class="table-wrap"><table class="corp-table">
       <thead><tr>
-        <th>${esc(t('trigger.name'))}</th><th>${esc(t('trigger.tokens'))}</th>
-        <th>${esc(t('trigger.target'))}</th><th>${esc(t('trigger.mode'))}</th>
-        <th>${esc(t('trigger.sources'))}</th><th>${esc(t('trigger.priority'))}</th>
-        <th>${esc(t('trigger.assigned'))}</th><th></th>
+        <th>${uiText(t('trigger.name'))}</th><th>${uiText(t('trigger.tokens'))}</th>
+        <th>${uiText(t('trigger.target'))}</th><th>${uiText(t('trigger.mode'))}</th>
+        <th>${uiText(t('trigger.sources'))}</th><th>${uiText(t('trigger.priority'))}</th>
+        <th>${uiText(t('trigger.assigned'))}</th><th></th>
       </tr></thead>
-      <tbody>${cache.triggers.map(rowHtml).join('')}</tbody>
-    </table></div>` : `<div class="corp-empty">${esc(t('trigger.empty'))}</div>`}`;
+      <tbody>${renderHTML(cache.triggers.map(rowHtml).join(''))}</tbody>
+    </table></div>` : `<div class="corp-empty">${uiText(t('trigger.empty'))}</div>`)}`;
 
   document.getElementById('tgNew').addEventListener('click', () => openForm(app, null));
   body.querySelectorAll('tr[data-id]').forEach((row) => {
@@ -375,7 +376,7 @@ export async function render(app) {
     row.querySelector('[data-act="del"]')?.addEventListener('click', async () => {
       if (!confirm(t('trigger.confirm_delete'))) return;
       try { await api.delete(`/triggers/${tr.id}`); showToast(t('trigger.deleted'), 'success'); render(app); }
-      catch (e) { showToast((e && e.message) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
     });
   });
 }

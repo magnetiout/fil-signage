@@ -29,7 +29,7 @@ const path = require('node:path');
 const FRONTEND = path.join(__dirname, '..', '..', 'frontend', 'js');
 
 /** Files that export the helpers everything else borrows. */
-const SOURCES = ['utils.js', 'i18n.js', 'api.js', 'branding.js']
+const SOURCES = ['utils.js', 'i18n.js', 'api.js', 'branding.js', 'lib/i18n-bindings.js', 'lib/admin-locale.js']
   .map((f) => path.join(FRONTEND, f))
   .concat(fs.existsSync(path.join(FRONTEND, 'components'))
     ? fs.readdirSync(path.join(FRONTEND, 'components')).filter((f) => f.endsWith('.js'))

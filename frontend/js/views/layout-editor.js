@@ -1,6 +1,12 @@
+import {builtinLayoutName, builtinZoneName} from '../lib/builtin-layout-labels.js';
+import {translatedAttribute} from '../lib/i18n-bindings.js';
+import { renderHTML, uiText, bindMessage, binding } from '../lib/i18n-bindings.js';
+
+import { localizeServerError } from '../api.js';
+
 import { api, assertLocalCallAllowed } from '../api.js';
 import { showToast } from '../components/toast.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { renderApprovalBar } from '../components/approval-actions.js';
 import { snapMove, snapResize } from '../components/snap.js';
@@ -18,8 +24,8 @@ const API = (url, opts = {}) => {
   // ⚠️ This helper bypasses api.js's routing, so it must ask the same question itself.
   assertLocalCallAllowed(url, opts.method);
   return fetch('/api' + url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error('Session expired'); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `Request failed (${r.status})`); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.layout_editor.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
   });
 };
@@ -39,15 +45,15 @@ export async function render(container) {
 async function renderList(container) {
   container.innerHTML = `
     <div class="page-header">
-      <div><h1>${t('layout.title')} <span class="help-tip" data-tip="${t('layout.help_tip')}">?</span></h1><div class="subtitle">${t('layout.subtitle')}</div></div>
+      <div><h1>${renderHTML(t('layout.title'))} <span class="help-tip" ${translatedAttribute("data-tip", 'layout.help_tip')}>?</span></h1><div class="subtitle">${renderHTML(t('layout.subtitle'))}</div></div>
       <button class="btn btn-primary" id="newLayoutBtn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        ${t('layout.new_layout')}
+        ${renderHTML(t('layout.new_layout'))}
       </button>
     </div>
-    <h3 style="margin-bottom:12px;font-size:14px;color:var(--text-secondary)">${t('layout.templates')}</h3>
+    <h3 style="margin-bottom:12px;font-size:14px;color:var(--text-secondary)">${renderHTML(t('layout.templates'))}</h3>
     <div class="content-grid" id="templateGrid"></div>
-    <h3 style="margin:24px 0 12px;font-size:14px;color:var(--text-secondary)">${t('layout.my_layouts')}</h3>
+    <h3 style="margin:24px 0 12px;font-size:14px;color:var(--text-secondary)">${renderHTML(t('layout.my_layouts'))}</h3>
     <div class="content-grid" id="layoutGrid"></div>
   `;
 
@@ -65,7 +71,7 @@ async function renderList(container) {
 
     document.getElementById('templateGrid').innerHTML = templates.map(l => renderLayoutCard(l, true)).join('');
     document.getElementById('layoutGrid').innerHTML = custom.length ? custom.map(l => renderLayoutCard(l, false)).join('') :
-      `<div class="empty-state" style="grid-column:1/-1"><p>${t('layout.empty_custom')}</p></div>`;
+      `<div class="empty-state" style="grid-column:1/-1"><p>${renderHTML(t('layout.empty_custom'))}</p></div>`;
 
     container.querySelectorAll('[data-use-template]').forEach(btn => {
       btn.onclick = async () => {
@@ -88,12 +94,12 @@ async function renderList(container) {
           showToast(t('layout.toast.deleted'));
           renderList(container);
         } catch (err) {
-          showToast(err.message || t('layout.toast.delete_failed'), 'error');
+          showToast(err.uiMessage || err.message || t('layout.toast.delete_failed'), 'error');
         }
       };
     });
   } catch (err) {
-    showToast(err.message, 'error');
+    showToast(err.uiMessage || err.message, 'error');
   }
 }
 
@@ -104,23 +110,23 @@ function renderLayoutCard(layout, isTemplate) {
     <div class="content-item" style="cursor:pointer">
       <div class="content-item-preview" style="position:relative;background:var(--bg-primary)">
         <div style="position:absolute;inset:8px;border:1px solid var(--border)">
-          ${(layout.zones || []).map(z => `
+          ${renderHTML((layout.zones || []).map(z => `
             <div style="position:absolute;left:${z.x_percent}%;top:${z.y_percent}%;width:${z.width_percent}%;height:${z.height_percent}%;
               background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.4);display:flex;align-items:center;justify-content:center;
-              font-size:9px;color:var(--text-muted);overflow:hidden">${esc(z.name)}</div>
-          `).join('')}
+              font-size:9px;color:var(--text-muted);overflow:hidden">${uiText(builtinZoneName(layout,z))}</div>
+          `).join(''))}
         </div>
       </div>
       <div class="content-item-body">
-        <div class="content-item-name">${esc(layout.name)}</div>
-        <div class="content-item-size">${zonesText}${isTemplate ? ' • ' + t('layout.template_label') : ''}</div>
+        <div class="content-item-name">${uiText(builtinLayoutName(layout))}</div>
+        <div class="content-item-size">${renderHTML(zonesText)}${renderHTML(isTemplate ? ' • ' + t('layout.template_label') : '')}</div>
       </div>
       <div class="content-item-actions">
-        ${isTemplate
-          ? `<button class="btn btn-primary btn-sm" data-use-template="${layout.id}">${t('layout.use_template')}</button>`
-          : `<button class="btn btn-secondary btn-sm" data-edit-layout="${layout.id}">${t('common.edit')}</button>`
+        ${renderHTML(isTemplate
+          ? `<button class="btn btn-primary btn-sm" data-use-template="${layout.id}">${renderHTML(t('layout.use_template'))}</button>`
+          : `<button class="btn btn-secondary btn-sm" data-edit-layout="${layout.id}">${renderHTML(t('common.edit'))}</button>`)
         }
-        <button class="btn btn-danger btn-sm" data-delete-layout="${layout.id}" data-layout-name="${esc(layout.name)}" style="margin-left:4px">${t('common.delete')}</button>
+        <button class="btn btn-danger btn-sm" data-delete-layout="${layout.id}" data-layout-name="${esc(layout.name)}" style="margin-left:4px">${renderHTML(t('common.delete'))}</button>
       </div>
     </div>
   `;
@@ -146,7 +152,7 @@ async function renderEditor(container, layoutId, wallId = null) {
   let layout;
   try {
     layout = await API(`/layouts/${layoutId}`);
-  } catch { container.innerHTML = `<div class="empty-state"><h3>${t('layout.not_found')}</h3></div>`; return; }
+  } catch { container.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('layout.not_found'))}</h3></div>`; return; }
   // The wall's panels in percent of its player rect — the same space the zones live in. Best-effort:
   // without them the editor is exactly the single-screen editor.
   let wallPanels = [];
@@ -155,7 +161,7 @@ async function renderEditor(container, layoutId, wallId = null) {
     try {
       const w = await API(`/walls/${wallId}`);
       const devs = w.devices || [];
-      const rects = devs.map(d => ({ name: d.device_name || 'Screen', x: d.canvas_x ?? 0, y: d.canvas_y ?? 0, w: d.canvas_width ?? 320, h: d.canvas_height ?? 180 }));
+      const rects = devs.map(d => ({ name: d.device_name || t("ui.layout_editor.screen_5cc847"), x: d.canvas_x ?? 0, y: d.canvas_y ?? 0, w: d.canvas_width ?? 320, h: d.canvas_height ?? 180 }));
       let p = (w.player_x != null) ? { x: w.player_x, y: w.player_y, w: w.player_width, h: w.player_height } : null;
       if (!p && rects.length) {
         const x = Math.min(...rects.map(r => r.x)), y = Math.min(...rects.map(r => r.y));
@@ -171,40 +177,40 @@ async function renderEditor(container, layoutId, wallId = null) {
   container.innerHTML = `
     <a href="${wallId && wallName ? '#/wall/' + esc(wallId) : '#/layouts'}" class="back-link" style="display:inline-flex;align-items:center;gap:6px;color:var(--text-secondary);margin-bottom:16px;font-size:13px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-      ${wallId && wallName ? esc(t('layout.back_to_wall', { wall: wallName })) : t('layout.back')}
+      ${renderHTML(wallId && wallName ? t('layout.back_to_wall', { wall: wallName }) : t('layout.back'))}
     </a>
     <div class="page-header">
       <!-- Editable in place. Duplicating a template names the copy "<template> (Copy)" and there
            was nowhere at all to change it — the only name field in this editor belongs to the
            selected ZONE, which is easy to mistake for the layout's own. Reported on #234. -->
       <input id="layoutName" class="input" value="${esc((layout.draft && layout.draft.name) || layout.name)}"
-             aria-label="${t('layout.rename')}" title="${t('layout.rename')}"
+             aria-label="${t('layout.rename')}" data-fil-i18n-aria-label="${binding('layout.rename', undefined)}" title="${t('layout.rename')}" data-fil-i18n-title="${binding('layout.rename', undefined)}"
              style="font-size:24px;font-weight:600;background:transparent;border:1px solid transparent;padding:2px 6px;max-width:420px">
       <div style="display:flex;gap:8px;align-items:center">
         <!-- The canvas size: a screen's resolution, or a WALL's player rect (wide and short). Zones are
              percentages either way; this is only the shape they are drawn on. -->
-        <label style="font-size:11px;color:var(--text-muted)" title="${t('layout.size_tip')}">${t('layout.size')}</label>
+        <label style="font-size:11px;color:var(--text-muted)" title="${t('layout.size_tip')}" data-fil-i18n-title="${binding('layout.size_tip', undefined)}">${renderHTML(t('layout.size'))}</label>
         <input type="number" id="layoutW" class="input" value="${esc(String((layout.draft && layout.draft.width) || layout.width || 1920))}" min="16" step="1" style="width:84px">
         <span style="color:var(--text-muted)">×</span>
         <input type="number" id="layoutH" class="input" value="${esc(String((layout.draft && layout.draft.height) || layout.height || 1080))}" min="16" step="1" style="width:84px">
-        <button class="btn btn-secondary btn-sm" id="addZoneBtn">${t('layout.add_zone')}</button>
-        <button class="btn btn-primary btn-sm" id="saveLayoutBtn">${t('common.save')}</button>
+        <button class="btn btn-secondary btn-sm" id="addZoneBtn">${renderHTML(t('layout.add_zone'))}</button>
+        <button class="btn btn-primary btn-sm" id="saveLayoutBtn">${renderHTML(t('common.save'))}</button>
       </div>
     </div>
     <div id="layoutApprovalBar" style="margin:-8px 0 12px"></div>
-    ${wallId ? '' : `
+    ${renderHTML(wallId ? '' : `
     <!-- 3.0: orientation versions (docs/layouts-and-campaigns.md). Same zones, own geometry; a
          screen gets the version for its shape, or the landscape one when the layout has none. -->
     <div id="variantBar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 12px">
-      <div role="group" aria-label="${esc(t('layoutvar.group'))}" style="display:inline-flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
-        <button class="btn btn-sm variant-tab" data-variant="default" aria-pressed="true">${esc(t('layoutvar.landscape'))}</button>
-        <button class="btn btn-sm variant-tab" data-variant="portrait" aria-pressed="false">${esc(t('layoutvar.portrait'))}</button>
-        <button class="btn btn-sm variant-tab" data-variant="square" aria-pressed="false">${esc(t('layoutvar.square'))}</button>
+      <div role="group" aria-label="${esc(t('layoutvar.group'))}" data-fil-i18n-aria-label="${binding('layoutvar.group', undefined)}" style="display:inline-flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <button class="btn btn-sm variant-tab" data-variant="default" aria-pressed="true">${uiText(t('layoutvar.landscape'))}</button>
+        <button class="btn btn-sm variant-tab" data-variant="portrait" aria-pressed="false">${uiText(t('layoutvar.portrait'))}</button>
+        <button class="btn btn-sm variant-tab" data-variant="square" aria-pressed="false">${uiText(t('layoutvar.square'))}</button>
       </div>
       <button class="btn btn-secondary btn-sm" id="variantCreateBtn" style="display:none"></button>
-      <button class="btn btn-secondary btn-sm" id="variantRemoveBtn" style="display:none;color:var(--danger)">${esc(t('layoutvar.remove'))}</button>
+      <button class="btn btn-secondary btn-sm" id="variantRemoveBtn" style="display:none;color:var(--danger)">${uiText(t('layoutvar.remove'))}</button>
       <span id="variantHint" style="font-size:12px;color:var(--text-muted)"></span>
-    </div>`}
+    </div>`)}
     <div style="display:flex;gap:20px">
       <div style="flex:1">
         <div id="canvasWrap" style="position:relative;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
@@ -216,34 +222,34 @@ async function renderEditor(container, layoutId, wallId = null) {
         </div>
       </div>
       <div style="width:280px">
-        <h3 style="font-size:14px;margin-bottom:12px">${t('layout.zones')}</h3>
+        <h3 style="font-size:14px;margin-bottom:12px">${renderHTML(t('layout.zones'))}</h3>
         <div id="zoneList"></div>
         <div id="zoneProperties" style="margin-top:16px;display:none">
-          <h3 style="font-size:14px;margin-bottom:12px">${t('layout.properties')}</h3>
-          <div class="form-group"><label>${t('layout.prop.name')}</label><input type="text" id="propName" class="input"></div>
-          <div class="form-group"><label>${t('layout.prop.x')}</label><input type="number" id="propX" class="input" min="0" max="100" step="0.1"></div>
-          <div class="form-group"><label>${t('layout.prop.y')}</label><input type="number" id="propY" class="input" min="0" max="100" step="0.1"></div>
-          <div class="form-group"><label>${t('layout.prop.width')}</label><input type="number" id="propW" class="input" min="1" max="100" step="0.1"></div>
-          <div class="form-group"><label>${t('layout.prop.height')}</label><input type="number" id="propH" class="input" min="1" max="100" step="0.1"></div>
-          <div class="form-group"><label>${t('layout.prop.z')}</label><input type="number" id="propZ" class="input" step="1">
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('layout.z_hint')}</div></div>
-          <div class="form-group"><label>${t('layout.prop.type')}</label>
+          <h3 style="font-size:14px;margin-bottom:12px">${renderHTML(t('layout.properties'))}</h3>
+          <div class="form-group"><label>${renderHTML(t('layout.prop.name'))}</label><input type="text" id="propName" class="input"></div>
+          <div class="form-group"><label>${renderHTML(t('layout.prop.x'))}</label><input type="number" id="propX" class="input" min="0" max="100" step="0.1"></div>
+          <div class="form-group"><label>${renderHTML(t('layout.prop.y'))}</label><input type="number" id="propY" class="input" min="0" max="100" step="0.1"></div>
+          <div class="form-group"><label>${renderHTML(t('layout.prop.width'))}</label><input type="number" id="propW" class="input" min="1" max="100" step="0.1"></div>
+          <div class="form-group"><label>${renderHTML(t('layout.prop.height'))}</label><input type="number" id="propH" class="input" min="1" max="100" step="0.1"></div>
+          <div class="form-group"><label>${renderHTML(t('layout.prop.z'))}</label><input type="number" id="propZ" class="input" step="1">
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('layout.z_hint'))}</div></div>
+          <div class="form-group"><label>${renderHTML(t('layout.prop.type'))}</label>
             <select id="propType" class="input" style="background:var(--bg-input)">
-              <option value="content">${t('layout.type_content')}</option><option value="widget">${t('layout.type_widget')}</option>
+              <option value="content">${renderHTML(t('layout.type_content'))}</option><option value="widget">${renderHTML(t('layout.type_widget'))}</option>
             </select>
           </div>
-          <div class="form-group"><label>${t('layout.prop.fit')}</label>
+          <div class="form-group"><label>${renderHTML(t('layout.prop.fit'))}</label>
             <select id="propFit" class="input" style="background:var(--bg-input)">
-              <option value="contain">${t('layout.fit_contain')}</option>
-              <option value="cover">${t('layout.fit_cover')}</option>
-              <option value="fill">${t('layout.fit_fill')}</option>
+              <option value="contain">${renderHTML(t('layout.fit_contain'))}</option>
+              <option value="cover">${renderHTML(t('layout.fit_cover'))}</option>
+              <option value="fill">${renderHTML(t('layout.fit_fill'))}</option>
             </select>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('layout.fit_hint')}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('layout.fit_hint'))}</div>
           </div>
           <!-- 3.0: where a playlist's zone-less items play (docs/layouts-and-campaigns.md). -->
-          <div class="form-group"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="propMain"> ${t('layoutpl.main_zone')}</label>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('layoutpl.main_zone_hint')}</div></div>
-          <button class="btn btn-danger btn-sm" id="deleteZoneBtn" style="width:100%;justify-content:center;margin-top:8px">${t('layout.delete_zone')}</button>
+          <div class="form-group"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="propMain"> ${renderHTML(t('layoutpl.main_zone'))}</label>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('layoutpl.main_zone_hint'))}</div></div>
+          <button class="btn btn-danger btn-sm" id="deleteZoneBtn" style="width:100%;justify-content:center;margin-top:8px">${renderHTML(t('layout.delete_zone'))}</button>
         </div>
       </div>
     </div>
@@ -302,10 +308,10 @@ async function renderEditor(container, layoutId, wallId = null) {
     const hint = document.getElementById('variantHint');
     const missing = variantMode !== 'default' && !hasVariant(variantMode);
     create.style.display = missing ? '' : 'none';
-    create.textContent = variantMode === 'portrait' ? t('layoutvar.create_portrait') : t('layoutvar.create_square');
+    bindMessage(create, variantMode === 'portrait' ? t('layoutvar.create_portrait') : t('layoutvar.create_square'));
     remove.style.display = variantMode !== 'default' && !missing ? '' : 'none';
-    hint.textContent = variantMode === 'default' ? t('layoutvar.hint_default')
-      : missing ? t('layoutvar.hint_missing') : t('layoutvar.hint_editing');
+    bindMessage(hint, variantMode === 'default' ? t('layoutvar.hint_default')
+      : missing ? t('layoutvar.hint_missing') : t('layoutvar.hint_editing'));
     document.getElementById('canvas')?.classList.toggle('variant-missing', missing);
   }
   document.querySelectorAll('#variantBar .variant-tab').forEach((b) => {
@@ -319,7 +325,7 @@ async function renderEditor(container, layoutId, wallId = null) {
         body: JSON.stringify({ variant: variantMode, width: sz.width || layout.width, height: sz.height || layout.height,
           zones: zones.map((z, i) => ({ key: String(i), ...z._base })) }),
       });
-      if (!res || res.error) { showToast((res && res.error) || t('layoutvar.create_failed'), 'error'); return; }
+      if (!res || res.error) { showToast((res && localizeServerError(res.error)) || t('layoutvar.create_failed'), 'error'); return; }
       zones.forEach((z, i) => {
         const g = res.zones && res.zones[String(i)];
         if (!g) return;
@@ -330,7 +336,7 @@ async function renderEditor(container, layoutId, wallId = null) {
       loadMode(variantMode);
       renderZones();
       showToast(t('layoutvar.created'), 'info');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   });
   document.getElementById('variantRemoveBtn')?.addEventListener('click', () => {
     if (!confirm(t('layoutvar.remove_confirm'))) return;
@@ -384,7 +390,7 @@ async function renderEditor(container, layoutId, wallId = null) {
         el.className = 'wall-panel-el';
         el.style.cssText = `position:absolute;left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%;pointer-events:none;
           border:1px dashed rgba(255,255,255,0.35);box-sizing:border-box;z-index:0`;
-        el.innerHTML = `<span style="position:absolute;right:4px;bottom:2px;font-size:10px;color:rgba(255,255,255,0.45)">${esc(p.name)}</span>`;
+        el.innerHTML = `<span style="position:absolute;right:4px;bottom:2px;font-size:10px;color:rgba(255,255,255,0.45)">${uiText(p.name)}</span>`;
         canvas.appendChild(el);
       }
     }
@@ -398,7 +404,7 @@ async function renderEditor(container, layoutId, wallId = null) {
         border:2px solid ${selectedZone === i ? 'var(--accent)' : 'rgba(59,130,246,0.4)'};
         cursor:move;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary);
         user-select:none;z-index:${z.z_index || 0}`;
-      el.textContent = z.name;
+      bindMessage(el, z.name);
 
       el.onmousedown = (e) => {
         if (e.target !== el) return;
@@ -477,8 +483,8 @@ async function renderEditor(container, layoutId, wallId = null) {
       <div style="padding:8px 10px;background:${selectedZone === i ? 'var(--bg-card-hover)' : 'var(--bg-secondary)'};
         border:1px solid ${selectedZone === i ? 'var(--accent)' : 'var(--border)'};border-radius:var(--radius);
         margin-bottom:4px;cursor:pointer;font-size:13px" data-zone-idx="${i}">
-        <div style="font-weight:500">${esc(z.name)}</div>
-        <div style="font-size:11px;color:var(--text-muted)">${Math.round(z.width_percent)}% x ${Math.round(z.height_percent)}% • ${esc(z.zone_type)}${Number(z.is_main) === 1 ? ' • ' + esc(t('layoutpl.main_zone')) : ''}</div>
+        <div style="font-weight:500">${uiText(builtinZoneName(layout,z))}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${renderHTML(Math.round(z.width_percent))}% x ${renderHTML(Math.round(z.height_percent))}% • ${uiText(z.zone_type)}${renderHTML(Number(z.is_main) === 1 ? ' • ' + t('layoutpl.main_zone') : '')}</div>
       </div>
     `).join('');
 
@@ -562,7 +568,7 @@ async function renderEditor(container, layoutId, wallId = null) {
           return { ...rest, ...(_base || {}), is_main: Number(z.is_main) === 1 ? 1 : 0, variants: v };
         }), ...(newName ? { name: newName } : {}), ...canvasSize() }),
       });
-      if (updated && updated.error) { showToast(updated.error, 'error'); return; }
+      if (updated && updated.error) { showToast(localizeServerError(updated.error), 'error'); return; }
       layout = updated;
       zones = layout.zones || [];
       selectedZone = null;
@@ -574,7 +580,7 @@ async function renderEditor(container, layoutId, wallId = null) {
       renderZones();
       updateProperties();
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
   };
 

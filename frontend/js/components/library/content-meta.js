@@ -1,3 +1,6 @@
+import { displayQuantity } from '../../i18n.js';
+import { renderHTML } from '../../lib/i18n-bindings.js';
+
 // What the Content Library says about one content row: its type, its status, its numbers, and how it
 // can be previewed. Shared by the grid cards, the table rows and the inspector so the three never
 // disagree.
@@ -9,7 +12,7 @@
 //   expired    neutral past its expiry date, or deactivated by the expiry sweep
 // "Uploading", "processing" and "failed" belong to the upload queue: a row exists only once ready.
 
-import { t } from '../../i18n.js';
+import { message as t } from '../../i18n.js';
 
 export const BUNDLE_MIME = 'application/vnd.screentinker.bundle+zip';
 export const HOLD_MIME = 'application/x-st-hold';
@@ -61,8 +64,8 @@ export function dimensionsOf(c) {
 
 export function formatSize(bytes) {
   if (!bytes) return '';
-  if (bytes >= 1073741824) return `${(bytes / 1073741824).toFixed(1)} GB`;
-  if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`;
+  if (bytes >= 1073741824) return displayQuantity((bytes / 1073741824),'GB',1);
+  if (bytes >= 1048576) return displayQuantity((bytes / 1048576),'MB',1);
   if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${bytes} B`;
 }
@@ -115,5 +118,5 @@ export const TYPE_ICONS = {
   bundle: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',
 };
 export function typeIcon(key, size = 32) {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">${TYPE_ICONS[key] || TYPE_ICONS.image}</svg>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">${renderHTML(TYPE_ICONS[key] || TYPE_ICONS.image)}</svg>`;
 }

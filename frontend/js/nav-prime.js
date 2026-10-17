@@ -13,6 +13,9 @@
 // belongs here too.
 (function () {
   try {
+    document.documentElement.classList.add('fil-i18n-pending');
+    var language = localStorage.getItem('rd_lang') || 'tr';
+    document.documentElement.lang = language === 'en' ? 'en' : 'tr';
     var hash = location.hash || '#/';
     var token = localStorage.getItem('token');
     var user = null;

@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 // Add-User modal (#10). Creates a user account directly with an admin-set
 // password and assigns them to a workspace + role (admin-provisioning for
 // instances with no outbound email). Two open modes, ONE shared form:
@@ -11,7 +13,7 @@
 //   opts.onSuccess: (result) => void  - fires on 201 (server response body)
 //   opts.mapError:  (err) => string   - translates server error to display text
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -46,17 +48,17 @@ export function openAddUserModal(workspace, opts = {}) {
     : t('members.modal.add_user_title', { workspace: esc(workspace.name) });
 
   const roleOptions = WORKSPACE_ROLES
-    .map(r => `<option value="${r}">${esc(t('members.role.' + r))}</option>`)
+    .map(r => `<option value="${r}">${uiText(t('members.role.' + r))}</option>`)
     .join('');
 
   // Workspace picker block — only rendered in picker mode. A filter input above
   // a <select> gives type-to-filter for the 70+ workspaces without a dependency.
   const workspaceGroup = pickerMode ? `
         <div class="form-group">
-          <label for="addUserWs">${t('members.modal.workspace_label')}</label>
-          <input id="addUserWsFilter" type="text" class="input" placeholder="${t('members.modal.workspace_filter_placeholder')}" style="width:100%;margin-bottom:6px" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="addUserWs">${renderHTML(t('members.modal.workspace_label'))}</label>
+          <input id="addUserWsFilter" type="text" class="input" placeholder="${t('members.modal.workspace_filter_placeholder')}" data-fil-i18n-placeholder="${binding('members.modal.workspace_filter_placeholder', undefined)}" style="width:100%;margin-bottom:6px" autocomplete="off" autocapitalize="off" spellcheck="false">
           <select id="addUserWs" class="input" style="width:100%">
-            <option value="">${t('members.modal.workspace_loading')}</option>
+            <option value="">${renderHTML(t('members.modal.workspace_loading'))}</option>
           </select>
         </div>` : '';
 
@@ -65,8 +67,8 @@ export function openAddUserModal(workspace, opts = {}) {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
-        <h3>${title}</h3>
-        <button class="btn-icon" type="button" data-add-close aria-label="${t('common.close')}">
+        <h3>${renderHTML(title)}</h3>
+        <button class="btn-icon" type="button" data-add-close aria-label="${t('common.close')}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -74,36 +76,36 @@ export function openAddUserModal(workspace, opts = {}) {
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label for="addUserEmail">${t('members.modal.email_label')}</label>
-          <input id="addUserEmail" type="email" class="input" placeholder="${t('members.modal.email_placeholder')}" style="width:100%" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="addUserEmail">${renderHTML(t('members.modal.email_label'))}</label>
+          <input id="addUserEmail" type="email" class="input" placeholder="${t('members.modal.email_placeholder')}" data-fil-i18n-placeholder="${binding('members.modal.email_placeholder', undefined)}" style="width:100%" autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
         <div class="form-group">
-          <label for="addUserName">${t('members.modal.name_label')}</label>
-          <input id="addUserName" type="text" class="input" placeholder="${t('members.modal.name_placeholder')}" style="width:100%" autocomplete="off">
+          <label for="addUserName">${renderHTML(t('members.modal.name_label'))}</label>
+          <input id="addUserName" type="text" class="input" placeholder="${t('members.modal.name_placeholder')}" data-fil-i18n-placeholder="${binding('members.modal.name_placeholder', undefined)}" style="width:100%" autocomplete="off">
         </div>
         <div class="form-group">
-          <label for="addUserPassword">${t('members.modal.password_label')}</label>
+          <label for="addUserPassword">${renderHTML(t('members.modal.password_label'))}</label>
           <div style="display:flex;gap:8px">
-            <input id="addUserPassword" type="text" class="input" placeholder="${t('members.modal.password_placeholder')}" style="flex:1" autocomplete="off" autocapitalize="off" spellcheck="false">
-            <button class="btn btn-secondary" type="button" id="addUserGenerate" style="white-space:nowrap">${t('members.modal.generate')}</button>
+            <input id="addUserPassword" type="text" class="input" placeholder="${t('members.modal.password_placeholder')}" data-fil-i18n-placeholder="${binding('members.modal.password_placeholder', undefined)}" style="flex:1" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button class="btn btn-secondary" type="button" id="addUserGenerate" style="white-space:nowrap">${renderHTML(t('members.modal.generate'))}</button>
           </div>
         </div>
-        ${workspaceGroup}
+        ${renderHTML(workspaceGroup)}
         <div class="form-group">
-          <label for="addUserRole">${t('members.modal.role_label')}</label>
+          <label for="addUserRole">${renderHTML(t('members.modal.role_label'))}</label>
           <select id="addUserRole" class="input" style="width:100%">
-            ${roleOptions}
+            ${renderHTML(roleOptions)}
           </select>
         </div>
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
           <input id="addUserMustChange" type="checkbox" checked>
-          ${t('members.modal.must_change_label')}
+          ${renderHTML(t('members.modal.must_change_label'))}
         </label>
         <div id="addUserError" style="display:none;color:var(--danger);font-size:13px;margin-top:8px"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" type="button" data-add-close>${t('members.modal.cancel')}</button>
-        <button class="btn btn-primary" type="button" id="addUserSubmit">${t('members.modal.create')}</button>
+        <button class="btn btn-secondary" type="button" data-add-close>${renderHTML(t('members.modal.cancel'))}</button>
+        <button class="btn btn-primary" type="button" id="addUserSubmit">${renderHTML(t('members.modal.create'))}</button>
       </div>
     </div>
   `;
@@ -128,17 +130,17 @@ export function openAddUserModal(workspace, opts = {}) {
   function renderWsOptions(filter) {
     const f = (filter || '').trim().toLowerCase();
     const matches = f ? allWs.filter(w => wsLabel(w).toLowerCase().includes(f)) : allWs;
-    wsSelect.innerHTML = `<option value="">${esc(t('members.modal.workspace_placeholder'))}</option>`
-      + matches.map(w => `<option value="${esc(w.id)}">${esc(wsLabel(w))}</option>`).join('');
+    wsSelect.innerHTML = `<option value="">${uiText(t('members.modal.workspace_placeholder'))}</option>`
+      + matches.map(w => `<option value="${esc(w.id)}">${uiText(wsLabel(w))}</option>`).join('');
   }
   if (pickerMode) {
     api.getMe()
       .then(me => {
         allWs = Array.isArray(me?.accessible_workspaces) ? me.accessible_workspaces.slice() : [];
-        if (!allWs.length) { wsSelect.innerHTML = `<option value="">${esc(t('members.modal.workspace_none'))}</option>`; return; }
+        if (!allWs.length) { wsSelect.innerHTML = `<option value="">${uiText(t('members.modal.workspace_none'))}</option>`; return; }
         renderWsOptions('');
       })
-      .catch(() => { wsSelect.innerHTML = `<option value="">${esc(t('members.modal.workspace_load_error'))}</option>`; });
+      .catch(() => { wsSelect.innerHTML = `<option value="">${uiText(t('members.modal.workspace_load_error'))}</option>`; });
     wsFilter.addEventListener('input', () => renderWsOptions(wsFilter.value));
   }
 
@@ -161,7 +163,7 @@ export function openAddUserModal(workspace, opts = {}) {
     if (pickerMode && !workspaceId) { showError(t('members.modal.workspace_required')); (wsFilter || wsSelect).focus(); return; }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = t('members.modal.creating');
+    bindText(submitBtn, 'members.modal.creating', undefined);
     try {
       const result = await api.adminCreateUser({
         email, name, password, role,
@@ -175,7 +177,7 @@ export function openAddUserModal(workspace, opts = {}) {
       }
     } catch (err) {
       submitBtn.disabled = false;
-      submitBtn.textContent = t('members.modal.create');
+      bindText(submitBtn, 'members.modal.create', undefined);
       const msg = (typeof mapError === 'function')
         ? mapError(err)
         : (err?.message || t('members.error.mutation_generic', { error: '' }));
@@ -183,7 +185,7 @@ export function openAddUserModal(workspace, opts = {}) {
     }
   }
 
-  function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
+  function showError(msg) { bindMessage(errorEl, msg); errorEl.style.display = 'block'; }
 
   submitBtn.addEventListener('click', submit);
 }

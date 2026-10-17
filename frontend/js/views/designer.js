@@ -1,7 +1,10 @@
+import {translatedAttribute} from '../lib/i18n-bindings.js';
+import { renderHTML, uiText, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 import { api, assertLocalCallAllowed } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 
 // Background swatches: ids resolve to translated names; values are the actual
 // CSS to apply.
@@ -40,11 +43,11 @@ export function render(container, widgetId) {
 
   container.innerHTML = `
     <div class="page-header">
-      <div><h1>${t('designer.title')} <span class="help-tip" data-tip="${t('designer.help_tip')}">?</span></h1><div class="subtitle">${t('designer.subtitle')}</div></div>
+      <div><h1>${renderHTML(t('designer.title'))} <span class="help-tip" ${translatedAttribute("data-tip", 'designer.help_tip')}>?</span></h1><div class="subtitle">${renderHTML(t('designer.subtitle'))}</div></div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" id="loadDesignBtn">${t('designer.load_design')}</button>
-        <button class="btn btn-secondary" id="exportPngBtn">${t('designer.export_png')}</button>
-        <button class="btn btn-primary" id="publishBtn">${t('designer.publish')}</button>
+        <button class="btn btn-secondary" id="loadDesignBtn">${renderHTML(t('designer.load_design'))}</button>
+        <button class="btn btn-secondary" id="exportPngBtn">${renderHTML(t('designer.export_png'))}</button>
+        <button class="btn btn-primary" id="publishBtn">${renderHTML(t('designer.publish'))}</button>
       </div>
     </div>
     <div style="display:flex;gap:20px">
@@ -53,65 +56,65 @@ export function render(container, widgetId) {
         <div id="previewWrap" style="position:relative;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:#000;aspect-ratio:16/9">
           <div id="designPreview" style="position:relative;width:100%;height:100%;overflow:hidden;container-type:inline-size"></div>
         </div>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px">${t('designer.preview_hint')}</p>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px">${renderHTML(t('designer.preview_hint'))}</p>
       </div>
       <!-- Sidebar -->
       <div style="width:300px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 120px);overflow-y:auto">
         <!-- AI Generate (#41) -->
         <div style="background:var(--bg-card);border:1px solid var(--accent);border-radius:var(--radius);padding:12px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <h4 style="font-size:13px">${t('designer.ai.title')}</h4>
-            <button class="btn-icon" id="aiSettingsBtn" title="${t('designer.ai.settings')}" style="padding:2px">
+            <h4 style="font-size:13px">${renderHTML(t('designer.ai.title'))}</h4>
+            <button class="btn-icon" id="aiSettingsBtn" title="${t('designer.ai.settings')}" data-fil-i18n-title="${binding('designer.ai.settings', undefined)}" style="padding:2px">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
           </div>
-          <textarea id="aiPrompt" rows="2" class="input" placeholder="${t('designer.ai.placeholder')}" style="width:100%;resize:vertical;font-size:12px"></textarea>
-          <button class="btn btn-primary btn-sm" id="aiGenerateBtn" style="width:100%;justify-content:center;margin-top:6px">${t('designer.ai.generate')}</button>
+          <textarea id="aiPrompt" rows="2" class="input" placeholder="${t('designer.ai.placeholder')}" data-fil-i18n-placeholder="${binding('designer.ai.placeholder', undefined)}" style="width:100%;resize:vertical;font-size:12px"></textarea>
+          <button class="btn btn-primary btn-sm" id="aiGenerateBtn" style="width:100%;justify-content:center;margin-top:6px">${renderHTML(t('designer.ai.generate'))}</button>
           <div id="aiStatus" style="font-size:11px;color:var(--text-muted);margin-top:6px"></div>
           <div data-private-ai-badge style="margin-top:6px"></div>
         </div>
 
         <!-- Add Elements -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px">
-          <h4 style="font-size:13px;margin-bottom:10px">${t('designer.add_element')}</h4>
+          <h4 style="font-size:13px;margin-bottom:10px">${renderHTML(t('designer.add_element'))}</h4>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <button class="btn btn-secondary btn-sm" id="addText" style="justify-content:center">&#128172; ${t('designer.el.text')}</button>
-            <button class="btn btn-secondary btn-sm" id="addHeading" style="justify-content:center">&#128220; ${t('designer.el.heading')}</button>
-            <button class="btn btn-secondary btn-sm" id="addImage" style="justify-content:center">&#128247; ${t('designer.el.image')}</button>
-            <button class="btn btn-secondary btn-sm" id="addVideo" style="justify-content:center">&#127916; ${t('designer.el.video')}</button>
-            <button class="btn btn-secondary btn-sm" id="addClock" style="justify-content:center">&#128339; ${t('designer.el.clock')}</button>
-            <button class="btn btn-secondary btn-sm" id="addDate" style="justify-content:center">&#128197; ${t('designer.el.date')}</button>
-            <button class="btn btn-secondary btn-sm" id="addWeather" style="justify-content:center">&#9925; ${t('designer.el.weather')}</button>
-            <button class="btn btn-secondary btn-sm" id="addTicker" style="justify-content:center">&#128240; ${t('designer.el.ticker')}</button>
-            <button class="btn btn-secondary btn-sm" id="addShape" style="justify-content:center">&#9632; ${t('designer.el.shape')}</button>
-            <button class="btn btn-secondary btn-sm" id="addQR" style="justify-content:center">&#9641; ${t('designer.el.qr')}</button>
-            <button class="btn btn-secondary btn-sm" id="addCountdown" style="justify-content:center">&#9201; ${t('designer.el.countdown')}</button>
-            <button class="btn btn-secondary btn-sm" id="addWebpage" style="justify-content:center">&#127760; ${t('designer.el.webpage')}</button>
+            <button class="btn btn-secondary btn-sm" id="addText" style="justify-content:center">&#128172; ${renderHTML(t('designer.el.text'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addHeading" style="justify-content:center">&#128220; ${renderHTML(t('designer.el.heading'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addImage" style="justify-content:center">&#128247; ${renderHTML(t('designer.el.image'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addVideo" style="justify-content:center">&#127916; ${renderHTML(t('designer.el.video'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addClock" style="justify-content:center">&#128339; ${renderHTML(t('designer.el.clock'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addDate" style="justify-content:center">&#128197; ${renderHTML(t('designer.el.date'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addWeather" style="justify-content:center">&#9925; ${renderHTML(t('designer.el.weather'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addTicker" style="justify-content:center">&#128240; ${renderHTML(t('designer.el.ticker'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addShape" style="justify-content:center">&#9632; ${renderHTML(t('designer.el.shape'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addQR" style="justify-content:center">&#9641; ${renderHTML(t('designer.el.qr'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addCountdown" style="justify-content:center">&#9201; ${renderHTML(t('designer.el.countdown'))}</button>
+            <button class="btn btn-secondary btn-sm" id="addWebpage" style="justify-content:center">&#127760; ${renderHTML(t('designer.el.webpage'))}</button>
           </div>
         </div>
         <!-- Background -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px">
-          <h4 style="font-size:13px;margin-bottom:8px">${t('designer.background')}</h4>
+          <h4 style="font-size:13px;margin-bottom:8px">${renderHTML(t('designer.background'))}</h4>
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
-            ${BACKGROUNDS.map(b => `<div style="width:30px;height:30px;border-radius:4px;cursor:pointer;border:2px solid var(--border);background:${b.value}" data-bg="${b.value}" title="${t('designer.bg.' + b.id)}"></div>`).join('')}
+            ${renderHTML(BACKGROUNDS.map(b => `<div style="width:30px;height:30px;border-radius:4px;cursor:pointer;border:2px solid var(--border);background:${b.value}" data-bg="${b.value}" title="${t('designer.bg.' + b.id)}" data-fil-i18n-title="${binding('designer.bg.' + b.id, undefined)}"></div>`).join(''))}
           </div>
           <div style="display:flex;gap:6px">
             <input type="color" id="bgColor" value="#000000" style="flex:1;height:32px;border:none;cursor:pointer;border-radius:4px">
-            <button class="btn btn-secondary btn-sm" id="bgImageBtn">${t('designer.bg_image')}</button>
+            <button class="btn btn-secondary btn-sm" id="bgImageBtn">${renderHTML(t('designer.bg_image'))}</button>
           </div>
           <input type="file" id="bgImageInput" style="display:none" accept="image/*">
         </div>
         <!-- Properties -->
         <div id="propPanel" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <h4 style="font-size:13px">${t('designer.properties')}</h4>
-            <button class="btn btn-danger btn-sm" id="deleteEl">${t('common.delete')}</button>
+            <h4 style="font-size:13px">${renderHTML(t('designer.properties'))}</h4>
+            <button class="btn btn-danger btn-sm" id="deleteEl">${renderHTML(t('common.delete'))}</button>
           </div>
           <div id="propFields"></div>
         </div>
         <!-- Layers -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px">
-          <h4 style="font-size:13px;margin-bottom:8px">${t('designer.layers')}</h4>
+          <h4 style="font-size:13px;margin-bottom:8px">${renderHTML(t('designer.layers'))}</h4>
           <div id="layerList" style="font-size:12px"></div>
         </div>
       </div>
@@ -143,9 +146,9 @@ export function render(container, widgetId) {
   aiGenBtn.onclick = async () => {
     const prompt = document.getElementById('aiPrompt').value.trim();
     const status = document.getElementById('aiStatus');
-    if (!prompt) { status.textContent = t('designer.ai.need_prompt'); return; }
-    aiGenBtn.disabled = true; aiGenBtn.textContent = t('designer.ai.generating');
-    status.textContent = t('designer.ai.contacting');
+    if (!prompt) { bindText(status, 'designer.ai.need_prompt', undefined); return; }
+    aiGenBtn.disabled = true; bindText(aiGenBtn, 'designer.ai.generating', undefined);
+    bindText(status, 'designer.ai.contacting', undefined);
     try {
       const design = await api.aiGenerateDesign(prompt);
       elements = []; selectedIdx = -1;
@@ -158,13 +161,13 @@ export function render(container, widgetId) {
       }
       (design.elements || []).forEach(el => elements.push(el));
       redraw();
-      status.textContent = design.image_warning
+      bindMessage(status, design.image_warning
         ? t('designer.ai.done_imgwarn', { n: (design.elements || []).length })
-        : t('designer.ai.done', { n: (design.elements || []).length });
+        : t('designer.ai.done', { n: (design.elements || []).length }));
     } catch (err) {
-      status.textContent = (err && err.message) || t('designer.ai.failed');
+      bindMessage(status, (err && (err.uiMessage || err.message)) || t('designer.ai.failed'));
     } finally {
-      aiGenBtn.disabled = false; aiGenBtn.textContent = t('designer.ai.generate');
+      aiGenBtn.disabled = false; bindText(aiGenBtn, 'designer.ai.generate', undefined);
     }
   };
 
@@ -234,7 +237,7 @@ export function render(container, widgetId) {
       }
       if (res.ok) showToast(t('designer.toast.published'), 'success');
       else showToast(t('designer.toast.publish_failed'), 'error');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   };
 
   // Export PNG screenshot
@@ -278,7 +281,7 @@ export function render(container, widgetId) {
       }
       const link = document.createElement('a');
       link.download = 'signage-design.png'; link.href = canvas.toDataURL('image/png'); link.click();
-    } catch (err) { showToast(t('designer.toast.export_failed', { error: err.message }), 'error'); }
+    } catch (err) { showToast(t('designer.toast.export_failed', { error: (err.uiMessage || err.message) }), 'error'); }
   };
 
   // Load saved design
@@ -362,10 +365,10 @@ async function loadWidgetForEdit(widgetId) {
     editingWidgetName = w.name;
     selectedIdx = -1;
     const pub = document.getElementById('publishBtn');
-    if (pub) pub.textContent = t('common.save'); // updating an existing widget, not publishing a new one
+    if (pub) bindText(pub, 'common.save', undefined); // updating an existing widget, not publishing a new one
     redraw();
     showToast(t('designer.toast.loaded'), 'success');
-  } catch (e) { showToast((e && e.message) || t('designer.toast.invalid_file'), 'error'); }
+  } catch (e) { showToast((e && (e.uiMessage || e.message)) || t('designer.toast.invalid_file'), 'error'); }
 }
 
 // Best-effort reverse of generateInnerHTML() for LEGACY widgets that stored only the rendered HTML.
@@ -375,7 +378,7 @@ async function loadWidgetForEdit(widgetId) {
 function reconstructDesign(html) {
   const out = { elements: [], bgImage: null };
   let root;
-  try { root = new DOMParser().parseFromString(`<div id="__r">${html}</div>`, 'text/html').getElementById('__r'); }
+  try { root = new DOMParser().parseFromString(`<div id="__r">${renderHTML(html)}</div>`, 'text/html').getElementById('__r'); }
   catch (e) { return out; }
   if (!root) return out;
   const rgbToHex = (c) => {
@@ -459,7 +462,7 @@ function redraw() {
 
     switch (el.type) {
       case 'text':
-        html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;font-size:${el.fontSize / 10}cqw;font-family:${esc(el.fontFamily)};color:${esc(el.color)};font-weight:${el.bold ? 'bold' : 'normal'};${el.shadow ? 'text-shadow:2px 2px 4px rgba(0,0,0,0.5);' : ''}white-space:nowrap;${border}${cursor}" data-idx="${i}">${esc(el.text)}</div>`;
+        html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;font-size:${el.fontSize / 10}cqw;font-family:${esc(el.fontFamily)};color:${esc(el.color)};font-weight:${el.bold ? 'bold' : 'normal'};${el.shadow ? 'text-shadow:2px 2px 4px rgba(0,0,0,0.5);' : ''}white-space:nowrap;${border}${cursor}" data-idx="${i}">${uiText(el.text)}</div>`;
         break;
       case 'clock':
         html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;font-size:${el.fontSize / 10}cqw;font-family:${esc(el.fontFamily)};color:${esc(el.color)};font-weight:bold;${el.shadow ? 'text-shadow:2px 2px 4px rgba(0,0,0,0.5);' : ''}${border}${cursor}" data-idx="${i}" id="clock_${i}"></div>`;
@@ -477,22 +480,22 @@ function redraw() {
         html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;width:${esc(el.width)}%;height:${esc(el.height)}%;background:${esc(el.color)};opacity:${esc(el.opacity)};border-radius:${esc(el.radius || 0)}px;${el.shape === 'circle' ? 'border-radius:50%;' : ''}${border}${cursor}" data-idx="${i}"></div>`;
         break;
       case 'weather':
-        html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;font-size:${el.fontSize / 10}cqw;color:${esc(el.color)};${border}${cursor}" data-idx="${i}" id="weather_${i}">&#9925; ${t('common.loading')}</div>`;
+        html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;font-size:${el.fontSize / 10}cqw;color:${esc(el.color)};${border}${cursor}" data-idx="${i}" id="weather_${i}">&#9925; ${renderHTML(t('common.loading'))}</div>`;
         break;
       case 'ticker':
         html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;width:${esc(el.width)}%;height:${esc(el.height)}%;background:${esc(el.bgColor)};overflow:hidden;display:flex;align-items:center;${border}" data-idx="${i}">
-          <div style="white-space:nowrap;animation:ticker ${esc(el.speed || 30)}s linear infinite;font-size:${el.fontSize / 10}cqw;color:${esc(el.color)}" id="ticker_${i}">${t('designer.loading_news')}</div>
+          <div style="white-space:nowrap;animation:ticker ${esc(el.speed || 30)}s linear infinite;font-size:${el.fontSize / 10}cqw;color:${esc(el.color)}" id="ticker_${i}">${renderHTML(t('designer.loading_news'))}</div>
         </div>`;
         break;
       case 'qr':
         html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;width:${esc(el.size)}%;aspect-ratio:1;background:${esc(el.bgColor)};display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;${border}${cursor}" data-idx="${i}">
-          <div style="font-size:1.5vw;color:${esc(el.fgColor)};font-weight:bold">${t('designer.qr_label')}</div>
-          <div style="font-size:0.8vw;color:${esc(el.fgColor)};opacity:0.7;margin-top:4px">${esc(el.data?.slice(0, 25))}</div>
+          <div style="font-size:1.5vw;color:${esc(el.fgColor)};font-weight:bold">${renderHTML(t('designer.qr_label'))}</div>
+          <div style="font-size:0.8vw;color:${esc(el.fgColor)};opacity:0.7;margin-top:4px">${uiText(el.data?.slice(0, 25))}</div>
         </div>`;
         break;
       case 'countdown':
         html += `<div style="position:absolute;left:${esc(el.x)}%;top:${esc(el.y)}%;text-align:center;color:${esc(el.color)};${border}${cursor}" data-idx="${i}">
-          <div style="font-size:${el.fontSize / 15}cqw;opacity:0.8">${esc(el.label || '')}</div>
+          <div style="font-size:${el.fontSize / 15}cqw;opacity:0.8">${uiText(el.label || '')}</div>
           <div style="font-size:${el.fontSize / 10}cqw;font-weight:bold" id="countdown_${i}"></div>
         </div>`;
         break;
@@ -524,7 +527,7 @@ function updateDynamic() {
           const opts = { hour: '2-digit', minute: '2-digit' };
           if (el.showSeconds) opts.second = '2-digit';
           opts.hour12 = el.format !== '24h';
-          clockEl.textContent = new Date().toLocaleTimeString('en-US', opts);
+          bindMessage(clockEl, new Date().toLocaleTimeString('en-US', opts));
         };
         update();
         // Only set interval if element still exists
@@ -533,18 +536,18 @@ function updateDynamic() {
     }
     if (el.type === 'date') {
       const dateEl = document.getElementById(`date_${i}`);
-      if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      if (dateEl) bindMessage(dateEl, new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
     }
     if (el.type === 'countdown') {
       const cdEl = document.getElementById(`countdown_${i}`);
       if (cdEl && el.targetDate) {
         const update = () => {
           const diff = new Date(el.targetDate) - new Date();
-          if (diff <= 0) { cdEl.textContent = t('designer.countdown_now'); return; }
+          if (diff <= 0) { bindText(cdEl, 'designer.countdown_now', undefined); return; }
           const days = Math.floor(diff / 86400000);
           const hours = Math.floor((diff % 86400000) / 3600000);
           const mins = Math.floor((diff % 3600000) / 60000);
-          cdEl.textContent = `${days}d ${hours}h ${mins}m`;
+          bindMessage(cdEl, `${days}d ${hours}h ${mins}m`);
         };
         update();
         const iv = setInterval(() => { if (document.getElementById(`countdown_${i}`)) update(); else clearInterval(iv); }, 60000);
@@ -557,9 +560,9 @@ function updateDynamic() {
           const cur = d.current_condition?.[0];
           if (cur) {
             const temp = el.units === 'metric' ? cur.temp_C + '°C' : cur.temp_F + '°F';
-            wEl.textContent = `${temp} ${cur.weatherDesc?.[0]?.value || ''}`;
+            bindMessage(wEl, `${temp} ${cur.weatherDesc?.[0]?.value || ''}`);
           }
-        }).catch(() => { wEl.textContent = '⛅ ' + el.location; });
+        }).catch(() => { bindMessage(wEl, '⛅ ' + el.location); });
       }
     }
     if (el.type === 'ticker') {
@@ -567,8 +570,8 @@ function updateDynamic() {
       if (tEl && el.feedUrl) {
         // 3.0: read by this server (routes/news-feeds.js), never by a third-party converter.
         api.newsPreview(el.feedUrl, 'feed').then(d => {
-          tEl.textContent = (d.items || []).map(item => item.title).join('  •  ') || t('designer.no_items');
-        }).catch(() => { tEl.textContent = t('designer.feed_unavailable'); });
+          bindMessage(tEl, (d.items || []).map(item => item.title).join('  •  ') || t('designer.no_items'));
+        }).catch(() => { bindText(tEl, 'designer.feed_unavailable', undefined); });
       }
     }
   });
@@ -589,46 +592,46 @@ function updateProps() {
   </div>`;
 
   if (el.type === 'text') {
-    html += `<div class="form-group"><label>${t('designer.prop.text')}</label><input type="text" class="input" value="${esc(el.text)}" data-prop="text"></div>
-      <div class="form-group"><label>${t('designer.prop.size')}</label><input type="range" min="8" max="120" value="${esc(el.fontSize)}" data-prop="fontSize" style="width:100%"><span style="font-size:11px;color:var(--text-muted)">${esc(el.fontSize)}px</span></div>
-      <div class="form-group"><label>${t('designer.prop.font')}</label><select class="input" style="background:var(--bg-input)" data-prop="fontFamily">${FONTS.map(f => `<option ${f === el.fontFamily ? 'selected' : ''}>${f}</option>`).join('')}</select></div>
-      <div class="form-group"><label>${t('designer.prop.color')}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none;cursor:pointer"></div>
-      <label style="font-size:12px;display:flex;gap:6px;margin:4px 0"><input type="checkbox" ${el.bold ? 'checked' : ''} data-prop="bold"> ${t('designer.prop.bold')}</label>
-      <label style="font-size:12px;display:flex;gap:6px;margin:4px 0"><input type="checkbox" ${el.shadow ? 'checked' : ''} data-prop="shadow"> ${t('designer.prop.shadow')}</label>`;
+    html += `<div class="form-group"><label>${renderHTML(t('designer.prop.text'))}</label><input type="text" class="input" value="${esc(el.text)}" data-prop="text"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.size'))}</label><input type="range" min="8" max="120" value="${esc(el.fontSize)}" data-prop="fontSize" style="width:100%"><span style="font-size:11px;color:var(--text-muted)">${uiText(el.fontSize)}px</span></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.font'))}</label><select class="input" style="background:var(--bg-input)" data-prop="fontFamily">${renderHTML(FONTS.map(f => `<option ${f === el.fontFamily ? 'selected' : ''}>${renderHTML(f)}</option>`).join(''))}</select></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.color'))}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none;cursor:pointer"></div>
+      <label style="font-size:12px;display:flex;gap:6px;margin:4px 0"><input type="checkbox" ${el.bold ? 'checked' : ''} data-prop="bold"> ${renderHTML(t('designer.prop.bold'))}</label>
+      <label style="font-size:12px;display:flex;gap:6px;margin:4px 0"><input type="checkbox" ${el.shadow ? 'checked' : ''} data-prop="shadow"> ${renderHTML(t('designer.prop.shadow'))}</label>`;
   } else if (el.type === 'clock') {
-    html += `<div class="form-group"><label>${t('designer.prop.size')}</label><input type="range" min="16" max="120" value="${esc(el.fontSize)}" data-prop="fontSize" style="width:100%"></div>
-      <div class="form-group"><label>${t('designer.prop.color')}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>
-      <div class="form-group"><label>${t('designer.prop.format')}</label><select class="input" style="background:var(--bg-input)" data-prop="format"><option ${el.format === '12h' ? 'selected' : ''} value="12h">12h</option><option ${el.format === '24h' ? 'selected' : ''} value="24h">24h</option></select></div>
-      <label style="font-size:12px;display:flex;gap:6px;margin:4px 0"><input type="checkbox" ${el.showSeconds ? 'checked' : ''} data-prop="showSeconds"> ${t('designer.prop.show_seconds')}</label>`;
+    html += `<div class="form-group"><label>${renderHTML(t('designer.prop.size'))}</label><input type="range" min="16" max="120" value="${esc(el.fontSize)}" data-prop="fontSize" style="width:100%"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.color'))}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.format'))}</label><select class="input" style="background:var(--bg-input)" data-prop="format"><option ${el.format === '12h' ? 'selected' : ''} value="12h">12h</option><option ${el.format === '24h' ? 'selected' : ''} value="24h">24h</option></select></div>
+      <label style="font-size:12px;display:flex;gap:6px;margin:4px 0"><input type="checkbox" ${el.showSeconds ? 'checked' : ''} data-prop="showSeconds"> ${renderHTML(t('designer.prop.show_seconds'))}</label>`;
   } else if (el.type === 'image' || el.type === 'video' || el.type === 'webpage') {
     html += `<div style="display:flex;gap:6px"><div class="form-group" style="flex:1;margin:0"><label>W%</label><input type="number" class="input" value="${Math.round(el.width)}" data-prop="width"></div>
       <div class="form-group" style="flex:1;margin:0"><label>H%</label><input type="number" class="input" value="${Math.round(el.height)}" data-prop="height"></div></div>`;
-    if (el.type === 'video') html += `<label style="font-size:12px;display:flex;gap:6px;margin:8px 0"><input type="checkbox" ${el.muted ? 'checked' : ''} data-prop="muted"> ${t('designer.prop.muted')}</label>
-      <label style="font-size:12px;display:flex;gap:6px;margin:4px 0"><input type="checkbox" ${el.loop ? 'checked' : ''} data-prop="loop"> ${t('designer.prop.loop')}</label>`;
+    if (el.type === 'video') html += `<label style="font-size:12px;display:flex;gap:6px;margin:8px 0"><input type="checkbox" ${el.muted ? 'checked' : ''} data-prop="muted"> ${renderHTML(t('designer.prop.muted'))}</label>
+      <label style="font-size:12px;display:flex;gap:6px;margin:4px 0"><input type="checkbox" ${el.loop ? 'checked' : ''} data-prop="loop"> ${renderHTML(t('designer.prop.loop'))}</label>`;
   } else if (el.type === 'shape') {
     html += `<div style="display:flex;gap:6px"><div class="form-group" style="flex:1;margin:0"><label>W%</label><input type="number" class="input" value="${Math.round(el.width)}" data-prop="width"></div>
       <div class="form-group" style="flex:1;margin:0"><label>H%</label><input type="number" class="input" value="${Math.round(el.height)}" data-prop="height"></div></div>
-      <div class="form-group"><label>${t('designer.prop.color')}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>
-      <div class="form-group"><label>${t('designer.prop.opacity')}</label><input type="range" min="0" max="1" step="0.1" value="${esc(el.opacity)}" data-prop="opacity" style="width:100%"></div>
-      <div class="form-group"><label>${t('designer.prop.shape')}</label><select class="input" style="background:var(--bg-input)" data-prop="shape"><option ${el.shape === 'rect' ? 'selected' : ''}>rect</option><option ${el.shape === 'circle' ? 'selected' : ''}>circle</option></select></div>`;
+      <div class="form-group"><label>${renderHTML(t('designer.prop.color'))}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.opacity'))}</label><input type="range" min="0" max="1" step="0.1" value="${esc(el.opacity)}" data-prop="opacity" style="width:100%"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.shape'))}</label><select class="input" style="background:var(--bg-input)" data-prop="shape"><option ${el.shape === 'rect' ? 'selected' : ''}>${renderHTML(t('ui.designer.rectangle'))}</option><option ${el.shape === 'circle' ? 'selected' : ''}>${renderHTML(t('ui.designer.circle'))}</option></select></div>`;
   } else if (el.type === 'weather') {
-    html += `<div class="form-group"><label>${t('designer.prop.location')}</label><input type="text" class="input" value="${esc(el.location)}" data-prop="location"></div>
-      <div class="form-group"><label>${t('widget.field.units')}</label><select class="input" data-prop="units">
-        <option value="imperial" ${el.units !== 'metric' ? 'selected' : ''}>${t('widget.field.units_imperial')}</option>
-        <option value="metric" ${el.units === 'metric' ? 'selected' : ''}>${t('widget.field.units_metric')}</option>
+    html += `<div class="form-group"><label>${renderHTML(t('designer.prop.location'))}</label><input type="text" class="input" value="${esc(el.location)}" data-prop="location"></div>
+      <div class="form-group"><label>${renderHTML(t('widget.field.units'))}</label><select class="input" data-prop="units">
+        <option value="imperial" ${el.units !== 'metric' ? 'selected' : ''}>${renderHTML(t('widget.field.units_imperial'))}</option>
+        <option value="metric" ${el.units === 'metric' ? 'selected' : ''}>${renderHTML(t('widget.field.units_metric'))}</option>
       </select></div>
-      <div class="form-group"><label>${t('designer.prop.size')}</label><input type="range" min="16" max="80" value="${esc(el.fontSize)}" data-prop="fontSize" style="width:100%"></div>
-      <div class="form-group"><label>${t('designer.prop.color')}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>`;
+      <div class="form-group"><label>${renderHTML(t('designer.prop.size'))}</label><input type="range" min="16" max="80" value="${esc(el.fontSize)}" data-prop="fontSize" style="width:100%"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.color'))}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>`;
   } else if (el.type === 'ticker') {
-    html += `<div class="form-group"><label>${t('designer.prop.feed_url')}</label><input type="text" class="input" value="${esc(el.feedUrl)}" data-prop="feedUrl"></div>
-      <div class="form-group"><label>${t('designer.prop.speed')}</label><input type="number" class="input" value="${esc(el.speed)}" data-prop="speed"></div>
-      <div class="form-group"><label>${t('designer.prop.text_color')}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>
-      <div class="form-group"><label>${t('designer.prop.bg_color')}</label><input type="text" class="input" value="${esc(el.bgColor)}" data-prop="bgColor"></div>`;
+    html += `<div class="form-group"><label>${renderHTML(t('designer.prop.feed_url'))}</label><input type="text" class="input" value="${esc(el.feedUrl)}" data-prop="feedUrl"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.speed'))}</label><input type="number" class="input" value="${esc(el.speed)}" data-prop="speed"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.text_color'))}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.bg_color'))}</label><input type="text" class="input" value="${esc(el.bgColor)}" data-prop="bgColor"></div>`;
   } else if (el.type === 'countdown') {
-    html += `<div class="form-group"><label>${t('designer.prop.target_date')}</label><input type="date" class="input" value="${esc(el.targetDate)}" data-prop="targetDate"></div>
-      <div class="form-group"><label>${t('designer.prop.label')}</label><input type="text" class="input" value="${esc(el.label)}" data-prop="label"></div>
-      <div class="form-group"><label>${t('designer.prop.size')}</label><input type="range" min="16" max="100" value="${esc(el.fontSize)}" data-prop="fontSize" style="width:100%"></div>
-      <div class="form-group"><label>${t('designer.prop.color')}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>`;
+    html += `<div class="form-group"><label>${renderHTML(t('designer.prop.target_date'))}</label><input type="date" class="input" value="${esc(el.targetDate)}" data-prop="targetDate"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.label'))}</label><input type="text" class="input" value="${esc(el.label)}" data-prop="label"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.size'))}</label><input type="range" min="16" max="100" value="${esc(el.fontSize)}" data-prop="fontSize" style="width:100%"></div>
+      <div class="form-group"><label>${renderHTML(t('designer.prop.color'))}</label><input type="color" value="${esc(el.color)}" data-prop="color" style="width:100%;height:28px;border:none"></div>`;
   }
 
   // Save design button
@@ -639,7 +642,7 @@ function updateProps() {
    * attributes on the button: a stored text of ` onmouseover=…` was script in the dashboard origin.
    * The data is read at click time instead, so it is also the CURRENT design, not a stale copy.
    */
-  html += `<button type="button" id="saveDesignFileBtn" class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;justify-content:center">${t('designer.save_design_file')}</button>`;
+  html += `<button type="button" id="saveDesignFileBtn" class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;justify-content:center">${renderHTML(t('designer.save_design_file'))}</button>`;
 
   fields.innerHTML = html;
 
@@ -671,10 +674,10 @@ function updateLayers() {
     <div style="padding:4px 8px;margin-bottom:2px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;
       background:${i === selectedIdx ? 'var(--accent)' : 'var(--bg-secondary)'};
       color:${i === selectedIdx ? 'white' : 'var(--text-secondary)'}" data-layer="${i}">
-      <span>${typeIcons[el.type] || '?'}</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(el.text || el.type)}</span>
+      <span>${renderHTML(typeIcons[el.type] || '?')}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(el.text || el.type)}</span>
     </div>
-  `).join('') || `<p style="color:var(--text-muted)">${t('designer.no_elements')}</p>`;
+  `).join('') || `<p style="color:var(--text-muted)">${renderHTML(t('designer.no_elements'))}</p>`;
 
   list.querySelectorAll('[data-layer]').forEach(el => {
     el.onclick = () => { selectedIdx = parseInt(el.dataset.layer); redraw(); };
@@ -692,15 +695,15 @@ function generateInnerHTML() {
     const fsLabel = el.fontSize / 15;
     switch (el.type) {
       case 'text':
-        html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;font-size:${fs}vw;font-family:${el.fontFamily};color:${el.color};font-weight:${el.bold ? 'bold' : 'normal'};${el.shadow ? 'text-shadow:2px 2px 4px rgba(0,0,0,0.5);' : ''}white-space:nowrap">${el.text}</div>`;
+        html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;font-size:${fs}vw;font-family:${el.fontFamily};color:${el.color};font-weight:${el.bold ? 'bold' : 'normal'};${el.shadow ? 'text-shadow:2px 2px 4px rgba(0,0,0,0.5);' : ''}white-space:nowrap">${renderHTML(el.text)}</div>`;
         break;
       case 'clock':
         html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;font-size:${fs}vw;font-family:${el.fontFamily};color:${el.color};font-weight:bold" id="c${i}"></div>
-          <script>setInterval(()=>{const o={hour:'2-digit',minute:'2-digit'${el.showSeconds ? ",second:'2-digit'" : ''},hour12:${el.format !== '24h'}};document.getElementById('c${i}').textContent=new Date().toLocaleTimeString('en-US',o)},1000)</script>`;
+          <script>setInterval(()=>{const o={hour:'2-digit',minute:'2-digit'${renderHTML(el.showSeconds ? ",second:'2-digit'" : '')},hour12:${renderHTML(el.format !== '24h')}};document.getElementById('c${renderHTML(i)}').textContent=new Date().toLocaleTimeString('en-US',o)},1000)</script>`;
         break;
       case 'date':
         html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;font-size:${fs}vw;font-family:${el.fontFamily};color:${el.color}" id="d${i}"></div>
-          <script>document.getElementById('d${i}').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})</script>`;
+          <script>document.getElementById('d${renderHTML(i)}').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})</script>`;
         break;
       case 'image':
         html += `<img src="${el.src}" style="position:absolute;left:${el.x}%;top:${el.y}%;width:${el.width}%;height:${el.height}%;object-fit:contain">`;
@@ -712,20 +715,20 @@ function generateInnerHTML() {
         html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;width:${el.width}%;height:${el.height}%;background:${el.color};opacity:${el.opacity};${el.shape === 'circle' ? 'border-radius:50%' : `border-radius:${el.radius}px`}"></div>`;
         break;
       case 'weather':
-        html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;font-size:${fs}vw;color:${el.color}" id="w${i}">Loading...</div>
-          <script>fetch('https://wttr.in/${encodeURIComponent(el.location)}?format=j1').then(r=>r.json()).then(d=>{const c=d.current_condition[0];document.getElementById('w${i}').textContent=c.temp_${el.units === 'metric' ? 'C' : 'F'}+'°${el.units === 'metric' ? 'C' : 'F'} '+c.weatherDesc[0].value}).catch(()=>{})</script>`;
+        html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;font-size:${fs}vw;color:${el.color}" id="w${i}">${renderHTML(t('common.loading'))}</div>
+          <script>fetch('https://wttr.in/${renderHTML(encodeURIComponent(el.location))}?format=j1').then(r=>r.json()).then(d=>{const c=d.current_condition[0];document.getElementById('w${renderHTML(i)}').textContent=c.temp_${renderHTML(el.units === 'metric' ? 'C' : 'F')}+'°${renderHTML(el.units === 'metric' ? 'C' : 'F')} '+c.weatherDesc[0].value}).catch(()=>{})</script>`;
         break;
       case 'ticker':
         html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;width:${el.width}%;height:${el.height}%;background:${el.bgColor};overflow:hidden;display:flex;align-items:center">
-          <div style="white-space:nowrap;animation:t ${el.speed}s linear infinite;font-size:${fs}vw;color:${el.color}" id="t${i}">Loading...</div></div>
+          <div style="white-space:nowrap;animation:t ${el.speed}s linear infinite;font-size:${fs}vw;color:${el.color}" id="t${i}">${renderHTML(t('common.loading'))}</div></div>
           <style>@keyframes t{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}</style>
-          <script>fetch('/api/news-feeds/items?m=feed&u=${encodeURIComponent(el.feedUrl)}').then(r=>r.json()).then(d=>{if(d.items&&d.items.length)document.getElementById('t${i}').textContent=d.items.map(i=>i.title).join('  •  ')}).catch(()=>{})</script>`;
+          <script>fetch('/api/news-feeds/items?m=feed&u=${renderHTML(encodeURIComponent(el.feedUrl))}').then(r=>r.json()).then(d=>{if(d.items&&d.items.length)document.getElementById('t${renderHTML(i)}').textContent=d.items.map(i=>i.title).join('  •  ')}).catch(()=>{})</script>`;
         break;
       case 'countdown':
         html += `<div style="position:absolute;left:${el.x}%;top:${el.y}%;text-align:center;color:${el.color}">
-          <div style="font-size:${fsLabel}vw;opacity:0.8">${esc(el.label)}</div>
+          <div style="font-size:${fsLabel}vw;opacity:0.8">${uiText(el.label)}</div>
           <div style="font-size:${fs}vw;font-weight:bold" id="cd${i}"></div></div>
-          <script>setInterval(()=>{const d=new Date('${el.targetDate}')-new Date();if(d<=0){document.getElementById('cd${i}').textContent='NOW!';return}document.getElementById('cd${i}').textContent=Math.floor(d/864e5)+'d '+Math.floor(d%864e5/36e5)+'h '+Math.floor(d%36e5/6e4)+'m'},6e4)</script>`;
+          <script>setInterval(()=>{const d=new Date('${renderHTML(el.targetDate)}')-new Date();if(d<=0){document.getElementById('cd${i}').textContent='NOW!';return}document.getElementById('cd${i}').textContent=Math.floor(d/864e5)+'d '+Math.floor(d%864e5/36e5)+'h '+Math.floor(d%36e5/6e4)+'m'},6e4)</script>`;
         break;
       case 'webpage':
         html += `<iframe src="${el.url}" style="position:absolute;left:${el.x}%;top:${el.y}%;width:${el.width}%;height:${el.height}%;border:none"></iframe>`;
@@ -736,7 +739,7 @@ function generateInnerHTML() {
 }
 
 function generateHTML() {
-  return `<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box}body{width:100vw;height:100vh;overflow:hidden;background:${bgImageDataUrl ? `url(${bgImageDataUrl}) center/cover` : bgValue}}</style></head><body>${generateInnerHTML()}</body></html>`;
+  return `<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box}body{width:100vw;height:100vh;overflow:hidden;background:${renderHTML(bgImageDataUrl ? `url(${bgImageDataUrl}) center/cover` : bgValue)}}</style></head><body>${renderHTML(generateInnerHTML())}</body></html>`;
 }
 
 export function cleanup() {}

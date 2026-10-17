@@ -1,3 +1,5 @@
+import { lowerFor } from './admin-locale.js';
+import { getLocale } from '../i18n.js';
 /*
  * Search, filters and selection for the Templates library — the pure half of views/templates.js.
  *
@@ -10,10 +12,9 @@
 import { localName, localDescription } from './template-i18n.js';
 
 /** Lower-case, accents folded ("Café" finds "cafe"), whitespace collapsed. */
-export function fold(s) {
-  return String(s == null ? '' : s)
-    .normalize('NFKD').replace(/[̀-ͯ]/g, '')
-    .toLowerCase().replace(/\s+/g, ' ').trim();
+export function fold(s, lang = 'en') {
+  return lowerFor(s == null ? '' : s, lang)
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 /** Orientation as a list, whether the index gave a string or an array (or nothing). */
@@ -26,15 +27,16 @@ export function orientationsOf(e) {
 /** The text a search looks through: English and translated name/description, id, tags, author. */
 function haystack(e, lang) {
   const tags = Array.isArray(e.tags) ? e.tags.join(' ') : '';
-  return fold([e.name, localName(e, lang), e.description, localDescription(e, lang), e.id, tags, e.author].join(' '));
+  return fold([e.name, localName(e, lang), e.description, localDescription(e, lang), e.author].join(' '), lang);
 }
 
 /** Every word of the query must appear somewhere (so "menu portrait" narrows, not widens). */
 export function matchesQuery(e, q, lang) {
-  const words = fold(q).split(' ').filter(Boolean);
+  const words = String(q || '').trim().split(/\s+/).filter(Boolean);
   if (!words.length) return true;
   const h = haystack(e, lang);
-  return words.every((w) => h.includes(w));
+  const technical = fold([e.id, ...(Array.isArray(e.tags) ? e.tags : [])].join(' '));
+  return words.every(w => h.includes(fold(w, lang)) || technical.includes(fold(w)));
 }
 
 /** A library entry an admin could install or update right now (the card shows a button for it). */
@@ -79,7 +81,7 @@ export function matchesFilters(e, state = {}, lang = 'en') {
 export function allTags(entries) {
   const set = new Set();
   for (const e of entries || []) for (const t of (Array.isArray(e.tags) ? e.tags : [])) if (typeof t === 'string' && t) set.add(t);
-  return [...set].sort((a, b) => a.localeCompare(b));
+  return [...set].sort((a, b) => a.localeCompare(b, getLocale()));
 }
 
 /**

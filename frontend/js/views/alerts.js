@@ -1,7 +1,9 @@
+import { uiText, renderHTML, translatedAttribute, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { mountSettings as mountVerification } from '../components/screen-verify.js';
 
 /*
@@ -36,32 +38,32 @@ function card(c) {
   return `<div class="corp-card" data-id="${esc(c.id)}" style="margin-bottom:12px;padding:16px;border-left:4px solid ${c.last_error ? '#ca8a04' : 'var(--border)'}">
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div style="min-width:0">
-        <div style="display:flex;gap:8px;align-items:center"><strong>${esc(c.name)}</strong>
-          <span class="corp-help" style="font-size:12px">${esc(t(`alerts.kind.${c.kind}`))}</span>
-          ${c.enabled ? '' : `<span class="corp-help" style="font-size:12px">${esc(t('alerts.off'))}</span>`}</div>
-        <div class="corp-help" style="font-size:12px;margin-top:4px;word-break:break-all">${esc(target(c))}</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">${esc(t('alerts.summary', {
+        <div style="display:flex;gap:8px;align-items:center"><strong>${uiText(c.name)}</strong>
+          <span class="corp-help" style="font-size:12px">${uiText(t(`alerts.kind.${c.kind}`))}</span>
+          ${renderHTML(c.enabled ? '' : `<span class="corp-help" style="font-size:12px">${uiText(t('alerts.off'))}</span>`)}</div>
+        <div class="corp-help" style="font-size:12px;margin-top:4px;word-break:break-all">${uiText(target(c))}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">${uiText(t('alerts.summary', {
           events: c.events.map((e) => t(`alerts.ev.${e}`)).join(', '), n: c.offline_minutes, scope: scopeSummary(c) }))}</div>
-        <div class="corp-help" style="font-size:12px;margin-top:4px">${esc(t('alerts.last_sent', { when: ago(c.last_sent_at) }))}${c.last_error ? ` · <span style="color:#ca8a04">${esc(c.last_error)}</span>` : ''}</div>
+        <div class="corp-help" style="font-size:12px;margin-top:4px">${renderHTML(t('alerts.last_sent', { when: ago(c.last_sent_at) }))}${renderHTML(c.last_error ? ` · <span style="color:#ca8a04">${uiText(c.last_error)}</span>` : '')}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
-        <button class="btn btn-secondary btn-sm" data-act="test">${esc(t('alerts.send_test'))}</button>
-        <button class="btn btn-secondary btn-sm" data-act="edit">${esc(t('common.edit'))}</button>
-        <button class="btn btn-secondary btn-sm" data-act="del" style="color:var(--danger)">${esc(t('common.delete'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="test">${uiText(t('alerts.send_test'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="edit">${uiText(t('common.edit'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="del" style="color:var(--danger)">${uiText(t('common.delete'))}</button>
       </div>
     </div></div>`;
 }
 
 export async function render(app) {
-  app.innerHTML = `<div class="page-header"><div><h1>${esc(t('nav.alerts'))}</h1><div class="subtitle">${esc(t('alerts.intro'))}</div></div></div><div id="alBody"></div>`;
+  app.innerHTML = `<div class="page-header"><div><h1>${uiText(t('nav.alerts'))}</h1><div class="subtitle">${uiText(t('alerts.intro'))}</div></div></div><div id="alBody"></div>`;
   const body = document.getElementById('alBody');
   try {
     const [chs, devs, grps] = await Promise.all([api.get('/alert-channels'), api.get('/devices'), api.get('/groups')]);
     cache = { channels: Array.isArray(chs) ? chs : [], devices: Array.isArray(devs) ? devs : (devs.devices || []), groups: Array.isArray(grps) ? grps : (grps.groups || []) };
-  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${esc((e && e.message) || t('common.error'))}</p>`; return; }
-  body.innerHTML = `<div id="svSettings"></div><div class="corp-toolbar"><button class="btn btn-primary" id="alNew">${esc(t('alerts.new'))}</button></div>
-    ${cache.channels.length ? cache.channels.map(card).join('') : `<div class="corp-empty">${esc(t('alerts.empty'))}</div>`}
-    <p class="corp-help" style="font-size:12px;margin-top:16px">${esc(t('alerts.owner_note'))}</p>`;
+  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`; return; }
+  body.innerHTML = `<div id="svSettings"></div><div class="corp-toolbar"><button class="btn btn-primary" id="alNew">${uiText(t('alerts.new'))}</button></div>
+    ${renderHTML(cache.channels.length ? cache.channels.map(card).join('') : `<div class="corp-empty">${uiText(t('alerts.empty'))}</div>`)}
+    <p class="corp-help" style="font-size:12px;margin-top:16px">${uiText(t('alerts.owner_note'))}</p>`;
   document.getElementById('alNew').addEventListener('click', () => openForm(app, null));
   // Screen verification settings and incident history sit above the channels they alert through.
   mountVerification(document.getElementById('svSettings'));
@@ -71,12 +73,12 @@ export async function render(app) {
     el.querySelector('[data-act="del"]').addEventListener('click', async () => {
       if (!confirm(t('alerts.confirm_delete', { name: c.name }))) return;
       try { await api.delete(`/alert-channels/${c.id}`); showToast(t('alerts.deleted'), 'success'); render(app); }
-      catch (e) { showToast((e && e.message) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
     });
     el.querySelector('[data-act="test"]').addEventListener('click', async (ev) => {
       ev.target.disabled = true;
       try { await api.post(`/alert-channels/${c.id}/test`, {}); showToast(t('alerts.test_sent'), 'success'); }
-      catch (e) { showToast((e && e.message) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
       render(app);
     });
   });
@@ -91,25 +93,25 @@ function openForm(app, ch) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px';
   overlay.innerHTML = `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:640px;max-width:100%;max-height:92vh;overflow:auto">
-    <h3 style="margin-bottom:12px">${esc(editing ? t('alerts.edit_title', { name: ch.name }) : t('alerts.new'))}</h3>
-    <div class="form-group"><label>${esc(t('alerts.f.kind'))}</label>
-      <select id="alKind" class="input" ${editing ? 'disabled' : ''}>${KINDS.map((k) => `<option value="${k}" ${kind0 === k ? 'selected' : ''}>${esc(t(`alerts.kind.${k}`))}</option>`).join('')}</select></div>
-    <div class="form-group"><label>${esc(t('alerts.f.name'))}</label><input id="alName" class="input" value="${esc(ch ? ch.name : '')}" placeholder="${esc(t('alerts.f.name_ph'))}"></div>
+    <h3 style="margin-bottom:12px">${uiText(editing ? t('alerts.edit_title', { name: ch.name }) : t('alerts.new'))}</h3>
+    <div class="form-group"><label>${uiText(t('alerts.f.kind'))}</label>
+      <select id="alKind" class="input" ${editing ? 'disabled' : ''}>${renderHTML(KINDS.map((k) => `<option value="${k}" ${kind0 === k ? 'selected' : ''}>${uiText(t(`alerts.kind.${k}`))}</option>`).join(''))}</select></div>
+    <div class="form-group"><label>${uiText(t('alerts.f.name'))}</label><input id="alName" class="input" value="${esc(ch ? ch.name : '')}" placeholder="${esc(t('alerts.f.name_ph'))}" data-fil-i18n-placeholder="${binding('alerts.f.name_ph', undefined)}"></div>
     <div id="alKindFields"></div>
-    <div class="form-group"><label>${esc(t('alerts.f.events'))}</label>
-      <label style="display:flex;gap:8px;font-size:13px"><input type="checkbox" id="alEvOff" ${ev.has('device_offline') ? 'checked' : ''}> ${esc(t('alerts.f.ev_off'))}
-        <input type="number" id="alMin" class="input" min="2" max="1440" value="${esc(ch ? ch.offline_minutes : 5)}" style="width:80px;display:inline-block"> ${esc(t('alerts.f.minutes'))}</label>
-      <label style="display:flex;gap:8px;font-size:13px;margin-top:6px"><input type="checkbox" id="alEvOn" ${ev.has('device_online') ? 'checked' : ''}> ${esc(t('alerts.f.ev_on'))}</label>
-      <label style="display:flex;gap:8px;font-size:13px;margin-top:6px"><input type="checkbox" id="alEvSvBad" ${ev.has('screen_problem') ? 'checked' : ''}> ${esc(t('alerts.f.ev_screen_problem'))}</label>
-      <label style="display:flex;gap:8px;font-size:13px;margin-top:6px"><input type="checkbox" id="alEvSvOk" ${ev.has('screen_ok') ? 'checked' : ''}> ${esc(t('alerts.f.ev_screen_ok'))}</label></div>
-    <div class="form-group"><label>${esc(t('alerts.f.scope'))}</label>
-      <select id="alScope" class="input" style="width:auto">${['workspace', 'group', 'device'].map((k) => `<option value="${k}" ${scopeKind === k ? 'selected' : ''}>${esc(t(`alerts.scope.${k}`))}</option>`).join('')}</select>
+    <div class="form-group"><label>${uiText(t('alerts.f.events'))}</label>
+      <label style="display:flex;gap:8px;font-size:13px"><input type="checkbox" id="alEvOff" ${ev.has('device_offline') ? 'checked' : ''}> ${uiText(t('alerts.f.ev_off'))}
+        <input type="number" id="alMin" class="input" min="2" max="1440" value="${esc(ch ? ch.offline_minutes : 5)}" style="width:80px;display:inline-block"> ${uiText(t('alerts.f.minutes'))}</label>
+      <label style="display:flex;gap:8px;font-size:13px;margin-top:6px"><input type="checkbox" id="alEvOn" ${ev.has('device_online') ? 'checked' : ''}> ${uiText(t('alerts.f.ev_on'))}</label>
+      <label style="display:flex;gap:8px;font-size:13px;margin-top:6px"><input type="checkbox" id="alEvSvBad" ${ev.has('screen_problem') ? 'checked' : ''}> ${uiText(t('alerts.f.ev_screen_problem'))}</label>
+      <label style="display:flex;gap:8px;font-size:13px;margin-top:6px"><input type="checkbox" id="alEvSvOk" ${ev.has('screen_ok') ? 'checked' : ''}> ${uiText(t('alerts.f.ev_screen_ok'))}</label></div>
+    <div class="form-group"><label>${uiText(t('alerts.f.scope'))}</label>
+      <select id="alScope" class="input" style="width:auto">${renderHTML(['workspace', 'group', 'device'].map((k) => `<option value="${k}" ${scopeKind === k ? 'selected' : ''}>${uiText(t(`alerts.scope.${k}`))}</option>`).join(''))}</select>
       <div id="alScopeList" style="margin-top:8px;max-height:150px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div></div>
-    <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="alEnabled" ${!ch || ch.enabled ? 'checked' : ''}> ${esc(t('alerts.f.enabled'))}</label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="alEnabled" ${!ch || ch.enabled ? 'checked' : ''}> ${uiText(t('alerts.f.enabled'))}</label>
     <div id="alError" style="color:var(--danger);font-size:13px;min-height:18px;margin-top:8px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-      <button class="btn btn-secondary" id="alCancel">${esc(t('common.cancel'))}</button>
-      <button class="btn btn-primary" id="alSave">${esc(t('common.save'))}</button></div></div>`;
+      <button class="btn btn-secondary" id="alCancel">${uiText(t('common.cancel'))}</button>
+      <button class="btn btn-primary" id="alSave">${uiText(t('common.save'))}</button></div></div>`;
   document.body.appendChild(overlay);
   const $ = (id) => overlay.querySelector('#' + id);
   const close = () => overlay.remove();
@@ -118,24 +120,24 @@ function openForm(app, ch) {
     const k = $('alKind').value;
     const keep = editing ? t('alerts.f.keep_hint') : '';
     const host = $('alKindFields');
-    if (k === 'email') host.innerHTML = `<div class="form-group"><label>${esc(t('alerts.f.emails'))}</label><input id="alEmails" class="input" value="${esc(ch && ch.emails ? ch.emails.join(', ') : '')}" placeholder="ops@example.com, manager@example.com"></div>`;
-    else if (k === 'pagerduty') host.innerHTML = `<div class="form-group"><label>${esc(t('alerts.f.pd_key'))}</label><input id="alSecret1" class="input" autocomplete="off" placeholder="${esc(ch && ch.routing_key_hint ? ch.routing_key_hint : '')}">
-      <div class="corp-help" style="font-size:12px;margin-top:4px">${esc(t('alerts.f.pd_hint'))} ${esc(keep)}</div></div>`;
-    else if (k === 'telegram') host.innerHTML = `<div class="form-group"><label>${esc(t('alerts.f.tg_token'))}</label><input id="alSecret1" type="password" class="input" autocomplete="off" placeholder="${esc(ch && ch.bot_token_hint ? ch.bot_token_hint : '123456789:AA…')}">
-      <div class="corp-help" style="font-size:12px;margin-top:4px">${esc(keep)}</div></div>
-      <div class="form-group"><label>${esc(t('alerts.f.tg_chat'))}</label><input id="alChat" class="input" autocomplete="off" value="${esc(ch && ch.chat_id ? ch.chat_id : '')}" placeholder="-1001234567890">
-      <div class="corp-help" style="font-size:12px;margin-top:4px">${esc(t('alerts.f.tg_hint'))}</div></div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input id="alTgSilent" type="checkbox" ${ch && ch.silent_info ? 'checked' : ''}> ${esc(t('alerts.f.tg_silent'))}</label></div>`;
-    else host.innerHTML = `<div class="form-group"><label>${esc(t(`alerts.f.url_${k}`))}</label><input id="alUrl" class="input" autocomplete="off" placeholder="${esc(ch && ch.url_hint ? ch.url_hint : 'https://…')}">
-      <div class="corp-help" style="font-size:12px;margin-top:4px">${esc(t(`alerts.f.url_${k}_hint`))} ${esc(keep)}</div></div>
-      ${k === 'webhook' ? `<div class="form-group"><label>${esc(t('alerts.f.secret'))}</label><input id="alSecret2" class="input" autocomplete="off" placeholder="${esc(ch && ch.has_secret ? '••••••' : '')}">
-      <div class="corp-help" style="font-size:12px;margin-top:4px">${esc(t('alerts.f.secret_hint'))}</div></div>` : ''}`;
+    if (k === 'email') host.innerHTML = `<div class="form-group"><label>${uiText(t('alerts.f.emails'))}</label><input id="alEmails" class="input" value="${esc(ch && ch.emails ? ch.emails.join(', ') : '')}" ${translatedAttribute("placeholder", "ui.alerts.placeholder_ops_example_com_manager_example_com_8fc535")}></div>`;
+    else if (k === 'pagerduty') host.innerHTML = `<div class="form-group"><label>${uiText(t('alerts.f.pd_key'))}</label><input id="alSecret1" class="input" autocomplete="off" placeholder="${esc(ch && ch.routing_key_hint ? ch.routing_key_hint : '')}">
+      <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(t('alerts.f.pd_hint'))} ${uiText(keep)}</div></div>`;
+    else if (k === 'telegram') host.innerHTML = `<div class="form-group"><label>${uiText(t('alerts.f.tg_token'))}</label><input id="alSecret1" type="password" class="input" autocomplete="off" placeholder="${esc(ch && ch.bot_token_hint ? ch.bot_token_hint : '123456789:AA…')}">
+      <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(keep)}</div></div>
+      <div class="form-group"><label>${uiText(t('alerts.f.tg_chat'))}</label><input id="alChat" class="input" autocomplete="off" value="${esc(ch && ch.chat_id ? ch.chat_id : '')}" placeholder="-1001234567890">
+      <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(t('alerts.f.tg_hint'))}</div></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input id="alTgSilent" type="checkbox" ${ch && ch.silent_info ? 'checked' : ''}> ${uiText(t('alerts.f.tg_silent'))}</label></div>`;
+    else host.innerHTML = `<div class="form-group"><label>${uiText(t(`alerts.f.url_${k}`))}</label><input id="alUrl" class="input" autocomplete="off" placeholder="${esc(ch && ch.url_hint ? ch.url_hint : 'https://…')}">
+      <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(t(`alerts.f.url_${k}_hint`))} ${uiText(keep)}</div></div>
+      ${renderHTML(k === 'webhook' ? `<div class="form-group"><label>${uiText(t('alerts.f.secret'))}</label><input id="alSecret2" class="input" autocomplete="off" placeholder="${esc(ch && ch.has_secret ? '••••••' : '')}">
+      <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(t('alerts.f.secret_hint'))}</div></div>` : '')}`;
   }
   function paintScope() {
     const k = $('alScope').value;
     const list = k === 'group' ? cache.groups : k === 'device' ? cache.devices : [];
-    $('alScopeList').innerHTML = k === 'workspace' ? `<span class="corp-help" style="font-size:12px">${esc(tn('alerts.scope_all_hint', cache.devices.length))}</span>`
-      : list.map((x) => `<label style="display:flex;gap:8px;font-size:13px"><input type="checkbox" value="${esc(x.id)}" ${chosen.has(x.id) ? 'checked' : ''}> ${esc(x.name)}</label>`).join('');
+    $('alScopeList').innerHTML = k === 'workspace' ? `<span class="corp-help" style="font-size:12px">${uiText(tn('alerts.scope_all_hint', cache.devices.length))}</span>`
+      : list.map((x) => `<label style="display:flex;gap:8px;font-size:13px"><input type="checkbox" value="${esc(x.id)}" ${chosen.has(x.id) ? 'checked' : ''}> ${uiText(x.name)}</label>`).join('');
   }
   $('alKind').addEventListener('change', paintKind);
   $('alScope').addEventListener('change', paintScope);
@@ -156,11 +158,11 @@ function openForm(app, ch) {
     else if (k === 'pagerduty') body.routing_key = $('alSecret1').value.trim();
     else if (k === 'telegram') { body.bot_token = $('alSecret1').value.trim(); body.chat_id = $('alChat').value.trim(); body.silent_info = $('alTgSilent').checked; }
     else { body.url = $('alUrl').value.trim(); if (k === 'webhook' && $('alSecret2').value) body.secret = $('alSecret2').value; }
-    if (!body.scopes.length) { $('alError').textContent = t('alerts.scope_required'); return; }
+    if (!body.scopes.length) { bindText($('alError'), 'alerts.scope_required', undefined); return; }
     $('alSave').disabled = true;
     try {
       if (editing) { delete body.kind; await api.put(`/alert-channels/${ch.id}`, body); } else await api.post('/alert-channels', body);
       showToast(t('alerts.saved'), 'success'); close(); render(app);
-    } catch (e) { $('alError').textContent = (e && e.message) || t('common.error'); $('alSave').disabled = false; }
+    } catch (e) { bindMessage($('alError'), (e && (e.uiMessage || e.message)) || t('common.error')); $('alSave').disabled = false; }
   });
 }

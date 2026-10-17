@@ -1,3 +1,5 @@
+import { renderHTML, uiText, bindMessage, bindText } from '../lib/i18n-bindings.js';
+
 /*
  * Self-service account deletion: the "Delete my account" card (Settings, and #/delete-account for
  * the Simple view and the Manager app) and its confirmation dialog.
@@ -12,7 +14,7 @@
  * (stashReturnRoute) and app.js returns here once the new session is in place.
  */
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { esc, inManagerApp } from '../utils.js';
 import { openModal } from './corporate-ui.js';
 
@@ -49,36 +51,36 @@ export function describeDeletion(info) {
   const solo = (info.owned_organizations || []).filter((o) => !o.shared);
   const blocked = blockedText(info);
   return `
-    ${blocked ? `<p class="delete-account-blocked" role="alert" style="color:var(--danger, #e05252);font-size:13px;margin-bottom:12px">${esc(blocked)}</p>` : ''}
-    ${info.subscription && info.subscription.active ? `<p role="note" style="font-size:13px;margin-bottom:12px;padding:8px 12px;border-radius:var(--radius);background:var(--bg-input)"><strong>${esc(t('account_delete.sub_title'))}</strong> ${esc(t('account_delete.sub_warning'))}</p>` : ''}
-    <h4 style="font-size:13px;margin:0 0 6px">${esc(t('account_delete.will_delete'))}</h4>
+    ${renderHTML(blocked ? `<p class="delete-account-blocked" role="alert" style="color:var(--danger, #e05252);font-size:13px;margin-bottom:12px">${uiText(blocked)}</p>` : '')}
+    ${renderHTML(info.subscription && info.subscription.active ? `<p role="note" style="font-size:13px;margin-bottom:12px;padding:8px 12px;border-radius:var(--radius);background:var(--bg-input)"><strong>${uiText(t('account_delete.sub_title'))}</strong> ${renderHTML(t('account_delete.sub_warning'))}</p>` : '')}
+    <h4 style="font-size:13px;margin:0 0 6px">${uiText(t('account_delete.will_delete'))}</h4>
     <ul style="font-size:13px;color:var(--text-secondary);margin:0 0 12px 18px;list-style:disc">
-      <li>${esc(t('account_delete.item_account'))}</li>
-      ${solo.map((o) => `<li>${esc(t('account_delete.item_org', { name: o.name, workspaces: o.workspaces, screens: o.screens, content: o.content, playlists: o.playlists }))}</li>`).join('')}
+      <li>${uiText(t('account_delete.item_account'))}</li>
+      ${renderHTML(solo.map((o) => `<li>${uiText(t('account_delete.item_org', { name: o.name, workspaces: o.workspaces, screens: o.screens, content: o.content, playlists: o.playlists }))}</li>`).join(''))}
     </ul>
-    <h4 style="font-size:13px;margin:0 0 6px">${esc(t('account_delete.not_deleted'))}</h4>
+    <h4 style="font-size:13px;margin:0 0 6px">${uiText(t('account_delete.not_deleted'))}</h4>
     <ul style="font-size:13px;color:var(--text-secondary);margin:0 0 12px 18px;list-style:disc">
-      ${info.other_organizations ? `<li>${esc(t('account_delete.item_other_orgs', { n: info.other_organizations }))}</li>` : ''}
-      <li>${esc(t('account_delete.item_audit'))}</li>
-      <li>${esc(t('account_delete.backups'))} <a href="/delete-account" target="_blank" rel="noopener" style="color:var(--accent, #3b82f6);text-decoration:underline">${esc(t('account_delete.more_link'))}</a></li>
+      ${renderHTML(info.other_organizations ? `<li>${uiText(t('account_delete.item_other_orgs', { n: info.other_organizations }))}</li>` : '')}
+      <li>${uiText(t('account_delete.item_audit'))}</li>
+      <li>${renderHTML(t('account_delete.backups'))} <a href="/delete-account" target="_blank" rel="noopener" style="color:var(--accent, #3b82f6);text-decoration:underline">${uiText(t('account_delete.more_link'))}</a></li>
     </ul>`;
 }
 
 /** Fill `el` with the explanation and the button that opens the dialog. */
 export async function mountDeleteAccountCard(el) {
   if (!el) return;
-  el.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${esc(t('common.loading'))}</p>`;
+  el.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText(t('common.loading'))}</p>`;
   let info;
   try { info = await api.accountDeletionInfo(); } catch (err) {
     if (!document.contains(el)) return;
-    el.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${esc(err.message)}</p>`;
+    el.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText((err.uiMessage || err.message))}</p>`;
     return;
   }
   if (!document.contains(el)) return;
   el.innerHTML = `
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${esc(t('account_delete.intro'))}</p>
-    ${describeDeletion(info)}
-    <button type="button" class="btn btn-danger btn-sm" data-delete-account ${info.blocked ? 'disabled' : ''}>${esc(t('account_delete.button'))}</button>`;
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${uiText(t('account_delete.intro'))}</p>
+    ${renderHTML(describeDeletion(info))}
+    <button type="button" class="btn btn-danger btn-sm" data-delete-account ${info.blocked ? 'disabled' : ''}>${uiText(t('account_delete.button'))}</button>`;
   el.querySelector('[data-delete-account]').addEventListener('click', () => openDeleteAccountDialog(info));
 }
 
@@ -104,57 +106,57 @@ export function openDeleteAccountDialog(info) {
   const m = openModal({
     title: t('account_delete.dialog_title'),
     body: `
-      <p style="font-size:13px;margin-bottom:12px"><strong>${esc(t('account_delete.dialog_warning'))}</strong></p>
-      ${describeDeletion(info)}
+      <p style="font-size:13px;margin-bottom:12px"><strong>${uiText(t('account_delete.dialog_warning'))}</strong></p>
+      ${renderHTML(describeDeletion(info))}
       <div class="form-group">
-        <label for="delAcctConfirm">${esc(t('account_delete.confirm_label', { email: info.email }))}</label>
+        <label for="delAcctConfirm">${uiText(t('account_delete.confirm_label', { email: info.email }))}</label>
         <input id="delAcctConfirm" class="input" type="email" autocomplete="off" autocapitalize="none" spellcheck="false">
       </div>
-      ${password ? `
+      ${renderHTML(password ? `
       <div class="form-group">
-        <label for="delAcctPassword">${esc(t('account_delete.password_label'))}</label>
+        <label for="delAcctPassword">${uiText(t('account_delete.password_label'))}</label>
         <input id="delAcctPassword" class="input" type="password" autocomplete="current-password">
       </div>
-      ${info.reauth.totp_required ? `
+      ${renderHTML(info.reauth.totp_required ? `
       <div class="form-group">
-        <label for="delAcctCode">${esc(t('account_delete.code_label'))}</label>
+        <label for="delAcctCode">${uiText(t('account_delete.code_label'))}</label>
         <input id="delAcctCode" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="20">
-      </div>` : ''}` : `
-      <p style="font-size:13px;color:var(--text-secondary)" data-reauth-note>${esc(needsSignIn ? t('account_delete.reauth_needed', { minutes }) : t('account_delete.reauth_recent', { minutes }))}</p>
-      ${needsSignIn ? `<button type="button" class="btn btn-secondary btn-sm" data-reauth>${esc(t('account_delete.reauth_button'))}</button>` : ''}`}
+      </div>` : '')}` : `
+      <p style="font-size:13px;color:var(--text-secondary)" data-reauth-note>${uiText(needsSignIn ? t('account_delete.reauth_needed', { minutes }) : t('account_delete.reauth_recent', { minutes }))}</p>
+      ${renderHTML(needsSignIn ? `<button type="button" class="btn btn-secondary btn-sm" data-reauth>${uiText(t('account_delete.reauth_button'))}</button>` : '')}`)}
       <div data-status role="status" style="font-size:13px;color:var(--danger, #e05252);margin-top:8px;min-height:1em"></div>`,
-    footer: `<button type="button" class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button>
-             <button type="button" class="btn btn-danger" data-submit ${info.blocked || needsSignIn ? 'disabled' : ''}>${esc(t('account_delete.submit'))}</button>`,
+    footer: `<button type="button" class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button>
+             <button type="button" class="btn btn-danger" data-submit ${info.blocked || needsSignIn ? 'disabled' : ''}>${uiText(t('account_delete.submit'))}</button>`,
   });
   const status = m.q('[data-status]');
   const submit = m.q('[data-submit]');
   m.q('[data-reauth]')?.addEventListener('click', () => signInAgain(info));
   m.q('#delAcctConfirm').focus();
   submit.addEventListener('click', async () => {
-    status.textContent = '';
+    bindMessage(status, '');
     const confirm = m.q('#delAcctConfirm').value.trim();
-    if (confirm.toLowerCase() !== String(info.email).toLowerCase()) { status.textContent = t('account_delete.err_confirm'); return; }
+    if (confirm.toLowerCase() !== String(info.email).toLowerCase()) { bindText(status, 'account_delete.err_confirm', undefined); return; }
     const body = { confirm };
     if (password) {
       body.password = m.q('#delAcctPassword').value;
-      if (!body.password) { status.textContent = t('account_delete.err_password'); return; }
+      if (!body.password) { bindText(status, 'account_delete.err_password', undefined); return; }
       const code = m.q('#delAcctCode');
       if (code) body.code = code.value.trim();
     }
     submit.disabled = true;
-    submit.textContent = t('account_delete.deleting');
+    bindText(submit, 'account_delete.deleting', undefined);
     try {
       await api.deleteMyAccount(body);
     } catch (err) {
       submit.disabled = false;
-      submit.textContent = t('account_delete.submit');
-      status.textContent = err.message;
+      bindText(submit, 'account_delete.submit', undefined);
+      bindMessage(status, (err.uiMessage || err.message));
       if (err.code === 'reauth_recent_sign_in_required') {
         submit.disabled = true;
         const note = m.q('[data-reauth-note]');
-        if (note) note.textContent = t('account_delete.reauth_needed', { minutes });
+        if (note) bindText(note, 'account_delete.reauth_needed', { minutes });
         if (!m.q('[data-reauth]') && note) {
-          note.insertAdjacentHTML('afterend', `<button type="button" class="btn btn-secondary btn-sm" data-reauth>${esc(t('account_delete.reauth_button'))}</button>`);
+          note.insertAdjacentHTML('afterend', `<button type="button" class="btn btn-secondary btn-sm" data-reauth>${uiText(t('account_delete.reauth_button'))}</button>`);
           m.q('[data-reauth]').addEventListener('click', () => signInAgain({ ...info, reauth: { ...info.reauth, sso_start: err.body?.sso_start || info.reauth.sso_start } }));
         }
       }

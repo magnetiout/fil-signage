@@ -1,8 +1,14 @@
+import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
+
+import { localizeServerError } from '../api.js';
+
 import { api } from '../api.js';
 import { mountPromotionsAdmin } from '../components/promotions-admin.js';
 import { showToast } from '../components/toast.js';
 import { esc, isPlatformAdmin } from '../utils.js';
-import { t, tn } from '../i18n.js';
+
 import { pluginFieldsHtml, readPluginFields } from '../lib/plugin-fields.js';
 import { openAddUserModal } from '../components/workspace-members-add-user-modal.js';
 import { openManageWorkspacesModal } from '../components/admin-user-workspaces-modal.js';
@@ -20,7 +26,7 @@ async function loadTrustInstance() {
   const el = document.getElementById('trustInstance');
   if (!el) return;
   try { el.innerHTML = reportHtml(await api.get('/trust/report?scope=instance')); }
-  catch (e) { el.innerHTML = `<p style="color:var(--text-muted)">${esc(e.message)}</p>`; }
+  catch (e) { el.innerHTML = `<p style="color:var(--text-muted)">${uiText((e.uiMessage || e.message))}</p>`; }
   mountOutbound(document.getElementById('trustOutboundInstance'), { instance: true });
   mountPublicToggle(document.getElementById('trustPublic'));
   // 3.0 export / import the whole server (components/org-move.js, docs/move-server.md).
@@ -38,8 +44,8 @@ const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}
 // the dead catch). The shared client in api.js has always thrown on !res.ok; these local copies did
 // not. Same contract now, including the 401 session-expiry reload.
 const API = (url, opts = {}) => fetch('/api' + url, { headers: headers(), ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error('Session expired'); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `Request failed (${r.status})`); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.admin.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
 });
 
@@ -73,8 +79,8 @@ function workspaceSummary(u) {
 function workspaceCell(u) {
   return `<td style="padding:8px">
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="color:var(--text-muted);font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${workspaceSummary(u)}</span>
-      <button class="btn btn-secondary btn-sm" type="button" data-ws-manage="${esc(u.id)}">${t('admin.workspace.manage')}</button>
+      <span style="color:var(--text-muted);font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${renderHTML(workspaceSummary(u))}</span>
+      <button class="btn btn-secondary btn-sm" type="button" data-ws-manage="${esc(u.id)}">${renderHTML(t('admin.workspace.manage'))}</button>
     </div>
   </td>`;
 }
@@ -82,7 +88,7 @@ function workspaceCell(u) {
 export async function render(container, section = 'overview') {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (!isPlatformAdmin(user)) {
-    container.innerHTML = `<div class="empty-state"><h3>${t('admin.access_denied')}</h3><p>${t('admin.access_denied_desc')}</p></div>`;
+    container.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('admin.access_denied'))}</h3><p>${renderHTML(t('admin.access_denied_desc'))}</p></div>`;
     return;
   }
 
@@ -92,13 +98,13 @@ export async function render(container, section = 'overview') {
 
   container.innerHTML = `
     <div class="page-header">
-      <div><h1>${esc(t(def.title))}</h1><div class="subtitle">${esc(t(def.subtitle))}</div></div>
-      <div style="display:flex;gap:8px">${def.actions ? def.actions() : ''}</div>
+      <div><h1>${uiText(t(def.title))}</h1><div class="subtitle">${uiText(t(def.subtitle))}</div></div>
+      <div style="display:flex;gap:8px">${renderHTML(def.actions ? def.actions() : '')}</div>
     </div>
-    <nav class="platform-tabs" aria-label="${esc(t('platform.nav_label'))}">
-      ${Object.entries(SECTIONS).map(([id, d]) => `<a href="#/platform/${id}" class="platform-tab${id === current ? ' active' : ''}"${id === current ? ' aria-current="page"' : ''}>${esc(t(d.tab))}</a>`).join('')}
+    <nav class="platform-tabs" aria-label="${esc(t('platform.nav_label'))}" data-fil-i18n-aria-label="${binding('platform.nav_label', undefined)}">
+      ${renderHTML(Object.entries(SECTIONS).map(([id, d]) => `<a href="#/platform/${id}" class="platform-tab${id === current ? ' active' : ''}"${id === current ? ' aria-current="page"' : ''}>${uiText(t(d.tab))}</a>`).join(''))}
     </nav>
-    ${def.html()}
+    ${renderHTML(def.html())}
   `;
   def.load();
 }
@@ -112,126 +118,126 @@ export async function render(container, section = 'overview') {
  */
 const section = (title, desc, body) => `
     <div class="settings-section">
-      <h3>${title}</h3>
-      ${desc ? `<p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${desc}</p>` : ''}
-      ${body}
+      <h3>${uiText(title)}</h3>
+      ${renderHTML(desc ? `<p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(desc)}</p>` : '')}
+      ${renderHTML(body)}
     </div>`;
-const loading = () => `<p style="color:var(--text-muted)">${t('common.loading')}</p>`;
+const loading = () => `<p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p>`;
 
 const SECTIONS = {
   overview: {
     tab: 'platform.tab.overview', title: 'platform.overview.title', subtitle: 'platform.overview.subtitle',
-    html: () => `<div id="platformOverview">${loading()}</div>`,
+    html: () => `<div id="platformOverview">${renderHTML(loading())}</div>`,
     load: () => loadOverview(),
   },
   users: {
     tab: 'platform.tab.users', title: 'platform.users.title', subtitle: 'platform.users.subtitle',
-    actions: () => `<button class="btn btn-primary" id="adminAddUserBtn">${t('admin.add_user')}</button>`,
+    actions: () => `<button class="btn btn-primary" id="adminAddUserBtn">${renderHTML(t('admin.add_user'))}</button>`,
     html: () => section(t('admin.all_users'), '', `
       <div class="platform-filters">
-        <input type="search" class="input" id="userSearch" placeholder="${esc(t('platform.users.search'))}" aria-label="${esc(t('platform.users.search'))}">
-        <select class="input" id="userRoleFilter" aria-label="${esc(t('platform.users.role_filter'))}">
-          <option value="">${esc(t('platform.users.role_all'))}</option>
-          <option value="platform">${esc(t('platform.users.role_platform'))}</option>
-          <option value="user">${esc(t('platform.users.role_user'))}</option>
+        <input type="search" class="input" id="userSearch" placeholder="${esc(t('platform.users.search'))}" data-fil-i18n-placeholder="${binding('platform.users.search', undefined)}" aria-label="${esc(t('platform.users.search'))}" data-fil-i18n-aria-label="${binding('platform.users.search', undefined)}">
+        <select class="input" id="userRoleFilter" aria-label="${esc(t('platform.users.role_filter'))}" data-fil-i18n-aria-label="${binding('platform.users.role_filter', undefined)}">
+          <option value="">${uiText(t('platform.users.role_all'))}</option>
+          <option value="platform">${uiText(t('platform.users.role_platform'))}</option>
+          <option value="user">${uiText(t('platform.users.role_user'))}</option>
         </select>
         <span class="platform-count" id="userCount"></span>
       </div>
-      <div id="allUsersTable">${loading()}</div>`),
+      <div id="allUsersTable">${renderHTML(loading())}</div>`),
     load: () => { wireAddUser(); loadUsers(); },
   },
   orgs: {
     tab: 'platform.tab.orgs', title: 'platform.orgs.title', subtitle: 'platform.orgs.subtitle',
-    actions: () => `<button class="btn btn-primary" id="adminCreateOrgBtn">${t('admin.create_org.button')}</button>`,
+    actions: () => `<button class="btn btn-primary" id="adminCreateOrgBtn">${renderHTML(t('admin.create_org.button'))}</button>`,
     html: () => `
     <div class="settings-section" id="ssoOnlySection" style="display:none">
-      <h3>${t('admin.sso_only.title')}</h3>
-      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${t('admin.sso_only.desc')}</p>
-      <div id="ssoOnlyRequests"><p style="color:var(--text-muted)">${t('common.loading')}</p></div>
+      <h3>${renderHTML(t('admin.sso_only.title'))}</h3>
+      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(t('admin.sso_only.desc'))}</p>
+      <div id="ssoOnlyRequests"><p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p></div>
     </div>
-${section(t('admin.orgs.title'), t('admin.orgs.desc'), `
+${renderHTML(section(t('admin.orgs.title'), t('admin.orgs.desc'), `
       <div class="platform-filters">
-        <input type="search" class="input" id="orgSearch" placeholder="${esc(t('platform.orgs.search'))}" aria-label="${esc(t('platform.orgs.search'))}">
+        <input type="search" class="input" id="orgSearch" placeholder="${esc(t('platform.orgs.search'))}" data-fil-i18n-placeholder="${binding('platform.orgs.search', undefined)}" aria-label="${esc(t('platform.orgs.search'))}" data-fil-i18n-aria-label="${binding('platform.orgs.search', undefined)}">
         <span class="platform-count" id="orgCount"></span>
       </div>
-      <div id="orgsTable">${loading()}</div>`)}`,
+      <div id="orgsTable">${renderHTML(loading())}</div>`))}`,
     load: () => { wireCreateOrg(); loadSsoOnlyRequests(); loadOrgs(); },
   },
   billing: {
     tab: 'platform.tab.billing', title: 'platform.billing.title', subtitle: 'platform.billing.subtitle',
-    html: () => section(t('admin.plans'), '', `<div id="plansTable">${loading()}</div>`)
-      + section(t('admin.promo.title'), t('admin.promo.desc'), `<div id="promotionsAdmin">${loading()}</div>`),
+    html: () => section(t('admin.plans'), '', `<div id="plansTable">${renderHTML(loading())}</div>`)
+      + section(t('admin.promo.title'), t('admin.promo.desc'), `<div id="promotionsAdmin">${renderHTML(loading())}</div>`),
     load: () => { loadPlans(); mountPromotionsAdmin(document.getElementById('promotionsAdmin')); },
   },
   branding: {
     tab: 'platform.tab.branding', title: 'platform.branding.title', subtitle: 'platform.branding.subtitle',
-    html: () => section(t('admin.branding.title'), t('admin.branding.desc'), `<div id="brandingForm">${loading()}</div>`),
+    html: () => section(t('admin.branding.title'), t('admin.branding.desc'), `<div id="brandingForm">${renderHTML(loading())}</div>`),
     load: () => loadBranding(),
   },
   rollouts: {
     tab: 'platform.tab.rollouts', title: 'platform.rollouts.title', subtitle: 'platform.rollouts.subtitle',
-    html: () => section(t('platform.rollouts.title'), t('platform.rollouts.desc'), `<div id="rolloutsBody">${loading()}</div>`),
+    html: () => section(t('platform.rollouts.title'), t('platform.rollouts.desc'), `<div id="rolloutsBody">${renderHTML(loading())}</div>`),
     load: () => loadRollouts(),
   },
   system: {
     tab: 'platform.tab.system', title: 'platform.system.title', subtitle: 'platform.system.subtitle',
     html: () => `
-      ${section(t('admin.system'), '', `<div id="systemInfo">${loading()}</div>`)}
-      ${section('Instance storage', '', `<div id="instanceStorage">${loading()}</div>`)}
+      ${renderHTML(section(t('admin.system'), '', `<div id="systemInfo">${renderHTML(loading())}</div>`))}
+      ${renderHTML(section(t("ui.admin.instance_storage_36aba2"), '', `<div id="instanceStorage">${renderHTML(loading())}</div>`))}
     <div class="settings-section">
-      <h3>${t('admin.diag.title')}</h3>
-      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${t('admin.diag.desc')}</p>
+      <h3>${renderHTML(t('admin.diag.title'))}</h3>
+      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(t('admin.diag.desc'))}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <button class="btn btn-secondary" id="diagRefreshBtn">${t('admin.diag.refresh')}</button>
+        <button class="btn btn-secondary" id="diagRefreshBtn">${renderHTML(t('admin.diag.refresh'))}</button>
         <select id="diagProfileSecs" class="input" style="width:auto">
           <option value="30">30s</option><option value="60">60s</option><option value="15">15s</option>
         </select>
-        <button class="btn btn-secondary" id="diagProfileBtn">${t('admin.diag.profile')}</button>
-        <button class="btn btn-secondary" id="diagDownloadBtn" style="display:none">${t('admin.diag.download')}</button>
+        <button class="btn btn-secondary" id="diagProfileBtn">${renderHTML(t('admin.diag.profile'))}</button>
+        <button class="btn btn-secondary" id="diagDownloadBtn" style="display:none">${renderHTML(t('admin.diag.download'))}</button>
       </div>
-      <div id="diagBody"><p style="color:var(--text-muted)">${t('common.loading')}</p></div>
+      <div id="diagBody"><p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p></div>
     </div>
-      ${section(esc(t('platform.system.status_endpoint')), '', `<div id="statusDebugForm">${loading()}</div>`)}
-      ${section(esc(t('platform.tvsafe.title')), esc(t('platform.tvsafe.desc')), `<div id="tvSafeForm">${loading()}</div>`)}
-      <div id="sharePresentersSection">${section(esc(t('screen_share.admin.title')), esc(t('screen_share.admin.desc')), `<div id="sharePresentersForm">${loading()}</div>`)}</div>
-      <div id="stockKeysSection">${section(esc(t('stock.admin.title')), esc(t('stock.admin.desc')), `<div id="stockKeysForm">${loading()}</div>`)}</div>
-      ${section(esc(t('platform.system.player_debug')), esc(t('platform.system.player_debug_desc')), `<a class="btn btn-secondary" href="#/admin/player-debug">${esc(t('platform.system.player_debug_open'))} &rarr;</a>`)}`,
+      ${renderHTML(section(t('platform.system.status_endpoint'), '', `<div id="statusDebugForm">${renderHTML(loading())}</div>`))}
+      ${renderHTML(section(t('platform.tvsafe.title'), t('platform.tvsafe.desc'), `<div id="tvSafeForm">${renderHTML(loading())}</div>`))}
+      <div id="sharePresentersSection">${renderHTML(section(t('screen_share.admin.title'), t('screen_share.admin.desc'), `<div id="sharePresentersForm">${renderHTML(loading())}</div>`))}</div>
+      <div id="stockKeysSection">${renderHTML(section(t('stock.admin.title'), t('stock.admin.desc'), `<div id="stockKeysForm">${renderHTML(loading())}</div>`))}</div>
+      ${renderHTML(section(t('platform.system.player_debug'), t('platform.system.player_debug_desc'), `<a class="btn btn-secondary" href="#/admin/player-debug">${uiText(t('platform.system.player_debug_open'))} →</a>`))}`,
     load: () => { loadSystem(); mountInstanceStorage(document.getElementById('instanceStorage')); loadDiagnostics(); wireDiagnostics(); loadStatusDebug(); loadTvSafe(); loadSharePresenters(); loadStockKeys(); },
   },
   // 3.0 "Your data, provably" (components/trust-report.js, docs/trust.md): the instance's data
   // handling report, every external host contacted, and the optional public /trust page.
   privacy: {
     tab: 'platform.tab.privacy', title: 'trust.platform.title', subtitle: 'trust.platform.subtitle',
-    html: () => `<div id="trustInstance">${loading()}</div>
-      ${section(esc(t('trust.out.title')), esc(t('trust.out.desc_instance')), '<div id="trustOutboundInstance"></div>')}
-      ${section(esc(t('imp.server.title')), '', '<div id="trustServerMove"></div>')}
-      ${section(esc(t('trust.pub.title_admin')), '', '<div id="trustPublic"></div>')}`,
+    html: () => `<div id="trustInstance">${renderHTML(loading())}</div>
+      ${renderHTML(section(t('trust.out.title'), t('trust.out.desc_instance'), `<div id="trustOutboundInstance"></div>`))}
+      ${renderHTML(section(t('imp.server.title'), '', `<div id="trustServerMove"></div>`))}
+      ${renderHTML(section(t('trust.pub.title_admin'), '', `<div id="trustPublic"></div>`))}`,
     load: () => loadTrustInstance(),
   },
   cleanup: {
     tab: 'platform.tab.cleanup', title: 'platform.cleanup.title', subtitle: 'platform.cleanup.subtitle',
-    html: () => `<div id="cleanupPane">${loading()}</div>`,
+    html: () => `<div id="cleanupPane">${renderHTML(loading())}</div>`,
     load: () => mountCleanup(document.getElementById('cleanupPane')),
   },
   plugins: {
     tab: 'platform.tab.plugins', title: 'platform.plugins.title', subtitle: 'platform.plugins.subtitle',
     html: () => `
     <div class="settings-section" id="pluginsSection" style="display:none">
-      <h3>${t('admin.plugins.title')}</h3>
-      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${t('admin.plugins.desc')}</p>
+      <h3>${renderHTML(t('admin.plugins.title'))}</h3>
+      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(t('admin.plugins.desc'))}</p>
       <form id="pluginUploadForm" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px">
         <input type="file" id="pluginZipInput" accept=".zip,application/zip" />
-        <button type="submit" class="btn btn-primary btn-sm">${t('admin.plugins.upload_cta')}</button>
-        <span style="color:var(--text-muted);font-size:12px">${t('admin.plugins.upload_hint')}</span>
+        <button type="submit" class="btn btn-primary btn-sm">${renderHTML(t('admin.plugins.upload_cta'))}</button>
+        <span style="color:var(--text-muted);font-size:12px">${renderHTML(t('admin.plugins.upload_hint'))}</span>
       </form>
-      <h4 style="margin:16px 0 8px;font-size:13px">${t('admin.plugins.pending')}</h4>
-      <div id="pluginSubmissions"><p style="color:var(--text-muted)">${t('common.loading')}</p></div>
-      <h4 style="margin:16px 0 8px;font-size:13px">${t('admin.plugins.title')}</h4>
-      <div id="pluginsTable"><p style="color:var(--text-muted)">${t('common.loading')}</p></div>
-      <h4 style="margin:16px 0 8px;font-size:13px">${t('admin.plugins.allowlist_title')}</h4>
-      <div id="pluginAllowlist"><p style="color:var(--text-muted)">${t('common.loading')}</p></div>
+      <h4 style="margin:16px 0 8px;font-size:13px">${renderHTML(t('admin.plugins.pending'))}</h4>
+      <div id="pluginSubmissions"><p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p></div>
+      <h4 style="margin:16px 0 8px;font-size:13px">${renderHTML(t('admin.plugins.title'))}</h4>
+      <div id="pluginsTable"><p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p></div>
+      <h4 style="margin:16px 0 8px;font-size:13px">${renderHTML(t('admin.plugins.allowlist_title'))}</h4>
+      <div id="pluginAllowlist"><p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p></div>
     </div>
-      <p class="platform-empty" id="pluginsOff" hidden>${esc(t('platform.plugins.off'))}</p>`,
+      <p class="platform-empty" id="pluginsOff" hidden>${uiText(t('platform.plugins.off'))}</p>`,
     load: () => loadPlugins(),
   },
 };
@@ -269,9 +275,9 @@ function wireCreateOrg() {
 function formatBytes(n) {
   const b = Number(n) || 0;
   if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
-  if (b < 1024 ** 3) return `${(b / 1024 ** 2).toFixed(1)} MB`;
-  if (b < 1024 ** 4) return `${(b / 1024 ** 3).toFixed(b < 100 * 1024 ** 3 ? 2 : 0)} GB`;
-  return `${(b / 1024 ** 4).toFixed(2)} TB`;
+  if (b < 1024 ** 3) return displayQuantity((b / 1024 ** 2),'MB',1);
+  if (b < 1024 ** 4) return displayQuantity((b / 1024 ** 3),'GB',b < 100 * 1024 ** 3 ? 2 : 0);
+  return displayQuantity((b / 1024 ** 4),'TB',2);
 }
 
 /*
@@ -281,42 +287,42 @@ function formatBytes(n) {
 async function loadAttentionDetail(d) {
   const body = d.querySelector('.att-body');
   const item = d.dataset.item;
-  const go = (label) => `<a class="att-go" href="${body.dataset.href}">${esc(label)} &rarr;</a>`;
+  const go = (label) => `<a class="att-go" href="${body.dataset.href}">${uiText(label)} →</a>`;
   const ago = (sec) => (sec ? relAgo(sec) : t('platform.att.never'));
-  const table = (heads, rows) => rows.length ? `<div class="table-wrap"><table class="att-table"><thead><tr>${heads.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<p class="platform-empty">${esc(t('platform.att.nothing_now'))}</p>`;
+  const table = (heads, rows) => rows.length ? `<div class="table-wrap"><table class="att-table"><thead><tr>${renderHTML(heads.map((h) => `<th>${uiText(h)}</th>`).join(''))}</tr></thead>
+    <tbody>${renderHTML(rows.map((r) => `<tr>${renderHTML(r.map((c) => `<td>${renderHTML(c)}</td>`).join(''))}</tr>`).join(''))}</tbody></table></div>` : `<p class="platform-empty">${uiText(t('platform.att.nothing_now'))}</p>`;
   let r = {};
-  if (item !== 'host') try { r = await api.adminAttention(item); } catch (err) { body.innerHTML = `<p style="color:var(--danger)">${esc(err.message)}</p>`; return; }
+  if (item !== 'host') try { r = await api.adminAttention(item); } catch (err) { body.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; return; }
   switch (item) {
     case 'sso':
-      body.innerHTML = `<p class="att-why">${esc(t('platform.att.sso_why'))}</p>` +
+      body.innerHTML = `<p class="att-why">${uiText(t('platform.att.sso_why'))}</p>` +
         table([t('platform.att.col_org'), t('platform.att.col_requested_by'), t('platform.att.col_reason'), t('platform.att.col_waiting')],
           r.rows.map((x) => [esc(x.organization || '—'), esc(x.requested_by || '—'), esc(x.reason || '—'), esc(ago(x.created_at))])) + go(t('platform.att.go_orgs'));
       break;
     case 'plugins':
-      body.innerHTML = `<p class="att-why">${esc(t('platform.att.plugins_why'))}</p>` +
+      body.innerHTML = `<p class="att-why">${uiText(t('platform.att.plugins_why'))}</p>` +
         table([t('platform.att.col_plugin'), t('platform.att.col_version'), t('platform.att.col_submitted_by'), t('platform.att.col_waiting')],
           r.rows.map((x) => [esc(x.name || x.plugin_id), esc(x.version || '—'), esc(x.submitted_by || '—'), esc(ago(x.submitted_at))])) + go(t('platform.att.go_plugins'));
       break;
     case 'host':
-      body.innerHTML = `<p class="att-why">${esc(t('platform.host.att_why'))}</p>`;
+      body.innerHTML = `<p class="att-why">${uiText(t('platform.host.att_why'))}</p>`;
       break;
     case 'update':
-      body.innerHTML = `<p class="att-why">${esc(t('platform.att.update_why', { current: r.current, latest: r.latest || '?' }))}</p>` + go(t('platform.att.go_system'));
+      body.innerHTML = `<p class="att-why">${uiText(t('platform.att.update_why', { current: r.current, latest: r.latest || '?' }))}</p>` + go(t('platform.att.go_system'));
       break;
     case 'orphans':
-      body.innerHTML = `<p class="att-why">${esc(t('platform.att.orphans_why'))}</p>` +
+      body.innerHTML = `<p class="att-why">${uiText(t('platform.att.orphans_why'))}</p>` +
         table([t('platform.att.col_missing_plan'), t('platform.att.col_accounts'), t('platform.att.col_examples')],
-          r.rows.map((x) => [`<code>${esc(x.plan_id)}</code>`, esc(String(x.accounts)), esc(x.emails)])) + go(t('platform.att.go_billing'));
+          r.rows.map((x) => [`<code>${uiText(x.plan_id)}</code>`, esc(String(x.accounts)), esc(x.emails)])) + go(t('platform.att.go_billing'));
       break;
     case 'offline':
-      body.innerHTML = `<p class="att-why">${esc(t('platform.att.offline_why'))}</p>` +
+      body.innerHTML = `<p class="att-why">${uiText(t('platform.att.offline_why'))}</p>` +
         table([t('platform.att.col_screen'), t('platform.att.col_org'), t('platform.att.col_workspace'), t('platform.att.col_last_seen'), t('platform.att.col_app')],
           r.rows.map((x) => [esc(x.screen), esc(x.organization), esc(x.workspace), esc(ago(x.last_heartbeat)), esc(x.app_version || '—')])) + go(t('platform.att.go_orgs'));
       break;
     case 'stale': {
       const c = r.counts || {};
-      body.innerHTML = `<p class="att-why">${esc(t('platform.att.stale_why', { a: c.not_warned || 0, b: c.notice || 0, c: c.ready || 0 }))}</p>` +
+      body.innerHTML = `<p class="att-why">${uiText(t('platform.att.stale_why', { a: c.not_warned || 0, b: c.notice || 0, c: c.ready || 0 }))}</p>` +
         table([t('platform.att.col_account'), t('platform.att.col_last_activity'), t('platform.att.col_notice'), t('platform.att.col_uploads')],
           r.rows.map((x) => [esc(x.email), esc(ago(x.last_activity)), esc(t(NOTICE_KEYS[x.notice] || NOTICE_KEYS.not_warned)), esc(x.content_bytes ? formatBytes(x.content_bytes) : '—')])) + go(t('platform.att.go_cleanup'));
       break;
@@ -364,9 +370,9 @@ function tvCard(v) {
   const sub = [now && v.queued ? t('platform.host.tv_queue', { n: v.queued }) : '', v.failed ? t('platform.host.tv_failed', { n: v.failed }) : '', v.encoder || '']
     .filter(Boolean).join(' · ');
   return `<div class="host-card">
-        <span class="host-k">${esc(t('platform.host.tv'))}</span>
-        <span class="host-v" style="font-size:14px">${esc(main)}</span>
-        <span class="host-s">${esc(sub)}</span>
+        <span class="host-k">${uiText(t('platform.host.tv'))}</span>
+        <span class="host-v" style="font-size:14px">${uiText(main)}</span>
+        <span class="host-s">${uiText(sub)}</span>
       </div>`;
 }
 async function loadHost() {
@@ -379,11 +385,11 @@ async function loadHost() {
   const disk = (d) => {
     const used = d.total - d.free;
     const pct = Math.round((used / d.total) * 1000) / 10;
-    return `<div class="host-card" title="${esc(d.path)}">
-      <span class="host-k">${esc(t(d.role === 'uploads' ? 'platform.host.disk_uploads' : 'platform.host.disk'))}</span>
-      <span class="host-v">${esc(t('platform.host.pct_used', { n: Math.round(pct) }))}</span>
-      ${pctBar(pct, 90)}
-      <span class="host-s">${esc(t('platform.host.disk_free', { free: formatBytes(d.free), total: formatBytes(d.total) }))}</span>
+    return `<div class="host-card" title="${esc(d.path)}"${attributeBinding("title", d.path)}>
+      <span class="host-k">${uiText(t(d.role === 'uploads' ? 'platform.host.disk_uploads' : 'platform.host.disk'))}</span>
+      <span class="host-v">${uiText(t('platform.host.pct_used', { n: Math.round(pct) }))}</span>
+      ${renderHTML(pctBar(pct, 90))}
+      <span class="host-s">${uiText(t('platform.host.disk_free', { free: formatBytes(d.free), total: formatBytes(d.total) }))}</span>
     </div>`;
   };
   const cpu = h.cpu || {};
@@ -394,25 +400,25 @@ async function loadHost() {
     ? t('platform.host.warn_disk', { free: formatBytes(w.free) })
     : t('platform.host.warn_mem', { free: formatBytes(w.available) }));
   el.innerHTML = `
-    <h3 class="platform-subhead">${esc(t('platform.host.title'))} <span class="host-name">${esc(h.hostname || '')}</span></h3>
-    ${warn.length ? `<p class="host-warn">&#9888;&#65039; ${warn.map(esc).join(' ')}</p>` : ''}
+    <h3 class="platform-subhead">${uiText(t('platform.host.title'))} <span class="host-name">${uiText(h.hostname || '')}</span></h3>
+    ${renderHTML(warn.length ? `<p class="host-warn">⚠️ ${renderHTML(warn.map(esc).join(' '))}</p>` : '')}
     <div class="host-grid">
-      ${(h.disks || []).map(disk).join('') || `<div class="host-card"><span class="host-k">${esc(t('platform.host.disk'))}</span><span class="host-v">—</span></div>`}
+      ${renderHTML((h.disks || []).map(disk).join('') || `<div class="host-card"><span class="host-k">${uiText(t('platform.host.disk'))}</span><span class="host-v">—</span></div>`)}
       <div class="host-card">
-        <span class="host-k">${esc(t('platform.host.cpu'))}</span>
-        <span class="host-v">${cpu.pct == null ? '—' : esc(t('platform.host.pct_busy', { n: Math.round(cpu.pct) }))}</span>
-        ${pctBar(cpu.pct)}
-        <span class="host-s">${esc(tn('platform.host.cores', cpu.cores || 0))}${cpu.load ? ` · ${esc(t('platform.host.load', { l: cpu.load.join(' / ') }))}` : ''}</span>
+        <span class="host-k">${uiText(t('platform.host.cpu'))}</span>
+        <span class="host-v">${renderHTML(cpu.pct == null ? '—' : t('platform.host.pct_busy', { n: Math.round(cpu.pct) }))}</span>
+        ${renderHTML(pctBar(cpu.pct))}
+        <span class="host-s">${uiText(tn('platform.host.cores', cpu.cores || 0))}${renderHTML(cpu.load ? ` · ${esc(t('platform.host.load', { l: cpu.load.join(' / ') }))}` : '')}</span>
       </div>
-      ${tvCard(h.video_variants)}
+      ${renderHTML(tvCard(h.video_variants))}
       <div class="host-card">
-        <span class="host-k">${esc(t('platform.host.memory'))}</span>
-        <span class="host-v">${memPct == null ? '—' : esc(t('platform.host.pct_used', { n: Math.round(memPct) }))}</span>
-        ${pctBar(memPct, 90)}
-        <span class="host-s">${memUsed == null ? '' : esc(t('platform.host.mem_used', { used: formatBytes(memUsed), total: formatBytes(mem.total) }))}${mem.process_rss ? ` · ${esc(t('platform.host.mem_app', { n: formatBytes(mem.process_rss) }))}` : ''}</span>
+        <span class="host-k">${uiText(t('platform.host.memory'))}</span>
+        <span class="host-v">${renderHTML(memPct == null ? '—' : t('platform.host.pct_used', { n: Math.round(memPct) }))}</span>
+        ${renderHTML(pctBar(memPct, 90))}
+        <span class="host-s">${renderHTML(memUsed == null ? '' : t('platform.host.mem_used', { used: formatBytes(memUsed), total: formatBytes(mem.total) }))}${renderHTML(mem.process_rss ? ` · ${esc(t('platform.host.mem_app', { n: formatBytes(mem.process_rss) }))}` : '')}</span>
       </div>
     </div>
-    <p class="host-foot">${esc(t('platform.host.foot', { db: h.db_bytes ? formatBytes(h.db_bytes) : '—', up: durationShort(h.uptime && h.uptime.process_sec), host: durationShort(h.uptime && h.uptime.host_sec) }))}</p>`;
+    <p class="host-foot">${uiText(t('platform.host.foot', { db: h.db_bytes ? formatBytes(h.db_bytes) : '—', up: durationShort(h.uptime && h.uptime.process_sec), host: durationShort(h.uptime && h.uptime.host_sec) }))}</p>`;
   hostTimer = setTimeout(loadHost, 10000);
 }
 
@@ -423,9 +429,9 @@ async function loadOverview() {
     const o = await api.adminOverview();
     const card = (href, value, label, sub) => `
       <a class="platform-stat" href="${href}">
-        <span class="platform-stat-n">${esc(String(value))}</span>
-        <span class="platform-stat-l">${esc(label)}</span>
-        ${sub ? `<span class="platform-stat-s">${esc(sub)}</span>` : ''}
+        <span class="platform-stat-n">${uiText(String(value))}</span>
+        <span class="platform-stat-l">${uiText(label)}</span>
+        ${renderHTML(sub ? `<span class="platform-stat-s">${uiText(sub)}</span>` : '')}
       </a>`;
     const attention = [];
     if (o.sso_only_requests > 0) attention.push(['sso', '#/platform/orgs', tn('platform.overview.att_sso', o.sso_only_requests), 'warn']);
@@ -441,40 +447,40 @@ async function loadOverview() {
     if (o.screens_offline_24h > 0) attention.push(['offline', '#/platform/orgs', tn('platform.overview.att_offline', o.screens_offline_24h), 'info']);
     const mini = (href, value, label, sub) => `
       <a class="platform-mini" href="${href}">
-        <span class="platform-mini-n">${esc(String(value))}</span>
-        <span class="platform-mini-l">${esc(label)}</span>
-        ${sub ? `<span class="platform-mini-s">${esc(sub)}</span>` : ''}
+        <span class="platform-mini-n">${uiText(String(value))}</span>
+        <span class="platform-mini-l">${uiText(label)}</span>
+        ${renderHTML(sub ? `<span class="platform-mini-s">${uiText(sub)}</span>` : '')}
       </a>`;
     el.innerHTML = `
       <div class="platform-stats">
-        ${card('#/platform/users', o.users, t('platform.overview.users'), tn('platform.overview.users_sub', o.platform_staff))}
-        ${card('#/platform/orgs', o.organizations, t('platform.overview.orgs'), tn('platform.overview.workspaces', o.workspaces))}
-        ${card('#/platform/orgs', o.devices, t('platform.overview.devices'), t('platform.overview.online', { n: o.devices_online }))}
-        ${card('#/platform/billing', o.paying_accounts, t('platform.overview.paying'), tn('platform.overview.trialing', o.trialing))}
+        ${renderHTML(card('#/platform/users', o.users, t('platform.overview.users'), tn('platform.overview.users_sub', o.platform_staff)))}
+        ${renderHTML(card('#/platform/orgs', o.organizations, t('platform.overview.orgs'), tn('platform.overview.workspaces', o.workspaces)))}
+        ${renderHTML(card('#/platform/orgs', o.devices, t('platform.overview.devices'), t('platform.overview.online', { n: o.devices_online })))}
+        ${renderHTML(card('#/platform/billing', o.paying_accounts, t('platform.overview.paying'), tn('platform.overview.trialing', o.trialing)))}
       </div>
       <div id="platformHost"></div>
-      <h3 class="platform-subhead">${esc(t('platform.overview.health'))}</h3>
+      <h3 class="platform-subhead">${uiText(t('platform.overview.health'))}</h3>
       <div class="platform-minis">
-        ${mini('#/platform/users', o.new_users_7d, t('platform.overview.new_7d'))}
-        ${mini('#/platform/cleanup', o.inactive_30d, t('platform.overview.inactive_30d'), tn('platform.overview.never_signed_in', o.never_signed_in))}
-        ${mini('#/platform/cleanup', o.accounts_no_screens, t('platform.overview.no_screens'), tn('platform.overview.orgs_no_screens', o.orgs_no_screens))}
-        ${mini('#/platform/orgs', o.screens_offline_24h, t('platform.overview.offline_24h'))}
-        ${mini('#/platform/billing', o.trials_ending_7d, t('platform.overview.trials_ending'))}
-        ${mini('#/platform/users', o.unverified_emails, t('platform.overview.unverified'))}
-        ${mini('#/platform/system', formatBytes(o.storage_bytes), t('platform.overview.storage'))}
-        ${mini('#/platform/cleanup', o.stale_accounts_180d, t('platform.overview.stale'), t('platform.overview.stale_sub'))}
+        ${renderHTML(mini('#/platform/users', o.new_users_7d, t('platform.overview.new_7d')))}
+        ${renderHTML(mini('#/platform/cleanup', o.inactive_30d, t('platform.overview.inactive_30d'), tn('platform.overview.never_signed_in', o.never_signed_in)))}
+        ${renderHTML(mini('#/platform/cleanup', o.accounts_no_screens, t('platform.overview.no_screens'), tn('platform.overview.orgs_no_screens', o.orgs_no_screens)))}
+        ${renderHTML(mini('#/platform/orgs', o.screens_offline_24h, t('platform.overview.offline_24h')))}
+        ${renderHTML(mini('#/platform/billing', o.trials_ending_7d, t('platform.overview.trials_ending')))}
+        ${renderHTML(mini('#/platform/users', o.unverified_emails, t('platform.overview.unverified')))}
+        ${renderHTML(mini('#/platform/system', formatBytes(o.storage_bytes), t('platform.overview.storage')))}
+        ${renderHTML(mini('#/platform/cleanup', o.stale_accounts_180d, t('platform.overview.stale'), t('platform.overview.stale_sub')))}
       </div>
       <div id="platformFunnel"></div>
       <div class="settings-section">
-        <h3>${esc(t('platform.overview.attention'))}</h3>
-        ${attention.length ? `<div class="platform-attention">${attention.map(([item, href, text, kind]) => `
+        <h3>${uiText(t('platform.overview.attention'))}</h3>
+        ${renderHTML(attention.length ? `<div class="platform-attention">${renderHTML(attention.map(([item, href, text, kind]) => `
           <details class="att att-${kind}" data-item="${item}">
-            <summary><span>${esc(text)}</span><span class="att-chev" aria-hidden="true"></span></summary>
-            <div class="att-body" data-href="${href}"><p class="platform-empty">${esc(t('common.loading'))}</p></div>
-          </details>`).join('')}</div>`
-          : `<p class="platform-empty">${esc(t('platform.overview.all_clear'))}</p>`}
+            <summary><span>${uiText(text)}</span><span class="att-chev" aria-hidden="true"></span></summary>
+            <div class="att-body" data-href="${href}"><p class="platform-empty">${uiText(t('common.loading'))}</p></div>
+          </details>`).join(''))}</div>`
+          : `<p class="platform-empty">${uiText(t('platform.overview.all_clear'))}</p>`)}
       </div>
-      <p class="platform-version">${esc(t('platform.overview.version', { v: o.version }))}</p>`;
+      <p class="platform-version">${uiText(t('platform.overview.version', { v: o.version }))}</p>`;
     loadFunnel();
     loadHost();
     // Details load the first time an item is opened (GET /admin/overview/attention/:item).
@@ -482,7 +488,7 @@ async function loadOverview() {
       d.addEventListener('toggle', () => { if (d.open && !d.dataset.loaded) { d.dataset.loaded = '1'; loadAttentionDetail(d); } });
     });
   } catch (err) {
-    el.innerHTML = `<p style="color:var(--danger)">${esc(err.message)}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`;
   }
 }
 
@@ -501,17 +507,17 @@ async function loadFunnel() {
   const rows = f.steps.map((st) => {
     const pct = base ? Math.round((st.accounts / base) * 100) : 0;
     return `<div class="funnel-row">
-        <span class="funnel-label">${esc(t('platform.funnel.step.' + st.event))}</span>
+        <span class="funnel-label">${uiText(t('platform.funnel.step.' + st.event))}</span>
         <span class="funnel-bar"><span style="width:${pct}%"></span></span>
-        <span class="funnel-n">${esc(String(st.accounts))}${base ? ` · ${pct}%` : ''}</span>
+        <span class="funnel-n">${uiText(String(st.accounts))}${renderHTML(base ? ` · ${pct}%` : '')}</span>
       </div>`;
   }).join('');
   const hits = (f.limit_hits || []).map((h) => `${esc(String(h.code || '?'))}: ${esc(String(h.n))}`).join(' · ');
   host.innerHTML = `<div class="settings-section">
-      <h3>${esc(t('platform.funnel.title'))}</h3>
-      <p class="platform-empty" style="margin-bottom:10px">${esc(t('platform.funnel.sub', { days: f.days }))}</p>
-      <div class="funnel">${rows}</div>
-      ${hits ? `<p class="platform-empty" style="margin-top:8px">${esc(t('platform.funnel.limit_hits'))} ${hits}</p>` : ''}
+      <h3>${uiText(t('platform.funnel.title'))}</h3>
+      <p class="platform-empty" style="margin-bottom:10px">${uiText(t('platform.funnel.sub', { days: f.days }))}</p>
+      <div class="funnel">${renderHTML(rows)}</div>
+      ${renderHTML(hits ? `<p class="platform-empty" style="margin-top:8px">${uiText(t('platform.funnel.limit_hits'))} ${renderHTML(hits)}</p>` : '')}
     </div>`;
 }
 
@@ -551,26 +557,26 @@ async function loadSsoOnlyRequests() {
 
   host.innerHTML = requests.map((r) => `
     <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
-      <div><strong>${esc(r.organization_name || r.organization_id)}</strong></div>
+      <div><strong>${uiText(r.organization_name || r.organization_id)}</strong></div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
-        ${esc(t('admin.sso_only.requested_by', { who: r.requested_by_email || 'unknown' }))}
+        ${uiText(t('admin.sso_only.requested_by', { who: r.requested_by_email || 'unknown' }))}
       </div>
-      ${r.reason ? `<div style="font-size:12px;margin-top:6px">${esc(r.reason)}</div>` : ''}
-      <div style="font-size:12px;color:var(--warning,#b45309);margin-top:8px">${esc(t('admin.sso_only.effect'))}</div>
+      ${renderHTML(r.reason ? `<div style="font-size:12px;margin-top:6px">${uiText(r.reason)}</div>` : '')}
+      <div style="font-size:12px;color:var(--warning,#b45309);margin-top:8px">${uiText(t('admin.sso_only.effect'))}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
-        <button class="btn btn-danger btn-sm" data-sso-approve="${esc(r.id)}">${esc(t('admin.sso_only.approve'))}</button>
-        <button class="btn btn-secondary btn-sm" data-sso-reject="${esc(r.id)}">${esc(t('admin.sso_only.reject'))}</button>
+        <button class="btn btn-danger btn-sm" data-sso-approve="${esc(r.id)}">${uiText(t('admin.sso_only.approve'))}</button>
+        <button class="btn btn-secondary btn-sm" data-sso-reject="${esc(r.id)}">${uiText(t('admin.sso_only.reject'))}</button>
       </div>
     </div>`).join('');
 
   const decide = async (id, decision) => {
     try {
       const res = await authed(`/organizations/sso-only/removal-requests/${id}/${decision}`, { method: 'POST', body: '{}' });
-      if (!res.ok) throw new Error(((await res.json().catch(() => ({}))).error) || String(res.status));
+      if (!res.ok) throw new Error((localizeServerError((await res.json().catch(() => ({}))).error)) || String(res.status));
       showToast(t(decision === 'approve' ? 'admin.sso_only.approved' : 'admin.sso_only.rejected'), 'success');
       await loadSsoOnlyRequests();
     } catch (e) {
-      showToast((e && e.message) || t('admin.sso_only.failed'), 'error');
+      showToast((e && (e.uiMessage || e.message)) || t('admin.sso_only.failed'), 'error');
     }
   };
   // Approving RE-OPENS password sign-in for a whole organization, so it is confirmed; rejecting
@@ -591,7 +597,7 @@ function wireOrgFilter(el) {
     const q = search.value.trim().toLowerCase();
     let shown = 0;
     for (const c of cards) { const ok = !q || c.dataset.filterText.includes(q); c.hidden = !ok; if (ok) shown++; }
-    if (count) count.textContent = t('platform.orgs.showing', { n: shown, total: cards.length });
+    if (count) bindText(count, 'platform.orgs.showing', { n: shown, total: cards.length });
   };
   search.oninput = apply;
   apply();
@@ -604,7 +610,7 @@ async function loadOrgs() {
   try {
     orgs = await api.adminListOrgs();
   } catch (err) {
-    el.innerHTML = `<p style="color:var(--danger)">${esc(err.message || 'Failed to load organizations')}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message) || t("ui.admin.failed_to_load_organizations_924642"))}</p>`;
     return;
   }
   // #talk: the per-org Talk controls are only meaningful when the TALK_ENABLED master switch is on.
@@ -612,41 +618,41 @@ async function loadOrgs() {
   let talkMaster = false;
   try { const s = await api.getServerStatus(); talkMaster = !!(s && s.features && s.features.talk); } catch (_) {}
   if (!orgs.length) {
-    el.innerHTML = `<p style="color:var(--text-muted)">${t('admin.orgs.empty')}</p>`;
+    el.innerHTML = `<p style="color:var(--text-muted)">${renderHTML(t('admin.orgs.empty'))}</p>`;
     return;
   }
   el.innerHTML = orgs.map(o => {
     const wsRows = (o.workspaces || []).map(w => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border)">
-        <div style="font-size:13px">${esc(w.name)}
-          <span style="color:var(--text-muted);font-size:11px">· ${w.device_count} ${t('admin.orgs.devices')} · ${w.member_count} ${t('admin.orgs.members')}</span>
+        <div style="font-size:13px">${uiText(w.name)}
+          <span style="color:var(--text-muted);font-size:11px">· ${renderHTML(w.device_count)} ${renderHTML(t('admin.orgs.devices'))} · ${renderHTML(w.member_count)} ${renderHTML(t('admin.orgs.members'))}</span>
         </div>
-        <button class="btn btn-danger btn-sm" data-del-ws="${esc(w.id)}" data-ws-name="${esc(w.name)}">${t('admin.orgs.delete_ws')}</button>
+        <button class="btn btn-danger btn-sm" data-del-ws="${esc(w.id)}" data-ws-name="${esc(w.name)}">${renderHTML(t('admin.orgs.delete_ws'))}</button>
       </div>`).join('');
     return `
       <div class="org-card" style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px" data-filter-text="${esc([o.name, o.owner_email, o.owner_name, ...(o.workspaces || []).map((w) => w.name)].filter(Boolean).join(' ').toLowerCase())}">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-secondary)">
           <div>
-            <div style="font-weight:600">${esc(o.name)}</div>
+            <div style="font-weight:600">${uiText(o.name)}</div>
             <div style="color:var(--text-muted);font-size:11px">
-              ${t('admin.orgs.owner')}: ${esc(o.owner_email || '—')} ·
-              ${o.workspace_count} ${t('admin.orgs.workspaces')} · ${o.device_count} ${t('admin.orgs.devices')} · ${o.member_count} ${t('admin.orgs.members')}
+              ${renderHTML(t('admin.orgs.owner'))}: ${uiText(o.owner_email || '—')} ·
+              ${renderHTML(o.workspace_count)} ${renderHTML(t('admin.orgs.workspaces'))} · ${renderHTML(o.device_count)} ${renderHTML(t('admin.orgs.devices'))} · ${renderHTML(o.member_count)} ${renderHTML(t('admin.orgs.members'))}
             </div>
           </div>
-          <button class="btn btn-danger btn-sm" data-del-org="${esc(o.id)}" data-org-name="${esc(o.name)}">${t('admin.orgs.delete_org')}</button>
+          <button class="btn btn-danger btn-sm" data-del-org="${esc(o.id)}" data-org-name="${esc(o.name)}">${renderHTML(t('admin.orgs.delete_org'))}</button>
         </div>
-        ${talkMaster ? `
+        ${renderHTML(talkMaster ? `
         <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
           <label style="display:flex;align-items:center;gap:8px;font-size:13px">
             <input type="checkbox" data-org-talk="${esc(o.id)}"${o.talk_enabled ? ' checked' : ''}>
-            ${t('admin.orgs.talk_enable')}
+            ${renderHTML(t('admin.orgs.talk_enable'))}
           </label>
-          <label style="font-size:12px;color:var(--text-muted)">${t('admin.orgs.talk_ice_label')}</label>
-          <textarea data-org-ice="${esc(o.id)}" rows="2" placeholder='[{"urls":"turn:turn.example.com:3478","username":"u","credential":"p"}]'
-            style="font-family:monospace;font-size:12px;width:100%;box-sizing:border-box">${esc(o.ice_servers || '')}</textarea>
-          <div><button class="btn btn-secondary btn-sm" data-org-talk-save="${esc(o.id)}">${t('admin.orgs.talk_save')}</button></div>
-        </div>` : ''}
-        ${wsRows}
+          <label style="font-size:12px;color:var(--text-muted)">${renderHTML(t('admin.orgs.talk_ice_label'))}</label>
+          <textarea data-org-ice="${esc(o.id)}" rows="2" ${translatedAttribute("placeholder", "ui.admin.placeholder_urls_turn_turn_example_com_3478_username_29459a")}
+            style="font-family:monospace;font-size:12px;width:100%;box-sizing:border-box">${uiText(o.ice_servers || '')}</textarea>
+          <div><button class="btn btn-secondary btn-sm" data-org-talk-save="${esc(o.id)}">${renderHTML(t('admin.orgs.talk_save'))}</button></div>
+        </div>` : '')}
+        ${renderHTML(wsRows)}
       </div>`;
   }).join('');
   wireOrgFilter(el);
@@ -658,7 +664,7 @@ async function loadOrgs() {
     try {
       await api.adminSetOrgTalk(id, { talk_enabled: enabled, ice_servers: ice || null });
       showToast(t('admin.orgs.talk_saved'), 'success');
-    } catch (e) { showToast((e && e.message) || t('admin.orgs.talk_save_failed'), 'error'); }
+    } catch (e) { showToast((e && (e.uiMessage || e.message)) || t('admin.orgs.talk_save_failed'), 'error'); }
   }));
 
   el.querySelectorAll('[data-del-org]').forEach(btn => btn.addEventListener('click', () => {
@@ -697,21 +703,21 @@ async function loadBranding() {
   const el = document.getElementById('brandingForm');
   if (!el) return;
   let b = {};
-  try { b = await api.adminGetBranding(); } catch (e) { el.innerHTML = `<p style="color:var(--danger)">${esc(e.message || 'Failed to load')}</p>`; return; }
+  try { b = await api.adminGetBranding(); } catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
   const v = (x) => esc(x == null ? '' : x);
   el.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:640px">
-      <div class="form-group" style="grid-column:1/-1"><label>${t('admin.branding.brand_name')}</label><input type="text" id="brBrandName" class="input" placeholder="ScreenTinker" value="${v(b.brand_name)}"></div>
-      <div class="form-group"><label>${t('admin.branding.primary_color')}</label><input type="text" id="brPrimary" class="input" placeholder="#3B82F6" value="${v(b.primary_color)}"></div>
-      <div class="form-group"><label>${t('admin.branding.bg_color')}</label><input type="text" id="brBg" class="input" placeholder="#111827" value="${v(b.bg_color)}"></div>
-      <div class="form-group" style="grid-column:1/-1"><label>${t('admin.branding.logo_url')}</label><input type="text" id="brLogo" class="input" placeholder="https://…/logo.png" value="${v(b.logo_url)}"></div>
-      <div class="form-group" style="grid-column:1/-1"><label>${t('admin.branding.favicon_url')}</label><input type="text" id="brFavicon" class="input" placeholder="https://…/favicon.ico" value="${v(b.favicon_url)}"></div>
-      <div class="form-group" style="grid-column:1/-1"><label>${t('admin.branding.custom_css')}</label><textarea id="brCss" class="input" rows="3" placeholder="/* optional */">${v(b.custom_css)}</textarea></div>
+      <div class="form-group" style="grid-column:1/-1"><label>${renderHTML(t('admin.branding.brand_name'))}</label><input type="text" id="brBrandName" class="input" placeholder="ScreenTinker" value="${v(b.brand_name)}"></div>
+      <div class="form-group"><label>${renderHTML(t('admin.branding.primary_color'))}</label><input type="text" id="brPrimary" class="input" placeholder="#3B82F6" value="${v(b.primary_color)}"></div>
+      <div class="form-group"><label>${renderHTML(t('admin.branding.bg_color'))}</label><input type="text" id="brBg" class="input" placeholder="#111827" value="${v(b.bg_color)}"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>${renderHTML(t('admin.branding.logo_url'))}</label><input type="text" id="brLogo" class="input" placeholder="https://…/logo.png" value="${v(b.logo_url)}"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>${renderHTML(t('admin.branding.favicon_url'))}</label><input type="text" id="brFavicon" class="input" placeholder="https://…/favicon.ico" value="${v(b.favicon_url)}"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>${renderHTML(t('admin.branding.custom_css'))}</label><textarea id="brCss" class="input" rows="3" placeholder="/* optional */">${renderHTML(v(b.custom_css))}</textarea></div>
       <label style="grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-        <input type="checkbox" id="brHide" ${b.hide_branding ? 'checked' : ''}> ${t('admin.branding.hide_branding')}
+        <input type="checkbox" id="brHide" ${b.hide_branding ? 'checked' : ''}> ${renderHTML(t('admin.branding.hide_branding'))}
       </label>
     </div>
-    <button class="btn btn-primary btn-sm" id="brSave" style="margin-top:12px">${t('admin.branding.save')}</button>
+    <button class="btn btn-primary btn-sm" id="brSave" style="margin-top:12px">${renderHTML(t('admin.branding.save'))}</button>
   `;
   document.getElementById('brSave').onclick = async () => {
     try {
@@ -725,7 +731,7 @@ async function loadBranding() {
         hide_branding: document.getElementById('brHide').checked,
       });
       showToast(t('admin.branding.saved'), 'success');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   };
 }
 
@@ -747,7 +753,7 @@ function wireUserFilters(el) {
       r.hidden = !ok;
       if (ok) shown++;
     }
-    if (count) count.textContent = t('platform.users.showing', { n: shown, total: rows.length });
+    if (count) bindText(count, 'platform.users.showing', { n: shown, total: rows.length });
   };
   search.oninput = apply;
   role.onchange = apply;
@@ -767,16 +773,16 @@ async function loadUsers() {
       <div class="table-wrap">
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:720px">
         <thead><tr style="border-bottom:1px solid var(--border)">
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.col.user')}</th>
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.col.auth')}</th>
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.col.last_login')}</th>
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.col.role')}</th>
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.col.plan')}</th>
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.col.workspace')}</th>
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.col.actions')}</th>
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('admin.col.user'))}</th>
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('admin.col.auth'))}</th>
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('admin.col.last_login'))}</th>
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('admin.col.role'))}</th>
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('admin.col.plan'))}</th>
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('admin.col.workspace'))}</th>
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${uiText(t('admin.col.actions'))}</th>
         </tr></thead>
         <tbody>
-          ${users.map(u => `
+          ${renderHTML(users.map(u => `
             <tr style="border-bottom:1px solid var(--border)" data-filter-text="${esc([u.name, u.email, workspaceSummary(u)].filter(Boolean).join(' ').toLowerCase())}" data-filter-kind="${isPlatformStaffRole(u.role) ? 'platform' : 'user'}">
               <!-- ESCAPED: these come from self-registration and from an identity provider's
                    email claim, so they are attacker-chosen. A reviewer registered an address whose
@@ -784,30 +790,25 @@ async function loadUsers() {
                    execution in the PLATFORM ADMIN's session on this page - the very page operators
                    are now emailed to. Note backticks are illegal here: this sits inside a template
                    literal. -->
-              <td style="padding:8px"><div style="font-weight:500">${esc(u.name || u.email)}</div><div style="font-size:11px;color:var(--text-muted)">${esc(u.email)}</div></td>
-              <td style="padding:8px"><span style="background:var(--bg-primary);padding:2px 8px;border-radius:10px;font-size:11px">${esc(u.auth_provider)}</span></td>
-              <td style="padding:8px;font-size:11px;color:var(--text-muted)">${u.last_login ? new Date(u.last_login * 1000).toLocaleString() : t('common.never')}</td>
+              <td style="padding:8px"><div style="font-weight:500">${uiText(u.name || u.email)}</div><div style="font-size:11px;color:var(--text-muted)">${uiText(u.email)}</div></td>
+              <td style="padding:8px"><span style="background:var(--bg-primary);padding:2px 8px;border-radius:10px;font-size:11px">${uiText(u.auth_provider)}</span></td>
+              <td style="padding:8px;font-size:11px;color:var(--text-muted)">${renderHTML(u.last_login ? displayValue(new Date(u.last_login * 1000), "toLocaleString", undefined) : t('common.never'))}</td>
               <td style="padding:8px">
                 <select class="input" style="max-width:120px;width:100%;background:var(--bg-input);font-size:12px;padding:4px" data-role-user="${esc(u.id)}">
-                  ${PLATFORM_ROLE_OPTIONS.map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${t('admin.role.' + r)}</option>`).join('')}
+                  ${renderHTML(PLATFORM_ROLE_OPTIONS.map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${renderHTML(t('admin.role.' + r))}</option>`).join(''))}
                 </select>
               </td>
               <td style="padding:8px">
                 <select class="input" style="max-width:130px;width:100%;background:var(--bg-input);font-size:12px;padding:4px" data-plan-user="${u.id}">
-                  ${plans.map(p => `<option value="${p.id}" ${u.plan_id === p.id ? 'selected' : ''}>${esc(p.display_name)}</option>`).join('')}
+                  ${renderHTML(plans.map(p => `<option value="${p.id}" ${u.plan_id === p.id ? 'selected' : ''}>${uiText(p.display_name)}</option>`).join(''))}
                 </select>
               </td>
-              ${workspaceCell(u)}
-              <td style="padding:8px;white-space:nowrap">
-                ${u.auth_provider === 'local' && u.id !== currentUser.id ? `<button class="btn btn-secondary btn-sm" data-reset-pw-user="${esc(u.id)}" data-user-email="${esc(u.email)}" style="margin-right:4px">${t('admin.reset_password')}</button>` : ''}
-                ${!isPlatformAdmin(u) ? `<button class="btn btn-danger btn-sm" data-delete-user="${u.id}">${t('admin.remove')}</button>` : `<span style="color:var(--text-muted);font-size:11px">${t('admin.owner')}</span>`}
-              </td>
-            </tr>
-          `).join('')}
+              ${renderHTML(workspaceCell(u))}
+          `).join(''))}
         </tbody>
       </table>
       </div>
-      <p style="color:var(--text-muted);font-size:11px;margin-top:8px">${t('admin.total_users', { n: users.length })}</p>
+      <p style="color:var(--text-muted);font-size:11px;margin-top:8px">${renderHTML(t('admin.total_users', { n: users.length }))}</p>
     `;
     wireUserFilters(el);
 
@@ -816,7 +817,7 @@ async function loadUsers() {
         try {
           await API(`/auth/users/${select.dataset.roleUser}/role`, { method: 'PUT', body: JSON.stringify({ role: select.value }) });
           showToast(t('admin.toast.role_updated'), 'success');
-        } catch (err) { showToast(err.message, 'error'); loadUsers(); }
+        } catch (err) { showToast(err.uiMessage || err.message, 'error'); loadUsers(); }
       };
     });
 
@@ -825,11 +826,11 @@ async function loadUsers() {
         try {
           await API('/subscription/assign', { method: 'POST', body: JSON.stringify({ user_id: select.dataset.planUser, plan_id: select.value }) });
           showToast(t('admin.toast.plan_updated'), 'success');
-        } catch (err) { showToast(err.message, 'error'); loadUsers(); }
+        } catch (err) { showToast(err.uiMessage || err.message, 'error'); loadUsers(); }
       };
     });
 
-    // Manage workspaces: open the per-user membership modal (add/remove
+    // Manage ${renderHTML(t('nav.workspaces'))}: open the per-user membership modal (add/remove
     // workspaces, set per-workspace role). Refresh the table on close only if
     // something changed (the modal calls onClose then).
     el.querySelectorAll('[data-ws-manage]').forEach(btn => {
@@ -850,7 +851,7 @@ async function loadUsers() {
         try {
           await api.resetUserPassword(btn.dataset.resetPwUser, pw);
           showToast(t('admin.toast.password_reset'), 'success');
-        } catch (err) { showToast(err.message, 'error'); }
+        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       };
     });
 
@@ -859,14 +860,14 @@ async function loadUsers() {
       btn.onclick = async () => {
         if (confirming) {
           try { await api.deleteUser(btn.dataset.deleteUser); showToast(t('admin.toast.user_removed'), 'success'); loadUsers(); }
-          catch (err) { showToast(err.message, 'error'); }
+          catch (err) { showToast(err.uiMessage || err.message, 'error'); }
           return;
         }
-        confirming = true; btn.textContent = t('admin.confirm'); btn.style.background = 'var(--danger)'; btn.style.color = 'white';
-        setTimeout(() => { confirming = false; btn.textContent = t('admin.remove'); btn.style.background = ''; btn.style.color = ''; }, 3000);
+        confirming = true; bindText(btn, 'admin.confirm', undefined); btn.style.background = 'var(--danger)'; btn.style.color = 'white';
+        setTimeout(() => { confirming = false; bindText(btn, 'admin.remove', undefined); btn.style.background = ''; btn.style.color = ''; }, 3000);
       };
     });
-  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${esc(err.message)}</p>`; }
+  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; }
 }
 
 // #146: toggle /api/status debug-metrics exposure. Mirrors loadBranding's
@@ -876,18 +877,18 @@ async function loadStatusDebug() {
   if (!el) return;
   let enabled = false;
   try { enabled = (await api.adminGetStatusDebug()).enabled; }
-  catch (e) { el.innerHTML = `<p style="color:var(--danger)">${esc(e.message || 'Failed to load')}</p>`; return; }
+  catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
   el.innerHTML = `
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-      <input type="checkbox" id="statusDebugChk" ${enabled ? 'checked' : ''}> Expose /api/status debug metrics
+      <input type="checkbox" id="statusDebugChk" ${enabled ? 'checked' : ''}> ${renderHTML(t("ui.admin.expose_api_status_debug_metrics_bdc780"))}
     </label>
-    <p style="color:var(--text-muted);font-size:12px;margin:4px 0 0 24px">Adds internal limiter/prune/OTA counters to the public status endpoint. Off by default.</p>
+    <p style="color:var(--text-muted);font-size:12px;margin:4px 0 0 24px">${renderHTML(t("ui.admin.adds_internal_limiter_prune_ota_counters_to"))}</p>
   `;
   document.getElementById('statusDebugChk').onchange = async (e) => {
     const chk = e.target;
     chk.disabled = true;
-    try { await api.adminSetStatusDebug(chk.checked); showToast('Status debug ' + (chk.checked ? 'enabled' : 'disabled'), 'success'); }
-    catch (err) { showToast(err.message, 'error'); chk.checked = !chk.checked; }
+    try { await api.adminSetStatusDebug(chk.checked); showToast(t(chk.checked ? 'ui.admin.status_debug_enabled' : 'ui.admin.status_debug_disabled'), 'success'); }
+    catch (err) { showToast(err.uiMessage || err.message, 'error'); chk.checked = !chk.checked; }
     finally { chk.disabled = false; }
   };
 }
@@ -902,19 +903,19 @@ async function loadTvSafe() {
   if (!el) return;
   let data;
   try { data = await api.adminGetVideoVariants(); }
-  catch (e) { el.innerHTML = `<p style="color:var(--danger)">${esc(e.message || 'Failed to load')}</p>`; return; }
+  catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
   const s = data.settings || {};
-  const row = (label, input, hint = '') => `<div class="form-group" style="margin-bottom:10px"><label style="font-size:13px">${esc(label)}</label>${input}${hint ? `<p style="color:var(--text-muted);font-size:12px;margin:4px 0 0">${esc(hint)}</p>` : ''}</div>`;
+  const row = (label, input, hint = '') => `<div class="form-group" style="margin-bottom:10px"><label style="font-size:13px">${uiText(label)}</label>${renderHTML(input)}${renderHTML(hint ? `<p style="color:var(--text-muted);font-size:12px;margin:4px 0 0">${uiText(hint)}</p>` : '')}</div>`;
   el.innerHTML = `
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:10px">
-      <input type="checkbox" id="tvSafeEnabled" ${s.enabled ? 'checked' : ''}> ${esc(t('platform.tvsafe.enabled'))}
+      <input type="checkbox" id="tvSafeEnabled" ${s.enabled ? 'checked' : ''}> ${uiText(t('platform.tvsafe.enabled'))}
     </label>
-    ${row(t('platform.tvsafe.window'), `<input class="input" id="tvSafeWindow" style="max-width:140px" placeholder="22-6" value="${esc(s.window || '')}">`, t('platform.tvsafe.window_hint'))}
-    ${row(t('platform.tvsafe.concurrency'), `<select class="input" id="tvSafeConc" style="width:auto">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(s.concurrency) === n ? 'selected' : ''}>${n}</option>`).join('')}</select>`)}
-    ${row(t('platform.tvsafe.max_cpu'), `<input class="input" type="number" min="10" max="100" id="tvSafeCpu" style="max-width:100px" value="${esc(String(s.max_cpu ?? 70))}">`)}
-    ${row(t('platform.tvsafe.minutes'), `<input class="input" type="number" min="0" id="tvSafeMinutes" style="max-width:120px" value="${esc(String(s.org_monthly_minutes ?? 0))}">`)}
-    <p style="color:var(--text-muted);font-size:12px;margin:0 0 10px">${esc(t('platform.tvsafe.env_hint'))}</p>
-    <button class="btn btn-primary btn-sm" id="tvSafeSave">${esc(t('platform.tvsafe.save'))}</button>`;
+    ${renderHTML(row(t('platform.tvsafe.window'), `<input class="input" id="tvSafeWindow" style="max-width:140px" placeholder="22-6" value="${esc(s.window || '')}">`, t('platform.tvsafe.window_hint')))}
+    ${renderHTML(row(t('platform.tvsafe.concurrency'), `<select class="input" id="tvSafeConc" style="width:auto">${renderHTML([1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(s.concurrency) === n ? 'selected' : ''}>${renderHTML(n)}</option>`).join(''))}</select>`))}
+    ${renderHTML(row(t('platform.tvsafe.max_cpu'), `<input class="input" type="number" min="10" max="100" id="tvSafeCpu" style="max-width:100px" value="${esc(String(s.max_cpu ?? 70))}">`))}
+    ${renderHTML(row(t('platform.tvsafe.minutes'), `<input class="input" type="number" min="0" id="tvSafeMinutes" style="max-width:120px" value="${esc(String(s.org_monthly_minutes ?? 0))}">`))}
+    <p style="color:var(--text-muted);font-size:12px;margin:0 0 10px">${uiText(t('platform.tvsafe.env_hint'))}</p>
+    <button class="btn btn-primary btn-sm" id="tvSafeSave">${uiText(t('platform.tvsafe.save'))}</button>`;
   document.getElementById('tvSafeSave').onclick = async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;
@@ -927,7 +928,7 @@ async function loadTvSafe() {
         org_monthly_minutes: Number(document.getElementById('tvSafeMinutes').value),
       });
       showToast(t('platform.tvsafe.saved'), 'success');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     finally { btn.disabled = false; }
   };
 }
@@ -945,16 +946,16 @@ async function loadSharePresenters() {
   catch (_) { document.getElementById('sharePresentersSection')?.remove(); return; }
   el.innerHTML = `
     <label style="display:flex;align-items:center;gap:10px;font-size:13px">
-      ${esc(t('screen_share.admin.label'))}
+      ${uiText(t('screen_share.admin.label'))}
       <select class="input" id="sharePresentersSel" style="width:auto">
-        ${[1, 2, 3, 4].map((n) => `<option value="${n}" ${n === cur ? 'selected' : ''}>${n}</option>`).join('')}
+        ${renderHTML([1, 2, 3, 4].map((n) => `<option value="${n}" ${n === cur ? 'selected' : ''}>${renderHTML(n)}</option>`).join(''))}
       </select>
     </label>`;
   document.getElementById('sharePresentersSel').onchange = async (e) => {
     const sel = e.target;
     sel.disabled = true;
     try { await api.adminSetScreenShare(Number(sel.value)); showToast(t('screen_share.admin.saved'), 'success'); }
-    catch (err) { showToast(err.message, 'error'); }
+    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     finally { sel.disabled = false; }
   };
 }
@@ -973,7 +974,7 @@ async function loadStockKeys() {
   try { data = await api.adminGetStockKeys(); }
   catch (e) {
     if (e.status === 403) { document.getElementById('stockKeysSection')?.remove(); return; }
-    el.innerHTML = `<p style="color:var(--danger)">${esc(e.message || 'Failed to load')}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_af14db"))}</p>`;
     return;
   }
   const stateText = (p) => p.source === 'env' ? t('stock.admin.from_env', { env: p.env })
@@ -981,20 +982,20 @@ async function loadStockKeys() {
   el.innerHTML = (data.providers || []).map((p) => `
     <div class="stock-admin-row" data-stock-provider="${esc(p.id)}">
       <div class="stock-admin-head">
-        <strong>${esc(p.name)}</strong>
-        <span class="stock-admin-state ${p.configured ? 'on' : ''}">${esc(stateText(p))}</span>
-        <a href="${esc(STOCK_KEY_PAGES[p.id] || '#')}" target="_blank" rel="noopener noreferrer">${esc(t('stock.admin.get_key'))}</a>
+        <strong>${uiText(p.name)}</strong>
+        <span class="stock-admin-state ${p.configured ? 'on' : ''}">${uiText(stateText(p))}</span>
+        <a href="${esc(STOCK_KEY_PAGES[p.id] || '#')}" target="_blank" rel="noopener noreferrer">${uiText(t('stock.admin.get_key'))}</a>
       </div>
-      ${p.env_locked ? '' : `<form class="stock-admin-form" data-stock-form>
-        <label class="lib-visually-hidden" for="stockKey-${esc(p.id)}">${esc(t('stock.admin.key_label', { provider: p.name }))}</label>
+      ${renderHTML(p.env_locked ? '' : `<form class="stock-admin-form" data-stock-form>
+        <label class="lib-visually-hidden" for="stockKey-${esc(p.id)}">${uiText(t('stock.admin.key_label', { provider: p.name }))}</label>
         <input id="stockKey-${esc(p.id)}" class="input" type="password" autocomplete="off" spellcheck="false" maxlength="200"
-          placeholder="${esc(t(p.configured ? 'stock.admin.key_ph_replace' : 'stock.admin.key_ph'))}">
-        <button type="submit" class="btn btn-primary btn-sm">${esc(t('common.save'))}</button>
-        ${p.configured ? `<button type="button" class="btn btn-secondary btn-sm" data-stock-remove>${esc(t('stock.admin.remove'))}</button>` : ''}
-      </form>`}
-      ${p.configured ? `<button type="button" class="btn btn-secondary btn-sm" data-stock-test>${esc(t('stock.admin.test'))}</button>` : ''}
+          placeholder="${esc(t(p.configured ? 'stock.admin.key_ph_replace' : 'stock.admin.key_ph'))}" data-fil-i18n-placeholder="${binding(p.configured ? 'stock.admin.key_ph_replace' : 'stock.admin.key_ph', undefined)}">
+        <button type="submit" class="btn btn-primary btn-sm">${uiText(t('common.save'))}</button>
+        ${renderHTML(p.configured ? `<button type="button" class="btn btn-secondary btn-sm" data-stock-remove>${uiText(t('stock.admin.remove'))}</button>` : '')}
+      </form>`)}
+      ${renderHTML(p.configured ? `<button type="button" class="btn btn-secondary btn-sm" data-stock-test>${uiText(t('stock.admin.test'))}</button>` : '')}
       <span class="stock-admin-result" data-stock-result role="status"></span>
-    </div>`).join('') + `<p style="color:var(--text-muted);font-size:12px;margin-top:8px">${esc(t('stock.admin.note'))}</p>`;
+    </div>`).join('') + `<p style="color:var(--text-muted);font-size:12px;margin-top:8px">${uiText(t('stock.admin.note'))}</p>`;
   el.querySelectorAll('[data-stock-provider]').forEach((row) => {
     const id = row.dataset.stockProvider;
     const result = row.querySelector('[data-stock-result]');
@@ -1004,19 +1005,19 @@ async function loadStockKeys() {
       const key = input.value.trim();
       if (!key) return;
       try { await api.adminSetStockKey(id, key); input.value = ''; showToast(t('stock.admin.saved_toast'), 'success'); loadStockKeys(); }
-      catch (err) { result.textContent = err.message; }
+      catch (err) { bindMessage(result, (err.uiMessage || err.message)); }
     });
     row.querySelector('[data-stock-remove]')?.addEventListener('click', async () => {
       try { await api.adminSetStockKey(id, ''); loadStockKeys(); }
-      catch (err) { result.textContent = err.message; }
+      catch (err) { bindMessage(result, (err.uiMessage || err.message)); }
     });
     row.querySelector('[data-stock-test]')?.addEventListener('click', async (e) => {
       e.target.disabled = true;
-      result.textContent = t('stock.admin.testing');
+      bindText(result, 'stock.admin.testing', undefined);
       try {
         const r = await api.adminTestStockKey(id);
-        result.textContent = r.ok ? t('stock.admin.test_ok') : (r.error || t('stock.admin.test_failed'));
-      } catch (err) { result.textContent = err.message; }
+        bindMessage(result, r.ok ? t('stock.admin.test_ok') : (r.error || t('stock.admin.test_failed')));
+      } catch (err) { bindMessage(result, (err.uiMessage || err.message)); }
       finally { e.target.disabled = false; }
     });
   });
@@ -1033,49 +1034,49 @@ async function loadPlans() {
     const canEdit = isPlatformAdmin(JSON.parse(localStorage.getItem('user') || '{}'));
     // Whether a paid plan can actually be bought: checkout charges its linked Stripe price.
     const checkout = (p) => {
-      if (!(p.price_monthly > 0) && !(p.price_yearly > 0)) return `<span style="color:var(--text-muted)">${esc(t('admin.plan.checkout_none'))}</span>`;
+      if (!(p.price_monthly > 0) && !(p.price_yearly > 0)) return `<span style="color:var(--text-muted)">${uiText(t('admin.plan.checkout_none'))}</span>`;
       const missing = (p.price_monthly > 0 && !p.stripe_price_monthly) || (p.price_yearly > 0 && !p.stripe_price_yearly);
-      return missing ? `<span style="color:var(--warning)">${esc(t('admin.plan.checkout_missing'))}</span>` : esc(t('admin.plan.checkout_linked'));
+      return missing ? `<span style="color:var(--warning)">${uiText(t('admin.plan.checkout_missing'))}</span>` : esc(t('admin.plan.checkout_linked'));
     };
     el.innerHTML = `
-      ${canEdit ? `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button type="button" class="btn btn-primary btn-sm" id="planNewBtn">${esc(t('admin.plan.new'))}</button></div>` : ''}
+      ${renderHTML(canEdit ? `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button type="button" class="btn btn-primary btn-sm" id="planNewBtn">${uiText(t('admin.plan.new'))}</button></div>` : '')}
       <div class="table-wrap">
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:640px">
         <thead><tr style="border-bottom:1px solid var(--border)">
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.col.plan')}</th>
-          <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('admin.col.devices')}</th>
-          <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('admin.col.storage')}</th>
-          <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('admin.col.monthly')}</th>
-          <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('admin.col.yearly')}</th>
-          <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('admin.col.accounts')}</th>
-          <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('admin.col.screens')}</th>
-          <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('admin.plan.checkout')}</th>
-          ${canEdit ? `<th style="padding:8px"><span class="lib-visually-hidden">${esc(t('admin.col.actions'))}</span></th>` : ''}
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('admin.col.plan'))}</th>
+          <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('admin.col.devices'))}</th>
+          <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('admin.col.storage'))}</th>
+          <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('admin.col.monthly'))}</th>
+          <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('admin.col.yearly'))}</th>
+          <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('admin.col.accounts'))}</th>
+          <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('admin.col.screens'))}</th>
+          <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('admin.plan.checkout'))}</th>
+          ${renderHTML(canEdit ? `<th style="padding:8px"><span class="lib-visually-hidden">${uiText(t('admin.col.actions'))}</span></th>` : '')}
         </tr></thead>
         <tbody>
-          ${plans.map(p => `
+          ${renderHTML(plans.map(p => `
             <tr style="border-bottom:1px solid var(--border)${p.active ? '' : ';opacity:.7'}">
-              <td style="padding:8px;font-weight:500">${esc(p.display_name)}
-                <span style="color:var(--text-muted);font-weight:400;font-size:11px">${esc(p.id)}</span>
-                ${p.active ? '' : `<span style="margin-left:6px;font-size:10px;padding:1px 6px;border:1px solid var(--border);border-radius:8px;color:var(--text-muted)">${t('admin.plan_hidden')}</span>`}
+              <td style="padding:8px;font-weight:500">${uiText(p.display_name)}
+                <span style="color:var(--text-muted);font-weight:400;font-size:11px">${uiText(p.id)}</span>
+                ${renderHTML(p.active ? '' : `<span style="margin-left:6px;font-size:10px;padding:1px 6px;border:1px solid var(--border);border-radius:8px;color:var(--text-muted)">${renderHTML(t('admin.plan_hidden'))}</span>`)}
               </td>
-              <td style="padding:8px;text-align:right">${p.max_devices === -1 ? t('admin.unlimited') : p.max_devices}</td>
-              <td style="padding:8px;text-align:right">${p.max_storage_mb === -1 ? t('admin.unlimited') : p.max_storage_mb >= 1024 ? (p.max_storage_mb/1024)+'GB' : p.max_storage_mb+'MB'}</td>
-              <td style="padding:8px;text-align:right">${p.price_monthly > 0 ? '$'+p.price_monthly : t('admin.free')}</td>
-              <td style="padding:8px;text-align:right">${p.price_yearly > 0 ? '$'+p.price_yearly : '-'}</td>
-              <td style="padding:8px;text-align:right${p.user_count ? ';font-weight:500' : ';color:var(--text-muted)'}">${p.user_count}</td>
-              <td style="padding:8px;text-align:right;color:var(--text-muted)">${p.device_count}</td>
-              <td style="padding:8px;font-size:12px">${checkout(p)}</td>
-              ${canEdit ? `<td style="padding:8px;text-align:right"><button type="button" class="btn btn-secondary btn-sm" data-plan-edit="${esc(p.id)}" aria-label="${esc(t('admin.plan.edit_named', { name: p.display_name }))}">${esc(t('admin.plan.edit'))}</button></td>` : ''}
+              <td style="padding:8px;text-align:right">${renderHTML(p.max_devices === -1 ? t('admin.unlimited') : p.max_devices)}</td>
+              <td style="padding:8px;text-align:right">${renderHTML(p.max_storage_mb === -1 ? t('admin.unlimited') : p.max_storage_mb >= 1024 ? (p.max_storage_mb/1024)+'GB' : p.max_storage_mb+'MB')}</td>
+              <td style="padding:8px;text-align:right">${renderHTML(p.price_monthly > 0 ? displayValue(Number(p.price_monthly),'toLocaleString',{style:'currency',currency:'USD'}) : t('admin.free'))}</td>
+              <td style="padding:8px;text-align:right">${renderHTML(p.price_yearly > 0 ? displayValue(Number(p.price_yearly),'toLocaleString',{style:'currency',currency:'USD'}) : '-')}</td>
+              <td style="padding:8px;text-align:right${p.user_count ? ';font-weight:500' : ';color:var(--text-muted)'}">${renderHTML(p.user_count)}</td>
+              <td style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(p.device_count)}</td>
+              <td style="padding:8px;font-size:12px">${renderHTML(checkout(p))}</td>
+              ${renderHTML(canEdit ? `<td style="padding:8px;text-align:right"><button type="button" class="btn btn-secondary btn-sm" data-plan-edit="${esc(p.id)}" aria-label="${esc(t('admin.plan.edit_named', { name: p.display_name }))}" data-fil-i18n-aria-label="${binding('admin.plan.edit_named', { name: p.display_name })}">${uiText(t('admin.plan.edit'))}</button></td>` : '')}
             </tr>
-          `).join('')}
+          `).join(''))}
         </tbody>
       </table>
       </div>
-      ${(orphaned && orphaned.length) ? `
+      ${renderHTML((orphaned && orphaned.length) ? `
         <p style="margin-top:10px;color:var(--danger);font-size:12px">
-          ${t('admin.plan_orphaned')}: ${orphaned.map(o => `<strong>${esc(o.plan_id)}</strong> (${o.user_count})`).join(', ')}
-        </p>` : ''}
+          ${renderHTML(t('admin.plan_orphaned'))}: ${renderHTML(orphaned.map(o => `<strong>${uiText(o.plan_id)}</strong> (${renderHTML(o.user_count)})`).join(', '))}
+        </p>` : '')}
     `;
     el.querySelector('#planNewBtn')?.addEventListener('click', async () => {
       const { openPlanEditor } = await import('../components/plan-editor.js');
@@ -1085,7 +1086,7 @@ async function loadPlans() {
       const { openPlanEditor } = await import('../components/plan-editor.js');
       openPlanEditor({ plan: plans.find((x) => x.id === b.dataset.planEdit), stripeConfigured, onSaved: () => loadPlans() });
     }));
-  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${esc(err.message)}</p>`; }
+  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; }
 }
 
 async function loadSystem() {
@@ -1103,34 +1104,33 @@ async function loadSystem() {
 
     const versionComparison = version.latest_version
       ? `<div class="info-card">
-           <div class="info-card-label">${t('admin.latest_version')}</div>
-           <div class="info-card-value small">${esc(version.latest_version)}</div>
+           <div class="info-card-label">${renderHTML(t('admin.latest_version'))}</div>
+           <div class="info-card-value small">${uiText(version.latest_version)}</div>
          </div>
          <div class="info-card">
-           <div class="info-card-label">${t('admin.status')}</div>
-           <div class="info-card-value small" style="color:${version.update_available ? 'var(--warning)' : 'var(--success)'}">${version.update_available ? (t('admin.update_available')) : (t('admin.up_to_date'))}</div>
+           <div class="info-card-label">${renderHTML(t('admin.status'))}</div>
+           <div class="info-card-value small" style="color:${version.update_available ? 'var(--warning)' : 'var(--success)'}">${renderHTML(version.update_available ? (t('admin.update_available')) : (t('admin.up_to_date')))}</div>
          </div>`
       : `<div class="info-card">
-           <div class="info-card-label">${t('admin.latest_version')}</div>
-           <div class="info-card-value small" style="color:var(--text-muted)">${t('admin.checking')}</div>
+           <div class="info-card-label">${renderHTML(t('admin.latest_version'))}</div>
+           <div class="info-card-value small" style="color:var(--text-muted)">${renderHTML(t('admin.checking'))}</div>
          </div>`;
 
     el.innerHTML = `
       <div class="info-grid">
-        <div class="info-card"><div class="info-card-label">${t('admin.version')}</div><div class="info-card-value small">${esc(version.version)}</div></div>
-        ${versionComparison}
-        ${updaterInfo ? `<div class="info-card">
-           <div class="info-card-label">${t('admin.updater')}</div>
-           <div class="info-card-value small" style="color:${updaterInfo.available ? 'var(--success)' : 'var(--text-muted)'}">${
-             updaterInfo.available ? esc(t('admin.updater_ready', { kind: updaterInfo.kind }))
-             : updaterInfo.reason === 'not_running' ? t('admin.updater_not_running') : t('admin.updater_not_installed')}</div>
-         </div>` : ''}
+        <div class="info-card"><div class="info-card-label">${renderHTML(t('admin.version'))}</div><div class="info-card-value small">${uiText(version.version)}</div></div>
+        ${renderHTML(versionComparison)}
+        ${renderHTML(updaterInfo ? `<div class="info-card">
+           <div class="info-card-label">${renderHTML(t('admin.updater'))}</div>
+           <div class="info-card-value small" style="color:${updaterInfo.available ? 'var(--success)' : 'var(--text-muted)'}">${renderHTML(updaterInfo.available ? t('admin.updater_ready', { kind: updaterInfo.kind })
+             : updaterInfo.reason === 'not_running' ? t('admin.updater_not_running') : t('admin.updater_not_installed'))}</div>
+         </div>` : '')}
       </div>
       <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" id="checkUpdateBtn">${t('admin.check_now')}</button>
-        <button class="btn btn-primary btn-sm" id="triggerUpdateBtn"${!version.update_available ? ' style="display:none"' : ''}>${t('admin.update_now')}</button>
-        <a href="/api/status/backup?token=${token}" class="btn btn-secondary btn-sm" style="text-decoration:none">${t('admin.download_db_backup')}</a>
-        <a href="/api/status" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none">${t('admin.server_status')}</a>
+        <button class="btn btn-secondary btn-sm" id="checkUpdateBtn">${renderHTML(t('admin.check_now'))}</button>
+        <button class="btn btn-primary btn-sm" id="triggerUpdateBtn"${!version.update_available ? ' style="display:none"' : ''}>${renderHTML(t('admin.update_now'))}</button>
+        <a href="/api/status/backup?token=${token}" class="btn btn-secondary btn-sm" style="text-decoration:none">${renderHTML(t('admin.download_db_backup'))}</a>
+        <a href="/api/status" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none">${renderHTML(t('admin.server_status'))}</a>
       </div>
       <div id="updateResult" style="margin-top:12px"></div>
     `;
@@ -1139,7 +1139,7 @@ async function loadSystem() {
     document.getElementById('checkUpdateBtn')?.addEventListener('click', async () => {
       const btn = document.getElementById('checkUpdateBtn');
       btn.disabled = true;
-      btn.textContent = t('admin.checking');
+      bindText(btn, 'admin.checking', undefined);
       try {
         const res = await fetch('/api/admin/check-update', { method: 'POST', headers: headers() });
         const data = await res.json();
@@ -1149,9 +1149,9 @@ async function loadSystem() {
         }
         loadSystem(); // refresh the whole card
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
         btn.disabled = false;
-        btn.textContent = t('admin.check_now');
+        bindText(btn, 'admin.check_now', undefined);
       }
     });
 
@@ -1164,7 +1164,7 @@ async function loadSystem() {
       if (updaterInfo?.available
           && !confirm(t('admin.update_confirm', { from: version.version, to: target }))) return;
       btn.disabled = true;
-      btn.textContent = t('admin.updating');
+      bindText(btn, 'admin.updating', undefined);
       try {
         const res = await fetch('/api/admin/trigger-update', {
           method: 'POST',
@@ -1172,7 +1172,7 @@ async function loadSystem() {
           body: JSON.stringify({ target }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || res.statusText);
+        if (!res.ok) throw new Error(localizeServerError(data.error) || res.statusText);
         if (data.queued) {
           watchUpdate(resultEl, data.id);
           return;  // the button stays disabled until the job ends
@@ -1180,31 +1180,31 @@ async function loadSystem() {
         resultEl.innerHTML = `
           <div style="margin-top:12px;border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--bg-secondary)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <strong style="font-size:13px">${t('admin.manual_update')}</strong>
-              <button class="btn btn-secondary btn-sm" id="copyCmdBtn">${t('admin.copy_command')}</button>
+              <strong style="font-size:13px">${renderHTML(t('admin.manual_update'))}</strong>
+              <button class="btn btn-secondary btn-sm" id="copyCmdBtn">${renderHTML(t('admin.copy_command'))}</button>
             </div>
-            <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${t('admin.manual_update_desc')}</p>
-            <pre style="font-size:11px;margin:0;background:var(--bg-primary);padding:8px;border-radius:4px;white-space:pre-wrap;word-break:break-all">${esc(data.instructions || '')}</pre>
-            <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">${t('admin.updater_hint')}</p>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${renderHTML(t('admin.manual_update_desc'))}</p>
+            <pre style="font-size:11px;margin:0;background:var(--bg-primary);padding:8px;border-radius:4px;white-space:pre-wrap;word-break:break-all">${uiText(data.instructions || '')}</pre>
+            <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">${renderHTML(t('admin.updater_hint'))}</p>
           </div>`;
         document.getElementById('copyCmdBtn')?.addEventListener('click', () => copyText(resultEl.querySelector('pre')?.textContent || ''));
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
       btn.disabled = false;
-      btn.textContent = t('admin.update_now');
+      bindText(btn, 'admin.update_now', undefined);
     });
 
     // An upgrade already running (this page was reloaded, or opened mid-upgrade): pick it up.
     if (updateStatus?.running || updateStatus?.pending?.length) {
       const btn = document.getElementById('triggerUpdateBtn');
-      if (btn) { btn.disabled = true; btn.textContent = t('admin.updating'); }
+      if (btn) { btn.disabled = true; bindText(btn, 'admin.updating', undefined); }
       watchUpdate(document.getElementById('updateResult'), updateStatus.pending?.[0] || updateStatus.job?.id);
     } else if (updateStatus?.job && ['failed', 'rolled_back'].includes(updateStatus.job.state)
                && Date.now() / 1000 - updateStatus.job.updated_at < 86400) {
       renderUpdateJob(document.getElementById('updateResult'), updateStatus);
     }
-  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${esc(err.message)}</p>`; }
+  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; }
 }
 
 let updatePollTimer = null;
@@ -1241,11 +1241,11 @@ function renderUpdateJob(el, s, { unreachable = false } = {}) {
   el.innerHTML = `
     <div style="margin-top:12px;border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--bg-card)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px">
-        <strong style="font-size:13px;color:${color}">${esc(title)}${job?.target ? ` · v${esc(job.from || '?')} → v${esc(job.target)}` : ''}</strong>
-        <button class="btn btn-secondary btn-sm" id="copyUpdateLogBtn">${t('admin.copy')}</button>
+        <strong style="font-size:13px;color:${color}">${uiText(title)}${renderHTML(job?.target ? ` · v${esc(job.from || '?')} → v${esc(job.target)}` : '')}</strong>
+        <button class="btn btn-secondary btn-sm" id="copyUpdateLogBtn">${renderHTML(t('admin.copy'))}</button>
       </div>
-      ${job?.message ? `<p style="font-size:12px;margin:0 0 8px;color:var(--text-muted)">${esc(job.message)}</p>` : ''}
-      <pre style="max-height:300px;overflow:auto;font-size:11px;margin:0;background:var(--bg-primary);padding:8px;border-radius:4px;white-space:pre-wrap;word-break:break-all">${esc(s?.log || '')}</pre>
+      ${renderHTML(job?.message ? `<p style="font-size:12px;margin:0 0 8px;color:var(--text-muted)">${uiText(job.message)}</p>` : '')}
+      <pre style="max-height:300px;overflow:auto;font-size:11px;margin:0;background:var(--bg-primary);padding:8px;border-radius:4px;white-space:pre-wrap;word-break:break-all">${uiText(s?.log || '')}</pre>
     </div>`;
   document.getElementById('copyUpdateLogBtn')?.addEventListener('click', () => copyText(el.querySelector('pre')?.textContent || ''));
 }
@@ -1271,7 +1271,7 @@ function watchUpdate(el, jobId) {
           setTimeout(() => location.reload(), 2500);  // load the new version's dashboard
         } else {
           const btn = document.getElementById('triggerUpdateBtn');
-          if (btn) { btn.disabled = false; btn.textContent = t('admin.update_now'); }
+          if (btn) { btn.disabled = false; bindText(btn, 'admin.update_now', undefined); }
         }
         return;
       }
@@ -1283,11 +1283,10 @@ function watchUpdate(el, jobId) {
 
 export function cleanup() { clearTimeout(updatePollTimer); clearTimeout(hostTimer); }
 
-
 /* ------------------------------------------------------------------ server diagnostics */
 
-const num = (n) => (n == null ? '—' : Number(n).toLocaleString());
-const mb = (b) => (b == null ? '—' : `${(b / 1048576).toFixed(1)} MB`);
+const num = (n) => (n == null ? '—' : displayValue(Number(n), "toLocaleString", undefined));
+const mb = (b) => (b == null ? '—' : displayQuantity((b / 1048576),'MB',1));
 
 /*
  * ⚠️ THE POINT OF THIS SCREEN. Diagnosing a slow install used to mean sending someone a shell
@@ -1298,12 +1297,12 @@ const mb = (b) => (b == null ? '—' : `${(b / 1048576).toFixed(1)} MB`);
 async function loadDiagnostics() {
   const el = document.getElementById('diagBody');
   if (!el) return;
-  el.innerHTML = `<p style="color:var(--text-muted)">${t('common.loading')}</p>`;
+  el.innerHTML = `<p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p>`;
   let shape; let lag;
   try {
     [shape, lag] = await Promise.all([api.adminDiagShape(), api.adminDiagLag(14)]);
   } catch (e) {
-    el.innerHTML = `<p style="color:var(--danger)">${esc(e.message || 'Failed to load diagnostics')}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_diagnostics_c143ae"))}</p>`;
     return;
   }
 
@@ -1315,39 +1314,39 @@ async function loadDiagnostics() {
    * did this step up on a date? That turns "why is the server slow" into "what changed on the 14th".
    */
   const daily = (lag.daily || []).map((d) => `
-    <tr><td>${esc(d.day)}</td><td>${num(d.samples)}</td><td>${num(d.avg_p50)}</td>
-        <td style="color:${d.avg_p99 >= 100 ? 'var(--danger)' : 'inherit'}">${num(d.avg_p99)}</td>
-        <td>${num(d.worst)}</td><td>${d.samples ? Math.round((100 * d.not_normal) / d.samples) : 0}%</td></tr>`).join('');
+    <tr><td>${uiText(d.day)}</td><td>${renderHTML(num(d.samples))}</td><td>${renderHTML(num(d.avg_p50))}</td>
+        <td style="color:${d.avg_p99 >= 100 ? 'var(--danger)' : 'inherit'}">${renderHTML(num(d.avg_p99))}</td>
+        <td>${renderHTML(num(d.worst))}</td><td>${renderHTML(d.samples ? Math.round((100 * d.not_normal) / d.samples) : 0)}%</td></tr>`).join('');
 
   const tables = (shape.tables || []).filter((r) => r.rows > 0).slice(0, 12)
-    .map((r) => `<tr><td>${esc(r.table)}</td><td>${num(r.rows)}</td></tr>`).join('');
+    .map((r) => `<tr><td>${uiText(r.table)}</td><td>${renderHTML(num(r.rows))}</td></tr>`).join('');
 
   el.innerHTML = `
     <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px">
-      <div><div style="font-size:11px;color:var(--text-muted)">${t('admin.diag.band')}</div>
-           <div style="font-size:20px;font-weight:700;color:${bandColour}">${esc(live.band || '—')}</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">sustained p99</div>
-           <div style="font-size:20px;font-weight:700">${num(Math.round(live.sustained_p99_ms || 0))} ms</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">database</div>
-           <div style="font-size:20px;font-weight:700">${mb((shape.db || {}).path_bytes)}</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">displays</div>
-           <div style="font-size:20px;font-weight:700">${num((shape.devices || {}).online)} / ${num((shape.devices || {}).total)}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">${renderHTML(t('admin.diag.band'))}</div>
+           <div style="font-size:20px;font-weight:700;color:${bandColour}">${uiText(live.band || '—')}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">${renderHTML(t("ui.admin.sustained_p99"))}</div>
+           <div style="font-size:20px;font-weight:700">${renderHTML(num(Math.round(live.sustained_p99_ms || 0)))} ms</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">${renderHTML(t("ui.admin.database"))}</div>
+           <div style="font-size:20px;font-weight:700">${renderHTML(mb((shape.db || {}).path_bytes))}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">${renderHTML(t("ui.admin.displays"))}</div>
+           <div style="font-size:20px;font-weight:700">${renderHTML(num((shape.devices || {}).online))} / ${renderHTML(num((shape.devices || {}).total))}</div></div>
     </div>
 
-    <h4 style="margin:12px 0 6px">${t('admin.diag.lag_daily')}</h4>
+    <h4 style="margin:12px 0 6px">${renderHTML(t('admin.diag.lag_daily'))}</h4>
     <div class="table-wrap"><table class="corp-table"><thead><tr>
-      <th>day</th><th>samples</th><th>avg p50</th><th>avg p99</th><th>worst</th><th>not normal</th>
-    </tr></thead><tbody>${daily || `<tr><td colspan="6">${t('admin.diag.no_history')}</td></tr>`}</tbody></table></div>
+      <th>${renderHTML(t("ui.admin.day"))}</th><th>${renderHTML(t("ui.admin.samples"))}</th><th>${renderHTML(t("ui.admin.avg_p50"))}</th><th>${renderHTML(t("ui.admin.avg_p99"))}</th><th>${renderHTML(t("ui.admin.worst"))}</th><th>${renderHTML(t("ui.admin.not_normal"))}</th>
+    </tr></thead><tbody>${renderHTML(daily || `<tr><td colspan="6">${renderHTML(t('admin.diag.no_history'))}</td></tr>`)}</tbody></table></div>
 
-    <h4 style="margin:16px 0 6px">${t('admin.diag.shape')}</h4>
+    <h4 style="margin:16px 0 6px">${renderHTML(t('admin.diag.shape'))}</h4>
     <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;margin-bottom:8px">
-      <span>plays: <b>${num((shape.play_logs || {}).total)}</b> (${num((shape.play_logs || {}).still_open)} open)</span>
-      <span>largest playlist payload: <b>${mb((shape.assigned_playlists || {}).max_snapshot_bytes)}</b></span>
-      <span>largest widget config: <b>${mb((shape.widgets || {}).max_config_bytes)}</b></span>
-      <span>workspaces: <b>${num(shape.workspaces)}</b></span>
+      <span>${renderHTML(t('ui.admin.plays',{total:num((shape.play_logs||{}).total),open:num((shape.play_logs||{}).still_open)}))}</span>
+      <span>${renderHTML(t('ui.admin.largest_playlist',{size:mb((shape.assigned_playlists||{}).max_snapshot_bytes)}))}</span>
+      <span>${renderHTML(t('ui.admin.largest_widget',{size:mb((shape.widgets||{}).max_config_bytes)}))}</span>
+      <span>${renderHTML(t('nav.workspaces'))}: <b>${renderHTML(num(shape.workspaces))}</b></span>
     </div>
-    <div class="table-wrap"><table class="corp-table"><thead><tr><th>table</th><th>rows</th></tr></thead>
-      <tbody>${tables}</tbody></table></div>
+    <div class="table-wrap"><table class="corp-table"><thead><tr><th>${renderHTML(t("ui.admin.table"))}</th><th>${renderHTML(t("ui.admin.rows"))}</th></tr></thead>
+      <tbody>${renderHTML(tables)}</tbody></table></div>
     <div id="diagProfileOut"></div>`;
 }
 
@@ -1381,25 +1380,25 @@ function wireDiagnostics() {
     btn.disabled = true;
     const original = btn.textContent;
     // It is supposed to take this long; say so, or it reads as a hung button.
-    btn.textContent = t('admin.diag.profiling', { seconds: secs });
-    if (out) out.innerHTML = `<p style="color:var(--text-muted);margin-top:12px">${t('admin.diag.profiling_note')}</p>`;
+    bindText(btn, 'admin.diag.profiling', { seconds: secs });
+    if (out) out.innerHTML = `<p style="color:var(--text-muted);margin-top:12px">${renderHTML(t('admin.diag.profiling_note'))}</p>`;
     try {
       const r = await api.adminDiagProfile(secs);
       lastProfile = r.profile;
       const rows = (r.top || []).map((x) => `
-        <tr><td style="text-align:right">${x.pct}%</td><td>${esc(x.fn)}</td><td style="color:var(--text-muted)">${esc(x.at)}</td></tr>`).join('');
+        <tr><td style="text-align:right">${renderHTML(x.pct)}%</td><td>${uiText(x.fn)}</td><td style="color:var(--text-muted)">${uiText(x.at)}</td></tr>`).join('');
       if (out) out.innerHTML = `
-        <h4 style="margin:16px 0 6px">${t('admin.diag.top_self')}</h4>
+        <h4 style="margin:16px 0 6px">${renderHTML(t('admin.diag.top_self'))}</h4>
         <div class="table-wrap"><table class="corp-table"><thead><tr>
-          <th>self</th><th>function</th><th>where</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+          <th>${renderHTML(t("ui.admin.self"))}</th><th>${renderHTML(t("ui.admin.function"))}</th><th>${renderHTML(t("ui.admin.where"))}</th></tr></thead><tbody>${renderHTML(rows)}</tbody></table></div>`;
       const d = document.getElementById('diagDownloadBtn');
       if (d) d.style.display = '';
       showToast(t('admin.diag.profile_done'), 'success');
     } catch (e) {
-      if (out) out.innerHTML = `<p style="color:var(--danger);margin-top:12px">${esc(e.message || 'Profile failed')}</p>`;
+      if (out) out.innerHTML = `<p style="color:var(--danger);margin-top:12px">${uiText((e.uiMessage || e.message) || t("ui.admin.profile_failed_1f3fd3"))}</p>`;
     } finally {
       btn.disabled = false;
-      btn.textContent = original;
+      bindMessage(btn, original);
     }
   });
 }
@@ -1421,7 +1420,7 @@ async function loadPlugins() {
       if (off) off.hidden = false;
       return;
     }
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+    if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
     body = await res.json();
   } catch (e) {
     section.style.display = 'none';
@@ -1444,81 +1443,81 @@ async function loadPlugins() {
 
   if (subHost) {
     if (!pending.length) {
-      subHost.innerHTML = `<p style="color:var(--text-muted);font-size:12px">${t('admin.plugins.pending_empty')}</p>`;
+      subHost.innerHTML = `<p style="color:var(--text-muted);font-size:12px">${renderHTML(t('admin.plugins.pending_empty'))}</p>`;
     } else {
       subHost.innerHTML = pending.map((s) => `
         <details class="corp-card" style="margin-bottom:8px;padding:12px">
-          <summary style="cursor:pointer;font-weight:600">${esc(s.name || s.plugin_id)} <span style="font-weight:400;color:var(--text-muted);font-family:monospace;font-size:12px">${esc(s.plugin_id)} @ ${esc(s.version || '')}</span></summary>
-          <p style="font-size:12px;color:var(--text-muted);margin:8px 0">${esc(s.description || '')}</p>
-          <p style="font-size:11px;font-family:monospace;word-break:break-all">sha256 ${esc(s.sha256)}</p>
+          <summary style="cursor:pointer;font-weight:600">${uiText(s.name || s.plugin_id)} <span style="font-weight:400;color:var(--text-muted);font-family:monospace;font-size:12px">${uiText(s.plugin_id)} @ ${uiText(s.version || '')}</span></summary>
+          <p style="font-size:12px;color:var(--text-muted);margin:8px 0">${uiText(s.description || '')}</p>
+          <p style="font-size:11px;font-family:monospace;word-break:break-all">${renderHTML(t("ui.admin.sha256_0466c7", {value4: s.sha256}))}</p>
           <details style="margin:8px 0">
-            <summary style="cursor:pointer;font-size:12px">${t('admin.plugins.manifest')}</summary>
-            <pre style="font-size:11px;overflow:auto;max-height:240px;background:var(--bg-primary);padding:8px;border-radius:6px">${esc(JSON.stringify(s.manifest || {}, null, 2))}</pre>
+            <summary style="cursor:pointer;font-size:12px">${renderHTML(t('admin.plugins.manifest'))}</summary>
+            <pre style="font-size:11px;overflow:auto;max-height:240px;background:var(--bg-primary);padding:8px;border-radius:6px">${uiText(JSON.stringify(s.manifest || {}, null, 2))}</pre>
           </details>
-          <p style="font-size:12px;margin:8px 0 4px">${t('admin.plugins.files')}</p>
-          <ul style="font-size:12px;font-family:monospace;margin:0 0 8px 16px">${(s.files || []).map((f) => `<li><button type="button" class="btn btn-secondary btn-sm" data-plugin-inspect="${s.id}" data-plugin-path="${esc(f.name)}">${t('admin.plugins.inspect')} ${esc(f.name)}</button> (${f.size})</li>`).join('')}</ul>
+          <p style="font-size:12px;margin:8px 0 4px">${renderHTML(t('admin.plugins.files'))}</p>
+          <ul style="font-size:12px;font-family:monospace;margin:0 0 8px 16px">${renderHTML((s.files || []).map((f) => `<li><button type="button" class="btn btn-secondary btn-sm" data-plugin-inspect="${s.id}" data-plugin-path="${esc(f.name)}">${renderHTML(t('admin.plugins.inspect'))} ${uiText(f.name)}</button> (${renderHTML(f.size)})</li>`).join(''))}</ul>
           <pre data-plugin-inspect-out="${s.id}" style="display:none;font-size:11px;overflow:auto;max-height:320px;background:var(--bg-primary);padding:8px;border-radius:6px;white-space:pre-wrap"></pre>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-primary btn-sm" data-plugin-approve="${s.id}">${t('admin.plugins.approve')}</button>
-            <button class="btn btn-secondary btn-sm" data-plugin-reject="${s.id}">${t('admin.plugins.reject')}</button>
+            <button class="btn btn-primary btn-sm" data-plugin-approve="${s.id}">${renderHTML(t('admin.plugins.approve'))}</button>
+            <button class="btn btn-secondary btn-sm" data-plugin-reject="${s.id}">${renderHTML(t('admin.plugins.reject'))}</button>
           </div>
         </details>`).join('');
     }
   }
 
   if (!plugins.length) {
-    host.innerHTML = `<p style="color:var(--text-muted)">${t('admin.plugins.empty')}</p>`;
+    host.innerHTML = `<p style="color:var(--text-muted)">${renderHTML(t('admin.plugins.empty'))}</p>`;
   } else {
     host.innerHTML = `<div class="table-wrap"><table class="corp-table"><thead><tr>
-      <th>${t('admin.plugins.col_name')}</th>
-      <th>${t('admin.plugins.col_id')}</th>
-      <th>${t('admin.plugins.col_origin')}</th>
-      <th>${t('admin.plugins.col_status')}</th>
-      <th>${t('admin.plugins.col_hash')}</th>
+      <th>${renderHTML(t('admin.plugins.col_name'))}</th>
+      <th>${renderHTML(t('admin.plugins.col_id'))}</th>
+      <th>${renderHTML(t('admin.plugins.col_origin'))}</th>
+      <th>${renderHTML(t('admin.plugins.col_status'))}</th>
+      <th>${renderHTML(t('admin.plugins.col_hash'))}</th>
       <th></th>
-    </tr></thead><tbody>${plugins.map((p) => {
+    </tr></thead><tbody>${renderHTML(plugins.map((p) => {
       const status = p.error
         ? t('admin.plugins.error')
         : (p.enabled ? (p.loaded ? t('admin.plugins.loaded') : t('admin.plugins.enabled')) : t('admin.plugins.disabled'));
       const action = p.enabled
-        ? `<button class="btn btn-secondary btn-sm" data-plugin-disable="${esc(p.id)}">${t('admin.plugins.disable')}</button>`
-        : `<button class="btn btn-primary btn-sm" data-plugin-enable="${esc(p.id)}">${t('admin.plugins.enable')}</button>`;
+        ? `<button class="btn btn-secondary btn-sm" data-plugin-disable="${esc(p.id)}">${renderHTML(t('admin.plugins.disable'))}</button>`
+        : `<button class="btn btn-primary btn-sm" data-plugin-enable="${esc(p.id)}">${renderHTML(t('admin.plugins.enable'))}</button>`;
       const pinBtn = p.allowlisted
-        ? `<button class="btn btn-secondary btn-sm" data-plugin-unpin="${esc(p.id)}">${t('admin.plugins.unpin')}</button>`
-        : `<button class="btn btn-secondary btn-sm" data-plugin-pin="${esc(p.id)}">${t('admin.plugins.pin')}</button>`;
-      const err = p.error ? `<div style="color:var(--danger);font-size:12px;margin-top:4px">${esc(p.error)}</div>` : '';
-      const hash = p.allowlist_sha256 ? `<span style="font-family:monospace;font-size:11px">${esc(p.allowlist_sha256.slice(0, 12))}…</span>` : '—';
+        ? `<button class="btn btn-secondary btn-sm" data-plugin-unpin="${esc(p.id)}">${renderHTML(t('admin.plugins.unpin'))}</button>`
+        : `<button class="btn btn-secondary btn-sm" data-plugin-pin="${esc(p.id)}">${renderHTML(t('admin.plugins.pin'))}</button>`;
+      const err = p.error ? `<div style="color:var(--danger);font-size:12px;margin-top:4px">${uiText(p.error)}</div>` : '';
+      const hash = p.allowlist_sha256 ? `<span style="font-family:monospace;font-size:11px">${uiText(p.allowlist_sha256.slice(0, 12))}…</span>` : '—';
       return `<tr>
-        <td>${esc(p.name || p.id)}${err}</td>
-        <td style="font-family:monospace;font-size:12px">${esc(p.id)}</td>
-        <td>${esc(p.origin || '')}</td>
-        <td>${esc(status)}</td>
-        <td>${hash}</td>
-        <td style="display:flex;gap:6px;flex-wrap:wrap">${action}${pinBtn}</td>
+        <td>${uiText(p.name || p.id)}${renderHTML(err)}</td>
+        <td style="font-family:monospace;font-size:12px">${uiText(p.id)}</td>
+        <td>${uiText(p.origin || '')}</td>
+        <td>${uiText(status)}</td>
+        <td>${renderHTML(hash)}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">${renderHTML(action)}${renderHTML(pinBtn)}</td>
       </tr>`;
-    }).join('')}</tbody></table></div>
-    <p style="color:var(--text-muted);font-size:12px;margin-top:8px">${t('admin.plugins.restart')}</p>
-    ${plugins.filter((p) => Array.isArray(p.settings_fields) && p.settings_fields.length).map((p) => `
+    }).join(''))}</tbody></table></div>
+    <p style="color:var(--text-muted);font-size:12px;margin-top:8px">${renderHTML(t('admin.plugins.restart'))}</p>
+    ${renderHTML(plugins.filter((p) => Array.isArray(p.settings_fields) && p.settings_fields.length).map((p) => `
       <details class="corp-card" style="margin-top:12px;padding:12px" data-plugin-settings="${esc(p.id)}">
-        <summary style="cursor:pointer;font-weight:600">${esc(p.name || p.id)} — ${t('admin.plugins.settings')}</summary>
+        <summary style="cursor:pointer;font-weight:600">${uiText(p.name || p.id)} — ${renderHTML(t('admin.plugins.settings'))}</summary>
         <form data-plugin-settings-form="${esc(p.id)}" style="margin-top:12px">
-          ${pluginFieldsHtml(p.settings_fields, p.settings || {}, 'plugset_' + p.id + '_')}
-          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:8px">${t('admin.plugins.save_settings')}</button>
+          ${renderHTML(pluginFieldsHtml(p.settings_fields, p.settings || {}, 'plugset_' + p.id + '_'))}
+          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:8px">${renderHTML(t('admin.plugins.save_settings'))}</button>
         </form>
-      </details>`).join('')}`;
+      </details>`).join(''))}`;
   }
 
   if (pinHost) {
     if (!pins.length) {
-      pinHost.innerHTML = `<p style="color:var(--text-muted);font-size:12px">${t('admin.plugins.allowlist_empty')}</p>`;
+      pinHost.innerHTML = `<p style="color:var(--text-muted);font-size:12px">${renderHTML(t('admin.plugins.allowlist_empty'))}</p>`;
     } else {
       pinHost.innerHTML = `<div class="table-wrap"><table class="corp-table"><thead><tr>
-        <th>${t('admin.plugins.col_id')}</th><th>sha256</th><th>source</th></tr></thead><tbody>
-        ${pins.map((r) => `<tr>
-          <td style="font-family:monospace;font-size:12px">${esc(r.plugin_id)}</td>
-          <td style="font-family:monospace;font-size:11px;word-break:break-all">${esc(r.sha256)}</td>
-          <td>${esc(r.source)}</td>
-        </tr>`).join('')}</tbody></table></div>`;
+        <th>${renderHTML(t('admin.plugins.col_id'))}</th><th>${renderHTML(t("ui.admin.sha256"))}</th><th>${renderHTML(t("ui.admin.source"))}</th></tr></thead><tbody>
+        ${renderHTML(pins.map((r) => `<tr>
+          <td style="font-family:monospace;font-size:12px">${uiText(r.plugin_id)}</td>
+          <td style="font-family:monospace;font-size:11px;word-break:break-all">${uiText(r.sha256)}</td>
+          <td>${uiText(r.source)}</td>
+        </tr>`).join(''))}</tbody></table></div>`;
     }
   }
 
@@ -1529,12 +1528,12 @@ async function loadPlugins() {
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: extra ? JSON.stringify(extra) : '{}',
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+      if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
       const r = await res.json().catch(() => ({}));
       showToast(okMsg || (r.restart_required ? t('admin.plugins.restart_now') : t('admin.plugins.saved')), 'success');
       await loadPlugins();
     } catch (e) {
-      showToast(e.message || t('admin.plugins.failed'), 'error');
+      showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
     }
   };
 
@@ -1560,11 +1559,11 @@ async function loadPlugins() {
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ settings }),
         });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         showToast(t('admin.plugins.settings_saved'), 'success');
         await loadPlugins();
       } catch (e) {
-        showToast(e.message || t('admin.plugins.failed'), 'error');
+        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
       }
     });
   });
@@ -1585,16 +1584,16 @@ async function loadPlugins() {
             headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({ replace: true }),
           });
-          if (!res2.ok) throw new Error((await res2.json().catch(() => ({}))).error || String(res2.status));
+          if (!res2.ok) throw new Error(localizeServerError((await res2.json().catch(() => ({}))).error) || String(res2.status));
           showToast(t('admin.plugins.approved_ok'), 'success');
           await loadPlugins();
           return;
         }
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         showToast(t('admin.plugins.approved_ok'), 'success');
         await loadPlugins();
       } catch (e) {
-        showToast(e.message || t('admin.plugins.failed'), 'error');
+        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
       }
     };
     subHost.querySelectorAll('[data-plugin-approve]').forEach((b) => b.addEventListener('click', () => approveOne(b.dataset.pluginApprove)));
@@ -1606,12 +1605,12 @@ async function loadPlugins() {
       if (!out || !rel) return;
       try {
         const res = await fetch(`/api/admin/plugins/submissions/${id}/file?path=${encodeURIComponent(rel)}`, { headers });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         const body = await res.json();
         out.style.display = '';
-        out.textContent = body.binary ? `${rel} (${body.size} bytes, binary)` : (body.text || '');
+        bindMessage(out, body.binary ? t("ui.admin.value0_value1_bytes_binary_a4caec", {value0: rel, value1: body.size}) : (body.text || ''));
       } catch (e) {
-        showToast(e.message || t('admin.plugins.failed'), 'error');
+        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
       }
     }));
   }
@@ -1632,12 +1631,12 @@ async function loadPlugins() {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           body: fd,
         });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         showToast(t('admin.plugins.queued'), 'success');
         input.value = '';
         await loadPlugins();
       } catch (e) {
-        showToast(e.message || t('admin.plugins.failed'), 'error');
+        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
       }
     });
   }
@@ -1653,81 +1652,81 @@ async function loadPlugins() {
  */
 async function mountCleanup(el, days = 180, lastResult = null, noticeDays = 14) {
   if (!el) return;
-  el.innerHTML = `<p style="color:var(--text-muted)">${esc(t('common.loading'))}</p>`;
+  el.innerHTML = `<p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p>`;
   let data;
-  try { data = await api.adminStaleAccounts(days); } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${esc(err.message)}</p>`; return; }
-  const when = (sec) => (sec ? new Date(sec * 1000).toLocaleDateString() : t('platform.cleanup.never'));
+  try { data = await api.adminStaleAccounts(days); } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; return; }
+  const when = (sec) => (sec ? displayValue(new Date(sec * 1000), "toLocaleDateString", undefined) : t('platform.cleanup.never'));
   const noticeCell = (a) => {
-    if (a.notice === 'ready') return `<span class="notice-pill notice-ready">${esc(t('platform.cleanup.st_ready'))}</span>`;
-    if (a.notice === 'notice') return `<span class="notice-pill notice-running">${esc(t('platform.cleanup.st_notice', { date: when(a.cleanup_delete_after) }))}</span>`;
-    return `<span class="notice-pill">${esc(t('platform.cleanup.st_not_warned'))}</span>`;
+    if (a.notice === 'ready') return `<span class="notice-pill notice-ready">${uiText(t('platform.cleanup.st_ready'))}</span>`;
+    if (a.notice === 'notice') return `<span class="notice-pill notice-running">${uiText(t('platform.cleanup.st_notice', { date: when(a.cleanup_delete_after) }))}</span>`;
+    return `<span class="notice-pill">${uiText(t('platform.cleanup.st_not_warned'))}</span>`;
   };
   const rows = data.accounts.map((a) => `
     <tr data-notice="${esc(a.notice)}">
-      <td><input type="checkbox" class="cleanup-pick" value="${esc(a.id)}" data-notice="${esc(a.notice)}" aria-label="${esc(t('platform.cleanup.select', { email: a.email }))}"></td>
-      <td><div style="font-weight:500">${esc(a.name || a.email)}</div><div style="font-size:11px;color:var(--text-muted)">${esc(a.email)}</div></td>
-      <td>${esc(when(a.created_at))}</td>
-      <td>${a.never_signed_in ? `<span class="cleanup-never">${esc(t('platform.cleanup.never'))}</span>` : esc(when(a.last_login))}<div style="font-size:11px;color:var(--text-muted)">${esc(t('platform.cleanup.last_activity', { date: when(a.last_activity) }))}</div></td>
-      <td>${esc(String(a.workspaces))} · ${esc(String(a.content_items))}${a.content_bytes ? ` <span style="color:var(--text-muted)">(${esc(formatBytes(a.content_bytes))})</span>` : ''}</td>
-      <td>${noticeCell(a)}</td>
+      <td><input type="checkbox" class="cleanup-pick" value="${esc(a.id)}" data-notice="${esc(a.notice)}" aria-label="${esc(t('platform.cleanup.select', { email: a.email }))}" data-fil-i18n-aria-label="${binding('platform.cleanup.select', { email: a.email })}"></td>
+      <td><div style="font-weight:500">${uiText(a.name || a.email)}</div><div style="font-size:11px;color:var(--text-muted)">${uiText(a.email)}</div></td>
+      <td>${uiText(when(a.created_at))}</td>
+      <td>${renderHTML(a.never_signed_in ? `<span class="cleanup-never">${uiText(t('platform.cleanup.never'))}</span>` : esc(when(a.last_login)))}<div style="font-size:11px;color:var(--text-muted)">${uiText(t('platform.cleanup.last_activity', { date: when(a.last_activity) }))}</div></td>
+      <td>${uiText(String(a.workspaces))} · ${uiText(String(a.content_items))}${renderHTML(a.content_bytes ? ` <span style="color:var(--text-muted)">(${uiText(formatBytes(a.content_bytes))})</span>` : '')}</td>
+      <td>${renderHTML(noticeCell(a))}</td>
     </tr>`).join('');
   const summary = lastResult ? `
     <div class="cleanup-summary">
-      <strong>${esc(lastResult.warned ? tn('platform.cleanup.warned_done', lastResult.warned.length) : tn('platform.cleanup.done', lastResult.deleted.length))}</strong>
-      ${lastResult.files_removed ? ` · ${esc(t('platform.cleanup.freed', { n: lastResult.files_removed, size: formatBytes(lastResult.bytes_freed) }))}` : ''}
-      ${lastResult.skipped.length ? `<div class="cleanup-skipped">${esc(tn('platform.cleanup.skipped', lastResult.skipped.length))}<ul>${lastResult.skipped.map((k) => `<li>${esc(k.email || k.id)}: ${esc(k.reason)}</li>`).join('')}</ul></div>` : ''}
+      <strong>${uiText(lastResult.warned ? tn('platform.cleanup.warned_done', lastResult.warned.length) : tn('platform.cleanup.done', lastResult.deleted.length))}</strong>
+      ${renderHTML(lastResult.files_removed ? ` · ${esc(t('platform.cleanup.freed', { n: lastResult.files_removed, size: formatBytes(lastResult.bytes_freed) }))}` : '')}
+      ${renderHTML(lastResult.skipped.length ? `<div class="cleanup-skipped">${uiText(tn('platform.cleanup.skipped', lastResult.skipped.length))}<ul>${renderHTML(lastResult.skipped.map((k) => `<li>${uiText(k.email || k.id)}: ${uiText(k.reason)}</li>`).join(''))}</ul></div>` : '')}
     </div>` : '';
   el.innerHTML = `
-    ${summary}
+    ${renderHTML(summary)}
     <div class="settings-section">
-      <h3>${esc(t('platform.cleanup.rules_title'))}</h3>
+      <h3>${uiText(t('platform.cleanup.rules_title'))}</h3>
       <div class="cleanup-rules">
-        <label>${esc(t('platform.cleanup.inactive_for'))}
-          <select class="input" id="cleanupDays">${[30, 90, 180, 365].map((d) => `<option value="${d}" ${d === data.inactive_days ? 'selected' : ''}>${esc(tn('platform.cleanup.days', d))}</option>`).join('')}</select>
+        <label>${uiText(t('platform.cleanup.inactive_for'))}
+          <select class="input" id="cleanupDays">${renderHTML([30, 90, 180, 365].map((d) => `<option value="${d}" ${d === data.inactive_days ? 'selected' : ''}>${uiText(tn('platform.cleanup.days', d))}</option>`).join(''))}</select>
         </label>
-        <label>${esc(t('platform.cleanup.notice_period'))}
-          <select class="input" id="cleanupNotice">${[14, 30].map((d) => `<option value="${d}" ${d === noticeDays ? 'selected' : ''}>${esc(tn('platform.cleanup.days', d))}</option>`).join('')}</select>
+        <label>${uiText(t('platform.cleanup.notice_period'))}
+          <select class="input" id="cleanupNotice">${renderHTML([14, 30].map((d) => `<option value="${d}" ${d === noticeDays ? 'selected' : ''}>${uiText(tn('platform.cleanup.days', d))}</option>`).join(''))}</select>
         </label>
         <ul>
-          <li>${esc(tn('platform.cleanup.rule_login', data.inactive_days))}</li>
-          <li>${esc(t('platform.cleanup.rule_screens'))}</li>
-          <li>${esc(t('platform.cleanup.rule_paying'))}</li>
-          <li>${esc(t('platform.cleanup.rule_shared'))}</li>
-          <li>${esc(t('platform.cleanup.rule_staff'))}</li>
+          <li>${uiText(tn('platform.cleanup.rule_login', data.inactive_days))}</li>
+          <li>${uiText(t('platform.cleanup.rule_screens'))}</li>
+          <li>${uiText(t('platform.cleanup.rule_paying'))}</li>
+          <li>${uiText(t('platform.cleanup.rule_shared'))}</li>
+          <li>${uiText(t('platform.cleanup.rule_staff'))}</li>
         </ul>
       </div>
       <ol class="cleanup-steps">
-        <li>${esc(t('platform.cleanup.step1'))}</li>
-        <li>${esc(t('platform.cleanup.step2'))}</li>
-        <li>${esc(t('platform.cleanup.step3'))}</li>
+        <li>${uiText(t('platform.cleanup.step1'))}</li>
+        <li>${uiText(t('platform.cleanup.step2'))}</li>
+        <li>${uiText(t('platform.cleanup.step3'))}</li>
       </ol>
-      ${data.email_configured ? '' : `<p class="cleanup-warn">${esc(t('platform.cleanup.no_email'))}</p>`}
+      ${renderHTML(data.email_configured ? '' : `<p class="cleanup-warn">${uiText(t('platform.cleanup.no_email'))}</p>`)}
     </div>
     <div class="settings-section">
       <div class="cleanup-head">
-        <h3 style="margin:0">${esc(tn('platform.cleanup.found', data.total))}${data.reclaimable_bytes ? ` <span class="cleanup-bytes">${esc(t('platform.cleanup.reclaim', { size: formatBytes(data.reclaimable_bytes) }))}</span>` : ''}</h3>
+        <h3 style="margin:0">${renderHTML(tn('platform.cleanup.found', data.total))}${renderHTML(data.reclaimable_bytes ? ` <span class="cleanup-bytes">${uiText(t('platform.cleanup.reclaim', { size: formatBytes(data.reclaimable_bytes) }))}</span>` : '')}</h3>
         <span style="flex:1"></span>
-        <button class="btn btn-secondary btn-sm" id="cleanupExport" ${data.total ? '' : 'disabled'}>${esc(t('platform.cleanup.export'))}</button>
+        <button class="btn btn-secondary btn-sm" id="cleanupExport" ${data.total ? '' : 'disabled'}>${uiText(t('platform.cleanup.export'))}</button>
       </div>
-      ${data.total ? `
+      ${renderHTML(data.total ? `
       <div class="cleanup-filters">
-        <button class="chip-btn" data-pick="not_warned">${esc(tn('platform.cleanup.pick_not_warned', data.counts.not_warned))}</button>
-        <button class="chip-btn" data-pick="notice">${esc(tn('platform.cleanup.pick_notice', data.counts.notice))}</button>
-        <button class="chip-btn chip-ready" data-pick="ready">${esc(tn('platform.cleanup.pick_ready', data.counts.ready))}</button>
-        <button class="chip-btn" data-pick="none">${esc(t('platform.cleanup.pick_none'))}</button>
+        <button class="chip-btn" data-pick="not_warned">${uiText(tn('platform.cleanup.pick_not_warned', data.counts.not_warned))}</button>
+        <button class="chip-btn" data-pick="notice">${uiText(tn('platform.cleanup.pick_notice', data.counts.notice))}</button>
+        <button class="chip-btn chip-ready" data-pick="ready">${uiText(tn('platform.cleanup.pick_ready', data.counts.ready))}</button>
+        <button class="chip-btn" data-pick="none">${uiText(t('platform.cleanup.pick_none'))}</button>
       </div>
       <div class="table-wrap"><table class="org-members-table cleanup-table">
-        <thead><tr><th><input type="checkbox" id="cleanupAll" aria-label="${esc(t('platform.cleanup.select_all'))}"></th>
-          <th>${esc(t('platform.cleanup.col_account'))}</th><th>${esc(t('platform.cleanup.col_created'))}</th><th>${esc(t('platform.cleanup.col_last_login'))}</th>
-          <th>${esc(t('platform.cleanup.col_holdings'))}</th><th>${esc(t('platform.cleanup.col_notice'))}</th></tr></thead>
-        <tbody>${rows}</tbody>
+        <thead><tr><th><input type="checkbox" id="cleanupAll" aria-label="${esc(t('platform.cleanup.select_all'))}" data-fil-i18n-aria-label="${binding('platform.cleanup.select_all', undefined)}"></th>
+          <th>${uiText(t('platform.cleanup.col_account'))}</th><th>${uiText(t('platform.cleanup.col_created'))}</th><th>${uiText(t('platform.cleanup.col_last_login'))}</th>
+          <th>${uiText(t('platform.cleanup.col_holdings'))}</th><th>${uiText(t('platform.cleanup.col_notice'))}</th></tr></thead>
+        <tbody>${renderHTML(rows)}</tbody>
       </table></div>
       <div class="cleanup-actions">
-        <button class="btn btn-primary btn-sm" id="cleanupWarn" disabled>${esc(t('platform.cleanup.warn_selected'))}</button>
-        <button class="btn btn-danger btn-sm" id="cleanupDelete" disabled>${esc(t('platform.cleanup.delete_selected'))}</button>
-        <label class="cleanup-override"><input type="checkbox" id="cleanupSkipNotice"> ${esc(t('platform.cleanup.skip_notice'))}</label>
-      </div>` : `<p class="platform-empty">${esc(t('platform.cleanup.none'))}</p>`}
-      <p class="cleanup-note">${esc(t('platform.cleanup.note'))}</p>
+        <button class="btn btn-primary btn-sm" id="cleanupWarn" disabled>${uiText(t('platform.cleanup.warn_selected'))}</button>
+        <button class="btn btn-danger btn-sm" id="cleanupDelete" disabled>${uiText(t('platform.cleanup.delete_selected'))}</button>
+        <label class="cleanup-override"><input type="checkbox" id="cleanupSkipNotice"> ${uiText(t('platform.cleanup.skip_notice'))}</label>
+      </div>` : `<p class="platform-empty">${uiText(t('platform.cleanup.none'))}</p>`)}
+      <p class="cleanup-note">${uiText(t('platform.cleanup.note'))}</p>
     </div>`;
 
   const reload = (result) => mountCleanup(el, data.inactive_days, result, noticeDays);
@@ -1755,9 +1754,9 @@ async function mountCleanup(el, days = 180, lastResult = null, noticeDays = 14) 
     const toWarn = sel.filter((c) => c.dataset.notice === 'not_warned').length;
     const toDelete = skip.checked ? sel.length : sel.filter((c) => c.dataset.notice === 'ready').length;
     warnBtn.disabled = !toWarn || !data.email_configured;
-    warnBtn.textContent = toWarn ? tn('platform.cleanup.warn_n', toWarn) : t('platform.cleanup.warn_selected');
+    bindMessage(warnBtn, toWarn ? tn('platform.cleanup.warn_n', toWarn) : t('platform.cleanup.warn_selected'));
     delBtn.disabled = !toDelete;
-    delBtn.textContent = toDelete ? tn(skip.checked ? 'platform.cleanup.delete_n_now' : 'platform.cleanup.delete_n', toDelete) : t('platform.cleanup.delete_selected');
+    bindMessage(delBtn, toDelete ? tn(skip.checked ? 'platform.cleanup.delete_n_now' : 'platform.cleanup.delete_n', toDelete) : t('platform.cleanup.delete_selected'));
   };
   boxes.forEach((c) => { c.onchange = sync; });
   skip.onchange = sync;
@@ -1803,33 +1802,32 @@ async function mountCleanup(el, days = 180, lastResult = null, noticeDays = 14) 
   };
 }
 
-
 /* ── Player rollouts (server lib/ota-rollout.js) ─────────────────────────────────────────────── */
 const ROLLOUT_ACTIONS = { rolling: ['pause', 'release', 'halt'], paused: ['resume', 'release', 'halt'], halted: ['clear'], complete: [], superseded: [] };
 async function loadRollouts() {
   const host = document.getElementById('rolloutsBody');
   if (!host) return;
   let data;
-  try { data = await api.get('/admin/ota-rollouts'); } catch (e) { host.innerHTML = `<p class="error">${esc(e.message)}</p>`; return; }
+  try { data = await api.get('/admin/ota-rollouts'); } catch (e) { host.innerHTML = `<p class="error">${uiText((e.uiMessage || e.message))}</p>`; return; }
   const rows = data.rollouts || [];
   host.innerHTML = `
-    ${data.enabled ? '' : `<p style="color:#ca8a04;font-size:13px">${esc(t('platform.rollouts.disabled'))}</p>`}
+    ${data.enabled ? '' : `<p style="color:#ca8a04;font-size:13px">${uiText(t('platform.rollouts.disabled'))}</p>`}
     ${rows.length ? `<div class="table-wrap"><table class="corp-table" style="min-width:640px"><thead><tr>
-      <th>${esc(t('platform.rollouts.col.player'))}</th><th>${esc(t('platform.rollouts.col.status'))}</th>
-      <th>${esc(t('platform.rollouts.col.health'))}</th><th></th></tr></thead><tbody>
-      ${rows.map((r) => `<tr>
-        <td><strong>${esc(t(`platform.rollouts.family.${r.family}`))} ${esc(r.version)}</strong>
-          <div class="corp-help">${esc(t('platform.rollouts.started', { when: new Date(r.started_at * 1000).toLocaleString() }))}</div></td>
-        <td>${esc(t(`platform.rollouts.status.${r.status}`, { pct: r.wave_percent }))}
-          ${r.status === 'halted' ? `<div style="font-size:12px;color:#dc2626;max-width:340px">${esc(r.halted_reason || '')}</div>
-            <div class="corp-help">${esc(r.family === 'android' ? t('platform.rollouts.android_note') : r.can_roll_back ? t('platform.rollouts.rolled_back', { v: r.prev_version }) : t('platform.rollouts.no_prev'))}</div>` : ''}</td>
-        <td style="font-size:12px">${r.health ? esc(t('platform.rollouts.health', { updated: r.health.updated, bad: r.health.bad, size: r.health.family_size })) : ''}</td>
-        <td style="white-space:nowrap">${(ROLLOUT_ACTIONS[r.status] || []).map((a) => `<button class="btn btn-secondary btn-sm" data-ro="${esc(r.family)}|${esc(r.version)}|${a}" style="margin:2px">${esc(t(`platform.rollouts.act.${a}`))}</button>`).join('')}</td>
-      </tr>`).join('')}</tbody></table></div>` : `<div class="corp-empty">${esc(t('platform.rollouts.empty'))}</div>`}`;
+      <th>${uiText(t('platform.rollouts.col.player'))}</th><th>${uiText(t('platform.rollouts.col.status'))}</th>
+      <th>${uiText(t('platform.rollouts.col.health'))}</th><th></th></tr></thead><tbody>
+      ${renderHTML(rows.map((r) => `<tr>
+        <td><strong>${uiText(t(`platform.rollouts.family.${r.family}`))} ${uiText(r.version)}</strong>
+          <div class="corp-help">${renderHTML(t('platform.rollouts.started', { when: displayValue(new Date(r.started_at * 1000), "toLocaleString", undefined) }))}</div></td>
+        <td>${renderHTML(t(`platform.rollouts.status.${r.status}`, { pct: r.wave_percent }))}
+          ${renderHTML(r.status === 'halted' ? `<div style="font-size:12px;color:#dc2626;max-width:340px">${uiText(r.halted_reason || '')}</div>
+            <div class="corp-help">${uiText(r.family === 'android' ? t('platform.rollouts.android_note') : r.can_roll_back ? t('platform.rollouts.rolled_back', { v: r.prev_version }) : t('platform.rollouts.no_prev'))}</div>` : '')}</td>
+        <td style="font-size:12px">${renderHTML(r.health ? t('platform.rollouts.health', { updated: r.health.updated, bad: r.health.bad, size: r.health.family_size }) : '')}</td>
+        <td style="white-space:nowrap">${renderHTML((ROLLOUT_ACTIONS[r.status] || []).map((a) => `<button class="btn btn-secondary btn-sm" data-ro="${esc(r.family)}|${esc(r.version)}|${a}" style="margin:2px">${uiText(t(`platform.rollouts.act.${a}`))}</button>`).join(''))}</td>
+      </tr>`).join(''))}</tbody></table></div>` : `<div class="corp-empty">${uiText(t('platform.rollouts.empty'))}</div>`}`;
   host.querySelectorAll('[data-ro]').forEach((b) => b.addEventListener('click', async () => {
     const [family, version, action] = b.dataset.ro.split('|');
     if ((action === 'halt' || action === 'release') && !confirm(t(`platform.rollouts.confirm.${action}`, { v: version }))) return;
     try { await api.post(`/admin/ota-rollouts/${encodeURIComponent(family)}/${encodeURIComponent(version)}/${action}`, {}); showToast(t('platform.rollouts.done'), 'success'); loadRollouts(); }
-    catch (e) { showToast(e.message, 'error'); }
+    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   }));
 }

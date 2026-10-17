@@ -15,7 +15,7 @@
  * reason: never hide something from someone who did not ask.
  */
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 import { inManagerApp, openOutsideApp } from '../utils.js';
 

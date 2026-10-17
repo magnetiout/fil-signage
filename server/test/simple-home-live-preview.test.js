@@ -1,4 +1,5 @@
 'use strict';
+const {runInViewContext}=require('./helpers/admin-render');
 
 // 3.0.1: the dashboard half of two preview fixes, without a browser (the helpers are evaluated from
 // the real module sources, imports stripped; the page-level wiring is checked against the source).
@@ -22,7 +23,7 @@ function load(file, names, ctx = {}) {
     .replace(/^export (const|function|async function|let) /gm, '$1 ')
     .replace(/^export \{[^}]*\};?$/gm, '');
   const box = { module: {}, URL, console, ...ctx };
-  vm.runInNewContext(`${src}\nmodule.exports = { ${names.join(', ')} };`, box);
+  runInViewContext(`${src}\nmodule.exports = { ${names.join(', ')} };`, box);
   return box.module.exports;
 }
 

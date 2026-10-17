@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 Make a sign: built-in sign templates, filled in and put on screens in under a minute.
  *
@@ -19,7 +21,7 @@
  * Values from the server and from the person reach the page through esc() or .value only.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc, isPlatformAdmin } from '../utils.js';
 import { openUseModal } from './templates.js';
 import { shell, guideFrame, showOnScreen, simpleCanChange } from './simple-home.js';
@@ -97,29 +99,29 @@ function isEmpty(v) {
 
 function fieldHtml(tp, f, v, brand) {
   const id = `sf_${f.key}`;
-  const label = `<label class="simple-label" for="${id}">${esc(fieldLabel(tp, f.key))}${f.required ? '' : ` <span class="sign-optional">${esc(t('signs.optional'))}</span>`}</label>`;
+  const label = `<label class="simple-label" for="${id}">${uiText(fieldLabel(tp, f.key))}${renderHTML(f.required ? '' : ` <span class="sign-optional">${uiText(t('signs.optional'))}</span>`)}</label>`;
   const val = v[f.key];
   switch (f.type) {
     case 'text':
-      return `${label}<input id="${id}" class="input sign-input" data-key="${esc(f.key)}" maxlength="${Number(f.max) || 80}" value="${esc(val || '')}" autocomplete="off">`;
+      return `${renderHTML(label)}<input id="${id}" class="input sign-input" data-key="${esc(f.key)}" maxlength="${Number(f.max) || 80}" value="${esc(val || '')}" autocomplete="off">`;
     case 'url':
-      return `${label}<input id="${id}" class="input sign-input" data-key="${esc(f.key)}" maxlength="${Number(f.max) || 500}" value="${esc(val || '')}" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://">`;
+      return `${renderHTML(label)}<input id="${id}" class="input sign-input" data-key="${esc(f.key)}" maxlength="${Number(f.max) || 500}" value="${esc(val || '')}" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://">`;
     case 'multiline':
-      return `${label}<textarea id="${id}" class="input sign-input" data-key="${esc(f.key)}" rows="${Math.min(5, Number(f.max_lines) || 4)}" maxlength="${Number(f.max) || 280}">${esc(val || '')}</textarea>
-        <small class="sign-hint">${esc(tn('signs.lines_hint', Number(f.max_lines) || 5))}</small>`;
+      return `${renderHTML(label)}<textarea id="${id}" class="input sign-input" data-key="${esc(f.key)}" rows="${Math.min(5, Number(f.max_lines) || 4)}" maxlength="${Number(f.max) || 280}">${uiText(val || '')}</textarea>
+        <small class="sign-hint">${uiText(tn('signs.lines_hint', Number(f.max_lines) || 5))}</small>`;
     case 'rows':
-      return `<span class="simple-label">${esc(fieldLabel(tp, f.key))}</span><div class="sign-rows" data-rows="${esc(f.key)}">${rowsHtml(tp, f, val || [])}</div>`;
+      return `<span class="simple-label">${uiText(fieldLabel(tp, f.key))}</span><div class="sign-rows" data-rows="${esc(f.key)}">${renderHTML(rowsHtml(tp, f, val || []))}</div>`;
     case 'datetime':
-      return `${label}<input id="${id}" type="datetime-local" class="input sign-input" data-key="${esc(f.key)}" data-type="datetime" value="${esc(toLocalInput(val))}">`;
+      return `${renderHTML(label)}<input id="${id}" type="datetime-local" class="input sign-input" data-key="${esc(f.key)}" data-type="datetime" value="${esc(toLocalInput(val))}">`;
     case 'color':
-      return `<label class="sign-color" for="${id}"><input id="${id}" type="color" data-key="${esc(f.key)}" value="${esc(val || '#000000')}"><span>${esc(fieldLabel(tp, f.key))}</span></label>`;
+      return `<label class="sign-color" for="${id}"><input id="${id}" type="color" data-key="${esc(f.key)}" value="${esc(val || '#000000')}"><span>${uiText(fieldLabel(tp, f.key))}</span></label>`;
     case 'toggle':
       // The logo switch only means something when there is a logo to show.
       if (f.key === 'show_logo' && !(brand && brand.logo_content_id)) return '';
-      return `<label class="sign-toggle" for="${id}"><input id="${id}" type="checkbox" data-key="${esc(f.key)}" data-type="toggle" ${val ? 'checked' : ''}> <span>${esc(fieldLabel(tp, f.key))}</span></label>`;
+      return `<label class="sign-toggle" for="${id}"><input id="${id}" type="checkbox" data-key="${esc(f.key)}" data-type="toggle" ${val ? 'checked' : ''}> <span>${uiText(fieldLabel(tp, f.key))}</span></label>`;
     case 'select':
-      return `${label}<select id="${id}" class="input sign-input" data-key="${esc(f.key)}">${(f.options || []).map((o) =>
-        `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(tx(`signs.option.${o}`) || o)}</option>`).join('')}</select>`;
+      return `${renderHTML(label)}<select id="${id}" class="input sign-input" data-key="${esc(f.key)}">${renderHTML((f.options || []).map((o) =>
+        `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${uiText(tx(`signs.option.${o}`) || o)}</option>`).join(''))}</select>`;
     default:
       return '';
   }
@@ -131,11 +133,11 @@ function rowsHtml(tp, f, rows) {
   const max = Number(f.max_rows) || 6;
   return `${rows.map((r, i) => `
     <div class="sign-row">
-      <input class="input sign-input" data-row-label="${i}" maxlength="60" value="${esc(r.label || '')}" placeholder="${esc(ph1)}" aria-label="${esc(ph1)} ${i + 1}">
-      <input class="input sign-input" data-row-value="${i}" maxlength="30" value="${esc(r.value || '')}" placeholder="${esc(ph2)}" aria-label="${esc(ph2)} ${i + 1}">
-      <button type="button" class="btn btn-secondary sign-row-del" data-row-del="${i}" aria-label="${esc(t('signs.row_remove'))}" title="${esc(t('signs.row_remove'))}">&times;</button>
+      <input class="input sign-input" data-row-label="${i}" maxlength="60" value="${esc(r.label || '')}" placeholder="${esc(ph1)}"${attributeBinding("placeholder", ph1)} aria-label="${esc(ph1)} ${i + 1}">
+      <input class="input sign-input" data-row-value="${i}" maxlength="30" value="${esc(r.value || '')}" placeholder="${esc(ph2)}"${attributeBinding("placeholder", ph2)} aria-label="${esc(ph2)} ${i + 1}">
+      <button type="button" class="btn btn-secondary sign-row-del" data-row-del="${i}" aria-label="${esc(t('signs.row_remove'))}" data-fil-i18n-aria-label="${binding('signs.row_remove', undefined)}" title="${esc(t('signs.row_remove'))}" data-fil-i18n-title="${binding('signs.row_remove', undefined)}">&times;</button>
     </div>`).join('')}
-    ${rows.length < max ? `<button type="button" class="btn btn-secondary btn-sm" data-row-add>+ ${esc(t('signs.row_add'))}</button>` : ''}`;
+    ${rows.length < max ? `<button type="button" class="btn btn-secondary btn-sm" data-row-add>+ ${uiText(t('signs.row_add'))}</button>` : ''}`;
 }
 
 function formHtml(tp, v, brand) {
@@ -144,22 +146,22 @@ function formHtml(tp, v, brand) {
   const moreText = more.filter((f) => f.type !== 'color' && f.type !== 'toggle').map((f) => fieldHtml(tp, f, v, brand)).join('');
   const colors = more.filter((f) => f.type === 'color').map((f) => fieldHtml(tp, f, v, brand)).join('');
   const toggles = more.filter((f) => f.type === 'toggle').map((f) => fieldHtml(tp, f, v, brand)).join('');
-  return `${main}
+  return `${renderHTML(main)}
     <details class="sign-more">
-      <summary>${esc(t('signs.more'))}</summary>
-      ${moreText}
-      ${colors ? `<span class="simple-label">${esc(t('signs.colors'))}</span><div class="sign-colors">${colors}</div>
-        <button type="button" class="btn btn-secondary btn-sm" data-reset-colors>${esc(t('signs.colors_reset'))}</button>` : ''}
-      ${toggles ? `<div class="sign-toggles">${toggles}</div>` : ''}
+      <summary>${uiText(t('signs.more'))}</summary>
+      ${renderHTML(moreText)}
+      ${renderHTML(colors ? `<span class="simple-label">${uiText(t('signs.colors'))}</span><div class="sign-colors">${renderHTML(colors)}</div>
+        <button type="button" class="btn btn-secondary btn-sm" data-reset-colors>${uiText(t('signs.colors_reset'))}</button>` : '')}
+      ${renderHTML(toggles ? `<div class="sign-toggles">${renderHTML(toggles)}</div>` : '')}
     </details>`;
 }
 
 /* ---------------------------------------------------------------- pieces */
 
 function aspectToggle(aspect) {
-  return `<div class="sign-aspect" role="group" aria-label="${esc(t('signs.shape'))}">
-    <button type="button" data-aspect-pick="16:9" aria-pressed="${aspect === '16:9'}"><span class="ico ico-land" aria-hidden="true"></span>${esc(t('signs.landscape'))}</button>
-    <button type="button" data-aspect-pick="9:16" aria-pressed="${aspect === '9:16'}"><span class="ico ico-port" aria-hidden="true"></span>${esc(t('signs.portrait'))}</button>
+  return `<div class="sign-aspect" role="group" aria-label="${esc(t('signs.shape'))}" data-fil-i18n-aria-label="${binding('signs.shape', undefined)}">
+    <button type="button" data-aspect-pick="16:9" aria-pressed="${aspect === '16:9'}"><span class="ico ico-land" aria-hidden="true"></span>${uiText(t('signs.landscape'))}</button>
+    <button type="button" data-aspect-pick="9:16" aria-pressed="${aspect === '9:16'}"><span class="ico ico-port" aria-hidden="true"></span>${uiText(t('signs.portrait'))}</button>
   </div>`;
 }
 
@@ -189,17 +191,17 @@ export async function renderSign(container, { simple = false, device: presetId =
   const brandHref = simple ? '#/simple/brand' : '#/settings';
   const paint = (inner) => {
     if (simple) shell(container, inner);
-    else container.innerHTML = `<div class="sign-page">${inner}</div>`;
+    else container.innerHTML = `<div class="sign-page">${renderHTML(inner)}</div>`;
   };
   const wireBack = (fn) => container.querySelector('[data-guide-back]')?.addEventListener('click', fn);
 
   if (!simpleCanChange()) {
     paint(guideFrame({ step: 0, total: 1, icon: '&#128065;', title: t('signs.title'), back: false, cancelHref: home,
-      body: `<p class="simple-lead">${esc(t('simple.home.viewer_note'))}</p>` }));
+      body: `<p class="simple-lead">${uiText(t('simple.home.viewer_note'))}</p>` }));
     return;
   }
 
-  paint(`<p class="simple-muted" style="text-align:center">${esc(t('common.loading'))}</p>`);
+  paint(`<p class="simple-muted" style="text-align:center">${uiText(t('common.loading'))}</p>`);
   let cat = null;
   let devices = [];
   let playlists = [];
@@ -216,7 +218,7 @@ export async function renderSign(container, { simple = false, device: presetId =
   } catch (err) {
     if (run !== alive) return;
     paint(guideFrame({ step: 0, total: 1, icon: '&#9888;', title: t('signs.title'), back: false, cancelHref: home,
-      body: `<p class="simple-lead">${esc((err && err.message) || t('signs.err.load'))}</p>` }));
+      body: `<p class="simple-lead">${uiText((err && (err.uiMessage || err.message)) || t('signs.err.load'))}</p>` }));
     return;
   }
   if (run !== alive) return;
@@ -265,24 +267,24 @@ export async function renderSign(container, { simple = false, device: presetId =
   function brandNote() {
     const has = brand.business_name || brand.logo_content_id || (brand.colors || []).some(Boolean);
     const text = has ? t('signs.brand.using', { name: brand.business_name || t('signs.brand.your_brand') }) : t('signs.brand.none');
-    return `<p class="simple-muted sign-brand-note">${esc(text)} <a href="${esc(brandHref)}">${esc(t(has ? 'signs.brand.edit' : 'signs.brand.set_up'))}</a></p>`;
+    return `<p class="simple-muted sign-brand-note">${uiText(text)} <a href="${esc(brandHref)}">${uiText(t(has ? 'signs.brand.edit' : 'signs.brand.set_up'))}</a></p>`;
   }
 
   // ---------------------------------------------------------------- 1. pick
   function pickStep() {
     paint(guideFrame({ step: 0, total, icon: '&#127991;&#65039;', title: t('signs.pick_title'), back: false, cancelHref: home, wide: true,
       body: `
-        <p class="simple-lead sign-lead">${esc(t('signs.pick_lead'))}</p>
-        ${aspectToggle(aspect)}
+        <p class="simple-lead sign-lead">${uiText(t('signs.pick_lead'))}</p>
+        ${renderHTML(aspectToggle(aspect))}
         <div class="sign-grid ${aspect === '9:16' ? 'is-portrait' : ''}" data-grid>
-          ${templates.map((tp) => `
+          ${renderHTML(templates.map((tp) => `
             <button type="button" class="sign-card" data-tpl="${esc(tp.id)}">
-              ${frameHtml(aspect, `data-prev="${esc(tp.id)}" title="${esc(tplName(tp))}"`)}
-              <span class="sign-card-name">${esc(tplName(tp))}</span>
-            </button>`).join('')}
+              ${renderHTML(frameHtml(aspect, `data-prev="${esc(tp.id)}" title="${esc(tplName(tp))}"`))}
+              <span class="sign-card-name">${uiText(tplName(tp))}</span>
+            </button>`).join(''))}
         </div>
-        ${brandNote()}
-        ${communityHtml()}` }));
+        ${renderHTML(brandNote())}
+        ${renderHTML(communityHtml())}` }));
     wireAspect(pickStep);
     container.querySelectorAll('[data-tpl]').forEach((b) => b.addEventListener('click', () => {
       tplId = b.dataset.tpl;
@@ -311,13 +313,13 @@ export async function renderSign(container, { simple = false, device: presetId =
     const thumb = (x) => (typeof x.thumbnail === 'string' && /^\/api\/templates\/thumb\/[0-9a-f]{64}$/.test(x.thumbnail))
       ? `<img data-community-thumb src="${esc(x.thumbnail)}" alt="" loading="lazy">` : '&#128444;&#65039;';
     return `
-      <h3 class="sign-section-title">${esc(t('signs.community_title'))}</h3>
-      ${list.length ? `<div class="sign-grid sign-grid--community">${list.map((x) => `
+      <h3 class="sign-section-title">${uiText(t('signs.community_title'))}</h3>
+      ${renderHTML(list.length ? `<div class="sign-grid sign-grid--community">${renderHTML(list.map((x) => `
         <button type="button" class="sign-card" data-community="${esc(x.key)}">
-          <span class="sign-community-thumb">${thumb(x)}</span>
-          <span class="sign-card-name">${esc(x.name || x.id)}</span>
-        </button>`).join('')}</div>` : `<p class="simple-muted">${esc(t('signs.community_none'))}</p>`}
-      ${canInstall ? `<p class="simple-muted"><a href="#/templates">${esc(t('signs.community_browse'))} &rarr;</a></p>` : ''}
+          <span class="sign-community-thumb">${renderHTML(thumb(x))}</span>
+          <span class="sign-card-name">${uiText(x.name || x.id)}</span>
+        </button>`).join(''))}</div>` : `<p class="simple-muted">${uiText(t('signs.community_none'))}</p>`)}
+      ${renderHTML(canInstall ? `<p class="simple-muted"><a href="#/templates">${uiText(t('signs.community_browse'))} →</a></p>` : '')}
       <p class="simple-status" data-status role="status"></p>`;
   }
 
@@ -348,17 +350,17 @@ export async function renderSign(container, { simple = false, device: presetId =
       : preset ? t('signs.show_on', { name: preset.name }) : t('signs.save_btn');
     paint(guideFrame({ step: queue ? batchIdx : 1, total, icon: '&#9998;', title: tplName(tp), cancelHref: home, wide: true, next: true, nextLabel,
       body: `
-        ${queue ? `<p class="simple-muted ai-setup-progress">${esc(t('ai_setup.sign_of', { n: batchIdx + 1, total: queue.length }))}
-          <button type="button" class="btn btn-secondary btn-sm" data-skip>${esc(t(skipped.has(batchIdx) ? 'ai_setup.include' : 'ai_setup.skip'))}</button></p>` : ''}
+        ${renderHTML(queue ? `<p class="simple-muted ai-setup-progress">${uiText(t('ai_setup.sign_of', { n: batchIdx + 1, total: queue.length }))}
+          <button type="button" class="btn btn-secondary btn-sm" data-skip>${uiText(t(skipped.has(batchIdx) ? 'ai_setup.include' : 'ai_setup.skip'))}</button></p>` : '')}
         <div class="sign-fill">
           <div class="sign-preview-col">
-            ${aspectToggle(aspect)}
-            ${frameHtml(aspect, `data-live title="${esc(t('signs.preview'))}"`, 'sign-frame--big')}
+            ${renderHTML(aspectToggle(aspect))}
+            ${renderHTML(frameHtml(aspect, `data-live title="${esc(t('signs.preview'))}"`, 'sign-frame--big'))}
           </div>
-          <div class="sign-form" data-form>${formHtml(tp, v, brand)}</div>
+          <div class="sign-form" data-form>${renderHTML(formHtml(tp, v, brand))}</div>
         </div>
         <div class="sign-a11y" data-a11y role="status" hidden></div>
-        ${brandNote()}
+        ${renderHTML(brandNote())}
         <p class="simple-status" data-status role="status"></p>` }));
     wireBack(queue ? () => {
       if (batchIdx > 0) { batchIdx--; tplId = queue[batchIdx].template; fillStep(); }
@@ -401,7 +403,7 @@ export async function renderSign(container, { simple = false, device: presetId =
         rows[i] = rows[i] || { label: '', value: '' };
         if (el.dataset.rowLabel != null) rows[i].label = el.value; else rows[i].value = el.value;
       } else return;
-      status.textContent = '';
+      bindMessage(status, '');
       preview();
     };
     // Both: a checkbox, a colour picker or a date picker reports through `change` on some browsers
@@ -435,7 +437,7 @@ export async function renderSign(container, { simple = false, device: presetId =
     container.querySelector('[data-guide-next]').addEventListener('click', () => {
       const missing = tp.fields.find((f) => f.required && isEmpty(v[f.key]));
       if (missing) {
-        status.textContent = t('signs.err.required', { field: fieldLabel(tp, missing.key) });
+        bindText(status, 'signs.err.required', { field: fieldLabel(tp, missing.key) });
         form.querySelector(`[data-key="${missing.key}"]`)?.focus();
         return;
       }
@@ -482,8 +484,8 @@ export async function renderSign(container, { simple = false, device: presetId =
     const chosen = Array.isArray(r.chosen) ? r.chosen[0] : null;
     const small = (r.issues || []).find((i) => i.code === 'text_small' && i.severity !== 'note');
     if (chosen && /^#[0-9A-Fa-f]{6}$/.test(chosen.suggested || '')) {
-      box.innerHTML = `<p><span class="a11y-swatch" style="background:${esc(chosen.suggested)}" aria-hidden="true"></span>${esc(t('a11y.sign.hard_to_read'))}</p>
-        <button type="button" class="btn btn-secondary" data-a11y-fix>${esc(t('a11y.sign.use_suggested'))}</button>`;
+      box.innerHTML = `<p><span class="a11y-swatch" style="background:${esc(chosen.suggested)}" aria-hidden="true"></span>${uiText(t('a11y.sign.hard_to_read'))}</p>
+        <button type="button" class="btn btn-secondary" data-a11y-fix>${uiText(t('a11y.sign.use_suggested'))}</button>`;
       box.hidden = false;
       box.querySelector('[data-a11y-fix]').addEventListener('click', () => {
         const v = valuesOf(tp);
@@ -495,7 +497,7 @@ export async function renderSign(container, { simple = false, device: presetId =
       });
     } else if (small) {
       const distance = r.view && r.view.distance_m ? r.view.distance_m : '';
-      box.innerHTML = `<p>${esc(t('a11y.sign.too_small', { distance }))}</p>`;
+      box.innerHTML = `<p>${uiText(t('a11y.sign.too_small', { distance }))}</p>`;
       box.hidden = false;
     } else {
       box.hidden = true;
@@ -509,18 +511,18 @@ export async function renderSign(container, { simple = false, device: presetId =
     paint(guideFrame({ step: screensAt, total, icon: '&#128250;', title: t('signs.where_title'), cancelHref: home,
       next: true, nextLabel: t('signs.show_btn'),
       body: `
-        <div class="simple-checks">${devices.map((d) => `
-          <label><input type="checkbox" value="${esc(d.id)}" checked> <span>${esc(d.name)}</span>
-          <small class="simple-screen-status ${d.status === 'online' ? 'on' : 'off'}">${esc(d.status === 'online' ? t('simple.status.online') : t('simple.status.offline'))}</small></label>`).join('')}</div>
-        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.change.how_label'))}">
-          <label><input type="radio" name="signHow" value="add" checked> <span><strong>${esc(t('simple.change.add'))}</strong><small>${esc(t('signs.how_add_desc'))}</small></span></label>
-          <label><input type="radio" name="signHow" value="replace"> <span><strong>${esc(t('simple.change.replace'))}</strong><small>${esc(t('signs.how_replace_desc'))}</small></span></label>
+        <div class="simple-checks">${renderHTML(devices.map((d) => `
+          <label><input type="checkbox" value="${esc(d.id)}" checked> <span>${uiText(d.name)}</span>
+          <small class="simple-screen-status ${d.status === 'online' ? 'on' : 'off'}">${uiText(d.status === 'online' ? t('simple.status.online') : t('simple.status.offline'))}</small></label>`).join(''))}</div>
+        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.change.how_label'))}" data-fil-i18n-aria-label="${binding('simple.change.how_label', undefined)}">
+          <label><input type="radio" name="signHow" value="add" checked> <span><strong>${uiText(t('simple.change.add'))}</strong><small>${uiText(t('signs.how_add_desc'))}</small></span></label>
+          <label><input type="radio" name="signHow" value="replace"> <span><strong>${uiText(t('simple.change.replace'))}</strong><small>${uiText(t('signs.how_replace_desc'))}</small></span></label>
         </div>
-        <p class="simple-muted">${esc(t('signs.where_hint'))}</p>
+        <p class="simple-muted">${uiText(t('signs.where_hint'))}</p>
         <p class="simple-status" data-status role="status"></p>` }));
     wireBack(communityWidget ? pickStep : fillStep);
     // A starter set with every sign left out has nothing to show.
-    if (queue && skipped.size >= queue.length) container.querySelector('[data-status]').textContent = t('ai_setup.all_skipped');
+    if (queue && skipped.size >= queue.length) bindText(container.querySelector('[data-status]'), 'ai_setup.all_skipped', undefined);
     container.querySelectorAll('input[name="signHow"]').forEach((r) => r.addEventListener('change', () => { how = r.value; }));
     container.querySelector('[data-guide-next]').addEventListener('click', () => {
       const ids = [...container.querySelectorAll('.simple-checks input:checked')].map((i) => i.value);
@@ -534,7 +536,7 @@ export async function renderSign(container, { simple = false, device: presetId =
     const tp = byId(tplId);
     const buttons = [...container.querySelectorAll('button, input, select, textarea')];
     buttons.forEach((b) => { b.disabled = true; });
-    status.textContent = t('simple.working');
+    bindText(status, 'simple.working', undefined);
     let sign;
     try {
       sign = communityWidget
@@ -544,9 +546,9 @@ export async function renderSign(container, { simple = false, device: presetId =
     } catch (err) {
       buttons.forEach((b) => { b.disabled = false; });
       const first = err && err.body && Array.isArray(err.body.errors) ? err.body.errors[0] : null;
-      status.textContent = first
+      bindMessage(status, first
         ? t(`signs.err.${first.code}`, { field: fieldLabel(tp, first.field) })
-        : ((err && err.message) || t('signs.err.save'));
+        : ((err && (err.uiMessage || err.message)) || t('signs.err.save')));
       return;
     }
     if (run !== alive) return;
@@ -570,7 +572,7 @@ export async function renderSign(container, { simple = false, device: presetId =
       // The sign exists (it is in Slides); only putting it on a screen failed. Say exactly that.
       buttons.forEach((b) => { b.disabled = false; });
       const reason = (err && err.message) || '';
-      status.textContent = t('signs.err.assign', { reason });
+      bindText(status, 'signs.err.assign', { reason });
       return;
     }
     if (run !== alive) return;
@@ -585,10 +587,10 @@ export async function renderSign(container, { simple = false, device: presetId =
    */
   async function makeBatch(deviceIds, how, status) {
     const keep = queue.map((b, i) => ({ ...b, i })).filter((b) => !skipped.has(b.i));
-    if (!keep.length) { status.textContent = t('ai_setup.all_skipped'); return; }
+    if (!keep.length) { bindText(status, 'ai_setup.all_skipped', undefined); return; }
     const buttons = [...container.querySelectorAll('button, input, select, textarea')];
     buttons.forEach((b) => { b.disabled = true; });
-    status.textContent = t('simple.working');
+    bindText(status, 'simple.working', undefined);
     const items = [];
     for (const b of keep) {
       const tp = byId(b.template);
@@ -598,7 +600,7 @@ export async function renderSign(container, { simple = false, device: presetId =
       } catch (err) {
         buttons.forEach((x) => { x.disabled = false; });
         const first = err && err.body && Array.isArray(err.body.errors) ? err.body.errors[0] : null;
-        status.textContent = `${tplName(tp)}: ${first ? t(`signs.err.${first.code}`, { field: fieldLabel(tp, first.field) }) : ((err && err.message) || t('signs.err.save'))}`;
+        bindMessage(status, `${tplName(tp)}: ${first ? t(`signs.err.${first.code}`, { field: fieldLabel(tp, first.field) }) : ((err && (err.uiMessage || err.message)) || t('signs.err.save'))}`);
         return;
       }
       if (run !== alive) return;
@@ -620,7 +622,7 @@ export async function renderSign(container, { simple = false, device: presetId =
     } catch (err) {
       buttons.forEach((b) => { b.disabled = false; });
       const reason = (err && err.message) || '';
-      status.textContent = t('signs.err.assign', { reason });
+      bindText(status, 'signs.err.assign', { reason });
       return;
     }
     if (run !== alive) return;
@@ -636,13 +638,13 @@ export async function renderSign(container, { simple = false, device: presetId =
       : review ? tn('simple.upload.review_on', shown) : tn('signs.done.live', shown);
     const hint = saved ? (devices.length ? '' : t('signs.done.no_screens')) : t(review ? 'simple.done.review_hint' : 'simple.done.seconds');
     paint(guideFrame({ step: total - 1, total, icon: saved ? '&#9989;' : review ? '&#9203;' : '&#127881;', title, back: false, cancelHref: home,
-      body: `${count ? `<p class="simple-lead">${esc(tn('ai_setup.made', count))}</p>` : ''}${count > 1 && saved ? '' : `<p class="simple-lead">${esc(lead)}</p>`}${hint ? `<p class="simple-muted">${esc(hint)}</p>` : ''}
-        <p class="simple-muted">${esc(t(communityWidget ? 'signs.done.edit_later_widget' : 'signs.done.edit_later'))}</p>
+      body: `${renderHTML(count ? `<p class="simple-lead">${uiText(tn('ai_setup.made', count))}</p>` : '')}${renderHTML(count > 1 && saved ? '' : `<p class="simple-lead">${uiText(lead)}</p>`)}${renderHTML(hint ? `<p class="simple-muted">${uiText(hint)}</p>` : '')}
+        <p class="simple-muted">${uiText(t(communityWidget ? 'signs.done.edit_later_widget' : 'signs.done.edit_later'))}</p>
         <div class="simple-done-actions">
-          <a class="btn btn-primary" href="${esc(fromGuide || fromSlides ? (fromSlides ? '#/slides' : '#/') : home)}">${esc(fromGuide ? t('onboarding.go_to_dashboard') : fromSlides ? t('signs.done.back_slides') : t('simple.done.home'))}</a>
-          <a class="btn btn-secondary" href="${esc(again)}">${esc(t('signs.done.another'))}</a>
-          ${!devices.length ? `<a class="btn btn-secondary" href="#/add-screen">${esc(t('simple.task.add'))}</a>` : ''}
-          ${!simple && !fromSlides ? `<a class="btn btn-secondary" href="#/slides">${esc(t('signs.done.open_slides'))}</a>` : ''}
+          <a class="btn btn-primary" href="${esc(fromGuide || fromSlides ? (fromSlides ? '#/slides' : '#/') : home)}">${uiText(fromGuide ? t('onboarding.go_to_dashboard') : fromSlides ? t('signs.done.back_slides') : t('simple.done.home'))}</a>
+          <a class="btn btn-secondary" href="${esc(again)}">${uiText(t('signs.done.another'))}</a>
+          ${renderHTML(!devices.length ? `<a class="btn btn-secondary" href="#/add-screen">${uiText(t('simple.task.add'))}</a>` : '')}
+          ${renderHTML(!simple && !fromSlides ? `<a class="btn btn-secondary" href="#/slides">${uiText(t('signs.done.open_slides'))}</a>` : '')}
         </div>` }));
     // "Make another" on the same hash does not fire hashchange; re-render explicitly.
     container.querySelector(`.simple-done-actions a[href="${again}"]`)?.addEventListener('click', (e) => {
@@ -677,13 +679,13 @@ export async function renderSign(container, { simple = false, device: presetId =
 export function renderBrand(container, { simple = true } = {}) {
   cleanup();
   const inner = `
-    <div class="simple-help-top"><a href="#/" class="btn btn-secondary btn-sm">&larr; ${esc(t('simple.done.home'))}</a></div>
-    <h1 class="simple-h1">${esc(t('signs.brand.title'))}</h1>
-    <p class="simple-lead sign-lead">${esc(t('signs.brand.intro'))}</p>
+    <div class="simple-help-top"><a href="#/" class="btn btn-secondary btn-sm">← ${uiText(t('simple.done.home'))}</a></div>
+    <h1 class="simple-h1">${uiText(t('signs.brand.title'))}</h1>
+    <p class="simple-lead sign-lead">${uiText(t('signs.brand.intro'))}</p>
     <div class="simple-card" data-brand-kit></div>
-    ${simpleCanChange() ? `<div class="simple-card sign-brand-cta"><span>${esc(t('signs.brand.cta'))}</span>
-      <a class="btn btn-primary" href="#/simple/sign">${esc(t('signs.task'))}</a></div>` : ''}`;
-  if (simple) shell(container, inner); else container.innerHTML = `<div class="simple-page">${inner}</div>`;
+    ${renderHTML(simpleCanChange() ? `<div class="simple-card sign-brand-cta"><span>${uiText(t('signs.brand.cta'))}</span>
+      <a class="btn btn-primary" href="#/simple/sign">${uiText(t('signs.task'))}</a></div>` : '')}`;
+  if (simple) shell(container, inner); else container.innerHTML = `<div class="simple-page">${renderHTML(inner)}</div>`;
   mountBrandKit(container.querySelector('[data-brand-kit]'));
 }
 

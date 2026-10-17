@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 Simple view task: "Show news headlines" (#/simple/news).
  *
@@ -12,7 +14,7 @@
  * the news site.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { shell, guideFrame, showOnScreen } from './simple-home.js';
 import { mountFeedPicker } from '../components/news-feed-picker.js';
@@ -37,7 +39,7 @@ export async function renderNews(container) {
   function sourceStep() {
     paint(guideFrame({ step: 0, total, icon: '&#128240;', title: t('news.simple.source_title'), back: false,
       next: true, nextLabel: t('onboarding.next'),
-      body: `<p class="simple-lead">${esc(t('news.simple.source_lead'))}</p><div data-picker></div><p class="simple-status" data-status role="status"></p>` }));
+      body: `<p class="simple-lead">${uiText(t('news.simple.source_lead'))}</p><div data-picker></div><p class="simple-status" data-status role="status"></p>` }));
     const next = container.querySelector('[data-guide-next]');
     const sync = (c) => { choice = c; next.disabled = !c.feed_url; };
     mountFeedPicker(container.querySelector('[data-picker]'), { url: choice.feed_url, mode: choice.feed_mode, simple: true, onChange: sync });
@@ -50,9 +52,9 @@ export async function renderNews(container) {
     paint(guideFrame({ step: 1, total, icon: '&#127912;', title: t('news.simple.look_title'),
       next: true, nextLabel: t('onboarding.next'),
       body: `
-        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('news.field.layout'))}">
-          <label><input type="radio" name="newsLook" value="headlines" ${layout === 'headlines' ? 'checked' : ''}> <span><strong>${esc(t('news.layout.headlines'))}</strong><small>${esc(t('news.simple.headlines_desc'))}</small></span></label>
-          <label><input type="radio" name="newsLook" value="ticker" ${layout === 'ticker' ? 'checked' : ''}> <span><strong>${esc(t('news.layout.ticker'))}</strong><small>${esc(t('news.simple.ticker_desc'))}</small></span></label>
+        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('news.field.layout'))}" data-fil-i18n-aria-label="${binding('news.field.layout', undefined)}">
+          <label><input type="radio" name="newsLook" value="headlines" ${layout === 'headlines' ? 'checked' : ''}> <span><strong>${uiText(t('news.layout.headlines'))}</strong><small>${uiText(t('news.simple.headlines_desc'))}</small></span></label>
+          <label><input type="radio" name="newsLook" value="ticker" ${layout === 'ticker' ? 'checked' : ''}> <span><strong>${uiText(t('news.layout.ticker'))}</strong><small>${uiText(t('news.simple.ticker_desc'))}</small></span></label>
         </div>` }));
     wireBack(sourceStep);
     container.querySelectorAll('input[name="newsLook"]').forEach((r) => r.addEventListener('change', () => { layout = r.value; }));
@@ -65,15 +67,15 @@ export async function renderNews(container) {
     paint(guideFrame({ step: 2, total, icon: '&#128250;', title: t('news.simple.where_title'),
       next: true, nextLabel: t('news.simple.show_btn'),
       body: devices.length ? `
-        <div class="simple-checks">${devices.map((d) => `
-          <label><input type="checkbox" value="${esc(d.id)}" checked> <span>${esc(d.name)}</span>
-          <small class="simple-screen-status ${d.status === 'online' ? 'on' : 'off'}">${esc(d.status === 'online' ? t('simple.status.online') : t('simple.status.offline'))}</small></label>`).join('')}</div>
-        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.change.how_label'))}">
-          <label><input type="radio" name="newsHow" value="add" checked> <span><strong>${esc(t('simple.change.add'))}</strong><small>${esc(t('news.simple.how_add_desc'))}</small></span></label>
-          <label><input type="radio" name="newsHow" value="replace"> <span><strong>${esc(t('simple.change.replace'))}</strong><small>${esc(t('news.simple.how_replace_desc'))}</small></span></label>
+        <div class="simple-checks">${renderHTML(devices.map((d) => `
+          <label><input type="checkbox" value="${esc(d.id)}" checked> <span>${uiText(d.name)}</span>
+          <small class="simple-screen-status ${d.status === 'online' ? 'on' : 'off'}">${uiText(d.status === 'online' ? t('simple.status.online') : t('simple.status.offline'))}</small></label>`).join(''))}</div>
+        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.change.how_label'))}" data-fil-i18n-aria-label="${binding('simple.change.how_label', undefined)}">
+          <label><input type="radio" name="newsHow" value="add" checked> <span><strong>${uiText(t('simple.change.add'))}</strong><small>${uiText(t('news.simple.how_add_desc'))}</small></span></label>
+          <label><input type="radio" name="newsHow" value="replace"> <span><strong>${uiText(t('simple.change.replace'))}</strong><small>${uiText(t('news.simple.how_replace_desc'))}</small></span></label>
         </div>
         <p class="simple-status" data-status role="status"></p>`
-        : `<p class="simple-lead">${esc(t('news.simple.no_screens'))}</p><p class="simple-status" data-status role="status"></p>` }));
+        : `<p class="simple-lead">${uiText(t('news.simple.no_screens'))}</p><p class="simple-status" data-status role="status"></p>` }));
     wireBack(lookStep);
     container.querySelectorAll('input[name="newsHow"]').forEach((r) => r.addEventListener('change', () => { how = r.value; }));
     container.querySelector('[data-guide-next]').addEventListener('click', () => {
@@ -85,7 +87,7 @@ export async function renderNews(container) {
   async function make(deviceIds, how, status) {
     const controls = [...container.querySelectorAll('button, input')];
     controls.forEach((b) => { b.disabled = true; });
-    status.textContent = t('simple.working');
+    bindText(status, 'simple.working', undefined);
     let widget;
     try {
       widget = await api.createWidget({
@@ -98,7 +100,7 @@ export async function renderNews(container) {
       });
     } catch (err) {
       controls.forEach((b) => { b.disabled = false; });
-      status.textContent = (err && err.message) || t('news.simple.err_save');
+      bindMessage(status, (err && (err.uiMessage || err.message)) || t('news.simple.err_save'));
       return;
     }
     let shown = 0;
@@ -119,7 +121,7 @@ export async function renderNews(container) {
     } catch (err) {
       controls.forEach((b) => { b.disabled = false; });
       const reason = (err && err.message) || '';
-      status.textContent = t('news.simple.err_assign', { reason });
+      bindText(status, 'news.simple.err_assign', { reason });
       return;
     }
     doneStep(shown, review);
@@ -130,12 +132,12 @@ export async function renderNews(container) {
     const lead = !shown ? t('news.simple.done_saved') : review ? tn('simple.upload.review_on', shown) : tn('news.simple.done_live', shown);
     paint(guideFrame({ step: 3, total, icon: !shown ? '&#9989;' : review ? '&#9203;' : '&#127881;', back: false,
       title: t(!shown ? 'news.simple.done_saved_title' : review ? 'simple.done.review_title' : 'onboarding.step.done.title'),
-      body: `<p class="simple-lead">${esc(lead)}</p>
-        ${shown ? `<p class="simple-muted">${esc(t(review ? 'simple.done.review_hint' : 'simple.done.seconds'))}</p>` : ''}
-        <p class="simple-muted">${esc(t('news.simple.edit_later'))}</p>
+      body: `<p class="simple-lead">${uiText(lead)}</p>
+        ${renderHTML(shown ? `<p class="simple-muted">${uiText(t(review ? 'simple.done.review_hint' : 'simple.done.seconds'))}</p>` : '')}
+        <p class="simple-muted">${uiText(t('news.simple.edit_later'))}</p>
         <div class="simple-done-actions">
-          <a class="btn btn-primary" href="#/">${esc(t('simple.done.home'))}</a>
-          ${!devices.length ? `<a class="btn btn-secondary" href="#/add-screen">${esc(t('simple.task.add'))}</a>` : ''}
+          <a class="btn btn-primary" href="#/">${uiText(t('simple.done.home'))}</a>
+          ${renderHTML(!devices.length ? `<a class="btn btn-secondary" href="#/add-screen">${uiText(t('simple.task.add'))}</a>` : '')}
         </div>` }));
     if (shown && !review) api.trackEvent('first_publish', { from: 'simple_news' });
   }

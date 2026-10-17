@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage, binding } from '../../lib/i18n-bindings.js';
+
 // A modal dialog that behaves like one: labelled by its title, focus kept inside (Tab and Shift+Tab
 // wrap), Escape and the backdrop ask to close, everything behind it is `inert` (not clickable, not
 // focusable, not read out), and focus goes back to whatever opened it.
@@ -10,7 +12,7 @@
 // modal) inerts the first one too, and gives it back when it closes.
 
 import { esc } from '../../utils.js';
-import { t } from '../../i18n.js';
+import { message as t } from '../../i18n.js';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), audio[controls], video[controls], summary';
 // Left alone by `inert`: toasts must still be announced, and the upload queue keeps reporting.
@@ -30,12 +32,12 @@ export function openDialog({ title, html = '', className = '', size = 'md', onRe
   backdrop.innerHTML = `
     <div class="lib-dialog lib-dialog-${size} ${className}" role="dialog" aria-modal="true" aria-labelledby="${id}-title">
       <div class="lib-dialog-head">
-        <h2 class="lib-dialog-title" id="${id}-title">${esc(title || '')}</h2>
-        <button type="button" class="lib-icon-btn" data-dialog-close aria-label="${esc(t('common.close'))}">
+        <h2 class="lib-dialog-title" id="${id}-title">${uiText(title || '')}</h2>
+        <button type="button" class="lib-icon-btn" data-dialog-close aria-label="${esc(t('common.close'))}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div class="lib-dialog-body">${html}</div>
+      <div class="lib-dialog-body">${renderHTML(html)}</div>
     </div>`;
   const dialog = backdrop.firstElementChild;
 
@@ -92,7 +94,7 @@ export function openDialog({ title, html = '', className = '', size = 'md', onRe
     root: dialog,
     body: dialog.querySelector('.lib-dialog-body'),
     titleEl: dialog.querySelector('.lib-dialog-title'),
-    setTitle(text) { dialog.querySelector('.lib-dialog-title').textContent = text; },
+    setTitle(text) { bindMessage(dialog.querySelector('.lib-dialog-title'), text); },
     focusFirst,
     close,
     requestClose,
@@ -110,10 +112,10 @@ export function confirmDialog({ title, bodyHtml = '', confirmLabel, cancelLabel,
     const d = openDialog({
       title,
       size: 'sm',
-      html: `<div class="lib-confirm-text">${bodyHtml}</div>
+      html: `<div class="lib-confirm-text">${renderHTML(bodyHtml)}</div>
         <div class="lib-dialog-actions">
-          <button type="button" class="btn btn-secondary" data-no>${esc(cancelLabel || t('common.cancel'))}</button>
-          <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-yes>${esc(confirmLabel || t('library.confirm'))}</button>
+          <button type="button" class="btn btn-secondary" data-no>${uiText(cancelLabel || t('common.cancel'))}</button>
+          <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-yes>${uiText(confirmLabel || t('library.confirm'))}</button>
         </div>`,
       initialFocus: '[data-no]',
       onRequestClose: () => { resolve(answer); return true; },

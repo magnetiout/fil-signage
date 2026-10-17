@@ -30,6 +30,7 @@ db.exec(`
     role TEXT NOT NULL DEFAULT 'user',
     plan_id TEXT DEFAULT 'free',
     email_alerts INTEGER DEFAULT 1,
+    ui_language TEXT,
     must_change_password INTEGER NOT NULL DEFAULT 0,
     -- Mirrors the real schema, where this arrives as
     --   ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0

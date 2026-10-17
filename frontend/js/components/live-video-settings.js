@@ -1,9 +1,11 @@
+import { uiText, renderHTML } from '../lib/i18n-bindings.js';
+
 // #go2rtc — workspace-level "Enable live video" toggle. Rendered on the members page for workspace
 // admins, next to the approval-settings card (same host pattern). Only appears when live video is
 // enabled server-wide (features.live_video); otherwise the toggle would be inert, so it is hidden
 // entirely rather than shown greyed-out, the same rule device-detail follows for capabilities.
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -21,13 +23,13 @@ export async function renderLiveVideoSettings(host, { workspaceId, workspace } =
   function paint() {
     host.innerHTML = `
       <div class="settings-section" style="margin-top:24px;padding:16px 20px">
-        <h3 style="margin:0 0 6px">${esc(t('live_video.title'))}</h3>
-        <p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">${esc(t('live_video.explain'))}</p>
+        <h3 style="margin:0 0 6px">${uiText(t('live_video.title'))}</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">${uiText(t('live_video.explain'))}</p>
         <label style="display:flex;align-items:center;gap:10px;font-weight:600;cursor:pointer">
           <input type="checkbox" id="wsLiveVideoToggle" ${enabled ? 'checked' : ''}>
-          ${esc(t('live_video.toggle'))}
+          ${uiText(t('live_video.toggle'))}
         </label>
-        ${enabled ? `<p style="font-size:13px;margin:8px 0 0;color:var(--text-muted)">${esc(t('live_video.on_effects'))}</p>` : ''}
+        ${renderHTML(enabled ? `<p style="font-size:13px;margin:8px 0 0;color:var(--text-muted)">${uiText(t('live_video.on_effects'))}</p>` : '')}
       </div>`;
     host.querySelector('#wsLiveVideoToggle')?.addEventListener('change', async (e) => {
       const want = !!e.target.checked;
@@ -41,7 +43,7 @@ export async function renderLiveVideoSettings(host, { workspaceId, workspace } =
       } catch (err) {
         e.target.checked = !want;   // revert the visual
         e.target.disabled = false;
-        showToast(err.message || t('live_video.save_failed'), 'error');
+        showToast(err.uiMessage || err.message || t('live_video.save_failed'), 'error');
       }
     });
   }

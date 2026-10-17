@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 screen share — the dashboard side (docs/screen-share.md).
  *
@@ -11,7 +13,7 @@
  * on document.body) and ends when the tab closes, because its signalling socket closes with it.
  */
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
 import { ScreenShareSender, MultiShareSender, pickScreen, shareUnsupportedReason, stopStream, soundMissing } from '../lib/screen-share-client.js';
@@ -37,7 +39,7 @@ export function activeScreenShare() {
 const PLAYER_NAMES = {
   android: 'Android', tizen: 'Samsung Tizen', brightsign: 'BrightSign', vega: 'Amazon Fire TV (Vega)',
   linux: 'Raspberry Pi', windows: 'Windows', macos: 'macOS', ios: 'iPad / iPhone', roku: 'Roku',
-  embedded: 'e-ink', web: 'web player',
+  embedded: 'e-ink', web: t("ui.screen_share.web_player_254c6d"),
 };
 // Players that have a receiver in a current release: a screen of that kind that cannot show one is
 // running an older app (update it), not a platform that never will.
@@ -94,7 +96,7 @@ export async function startScreenShare(device, { audio = false, also = [] } = {}
     start = await api.startScreenShare(device.id, { audio: !!audio && stream.getAudioTracks().length > 0 });
   } catch (e) {
     stopStream(stream);
-    showToast((e && e.body && e.body.reason) ? screenShareReasonText(e.body.reason) : (e.message || t('screen_share.reason.generic')), 'error', 7000);
+    showToast((e && e.body && e.body.reason) ? screenShareReasonText(e.body.reason) : ((e.uiMessage || e.message) || t('screen_share.reason.generic')), 'error', 7000);
     return false;
   }
   // The display's mirrors (its link open somewhere else) come back as extra legs: the same one
@@ -278,18 +280,18 @@ function paintBar() {
   bar.innerHTML = `
     <span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;flex:0 0 auto;background:${live ? 'var(--danger, #ef4444)' : 'var(--warning, #f59e0b)'}"></span>
     <span style="display:grid;line-height:1.3;min-width:0">
-      <strong style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(title)}</strong>
-      <small style="color:var(--text-muted);font-size:12px">${esc(detail)}</small>
+      <strong style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${uiText(title)}</strong>
+      <small style="color:var(--text-muted);font-size:12px">${uiText(detail)}</small>
     </span>
-    <button type="button" class="btn btn-danger btn-sm" data-share-stop>${esc(t('screen_share.stop'))}</button>
-    ${room ? `<div style="flex-basis:100%;display:grid;gap:6px;padding-top:6px;border-top:1px solid var(--border)">
-      <small style="color:var(--text-muted)">${esc(t('screen_share.room.count', { count: room.presenters.length, slots: room.slots || room.presenters.length }))}</small>
-      ${room.presenters.map((p) => `<div style="display:flex;align-items:center;gap:8px;font-size:13px">
-        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}${p.guest ? ` <small>(${esc(t('screen_share.guest_word'))})</small>` : ''}${p.you ? ` <small>(${esc(t('screen_share.room.you'))})</small>` : ''}${p.spotlight ? ` <small>· ${esc(t('screen_share.room.full_screen'))}</small>` : ''}</span>
-        ${room.can_control ? `<button type="button" class="btn btn-secondary btn-sm" data-room-spot="${esc(p.id)}" data-on="${p.spotlight ? '1' : ''}">${esc(t(p.spotlight ? 'screen_share.room.unspotlight' : 'screen_share.room.spotlight'))}</button>` : ''}
-        ${room.can_control && !p.you ? `<button type="button" class="btn btn-danger btn-sm" data-room-remove="${esc(p.id)}">${esc(t('screen_share.room.remove'))}</button>` : ''}
-      </div>`).join('')}
-    </div>` : ''}`;
+    <button type="button" class="btn btn-danger btn-sm" data-share-stop>${uiText(t('screen_share.stop'))}</button>
+    ${renderHTML(room ? `<div style="flex-basis:100%;display:grid;gap:6px;padding-top:6px;border-top:1px solid var(--border)">
+      <small style="color:var(--text-muted)">${uiText(t('screen_share.room.count', { count: room.presenters.length, slots: room.slots || room.presenters.length }))}</small>
+      ${renderHTML(room.presenters.map((p) => `<div style="display:flex;align-items:center;gap:8px;font-size:13px">
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(p.name)}${renderHTML(p.guest ? ` <small>(${uiText(t('screen_share.guest_word'))})</small>` : '')}${renderHTML(p.you ? ` <small>(${uiText(t('screen_share.room.you'))})</small>` : '')}${renderHTML(p.spotlight ? ` <small>· ${uiText(t('screen_share.room.full_screen'))}</small>` : '')}</span>
+        ${renderHTML(room.can_control ? `<button type="button" class="btn btn-secondary btn-sm" data-room-spot="${esc(p.id)}" data-on="${p.spotlight ? '1' : ''}">${uiText(t(p.spotlight ? 'screen_share.room.unspotlight' : 'screen_share.room.spotlight'))}</button>` : '')}
+        ${renderHTML(room.can_control && !p.you ? `<button type="button" class="btn btn-danger btn-sm" data-room-remove="${esc(p.id)}">${uiText(t('screen_share.room.remove'))}</button>` : '')}
+      </div>`).join(''))}
+    </div>` : '')}`;
   bar.querySelector('[data-share-stop]').addEventListener('click', () => stopScreenShare());
   bar.querySelectorAll('[data-room-spot]').forEach((b) => b.addEventListener('click', () => {
     if (active && active.sender && room) active.sender.roomAction(room.room, 'spotlight', b.dataset.on ? null : b.dataset.roomSpot);
@@ -338,14 +340,14 @@ export function renderScreenShareCard(host, device, opts = {}) {
 
   function alsoHtml() {
     if (!others) return `<p style="font-size:13px;color:var(--text-muted);margin:8px 0 0">…</p>`;
-    if (!others.length) return `<p style="font-size:13px;color:var(--text-muted);margin:8px 0 0">${esc(t('screen_share.card.also_none'))}</p>`;
+    if (!others.length) return `<p style="font-size:13px;color:var(--text-muted);margin:8px 0 0">${uiText(t('screen_share.card.also_none'))}</p>`;
     const more = Math.max(0, (status.max_targets || 6) - 1);
-    return `<p style="font-size:12px;color:var(--text-muted);margin:8px 0 6px">${esc(t('screen_share.card.also_hint', { more }))}</p>
-      <div style="display:grid;gap:4px;max-height:180px;overflow:auto">${others.map((o) => `
+    return `<p style="font-size:12px;color:var(--text-muted);margin:8px 0 6px">${uiText(t('screen_share.card.also_hint', { more }))}</p>
+      <div style="display:grid;gap:4px;max-height:180px;overflow:auto">${renderHTML(others.map((o) => `
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;${o.online ? '' : 'opacity:.55'}">
           <input type="checkbox" data-share-also="${esc(o.id)}" ${also.has(o.id) ? 'checked' : ''} ${o.online ? '' : 'disabled'}>
-          ${esc(o.name)}${o.online ? '' : ` <small>(${esc(t('screen_share.reason.offline'))})</small>`}
-        </label>`).join('')}</div>`;
+          ${uiText(o.name)}${renderHTML(o.online ? '' : ` <small>(${uiText(t('screen_share.reason.offline'))})</small>`)}
+        </label>`).join(''))}</div>`;
   }
 
   async function load() {
@@ -373,43 +375,43 @@ export function renderScreenShareCard(host, device, opts = {}) {
     const since = s && s.started_at ? new Date(s.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     host.innerHTML = `
       <div class="settings-section" style="margin-top:16px;padding:16px 20px">
-        <h3 style="margin:0 0 6px">${esc(t('screen_share.card.title'))}</h3>
-        <p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">${esc(t('screen_share.card.explain', { minutes: Math.round((status.max_seconds || 3600) / 60) }))}</p>
-        ${many ? presentersHtml(presenters, multi, status.can_share, mine) : ''}
-        ${s && !many ? `
+        <h3 style="margin:0 0 6px">${uiText(t('screen_share.card.title'))}</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">${uiText(t('screen_share.card.explain', { minutes: Math.round((status.max_seconds || 3600) / 60) }))}</p>
+        ${renderHTML(many ? presentersHtml(presenters, multi, status.can_share, mine) : '')}
+        ${renderHTML(s && !many ? `
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-            <span>&#9679; ${esc(s.screens > 1
+            <span>● ${uiText(s.screens > 1
               ? t('screen_share.card.now_multi', { name: s.shared_by, count: s.screens, time: since })
               : t(s.guest ? 'screen_share.card.now_guest' : 'screen_share.card.now', { name: s.shared_by, time: since }))}</span>
-            ${status.can_share && !mine ? `<button type="button" class="btn btn-danger btn-sm" data-share-kick>${esc(t(s.screens > 1 ? 'screen_share.card.kick_one' : 'screen_share.card.kick'))}</button>` : ''}
-            ${status.can_share && !mine && s.screens > 1 ? `<button type="button" class="btn btn-danger btn-sm" data-share-kick-all>${esc(t('screen_share.card.stop_all', { count: s.screens }))}</button>` : ''}
-            ${mine ? `<button type="button" class="btn btn-danger btn-sm" data-share-mine-stop>${esc(t('screen_share.stop'))}</button>` : ''}
-          </div>` : ''}
-        ${canStart ? `
+            ${renderHTML(status.can_share && !mine ? `<button type="button" class="btn btn-danger btn-sm" data-share-kick>${uiText(t(s.screens > 1 ? 'screen_share.card.kick_one' : 'screen_share.card.kick'))}</button>` : '')}
+            ${renderHTML(status.can_share && !mine && s.screens > 1 ? `<button type="button" class="btn btn-danger btn-sm" data-share-kick-all>${uiText(t('screen_share.card.stop_all', { count: s.screens }))}</button>` : '')}
+            ${renderHTML(mine ? `<button type="button" class="btn btn-danger btn-sm" data-share-mine-stop>${uiText(t('screen_share.stop'))}</button>` : '')}
+          </div>` : '')}
+        ${renderHTML(canStart ? `
           <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <button type="button" class="btn btn-primary btn-sm" data-share-start ${status.reason === 'offline' ? 'disabled' : ''}>&#128421;&#65039; ${esc(t('screen_share.start'))}</button>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" data-share-audio> ${esc(t('screen_share.include_audio'))}</label>
+            <button type="button" class="btn btn-primary btn-sm" data-share-start ${status.reason === 'offline' ? 'disabled' : ''}>🖥️ ${uiText(t('screen_share.start'))}</button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" data-share-audio> ${uiText(t('screen_share.include_audio'))}</label>
           </div>
-          ${(status.max_targets || 1) > 1 ? `
+          ${renderHTML((status.max_targets || 1) > 1 ? `
           <details data-share-also-box style="margin-top:10px" ${alsoOpen ? 'open' : ''}>
-            <summary style="cursor:pointer;font-size:13px">${esc(t('screen_share.card.also'))}${also.size ? ` (${also.size})` : ''}</summary>
-            ${alsoOpen ? alsoHtml() : ''}
-          </details>` : ''}` : ''}
-        ${canStart && Array.isArray(status.mirrors) && status.mirrors.length ? `
-          <p data-share-mirrors style="font-size:12px;margin:8px 0 0;color:var(--text-muted)">${esc(t('screen_share.card.mirrors_line', { count: status.mirrors.length, names: status.mirrors.map((m) => m.name).join(', ') }))}</p>` : ''}
-        ${note ? `<p style="font-size:13px;margin:10px 0 0;color:var(--text-muted)">${esc(note)}</p>` : ''}
+            <summary style="cursor:pointer;font-size:13px">${uiText(t('screen_share.card.also'))}${renderHTML(also.size ? ` (${also.size})` : '')}</summary>
+            ${renderHTML(alsoOpen ? alsoHtml() : '')}
+          </details>` : '')}` : '')}
+        ${renderHTML(canStart && Array.isArray(status.mirrors) && status.mirrors.length ? `
+          <p data-share-mirrors style="font-size:12px;margin:8px 0 0;color:var(--text-muted)">${uiText(t('screen_share.card.mirrors_line', { count: status.mirrors.length, names: status.mirrors.map((m) => m.name).join(', ') }))}</p>` : '')}
+        ${renderHTML(note ? `<p style="font-size:13px;margin:10px 0 0;color:var(--text-muted)">${uiText(note)}</p>` : '')}
         ${/* A mirror shows its display's code: the switch is on the display (the mirror banner links it). */
-          status.can_admin && status.supported && !status.mirror_of ? `
+          renderHTML(status.can_admin && status.supported && !status.mirror_of ? `
           <label style="display:flex;align-items:flex-start;gap:10px;margin-top:14px;cursor:pointer">
             <input type="checkbox" data-share-guest ${status.guest_enabled ? 'checked' : ''} ${status.workspace_enabled ? '' : 'disabled'} style="margin-top:3px">
-            <span><strong style="font-size:14px">${esc(t('screen_share.guest.toggle'))}</strong><br>
-            <small style="color:var(--text-muted);font-size:12px">${esc(t('screen_share.guest.explain'))}</small></span>
+            <span><strong style="font-size:14px">${uiText(t('screen_share.guest.toggle'))}</strong><br>
+            <small style="color:var(--text-muted);font-size:12px">${uiText(t('screen_share.guest.explain'))}</small></span>
           </label>
           <label style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;cursor:pointer">
             <input type="checkbox" data-share-multi ${multi.enabled ? 'checked' : ''} ${status.workspace_enabled && (multi.supported || multi.enabled) ? '' : 'disabled'} style="margin-top:3px">
-            <span><strong style="font-size:14px">${esc(t('screen_share.multi.toggle', { max: multi.max_presenters || 4 }))}</strong><br>
-            <small style="color:var(--text-muted);font-size:12px">${esc(multi.supported ? t('screen_share.multi.explain', { max: multi.max_presenters || 4 }) : t('screen_share.multi.unsupported'))}</small></span>
-          </label>` : ''}
+            <span><strong style="font-size:14px">${uiText(t('screen_share.multi.toggle', { max: multi.max_presenters || 4 }))}</strong><br>
+            <small style="color:var(--text-muted);font-size:12px">${uiText(multi.supported ? t('screen_share.multi.explain', { max: multi.max_presenters || 4 }) : t('screen_share.multi.unsupported'))}</small></span>
+          </label>` : '')}
       </div>`;
     host.querySelector('[data-share-start]')?.addEventListener('click', async (e) => {
       const audio = !!host.querySelector('[data-share-audio]')?.checked;
@@ -427,19 +429,19 @@ export function renderScreenShareCard(host, device, opts = {}) {
       if (cb.checked && also.size >= max) { cb.checked = false; showToast(t('screen_share.reason.too_many_targets', { max: status.max_targets, count: also.size + 2 }), 'warning'); return; }
       if (cb.checked) also.add(cb.dataset.shareAlso); else also.delete(cb.dataset.shareAlso);
       const sum = host.querySelector('[data-share-also-box] summary');
-      if (sum) sum.textContent = t('screen_share.card.also') + (also.size ? ` (${also.size})` : '');
+      if (sum) bindMessage(sum, t('screen_share.card.also') + (also.size ? ` (${also.size})` : ''));
     }));
     host.querySelector('[data-share-kick-all]')?.addEventListener('click', async (e) => {
       e.currentTarget.disabled = true;
       try { await api.stopScreenShareAll(status.session.share_id); showToast(t('screen_share.card.kicked'), 'success'); }
-      catch (err) { showToast(err.message, 'error'); }
+      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       load();
     });
     host.querySelector('[data-share-mine-stop]')?.addEventListener('click', () => stopScreenShare());
     host.querySelector('[data-share-kick]')?.addEventListener('click', async (e) => {
       e.currentTarget.disabled = true;
       try { await api.stopScreenShare(device.id); showToast(t('screen_share.card.kicked'), 'success'); }
-      catch (err) { showToast(err.message, 'error'); }
+      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       load();
     });
     host.querySelector('[data-share-multi]')?.addEventListener('change', async (e) => {
@@ -448,19 +450,19 @@ export function renderScreenShareCard(host, device, opts = {}) {
       try {
         await api.setScreenShareMulti(device.id, want);
         showToast(t(want ? 'screen_share.multi.on_toast' : 'screen_share.multi.off_toast'), 'success');
-      } catch (err) { e.target.checked = !want; showToast(err.message, 'error'); }
+      } catch (err) { e.target.checked = !want; showToast(err.uiMessage || err.message, 'error'); }
       load();
     });
     host.querySelectorAll('[data-presenter-spot]').forEach((b) => b.addEventListener('click', async () => {
       b.disabled = true;
       try { await api.spotlightScreenShare(device.id, b.dataset.on ? null : b.dataset.presenterSpot); }
-      catch (err) { showToast(err.message, 'error'); }
+      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       load();
     }));
     host.querySelectorAll('[data-presenter-remove]').forEach((b) => b.addEventListener('click', async () => {
       b.disabled = true;
       try { await api.removeScreenSharePresenter(device.id, b.dataset.presenterRemove); showToast(t('screen_share.card.removed'), 'success'); }
-      catch (err) { showToast(err.message, 'error'); }
+      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       load();
     }));
     host.querySelector('[data-share-guest]')?.addEventListener('change', async (e) => {
@@ -469,7 +471,7 @@ export function renderScreenShareCard(host, device, opts = {}) {
       try {
         await api.setScreenShareGuest(device.id, want);
         showToast(t(want ? 'screen_share.guest.on_toast' : 'screen_share.guest.off_toast'), 'success');
-      } catch (err) { e.target.checked = !want; showToast(err.message, 'error'); }
+      } catch (err) { e.target.checked = !want; showToast(err.uiMessage || err.message, 'error'); }
       load();
     });
   }
@@ -480,16 +482,16 @@ export function renderScreenShareCard(host, device, opts = {}) {
     const at = (p) => (p.started_at ? new Date(p.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
     return `<div data-share-presenters style="border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <strong style="flex:1;font-size:13px">${esc(t('screen_share.card.presenters_title', { count: list.length, slots: Math.max(multi.slots || 1, list.length) }))}</strong>
-        ${canManage && !mine ? `<button type="button" class="btn btn-danger btn-sm" data-share-kick>${esc(t('screen_share.card.stop_everyone'))}</button>` : ''}
-        ${mine ? `<button type="button" class="btn btn-danger btn-sm" data-share-mine-stop>${esc(t('screen_share.stop'))}</button>` : ''}
+        <strong style="flex:1;font-size:13px">${uiText(t('screen_share.card.presenters_title', { count: list.length, slots: Math.max(multi.slots || 1, list.length) }))}</strong>
+        ${renderHTML(canManage && !mine ? `<button type="button" class="btn btn-danger btn-sm" data-share-kick>${uiText(t('screen_share.card.stop_everyone'))}</button>` : '')}
+        ${renderHTML(mine ? `<button type="button" class="btn btn-danger btn-sm" data-share-mine-stop>${uiText(t('screen_share.stop'))}</button>` : '')}
       </div>
-      <div style="display:grid;gap:6px">${list.map((p) => `
+      <div style="display:grid;gap:6px">${renderHTML(list.map((p) => `
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px">
-          <span style="flex:1;min-width:0">&#9679; ${esc(t(p.guest ? 'screen_share.card.presenter_guest' : 'screen_share.card.presenter', { name: p.shared_by, time: at(p) }))}${p.spotlight ? ` <small style="color:var(--text-muted)">· ${esc(t('screen_share.room.full_screen'))}</small>` : ''}</span>
-          ${canManage ? `<button type="button" class="btn btn-secondary btn-sm" data-presenter-spot="${esc(p.share_id)}" data-on="${p.spotlight ? '1' : ''}">${esc(t(p.spotlight ? 'screen_share.room.unspotlight' : 'screen_share.room.spotlight'))}</button>
-          <button type="button" class="btn btn-danger btn-sm" data-presenter-remove="${esc(p.share_id)}">${esc(t('screen_share.room.remove'))}</button>` : ''}
-        </div>`).join('')}</div>
+          <span style="flex:1;min-width:0">&#9679; ${renderHTML(t(p.guest ? 'screen_share.card.presenter_guest' : 'screen_share.card.presenter', { name: p.shared_by, time: at(p) }))}${renderHTML(p.spotlight ? ` <small style="color:var(--text-muted)">· ${uiText(t('screen_share.room.full_screen'))}</small>` : '')}</span>
+          ${renderHTML(canManage ? `<button type="button" class="btn btn-secondary btn-sm" data-presenter-spot="${esc(p.share_id)}" data-on="${p.spotlight ? '1' : ''}">${uiText(t(p.spotlight ? 'screen_share.room.unspotlight' : 'screen_share.room.spotlight'))}</button>
+          <button type="button" class="btn btn-danger btn-sm" data-presenter-remove="${esc(p.share_id)}">${uiText(t('screen_share.room.remove'))}</button>` : '')}
+        </div>`).join(''))}</div>
     </div>`;
   }
 
@@ -514,11 +516,11 @@ export async function renderScreenShareSettings(host, { workspaceId } = {}) {
   function paint() {
     host.innerHTML = `
       <div class="settings-section" style="margin-top:24px;padding:16px 20px">
-        <h3 style="margin:0 0 6px">${esc(t('screen_share.settings.title'))}</h3>
-        <p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">${esc(t('screen_share.settings.explain'))}</p>
+        <h3 style="margin:0 0 6px">${uiText(t('screen_share.settings.title'))}</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">${uiText(t('screen_share.settings.explain'))}</p>
         <label style="display:flex;align-items:center;gap:10px;font-weight:600;cursor:pointer">
           <input type="checkbox" id="wsScreenShareToggle" ${enabled ? 'checked' : ''}>
-          ${esc(t('screen_share.settings.toggle'))}
+          ${uiText(t('screen_share.settings.toggle'))}
         </label>
       </div>`;
     host.querySelector('#wsScreenShareToggle')?.addEventListener('change', async (e) => {
@@ -528,7 +530,7 @@ export async function renderScreenShareSettings(host, { workspaceId } = {}) {
         await api.setScreenShareWorkspace(workspaceId, want);
         enabled = want;
         showToast(t(want ? 'screen_share.settings.on_toast' : 'screen_share.settings.off_toast'), 'success');
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       paint();
     });
   }

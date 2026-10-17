@@ -1,7 +1,9 @@
+import { renderHTML, uiText, bindMessage } from '../lib/i18n-bindings.js';
+
 import { api } from '../api.js';
 import { showToast } from './toast.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 
 /*
  * View-only access for one display (server lib/view-access.js). Off by default. Workspace admins get
@@ -24,42 +26,42 @@ export async function setupViewAccess(device) {
   };
 
   const draw = () => {
-    const head = `<h4 style="font-size:13px;margin-bottom:4px">${t('device.view.title')}</h4>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;max-width:70ch">${t('device.view.hint')}</div>`;
+    const head = `<h4 style="font-size:13px;margin-bottom:4px">${renderHTML(t('device.view.title'))}</h4>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;max-width:70ch">${renderHTML(t('device.view.hint'))}</div>`;
     if (!state.can_admin) {
-      host.innerHTML = `<div style="margin-top:20px">${head}
-        <div style="font-size:12px">${state.enabled ? t('device.view.status_on') : t('device.view.status_off')}
-        <span style="color:var(--text-muted)">${t('device.view.admin_only')}</span></div></div>`;
+      host.innerHTML = `<div style="margin-top:20px">${renderHTML(head)}
+        <div style="font-size:12px">${renderHTML(state.enabled ? t('device.view.status_on') : t('device.view.status_off'))}
+        <span style="color:var(--text-muted)">${renderHTML(t('device.view.admin_only'))}</span></div></div>`;
       return;
     }
-    host.innerHTML = `<div style="margin-top:20px">${head}
+    host.innerHTML = `<div style="margin-top:20px">${renderHTML(head)}
       <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer">
-        <input type="checkbox" id="viewEnabled" ${state.enabled ? 'checked' : ''}> ${t('device.view.enable')}
+        <input type="checkbox" id="viewEnabled" ${state.enabled ? 'checked' : ''}> ${renderHTML(t('device.view.enable'))}
       </label>
-      ${state.enabled ? `
+      ${renderHTML(state.enabled ? `
       <div style="margin-top:12px">
-        <div style="font-size:12px;font-weight:600;margin-bottom:4px">${t('device.view.link')}</div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:4px">${renderHTML(t('device.view.link'))}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <input class="input" id="viewShareUrl" readonly value="${esc(state.share_url || '')}" style="flex:1;min-width:260px;font-family:monospace;font-size:11px">
-          <button class="btn btn-secondary btn-sm" id="viewCopyBtn">${t('device.view.copy')}</button>
-          <button class="btn btn-secondary btn-sm" id="viewRegenBtn">${t('device.view.regenerate')}</button>
+          <button class="btn btn-secondary btn-sm" id="viewCopyBtn">${renderHTML(t('device.view.copy'))}</button>
+          <button class="btn btn-secondary btn-sm" id="viewRegenBtn">${renderHTML(t('device.view.regenerate'))}</button>
         </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('device.view.link_hint')}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('device.view.link_hint'))}</div>
       </div>
       <div style="margin-top:12px">
-        <div style="font-size:12px;font-weight:600;margin-bottom:4px">${t('device.view.networks')}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${t('device.view.networks_hint')}</div>
-        <textarea class="input" id="viewCidrs" rows="3" spellcheck="false" style="width:100%;max-width:420px;font-family:monospace;font-size:12px">${esc((state.cidrs || []).join('\n'))}</textarea>
+        <div style="font-size:12px;font-weight:600;margin-bottom:4px">${renderHTML(t('device.view.networks'))}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t('device.view.networks_hint'))}</div>
+        <textarea class="input" id="viewCidrs" rows="3" spellcheck="false" style="width:100%;max-width:420px;font-family:monospace;font-size:12px">${uiText((state.cidrs || []).join('\n'))}</textarea>
         <div id="viewCidrError" style="font-size:12px;color:var(--danger);margin-top:4px"></div>
-        <button class="btn btn-secondary btn-sm" id="viewCidrSave" style="margin-top:6px">${t('device.view.networks_save')}</button>
-        ${state.network_url ? `
-        <div style="font-size:12px;font-weight:600;margin:10px 0 4px">${t('device.view.network_url')}</div>
+        <button class="btn btn-secondary btn-sm" id="viewCidrSave" style="margin-top:6px">${renderHTML(t('device.view.networks_save'))}</button>
+        ${renderHTML(state.network_url ? `
+        <div style="font-size:12px;font-weight:600;margin:10px 0 4px">${renderHTML(t('device.view.network_url'))}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <input class="input" id="viewNetUrl" readonly value="${esc(state.network_url)}" style="flex:1;min-width:260px;font-family:monospace;font-size:11px">
-          <button class="btn btn-secondary btn-sm" id="viewNetCopyBtn">${t('device.view.copy')}</button>
+          <button class="btn btn-secondary btn-sm" id="viewNetCopyBtn">${renderHTML(t('device.view.copy'))}</button>
         </div>
-        ${state.trusted_proxies_configured ? '' : `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('device.view.proxy_note')}</div>`}` : ''}
-      </div>` : ''}
+        ${renderHTML(state.trusted_proxies_configured ? '' : `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('device.view.proxy_note'))}</div>`)}` : '')}
+      </div>` : '')}
     </div>`;
 
     host.querySelector('#viewEnabled').addEventListener('change', async (e) => {
@@ -67,7 +69,7 @@ export async function setupViewAccess(device) {
       try {
         state = await api.updateViewAccess(device.id, { enabled: on });
         showToast(on ? t('device.view.turned_on') : t('device.view.turned_off'));
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       draw();
     });
     if (!state.enabled) return;
@@ -75,16 +77,16 @@ export async function setupViewAccess(device) {
     host.querySelector('#viewRegenBtn').addEventListener('click', async () => {
       if (!confirm(t('device.view.confirm_regenerate'))) return;
       try { state = await api.regenerateViewLink(device.id); showToast(t('device.view.regenerated')); draw(); }
-      catch (err) { showToast(err.message, 'error'); }
+      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     });
     host.querySelector('#viewCidrSave').addEventListener('click', async () => {
       const errEl = host.querySelector('#viewCidrError');
-      errEl.textContent = '';
+      bindMessage(errEl, '');
       try {
         state = await api.updateViewAccess(device.id, { cidrs: host.querySelector('#viewCidrs').value });
         showToast(t('device.view.networks_saved'));
         draw();
-      } catch (err) { errEl.textContent = err.message; }
+      } catch (err) { bindMessage(errEl, (err.uiMessage || err.message)); }
     });
     const net = host.querySelector('#viewNetCopyBtn');
     if (net) net.addEventListener('click', () => copy('#viewNetUrl'));

@@ -1,3 +1,7 @@
+import { uiText, renderHTML, translatedAttribute, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { displayQuantity, displayValue, getLocale, message as t, messageCount as tn } from '../i18n.js';
+
 import { api } from '../api.js';
 import { isSimpleMode } from '../components/ui-mode.js';
 import { plansVisible } from '../components/plan-nudges.js';
@@ -6,7 +10,7 @@ import { BroadcastTalkClient } from '../lib/talk-client.js';
 import { showToast } from '../components/toast.js';
 import { esc, livenessBadge, isPlatformAdmin, screenshotUrl, compareVersions } from '../utils.js';
 import { mountWallLive } from '../components/wall-live.js';
-import { t, tn } from '../i18n.js';
+
 import * as gettingStarted from '../components/getting-started.js';
 import * as whatsNew from '../components/whats-new.js';
 import { showDeviceOwnerQRModal } from '../components/device-owner-qr-modal.js';
@@ -88,7 +92,7 @@ function formatTimeAgo(timestamp) {
 
 function formatBytes(mb) {
   if (mb === null || mb === undefined) return '--';
-  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
+  if (mb >= 1024) return displayQuantity((mb / 1024),'GB',1);
   return `${mb} MB`;
 }
 
@@ -105,14 +109,14 @@ function renderProgressFor(deviceId) {
       const remaining = Math.max(0, Math.ceil(state.duration_sec - elapsed));
       const pct = Math.min(100, (elapsed / state.duration_sec) * 100);
       fill.style.width = pct + '%';
-      if (nameEl) nameEl.textContent = name;
-      if (timeEl) timeEl.textContent = remaining + 's';
+      if (nameEl) bindMessage(nameEl, name);
+      if (timeEl) bindMessage(timeEl, remaining + 's');
     } else {
       // Unknown duration (e.g. video plays to end) — show indeterminate state
       fill.style.width = '100%';
       fill.classList.add('indeterminate');
-      if (nameEl) nameEl.textContent = name;
-      if (timeEl) timeEl.textContent = '';
+      if (nameEl) bindMessage(nameEl, name);
+      if (timeEl) bindMessage(timeEl, '');
     }
     el.style.display = 'block';
   });
@@ -163,12 +167,12 @@ function fillVersionFilter(devices) {
   for (const d of devices) if (d.app_version) counts.set(d.app_version, (counts.get(d.app_version) || 0) + 1);
   const versions = [...counts.keys()].sort((x, y) => {
     const c = compareVersions(y, x);
-    return c === null ? String(y).localeCompare(String(x)) : c;
+    return c === null ? String(y).localeCompare(String(x), getLocale()) : c;
   });
   const behind = devices.filter(isBehindServedApk).length;
   group.innerHTML = (servedApkVersion && behind
-    ? `<option value="version:behind">${esc(t('dashboard.filter.version_behind', { version: servedApkVersion, n: behind }))}</option>`
-    : '') + versions.map((v) => `<option value="version:=${esc(v)}">v${esc(String(v).replace(/^v/, ''))} (${counts.get(v)})</option>`).join('');
+    ? `<option value="version:behind">${uiText(t('dashboard.filter.version_behind', { version: servedApkVersion, n: behind }))}</option>`
+    : '') + versions.map((v) => `<option value="version:=${esc(v)}">v${uiText(String(v).replace(/^v/, ''))} (${renderHTML(counts.get(v))})</option>`).join('');
   group.hidden = !group.children.length;
   if (sel && keep && [...sel.options].some((o) => o.value === keep)) sel.value = keep;
 }
@@ -181,8 +185,8 @@ function fillTagFilter(devices) {
   const counts = new Map();
   for (const d of devices) for (const tg of (Array.isArray(d.tags) ? d.tags : [])) counts.set(tg, (counts.get(tg) || 0) + 1);
   const tags = [...counts.keys()].sort();
-  sel.innerHTML = `<option value="">${esc(t('dashboard.filter.all_tags'))}</option>`
-    + tags.map((tg) => `<option value="${esc(tg)}">#${esc(tg)} (${counts.get(tg)})</option>`).join('');
+  sel.innerHTML = `<option value="">${uiText(t('dashboard.filter.all_tags'))}</option>`
+    + tags.map((tg) => `<option value="${esc(tg)}">#${uiText(tg)} (${renderHTML(counts.get(tg))})</option>`).join('');
   sel.hidden = !tags.length;
   if (keep && counts.has(keep)) sel.value = keep;
 }
@@ -218,7 +222,7 @@ function mirrorBadge(device) {
   const n = mirrorCounts.get(device.id) || 0;
   const label = device.mirror_of ? t('dashboard.mirror_badge') : (n ? tn('dashboard.mirrors_badge', n) : '');
   if (!label) return '';
-  return ` <span class="device-mirror-badge" title="${esc(t('dashboard.mirror_badge_tip'))}" style="margin-left:6px;font-size:11px;color:var(--text-secondary);background:var(--bg-primary);padding:1px 6px;border-radius:8px;vertical-align:middle">${esc(label)}</span>`;
+  return ` <span class="device-mirror-badge" title="${esc(t('dashboard.mirror_badge_tip'))}" data-fil-i18n-title="${binding('dashboard.mirror_badge_tip', undefined)}" style="margin-left:6px;font-size:11px;color:var(--text-secondary);background:var(--bg-primary);padding:1px 6px;border-radius:8px;vertical-align:middle">${uiText(label)}</span>`;
 }
 
 /*
@@ -250,97 +254,97 @@ function renderDeviceCard(device) {
     && !(Number(device.battery_level) === 0 && !device.battery_charging);
   return `
     <div class="device-card${checked ? ' selected' : ''}" draggable="true" data-device-id="${device.id}" data-device-name="${esc(device.name)}" data-can-screenshot="${canShot ? '1' : '0'}" data-app-version="${esc(device.app_version || '')}" data-behind="${behind ? '1' : '0'}" data-tags="${esc((Array.isArray(device.tags) ? device.tags : []).join(' '))}" onclick="window.location.hash='/device/${device.id}'">
-      <span class="device-card-drag" title="${esc(t('dashboard.drag_to_reorder'))}" onclick="event.stopPropagation()">⠿</span>
-      <label class="device-card-select" title="${t('dashboard.select_for_wall')}" onclick="event.stopPropagation()">
+      <span class="device-card-drag" title="${esc(t('dashboard.drag_to_reorder'))}" data-fil-i18n-title="${binding('dashboard.drag_to_reorder', undefined)}" onclick="event.stopPropagation()">⠿</span>
+      <label class="device-card-select" title="${t('dashboard.select_for_wall')}" data-fil-i18n-title="${binding('dashboard.select_for_wall', undefined)}" onclick="event.stopPropagation()">
         <input type="checkbox" class="device-select-cb" data-device-id="${device.id}"${checked ? ' checked' : ''}>
       </label>
       <div class="device-card-preview" id="preview-${device.id}" data-orientation="${esc(device.orientation || 'landscape')}">
-        ${shotSrc
-          ? `<img src="${shotSrc}" alt="Screenshot" loading="lazy">`
+        ${renderHTML(shotSrc
+          ? `<img src="${shotSrc}" ${translatedAttribute("alt", "ui.dashboard.alt_screenshot_029320")} loading="lazy">`
           : `<div class="no-preview">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
                 <line x1="8" y1="21" x2="16" y2="21"/>
                 <line x1="12" y1="17" x2="12" y2="21"/>
               </svg>
-              <span>${t('dashboard.no_preview')}</span>
-            </div>`
+              <span>${renderHTML(t('dashboard.no_preview'))}</span>
+            </div>`)
         }
         <div class="device-card-status is-liveness">
-          ${(() => { const b = livenessBadge(device, { short: true }); return `<span class="device-status-badge ${b.state}" data-liveness="${b.state}" data-offline-reason="${esc(b.reason)}"${b.title ? ` title="${esc(b.title)}"` : ''}>${esc(b.label)}</span>`; })()}
+          ${renderHTML((() => { const b = livenessBadge(device, { short: true }); return `<span class="device-status-badge ${b.state}" data-liveness="${b.state}" data-offline-reason="${esc(b.reason)}"${b.title ? ` title="${esc(b.title)}"` : ''}>${uiText(b.label)}</span>`; })())}
         </div>
-        ${device.status === 'provisioning' && device.pairing_code ? `
+        ${renderHTML(device.status === 'provisioning' && device.pairing_code ? `
         <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#f59e0b;padding:4px 12px;border-radius:6px;font-size:13px;font-weight:600;letter-spacing:2px;font-family:monospace">
-          ${device.pairing_code}
-        </div>` : ''}
+          ${renderHTML(device.pairing_code)}
+        </div>` : '')}
         <div class="device-card-progress" id="progress-${device.id}" style="display:none">
           <div class="device-card-progress-label"><span class="dcp-name"></span><span class="dcp-time"></span></div>
           <div class="device-card-progress-track"><div class="device-card-progress-fill"></div></div>
         </div>
       </div>
       <div class="device-card-body">
-        <div class="device-card-name">${esc(device.name)}${mirrorBadge(device)}${device.orphan_count > 0 ? `
-          <span class="device-orphan-badge" title="${tn('dashboard.device_orphan_tip', device.orphan_count)}" style="margin-left:6px;display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--danger);vertical-align:middle">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${device.orphan_count}
-          </span>` : ''}${device.ota_status === 'manual_update_required' ? `
-          <span class="device-ota-badge" title="${esc(t('dashboard.device_ota_stuck', { version: device.ota_target_version || '?', n: device.ota_attempts || 0 }))}" style="margin-left:6px;display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--warning);vertical-align:middle">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>update
-          </span>` : ''}</div>
-        <div class="device-card-verify" data-sv-device="${esc(device.id)}"></div>${Array.isArray(device.tags) && device.tags.length ? `
-        <div class="device-card-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">${device.tags.slice(0, 4).map((tg) => `<span style="font-size:10px;color:var(--text-secondary);background:var(--bg-primary);padding:1px 6px;border-radius:8px">#${esc(tg)}</span>`).join('')}${device.tags.length > 4 ? `<span style="font-size:10px;color:var(--text-muted)">+${device.tags.length - 4}</span>` : ''}</div>` : ''}
-        ${device.plan_paused ? (plansVisible()
-          ? `<a class="device-plan-paused" href="#/billing?from=paused_screen" onclick="event.stopPropagation()">⏸ ${esc(t(device.plan_paused.reason === 'trial_expired' ? 'dashboard.plan_paused.trial_expired' : 'dashboard.plan_paused.device_limit'))}</a>`
-          : `<span class="device-plan-paused">⏸ ${esc(t('dashboard.plan_paused.device_limit'))}</span>`) : ''}
-        ${device.owner_name || device.owner_email ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">
+        <div class="device-card-name">${uiText(device.name)}${renderHTML(mirrorBadge(device))}${renderHTML(device.orphan_count > 0 ? `
+          <span class="device-orphan-badge" title="${tn('dashboard.device_orphan_tip', device.orphan_count)}" data-fil-i18n-title="${binding('dashboard.device_orphan_tip', undefined, device.orphan_count)}" style="margin-left:6px;display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--danger);vertical-align:middle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${renderHTML(device.orphan_count)}
+          </span>` : '')}${renderHTML(device.ota_status === 'manual_update_required' ? `
+          <span class="device-ota-badge" title="${esc(t('dashboard.device_ota_stuck', { version: device.ota_target_version || '?', n: device.ota_attempts || 0 }))}" data-fil-i18n-title="${binding('dashboard.device_ota_stuck', { version: device.ota_target_version || '?', n: device.ota_attempts || 0 })}" style="margin-left:6px;display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--warning);vertical-align:middle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${renderHTML(t("ui.dashboard.update_293701"))}
+          </span>` : '')}</div>
+        <div class="device-card-verify" data-sv-device="${esc(device.id)}"></div>${renderHTML(Array.isArray(device.tags) && device.tags.length ? `
+        <div class="device-card-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">${renderHTML(device.tags.slice(0, 4).map((tg) => `<span style="font-size:10px;color:var(--text-secondary);background:var(--bg-primary);padding:1px 6px;border-radius:8px">#${uiText(tg)}</span>`).join(''))}${renderHTML(device.tags.length > 4 ? `<span style="font-size:10px;color:var(--text-muted)">+${renderHTML(device.tags.length - 4)}</span>` : '')}</div>` : '')}
+        ${renderHTML(device.plan_paused ? (plansVisible()
+          ? `<a class="device-plan-paused" href="#/billing?from=paused_screen" onclick="event.stopPropagation()">⏸ ${uiText(t(device.plan_paused.reason === 'trial_expired' ? 'dashboard.plan_paused.trial_expired' : 'dashboard.plan_paused.device_limit'))}</a>`
+          : `<span class="device-plan-paused">⏸ ${uiText(t('dashboard.plan_paused.device_limit'))}</span>`) : '')}
+        ${renderHTML(device.owner_name || device.owner_email ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
-          ${esc(device.owner_name || device.owner_email)}
-        </div>` : ''}
+          ${uiText(device.owner_name || device.owner_email)}
+        </div>` : '')}
         <div class="device-card-meta">
           <div class="meta-item">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            ${formatTimeAgo(device.last_heartbeat)}
+            ${renderHTML(formatTimeAgo(device.last_heartbeat))}
           </div>
-          ${device.app_version ? `
+          ${renderHTML(device.app_version ? `
           <div class="meta-item meta-version${behind ? ' is-behind' : ''}" data-card-field="version" title="${esc(behind
             ? t('dashboard.app_behind_tip', { version: servedApkVersion })
             : t('dashboard.app_version_tip'))}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
             </svg>
-            v${esc(String(device.app_version).replace(/^v/, ''))}${behind ? ' ↓' : ''}
-          </div>` : ''}
-          ${realBattery ? `
+            v${uiText(String(device.app_version).replace(/^v/, ''))}${renderHTML(behind ? ' ↓' : '')}
+          </div>` : '')}
+          ${renderHTML(realBattery ? `
           <div class="meta-item" data-card-field="battery">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/>
             </svg>
-            ${device.battery_level}%
-          </div>` : ''}
-          ${device.wifi_rssi ? `
+            ${renderHTML(device.battery_level)}%
+          </div>` : '')}
+          ${renderHTML(device.wifi_rssi ? `
           <div class="meta-item" data-card-field="wifi">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/>
               <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
             </svg>
-            ${device.wifi_rssi} dBm
-          </div>` : ''}
-          ${device.storage_free_mb ? `
+            ${renderHTML(t("ui.dashboard.dbm_241f09", {value0: device.wifi_rssi}))}
+          </div>` : '')}
+          ${renderHTML(device.storage_free_mb ? `
           <div class="meta-item" data-card-field="storage">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
               <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
             </svg>
-            ${formatBytes(device.storage_free_mb)} free
-          </div>` : ''}
-          ${(isEmbeddedCard(device) && (device.temperature_c != null || device.humidity != null)) ? `
+            ${renderHTML(t("ui.dashboard.free_d14372", {value0: formatBytes(device.storage_free_mb)}))}
+          </div>` : '')}
+          ${renderHTML((isEmbeddedCard(device) && (device.temperature_c != null || device.humidity != null)) ? `
           <div class="meta-item" data-card-field="sensors" title="${device.temperature_c != null ? device.temperature_c + '°C' : ''}${device.temperature_c != null && device.humidity != null ? ' · ' : ''}${device.humidity != null ? esc(t('device.info.humidity_value', { n: device.humidity })) : ''}">
             <span style="font-size:11px;margin-right:2px">🌡️</span>
-            ${device.temperature_c != null ? `${device.temperature_c}°C` : ''}${device.temperature_c != null && device.humidity != null ? ' · ' : ''}${device.humidity != null ? `${device.humidity}%` : ''}
-          </div>` : ''}
+            ${renderHTML(device.temperature_c != null ? `${device.temperature_c}°C` : '')}${renderHTML(device.temperature_c != null && device.humidity != null ? ' · ' : '')}${renderHTML(device.humidity != null ? `${device.humidity}%` : '')}
+          </div>` : '')}
         </div>
       </div>
     </div>
@@ -375,31 +379,31 @@ function renderWallCard(wall) {
   return `
     <div class="device-card wall-card" data-wall-id="${wall.id}" onclick="window.location.hash='#/wall/${wall.id}'">
       <div class="device-card-preview wall-card-preview">
-        ${(wall.devices || []).length
+        ${renderHTML((wall.devices || []).length
           ? `<div class="wall-card-live" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:6px"></div>`
-          : `<div class="wall-card-grid" style="grid-template-columns:repeat(${wall.grid_cols},1fr);grid-template-rows:repeat(${wall.grid_rows},1fr)">${cells.join('')}</div>`}
+          : `<div class="wall-card-grid" style="grid-template-columns:repeat(${wall.grid_cols},1fr);grid-template-rows:repeat(${wall.grid_rows},1fr)">${renderHTML(cells.join(''))}</div>`)}
         <div class="device-card-status">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-          <span>${(wall.devices || []).length ? (wall.devices.length + '-panel') : wall.grid_cols + '×' + wall.grid_rows} wall</span>
+          <span>${renderHTML(t("ui.dashboard.wall_7bd67d", {value3: (wall.devices || []).length ? (wall.devices.length + '-panel') : wall.grid_cols + '×' + wall.grid_rows}))}</span>
         </div>
       </div>
       <div class="device-card-body">
-        <div class="device-card-name">${esc(wall.name)}</div>
+        <div class="device-card-name">${uiText(wall.name)}</div>
         <div class="device-card-meta">
-          <div class="meta-item">${members.length} ${members.length === 1 ? 'tile' : 'tiles'}</div>
-          <div class="meta-item" style="color:${allUp ? 'var(--success)' : 'var(--danger, #e5484d)'}">${allUp ? 'all online' : `${onlineCount}/${members.length} online`}</div>
+          <div class="meta-item">${renderHTML(members.length)} ${renderHTML(members.length === 1 ? 'tile' : 'tiles')}</div>
+          <div class="meta-item" style="color:${allUp ? 'var(--success)' : 'var(--danger, #e5484d)'}">${renderHTML(allUp ? t('ui.dashboard.all_online') : t("ui.dashboard.value0_value1_online_a2308f", {value0: onlineCount, value1: members.length}))}</div>
         </div>
         <!-- #235: a wall replaces its members' cards, so without this strip one dead panel of a
              four-panel wall is invisible from the dashboard. Each chip links straight to the
              device page — being in a wall must not cost device-level visibility. -->
         <div class="wall-card-members" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
-          ${members.map(d => `
+          ${renderHTML(members.map(d => `
             <a class="wall-card-member" href="#/device/${esc(d.device_id)}" data-member-device-id="${esc(d.device_id)}" onclick="event.stopPropagation()"
                title="${esc(d.device_name)} — ${esc(d.device_status || 'unknown')}. Open device info & controls"
                style="display:inline-flex;align-items:center;gap:4px;max-width:120px;padding:1px 6px;border:1px solid var(--border);border-radius:10px;font-size:10px;color:var(--text-secondary);text-decoration:none">
               <span class="status-dot ${esc(d.device_status || 'offline')}" style="display:inline-block;flex-shrink:0"></span>
-              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.device_name)}</span>
-            </a>`).join('')}
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(d.device_name)}</span>
+            </a>`).join(''))}
         </div>
       </div>
     </div>
@@ -428,7 +432,7 @@ function corpGroupBadge(group) {
   if (!g) return '';
   if (!g.covered) return cui.chip(tn('corp.group.partial', g.mandated_members), 'hq', t('corp.tip.locked'), { lock: true });
   return cui.chip(g.dark ? t('corp.badge.dark') : t('corp.group.badge', { name: g.playlist_name || '' }), g.dark ? 'dark' : 'hq', t('corp.group.badge_tip', { target: g.target_label || '' }), { lock: true })
-    + (g.sync_excluded ? ` <span style="font-size:11px;color:var(--warning)">${esc(tn('corp.group.sync_excluded', g.sync_excluded))}</span>` : '');
+    + (g.sync_excluded ? ` <span style="font-size:11px;color:var(--warning)">${uiText(tn('corp.group.sync_excluded', g.sync_excluded))}</span>` : '');
 }
 const corpGroupCovered = (group) => !!(corpCoverage && corpCoverage.groups && corpCoverage.groups[group.id] && corpCoverage.groups[group.id].covered);
 
@@ -439,63 +443,62 @@ function renderGroupSection(group, devices, playlists) {
     <div class="group-section" data-group-id="${group.id}" style="margin-bottom:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px 12px;background:var(--bg-secondary);border-radius:8px;border-left:4px solid ${esc(group.color || '#3B82F6')}">
         <div style="display:flex;align-items:center;gap:10px">
-          <strong style="font-size:15px">${esc(group.name)}</strong>
-          <span style="color:var(--text-muted);font-size:12px">${tn('dashboard.devices_count', devices.length)} &middot; ${t('dashboard.online_count', { n: onlineCount })}</span>
-          ${playlistLabel ? `<span style="font-size:11px;color:var(--text-secondary);background:var(--bg-primary);padding:2px 8px;border-radius:10px">${t('dashboard.playlist_label', { name: playlistLabel })}</span>` : ''}
-          ${corpGroupBadge(group)}
-          ${group.rules ? `<span style="font-size:11px;color:var(--accent, #3B82F6);background:var(--bg-primary);padding:2px 8px;border-radius:10px" title="${esc(t('grouprules.badge_hint'))}">${esc(t('grouprules.badge', { summary: groupRulesSummary(group.rules) }))}</span>` : ''}
+          <strong style="font-size:15px">${uiText(group.name)}</strong>
+          <span style="color:var(--text-muted);font-size:12px">${renderHTML(tn('dashboard.devices_count', devices.length))} · ${renderHTML(t('dashboard.online_count', { n: onlineCount }))}</span>
+          ${renderHTML(playlistLabel ? `<span style="font-size:11px;color:var(--text-secondary);background:var(--bg-primary);padding:2px 8px;border-radius:10px">${renderHTML(t('dashboard.playlist_label', { name: playlistLabel }))}</span>` : '')}
+          ${renderHTML(corpGroupBadge(group))}
+          ${renderHTML(group.rules ? `<span style="font-size:11px;color:var(--accent, #3B82F6);background:var(--bg-primary);padding:2px 8px;border-radius:10px" title="${esc(t('grouprules.badge_hint'))}" data-fil-i18n-title="${binding('grouprules.badge_hint', undefined)}">${uiText(t('grouprules.badge', { summary: groupRulesSummary(group.rules) }))}</span>` : '')}
         </div>
         <div style="display:flex;gap:6px;align-items:center">
-          ${devices.length > 0 && corpGroupCovered(group) ? `<button type="button" class="btn btn-secondary btn-sm corp-group-why" data-group-id="${group.id}" style="padding:4px 8px;font-size:12px;white-space:nowrap">${cui.LOCK_SVG} ${esc(t('corp.group.why'))}</button>` : ''}
-          ${devices.length > 0 ? `
-          ${corpGroupCovered(group) ? '' : `<select class="input group-playlist-select" data-group-id="${group.id}" data-group-name="${esc(group.name)}" style="width:160px;padding:4px 8px;font-size:12px;background:var(--bg-input)">
-            <option value="">${t('dashboard.set_playlist_placeholder')}</option>
-            ${(playlists || []).map(p => `<option value="${esc(p.id)}">${esc(p.name)}${p.status === 'draft' ? ' ' + t('dashboard.draft_suffix') : ''}</option>`).join('')}
-          </select>`}
+          ${renderHTML(devices.length > 0 && corpGroupCovered(group) ? `<button type="button" class="btn btn-secondary btn-sm corp-group-why" data-group-id="${group.id}" style="padding:4px 8px;font-size:12px;white-space:nowrap">${renderHTML(cui.LOCK_SVG)} ${uiText(t('corp.group.why'))}</button>` : '')}
+          ${renderHTML(devices.length > 0 ? `
+          ${renderHTML(corpGroupCovered(group) ? '' : `<select class="input group-playlist-select" data-group-id="${group.id}" data-group-name="${esc(group.name)}" style="width:160px;padding:4px 8px;font-size:12px;background:var(--bg-input)">
+            <option value="">${renderHTML(t('dashboard.set_playlist_placeholder'))}</option>
+            ${renderHTML((playlists || []).map(p => `<option value="${esc(p.id)}">${uiText(p.name)}${renderHTML(p.status === 'draft' ? ' ' + t('dashboard.draft_suffix') : '')}</option>`).join(''))}
+          </select>`)}
           <select class="input group-cmd-select" data-group-id="${group.id}" data-group-name="${esc(group.name)}" data-device-count="${devices.length}" style="width:150px;padding:4px 8px;font-size:12px;background:var(--bg-input)">
-            <option value="">${t('dashboard.send_command_placeholder')}</option>
-            ${GROUP_COMMANDS.map(c => `<option value="${c.type}" ${c.destructive ? 'style="color:var(--danger)"' : ''}>${t(CMD_LABEL_KEY[c.type])}</option>`).join('')}
+            <option value="">${renderHTML(t('dashboard.send_command_placeholder'))}</option>
+            ${renderHTML(GROUP_COMMANDS.map(c => `<option value="${c.type}" ${c.destructive ? 'style="color:var(--danger)"' : ''}>${renderHTML(t(CMD_LABEL_KEY[c.type]))}</option>`).join(''))}
           </select>
-          ` : ''}
-          ${devices.length > 0 ? `
+          ` : '')}
+          ${renderHTML(devices.length > 0 ? `
           <!-- The weekly backlight schedule for every member that does not have its own. Opens the
                SAME editor the device page uses; see components/group-power-schedule-modal.js. -->
           <button class="btn btn-secondary btn-sm group-power-btn" data-group-id="${group.id}" data-group-name="${esc(group.name)}"
-                  style="padding:4px 8px;font-size:12px;white-space:nowrap" title="${esc(t('power.section_title'))}">
-            ${t('power.group_button')}
+                  style="padding:4px 8px;font-size:12px;white-space:nowrap" title="${esc(t('power.section_title'))}" data-fil-i18n-title="${binding('power.section_title', undefined)}">
+            ${renderHTML(t('power.group_button'))}
           </button>
           <!-- 3.0 multi share: revealed by wireGroupShareButtons when the feature is on and a member can show one. -->
           <button type="button" class="btn btn-secondary btn-sm" data-group-share="${esc(group.id)}" data-group-name="${esc(group.name)}"
                   data-share-capable="${devices.filter((d) => Array.isArray(d.capabilities) && d.capabilities.includes('remote.screen_share')).length}"
-                  style="display:none;padding:4px 8px;font-size:12px;white-space:nowrap">&#128421;&#65039; ${esc(t('screen_share.group.button'))}</button>
-          <label class="group-sync-label" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap" title="${esc(t('dashboard.group_sync.hint'))}">
-            <input type="checkbox" class="group-sync-cb" data-group-id="${group.id}" ${group.sync_enabled ? 'checked' : ''}> ${t('dashboard.group_sync.label')}
+                  style="display:none;padding:4px 8px;font-size:12px;white-space:nowrap">🖥️ ${uiText(t('screen_share.group.button'))}</button>
+          <label class="group-sync-label" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap" title="${esc(t('dashboard.group_sync.hint'))}" data-fil-i18n-title="${binding('dashboard.group_sync.hint', undefined)}">
+            <input type="checkbox" class="group-sync-cb" data-group-id="${group.id}" ${group.sync_enabled ? 'checked' : ''}> ${renderHTML(t('dashboard.group_sync.label'))}
           </label>
-          ${group.sync_enabled ? `
-          <select class="input group-backend-select" data-group-id="${group.id}" style="width:130px;padding:4px 8px;font-size:12px;background:var(--bg-input)" title="${esc(t('dashboard.group_sync.backend_hint'))}">
-            <option value="auto" ${(group.sync_backend || 'auto') === 'auto' ? 'selected' : ''}>${t('dashboard.group_sync.backend_auto')}</option>
-            <option value="screentinker" ${group.sync_backend === 'screentinker' ? 'selected' : ''}>${t('dashboard.group_sync.backend_screentinker')}</option>
-            <option value="brightsign" ${group.sync_backend === 'brightsign' ? 'selected' : ''}>${t('dashboard.group_sync.backend_brightsign')}</option>
+          ${renderHTML(group.sync_enabled ? `
+          <select class="input group-backend-select" data-group-id="${group.id}" style="width:130px;padding:4px 8px;font-size:12px;background:var(--bg-input)" title="${esc(t('dashboard.group_sync.backend_hint'))}" data-fil-i18n-title="${binding('dashboard.group_sync.backend_hint', undefined)}">
+            <option value="auto" ${(group.sync_backend || 'auto') === 'auto' ? 'selected' : ''}>${renderHTML(t('dashboard.group_sync.backend_auto'))}</option>
+            <option value="screentinker" ${group.sync_backend === 'screentinker' ? 'selected' : ''}>${renderHTML(t('dashboard.group_sync.backend_screentinker'))}</option>
+            <option value="brightsign" ${group.sync_backend === 'brightsign' ? 'selected' : ''}>${renderHTML(t('dashboard.group_sync.backend_brightsign'))}</option>
           </select>
-          ${group.sync_effective ? `
+          ${renderHTML(group.sync_effective ? `
           <span style="font-size:11px;color:${group.sync_downgraded ? 'var(--warning, #d97706)' : 'var(--text-muted)'};white-space:nowrap"
-                title="${esc(group.sync_reason || '')}">${group.sync_downgraded ? '&#9888; ' : ''}${esc(group.sync_effective)}${group.sync_reason ? ' — ' + esc(group.sync_reason) : ''}</span>` : ''}
-          <button class="btn group-resync-btn" data-group-id="${group.id}" style="padding:4px 10px;font-size:12px" title="${esc(t('dashboard.group_sync.resync_hint'))}">${t('dashboard.group_sync.resync')}</button>` : ''}
-          ` : ''}
+                title="${esc(group.sync_reason || '')}">${renderHTML(group.sync_downgraded ? '&#9888; ' : '')}${uiText(group.sync_effective)}${renderHTML(group.sync_reason ? ' — ' + esc(group.sync_reason) : '')}</span>` : '')}
+          <button class="btn group-resync-btn" data-group-id="${group.id}" style="padding:4px 10px;font-size:12px" title="${esc(t('dashboard.group_sync.resync_hint'))}" data-fil-i18n-title="${binding('dashboard.group_sync.resync_hint', undefined)}">${renderHTML(t('dashboard.group_sync.resync'))}</button>` : '')}
+          ` : '')}
           <!-- #talk broadcast: PA to every device in this group. Hidden until live video is confirmed. -->
-          <button class="btn talk-scope-btn" data-scope-kind="group" data-group-id="${group.id}" style="display:none;padding:4px 10px;font-size:12px">🎙️ ${t('dashboard.talk_group')}</button>
-          <button class="btn btn-secondary btn-sm group-rules-btn" data-group-id="${group.id}" style="padding:4px 8px;font-size:12px;white-space:nowrap" title="${esc(t('grouprules.button_hint'))}">${t(group.rules ? 'grouprules.button_edit' : 'grouprules.button')}</button>
-          <button class="btn" data-group-delete="${group.id}" style="padding:4px 8px;font-size:12px;color:var(--danger)" title="${t('dashboard.delete_group_tooltip')}">&#x2715;</button>
+          <button class="btn talk-scope-btn" data-scope-kind="group" data-group-id="${group.id}" style="display:none;padding:4px 10px;font-size:12px">🎙️ ${renderHTML(t('dashboard.talk_group'))}</button>
+          <button class="btn btn-secondary btn-sm group-rules-btn" data-group-id="${group.id}" style="padding:4px 8px;font-size:12px;white-space:nowrap" title="${esc(t('grouprules.button_hint'))}" data-fil-i18n-title="${binding('grouprules.button_hint', undefined)}">${renderHTML(t(group.rules ? 'grouprules.button_edit' : 'grouprules.button'))}</button>
+          <button class="btn" data-group-delete="${group.id}" style="padding:4px 8px;font-size:12px;color:var(--danger)" title="${t('dashboard.delete_group_tooltip')}" data-fil-i18n-title="${binding('dashboard.delete_group_tooltip', undefined)}">&#x2715;</button>
         </div>
       </div>
-      ${renderSelectionBar(group.id, group.id)}
+      ${renderHTML(renderSelectionBar(group.id, group.id))}
       <div class="device-grid">
-        ${devices.length > 0 ? devices.map(renderDeviceCard).join('') : `<div style="color:var(--text-muted);font-size:13px;padding:8px 12px">${t('dashboard.no_devices_in_group')}</div>`}
+        ${renderHTML(devices.length > 0 ? devices.map(renderDeviceCard).join('') : `<div style="color:var(--text-muted);font-size:13px;padding:8px 12px">${renderHTML(t('dashboard.no_devices_in_group'))}</div>`)}
       </div>
     </div>
   `;
 }
-
 
 /*
  * ⚠️ A BULK ACTION THAT PART-SUCCEEDS MUST SAY SO.
@@ -529,7 +532,7 @@ function reportBulk(done, failed, successKey) {
   if (!failed.length) { showToast(tn(successKey, done.length), 'success'); return; }
   const first = failed[0].reason;
   showToast(done.length
-    ? `${done.length} done, ${failed.length} could not be changed — ${first}`
+    ? t("ui.dashboard.value0_done_value1_could_not_be_changed_value2_46a9c1", {value0: done.length, value1: failed.length, value2: first})
     : first, done.length ? 'warning' : 'error');
 }
 
@@ -537,22 +540,22 @@ function renderSelectionBar(scope, groupId = null) {
   return `
     <div class="selection-bar" data-selection-scope="${esc(scope)}"${groupId ? ` data-group-id="${esc(groupId)}"` : ''} style="display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;margin:0 0 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px">
       <span class="selection-count" style="font-weight:500;font-size:13px;margin-right:4px"></span>
-      <button class="btn btn-primary btn-sm" data-selection-action="all">${t('dashboard.select_all')}</button>
-      <button class="btn btn-primary btn-sm" data-selection-action="invert">${t('dashboard.invert_selection')}</button>
-      <button class="btn btn-primary btn-sm" data-selection-action="cancel">${t('dashboard.cancel_selection')}</button>
+      <button class="btn btn-primary btn-sm" data-selection-action="all">${renderHTML(t('dashboard.select_all'))}</button>
+      <button class="btn btn-primary btn-sm" data-selection-action="invert">${renderHTML(t('dashboard.invert_selection'))}</button>
+      <button class="btn btn-primary btn-sm" data-selection-action="cancel">${renderHTML(t('dashboard.cancel_selection'))}</button>
       <span class="selection-bar-divider" aria-hidden="true"></span>
-      ${groupId
-        ? `<button class="btn btn-primary btn-sm" data-selection-action="remove"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line></svg>${t('dashboard.remove_from_group')}</button>`
+      ${renderHTML(groupId
+        ? `<button class="btn btn-primary btn-sm" data-selection-action="remove"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line></svg>${renderHTML(t('dashboard.remove_from_group'))}</button>`
         : `<details class="selection-group-menu">
-            <summary class="btn btn-primary btn-sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>${t('dashboard.add_to_group')} <span aria-hidden="true">&#x25BE;</span></summary>
+            <summary class="btn btn-primary btn-sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>${renderHTML(t('dashboard.add_to_group'))} <span aria-hidden="true">&#x25BE;</span></summary>
             <div class="selection-group-menu-panel">
-              ${selectableGroups.map(g => `<button type="button" data-selection-group-id="${esc(g.id)}">${esc(g.name)}</button>`).join('')}
+              ${renderHTML(selectableGroups.map(g => `<button type="button" data-selection-group-id="${esc(g.id)}">${uiText(g.name)}</button>`).join(''))}
               <div class="selection-group-menu-divider"></div>
-              <button type="button" class="selection-group-menu-create" data-selection-create-group>${t('dashboard.create_group_and_add')}</button>
+              <button type="button" class="selection-group-menu-create" data-selection-create-group>${renderHTML(t('dashboard.create_group_and_add'))}</button>
             </div>
-          </details>`}
-      <button class="btn btn-primary btn-sm" data-selection-action="wall">${t('dashboard.create_wall')}</button>
-      <button class="btn btn-secondary btn-sm" data-selection-action="move-workspace">${t('move.button')}</button>
+          </details>`)}
+      <button class="btn btn-primary btn-sm" data-selection-action="wall">${renderHTML(t('dashboard.create_wall'))}</button>
+      <button class="btn btn-secondary btn-sm" data-selection-action="move-workspace">${renderHTML(t('move.button'))}</button>
     </div>
   `;
 }
@@ -575,12 +578,12 @@ export async function renderStatsPrompt(container) {
   el.style.cssText = 'margin-bottom:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap';
   el.innerHTML = `
     <div style="flex:1;min-width:260px">
-      <strong>${esc(t('stats.prompt.title'))}</strong>
-      <p style="color:var(--text-muted);font-size:13px;margin:6px 0 0">${esc(t('stats.prompt.body'))}</p>
+      <strong>${uiText(t('stats.prompt.title'))}</strong>
+      <p style="color:var(--text-muted);font-size:13px;margin:6px 0 0">${uiText(t('stats.prompt.body'))}</p>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-primary btn-sm" id="statsYes">${esc(t('stats.prompt.share'))}</button>
-      <button class="btn btn-secondary btn-sm" id="statsNo">${esc(t('stats.prompt.no'))}</button>
+      <button class="btn btn-primary btn-sm" id="statsYes">${uiText(t('stats.prompt.share'))}</button>
+      <button class="btn btn-secondary btn-sm" id="statsNo">${uiText(t('stats.prompt.no'))}</button>
     </div>
   `;
   container.prepend(el);
@@ -598,22 +601,22 @@ export function render(container) {
   container.innerHTML = `
     <div class="page-header">
       <div>
-        <h1>${t('dashboard.title')} <span class="help-tip" data-tip="${t('dashboard.help_tip')}">?</span></h1>
-        <div class="subtitle">${t('dashboard.subtitle')}</div>
+        <h1>${renderHTML(t('dashboard.title'))} <span class="help-tip" ${translatedAttribute("data-tip", 'dashboard.help_tip')}>?</span></h1>
+        <div class="subtitle">${renderHTML(t('dashboard.subtitle'))}</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <!-- #talk broadcast: PA to every device in the workspace. Hidden until we confirm live video
              is available (see wireTalkScopeButtons). -->
-        <button class="btn btn-secondary talk-scope-btn" data-scope-kind="workspace" style="display:none">🎙️ ${t('dashboard.talk_all')}</button>
+        <button class="btn btn-secondary talk-scope-btn" data-scope-kind="workspace" style="display:none">🎙️ ${renderHTML(t('dashboard.talk_all'))}</button>
         <!-- #312 follow-up: move EVERY device in the workspace to a new server address. Shown only to
              a workspace admin (server also enforces it); opens a warning + type-to-commit modal.
              Each panel verifies-then-commits and rolls back an unreachable address. -->
-        ${currentWorkspaceCanAdmin() ? `<button class="btn btn-secondary" id="wsSetServerUrlBtn" data-advanced-ui title="${t('dashboard.ws_set_server_url_tip')}">🔗 ${t('dashboard.ws_set_server_url')}</button>` : ''}
+        ${renderHTML(currentWorkspaceCanAdmin() ? `<button class="btn btn-secondary" id="wsSetServerUrlBtn" data-advanced-ui title="${t('dashboard.ws_set_server_url_tip')}" data-fil-i18n-title="${binding('dashboard.ws_set_server_url_tip', undefined)}">🔗 ${renderHTML(t('dashboard.ws_set_server_url'))}</button>` : '')}
         <button class="btn btn-primary" id="addDeviceBtn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          ${t('dashboard.add')}
+          ${renderHTML(t('dashboard.add'))}
         </button>
       </div>
     </div>
@@ -623,30 +626,30 @@ export function render(container) {
     <!-- 3.0: .dash-toolbar wraps, and stacks at phone width (main.css); the power-user filters are
          data-advanced-ui, hidden in the simple menu mode (components/ui-mode.js). -->
     <div class="dash-toolbar">
-      <input type="text" id="deviceSearch" class="input" placeholder="${t('dashboard.search')}" style="max-width:300px">
+      <input type="text" id="deviceSearch" class="input" placeholder="${t('dashboard.search')}" data-fil-i18n-placeholder="${binding('dashboard.search', undefined)}" style="max-width:300px">
       <select id="deviceFilter" class="input" style="width:180px;background:var(--bg-input)">
-        <option value="">${t('dashboard.all_status')}</option>
-        <option value="healthy">${t('device.liveness.healthy')}</option>
-        <option value="degraded">${t('device.liveness.degraded')}</option>
-        <option value="offline">${t('device.liveness.offline')}</option>
+        <option value="">${renderHTML(t('dashboard.all_status'))}</option>
+        <option value="healthy">${renderHTML(t('device.liveness.healthy'))}</option>
+        <option value="degraded">${renderHTML(t('device.liveness.degraded'))}</option>
+        <option value="offline">${renderHTML(t('device.liveness.offline'))}</option>
         <optgroup label="${t('dashboard.filter.offline_by_reason')}">
-          <option value="offline:silent">${t('dashboard.filter.offline_silent')}</option>
-          <option value="offline:crashed">${t('dashboard.filter.offline_crashed')}</option>
-          <option value="offline:clean_exit">${t('dashboard.filter.offline_clean')}</option>
+          <option value="offline:silent">${renderHTML(t('dashboard.filter.offline_silent'))}</option>
+          <option value="offline:crashed">${renderHTML(t('dashboard.filter.offline_crashed'))}</option>
+          <option value="offline:clean_exit">${renderHTML(t('dashboard.filter.offline_clean'))}</option>
         </optgroup>
         <optgroup id="versionFilterGroup" label="${t('dashboard.filter.by_version')}" hidden></optgroup>
       </select>
-      <select id="deviceTagFilter" class="input" style="width:160px;background:var(--bg-input)" hidden title="${esc(t('dashboard.filter.by_tag'))}"></select>
+      <select id="deviceTagFilter" class="input" style="width:160px;background:var(--bg-input)" hidden title="${esc(t('dashboard.filter.by_tag'))}" data-fil-i18n-title="${binding('dashboard.filter.by_tag', undefined)}"></select>
       <details class="card-fields-menu" id="cardFieldsMenu" data-advanced-ui>
-        <summary class="btn btn-secondary btn-sm">${t('dashboard.card_fields')}</summary>
+        <summary class="btn btn-secondary btn-sm">${renderHTML(t('dashboard.card_fields'))}</summary>
         <div class="card-fields-pop">
-          ${['version', 'battery', 'wifi', 'storage'].map((f) => `
-            <label><input type="checkbox" data-card-field-toggle="${f}"> ${t('dashboard.field.' + f)}</label>`).join('')}
+          ${renderHTML(['version', 'battery', 'wifi', 'storage'].map((f) => `
+            <label><input type="checkbox" data-card-field-toggle="${f}"> ${renderHTML(t('dashboard.field.' + f))}</label>`).join(''))}
         </div>
       </details>
       <!-- #106 reordering has existed since 2.1, and a customer still asked "is it possible to
            reorder the screens?". A feature nobody can see is a feature nobody has. -->
-      <span class="dash-drag-hint" data-advanced-ui>${t('dashboard.drag_hint')}</span>
+      <span class="dash-drag-hint" data-advanced-ui>${renderHTML(t('dashboard.drag_hint'))}</span>
     </div>
     <div id="groupedDevices"></div>
   `;
@@ -683,9 +686,9 @@ export function render(container) {
 
     const serverUrl = `${window.location.protocol}//${window.location.host}`;
     const el = document.getElementById('addDeviceServerUrl');
-    if (el) el.textContent = serverUrl;
+    if (el) bindMessage(el, serverUrl);
     const tvEl = document.getElementById('addDeviceSmartTvUrl');
-    if (tvEl) tvEl.textContent = `${serverUrl}/player`;
+    if (tvEl) bindMessage(tvEl, `${serverUrl}/player`);
   });
 
   // #device-owner: provision a fresh/factory-reset Android panel straight from Add Display.
@@ -711,7 +714,7 @@ export function render(container) {
   }
 
   function filterDevices() {
-    const search = document.getElementById('deviceSearch').value.toLowerCase();
+    const search = document.getElementById('deviceSearch').value.toLocaleLowerCase(getLocale());
     // Compare against the liveness STATE ('healthy'|'degraded'|'offline'), NOT the display label:
     // the badge text is now "Healthy"/"Reconnecting"/"Offline", so the old text-vs-'online' compare
     // matched nothing and emptied the list. data-liveness carries the state for a robust match.
@@ -720,7 +723,7 @@ export function render(container) {
     const versionDrill = filter.startsWith('version:') ? filter.slice(8) : null;  // #467: 'behind' | '=<version>' 
     const tagFilter = document.getElementById('deviceTagFilter')?.value || '';
     document.querySelectorAll('.device-card').forEach(card => {
-      const name = card.querySelector('.device-card-name')?.textContent.toLowerCase() || '';
+      const name = card.querySelector('.device-card-name')?.textContent.toLocaleLowerCase(getLocale()) || '';
       const el = card.querySelector('.device-card-status [data-liveness]');
       const cardState = el?.dataset.liveness || '';
       const cardReason = el?.dataset.offlineReason || '';
@@ -765,8 +768,8 @@ export function render(container) {
   const syncMode = () => {
     const noStorage = !!noStorageBox?.checked;
     if (codeGroup) codeGroup.style.display = noStorage ? 'none' : '';
-    if (introEl) introEl.textContent = noStorage ? t('add_display.intro_no_storage') : t('add_display.intro');
-    pairBtn.textContent = noStorage ? t('add_display.create_btn') : t('add_display.pair_btn');
+    if (introEl) bindMessage(introEl, noStorage ? t('add_display.intro_no_storage') : t('add_display.intro'));
+    bindMessage(pairBtn, noStorage ? t('add_display.create_btn') : t('add_display.pair_btn'));
   };
   noStorageBox?.addEventListener('change', syncMode);
   syncMode();
@@ -781,7 +784,7 @@ export function render(container) {
         loadDashboard();
       } catch (err) {
         if (err.planPromptShown) { document.getElementById('addDeviceModal').style.display = 'none'; return; }
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
       return;
     }
@@ -801,7 +804,7 @@ export function render(container) {
     } catch (err) {
       // A plan limit is answered by the upgrade prompt (plan-nudges.js); the dialog gets out of its way.
       if (err.planPromptShown) { document.getElementById('addDeviceModal').style.display = 'none'; return; }
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
   };
 
@@ -934,7 +937,7 @@ export function render(container) {
       loadDashboard();
     } catch (err) {
       // Only reaches here if creating the GROUP failed — the per-device results are handled above.
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
     menu.removeAttribute('open');
   };
@@ -953,7 +956,7 @@ export function render(container) {
     const cards = document.querySelectorAll(`[data-device-id="${data.device_id}"]`);
     cards.forEach(card => {
       const statusEl = card.querySelector('.device-card-status');
-      if (statusEl) statusEl.innerHTML = `<span class="device-status-badge ${b.state}" data-liveness="${b.state}" data-offline-reason="${esc(b.reason)}"${b.title ? ` title="${esc(b.title)}"` : ''}>${esc(b.label)}</span>`;
+      if (statusEl) statusEl.innerHTML = `<span class="device-status-badge ${b.state}" data-liveness="${b.state}" data-offline-reason="${esc(b.reason)}"${b.title ? ` title="${esc(b.title)}"` : ''}>${uiText(b.label)}</span>`;
     });
     // #235: a wall member has no card of its own, only a chip on the wall card. Without this a
     // panel could go offline and the dashboard would keep showing it green until a full reload —
@@ -961,7 +964,7 @@ export function render(container) {
     document.querySelectorAll(`.wall-card-member[data-member-device-id="${CSS.escape(data.device_id)}"]`).forEach(chip => {
       const dot = chip.querySelector('.status-dot');
       if (dot) dot.className = `status-dot ${b.state}`;
-      chip.title = `${chip.title.split(' — ')[0]} — ${b.label}. Open device info & controls`;
+      bindAttribute(chip, "title", t("ui.dashboard.value0_value1_open_device_info_controls_c0f9c1", {value0: chip.title.split(' — ')[0], value1: b.label}));
     });
   };
 
@@ -973,7 +976,7 @@ export function render(container) {
         img.src = imgSrc;
       } else {
         const statusHtml = preview.querySelector('.device-card-status')?.outerHTML || '';
-        preview.innerHTML = `<img src="${imgSrc}" alt="Screenshot" loading="lazy">${statusHtml}`;
+        preview.innerHTML = `<img src="${imgSrc}" ${translatedAttribute("alt", "ui.dashboard.alt_screenshot_029320")} loading="lazy">${renderHTML(statusHtml)}`;
       }
       frameCard(preview);   // the branch above can swap the img element out from under us
     });
@@ -1035,7 +1038,7 @@ function refreshSelectionBar() {
     const n = visible.filter(card => selectedDeviceIds.has(card.dataset.deviceId)).length;
     bar.style.display = n > 0 ? 'flex' : 'none';
     const count = bar.querySelector('.selection-count');
-    if (count) count.textContent = t('dashboard.selection_count_other', { n });
+    if (count) bindText(count, 'dashboard.selection_count_other', { n });
     const wall = bar.querySelector('[data-selection-action="wall"]');
     if (wall) {
       wall.style.display = n >= 2 ? '' : 'none';
@@ -1061,8 +1064,8 @@ function defaultGridForCount(n) {
 
 async function createWallFromSelection() {
   const ids = [...selectedDeviceIds];
-  if (ids.length < 2) { showToast('Select at least 2 displays', 'error'); return; }
-  const name = prompt('Name this video wall:', `Wall ${new Date().toLocaleString()}`);
+  if (ids.length < 2) { showToast(t("ui.dashboard.select_at_least_2_displays"), 'error'); return; }
+  const name = prompt(t("ui.dashboard.name_this_video_wall"), `Wall ${displayValue(new Date(), "toLocaleString", undefined)}`);
   if (!name) return;
   const { cols, rows } = defaultGridForCount(ids.length);
   try {
@@ -1079,15 +1082,15 @@ async function createWallFromSelection() {
     } catch (e) {
       // Declined "I've checked these": the wall exists, empty — open it so the person can decide.
       if (!e.cancelled) throw e;
-      showToast(e.message, 'info');
+      showToast(e.uiMessage || e.message, 'info');
       window.location.hash = `#/wall/${wall.id}`;
       return;
     }
     selectedDeviceIds.clear();
-    showToast('Video wall created', 'success');
+    showToast(t("ui.dashboard.video_wall_created"), 'success');
     window.location.hash = `#/wall/${wall.id}`;
   } catch (e) {
-    showToast(e.message, 'error');
+    showToast(e.uiMessage || e.message, 'error');
   }
 }
 
@@ -1124,7 +1127,7 @@ async function loadRemoteDashboard(org) {
      */
     rows = await api.get('/devices');
   } catch (e) {
-    liveError = e.message || 'that server did not answer';
+    liveError = e.message || t("ui.dashboard.that_server_did_not_answer_c47a91");
   }
 
   /*
@@ -1147,14 +1150,14 @@ async function loadRemoteDashboard(org) {
   const scoped = rows.filter((d) => !org.workspaceId || d.workspace_id === org.workspaceId);
 
   main.innerHTML = `
-    ${liveError ? `
+    ${renderHTML(liveError ? `
       <div style="border-left:3px solid var(--warning,#f59e0b);background:var(--bg-card);
                   padding:8px 12px;margin-bottom:12px;font-size:12px">
-        Showing the last state this server received — ${esc(liveError)}
-      </div>` : ''}
+        ${renderHTML(t("ui.dashboard.showing_the_last_state_this_server_received_fee43c", {value0: liveError}))}
+      </div>` : '')}
     <div class="device-grid">
-      ${scoped.map(renderDeviceCard).join('') ||
-        `<div style="color:var(--text-muted);font-size:13px;padding:8px 12px">No screens shared from this server.</div>`}
+      ${renderHTML(scoped.map(renderDeviceCard).join('') ||
+        `<div style="color:var(--text-muted);font-size:13px;padding:8px 12px">${renderHTML(t("ui.dashboard.no_screens_shared_from_this_server"))}</div>`)}
     </div>`;
 
   frameCardScreenshots();
@@ -1182,7 +1185,7 @@ async function loadRemoteDashboard(org) {
     card.querySelector('.device-card-drag')?.remove();
   });
 
-  const stat = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const stat = (id, v) => { const el = document.getElementById(id); if (el) bindMessage(el, v); };
   stat('statTotal', scoped.length);
   stat('statOnline', scoped.filter((d) => d.status === 'online').length);
   stat('statOffline', scoped.filter((d) => d.status !== 'online').length);
@@ -1273,22 +1276,22 @@ async function loadDashboard() {
     if (statsEl) {
       statsEl.innerHTML = `
         <div class="info-card" style="flex:1;min-width:120px">
-          <div class="info-card-label">${t('dashboard.total_displays')}</div>
-          <div class="info-card-value">${devices.length}</div>
+          <div class="info-card-label">${renderHTML(t('dashboard.total_displays'))}</div>
+          <div class="info-card-value">${renderHTML(devices.length)}</div>
         </div>
         <div class="info-card" style="flex:1;min-width:120px">
-          <div class="info-card-label">${t('dashboard.online')}</div>
-          <div class="info-card-value" style="color:var(--success)">${online}</div>
+          <div class="info-card-label">${renderHTML(t('dashboard.online'))}</div>
+          <div class="info-card-value" style="color:var(--success)">${renderHTML(online)}</div>
         </div>
         <div class="info-card" style="flex:1;min-width:120px">
-          <div class="info-card-label">${t('dashboard.offline')}</div>
-          <div class="info-card-value" style="color:${offline > 0 ? 'var(--danger)' : 'var(--text-muted)'}">${offline}</div>
+          <div class="info-card-label">${renderHTML(t('dashboard.offline'))}</div>
+          <div class="info-card-value" style="color:${offline > 0 ? 'var(--danger)' : 'var(--text-muted)'}">${renderHTML(offline)}</div>
         </div>
-        ${provisioning > 0 ? `
+        ${renderHTML(provisioning > 0 ? `
         <div class="info-card" style="flex:1;min-width:120px">
-          <div class="info-card-label">${t('dashboard.awaiting_pairing')}</div>
-          <div class="info-card-value" style="color:var(--warning,#f59e0b)">${provisioning}</div>
-        </div>` : ''}
+          <div class="info-card-label">${renderHTML(t('dashboard.awaiting_pairing'))}</div>
+          <div class="info-card-value" style="color:var(--warning,#f59e0b)">${renderHTML(provisioning)}</div>
+        </div>` : '')}
       `;
     }
 
@@ -1300,8 +1303,8 @@ async function loadDashboard() {
             <line x1="8" y1="21" x2="16" y2="21"/>
             <line x1="12" y1="17" x2="12" y2="21"/>
           </svg>
-          <h3>${t('dashboard.no_displays')}</h3>
-          <p>${t('dashboard.no_displays_desc')}</p>
+          <h3>${renderHTML(t('dashboard.no_displays'))}</h3>
+          <p>${renderHTML(t('dashboard.no_displays_desc'))}</p>
         </div>
       `;
       return;
@@ -1343,10 +1346,10 @@ async function loadDashboard() {
       html += `
         <div class="wall-section" style="margin-bottom:24px">
           <div style="display:flex;align-items:center;margin-bottom:10px;padding:8px 12px;background:var(--bg-secondary);border-radius:8px;border-left:4px solid #8b5cf6">
-            <strong style="font-size:15px">Video Walls</strong>
-            <span style="color:var(--text-muted);font-size:12px;margin-left:10px">${walls.length} wall${walls.length === 1 ? '' : 's'}</span>
+            <strong style="font-size:15px">${renderHTML(t("ui.dashboard.video_walls_cbcb2d"))}</strong>
+            <span style="color:var(--text-muted);font-size:12px;margin-left:10px">${renderHTML(tn('ui.dashboard.wall_count', walls.length))}</span>
           </div>
-          <div class="device-grid">${walls.map(renderWallCard).join('')}</div>
+          <div class="device-grid">${renderHTML(walls.map(renderWallCard).join(''))}</div>
         </div>
       `;
     }
@@ -1362,14 +1365,14 @@ async function loadDashboard() {
     if (ungrouped.length > 0) {
       html += `
         <div class="ungrouped-section" data-ungrouped="1" style="margin-bottom:24px">
-          ${groups.length > 0 ? `
+          ${renderHTML(groups.length > 0 ? `
           <div style="display:flex;align-items:center;margin-bottom:10px;padding:8px 12px;background:var(--bg-secondary);border-radius:8px;border-left:4px solid var(--text-muted)">
-            <strong style="font-size:15px;color:var(--text-muted)">${t('dashboard.ungrouped')}</strong>
-            <span style="color:var(--text-muted);font-size:12px;margin-left:10px">${tn('dashboard.devices_count', ungrouped.length)}</span>
-          </div>` : ''}
-          ${renderSelectionBar('ungrouped')}
+            <strong style="font-size:15px;color:var(--text-muted)">${renderHTML(t('dashboard.ungrouped'))}</strong>
+            <span style="color:var(--text-muted);font-size:12px;margin-left:10px">${renderHTML(tn('dashboard.devices_count', ungrouped.length))}</span>
+          </div>` : '')}
+          ${renderHTML(renderSelectionBar('ungrouped'))}
           <div class="device-grid">
-            ${ungrouped.map(renderDeviceCard).join('')}
+            ${renderHTML(ungrouped.map(renderDeviceCard).join(''))}
           </div>
         </div>
       `;
@@ -1390,7 +1393,7 @@ async function loadDashboard() {
     refreshSelectionBar();
 
   } catch (err) {
-    main.innerHTML = `<div class="empty-state"><h3>${t('dashboard.failed_to_load')}</h3><p>${esc(err.message)}</p></div>`;
+    main.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('dashboard.failed_to_load'))}</h3><p>${uiText((err.uiMessage || err.message))}</p></div>`;
   }
 }
 
@@ -1500,7 +1503,7 @@ function attachGroupHandlers(groupsWithDevices) {
       try {
         await api.reorderDevices(ids);
         loadDashboard();
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     });
   });
 
@@ -1522,7 +1525,7 @@ function attachGroupHandlers(groupsWithDevices) {
       e.preventDefault();
       highlightOff(section);
       const deviceId = e.dataTransfer.getData('text/device-id');
-      const deviceName = e.dataTransfer.getData('text/device-name') || 'this device';
+      const deviceName = e.dataTransfer.getData('text/device-name') || t("ui.dashboard.this_device_eef9f9");
       if (!deviceId) return;
       const groupId = section.dataset.groupId;
       const targetGroup = groupsWithDevices.find(g => g.id === groupId);
@@ -1556,7 +1559,7 @@ function attachGroupHandlers(groupsWithDevices) {
         }
         showToast(t('dashboard.toast.moved_device', { name: deviceName, group: targetGroup.name }), 'success');
         loadDashboard();
-      } catch (err) { showToast(err.message, err.cancelled ? 'info' : 'error'); }
+      } catch (err) { showToast(err.uiMessage || err.message, err.cancelled ? 'info' : 'error'); }
     });
   });
 
@@ -1575,7 +1578,7 @@ function attachGroupHandlers(groupsWithDevices) {
       e.preventDefault();
       highlightOff(section);
       const deviceId = e.dataTransfer.getData('text/device-id');
-      const deviceName = e.dataTransfer.getData('text/device-name') || 'this device';
+      const deviceName = e.dataTransfer.getData('text/device-name') || t("ui.dashboard.this_device_eef9f9");
       if (!deviceId) return;
       const memberships = groupsByDeviceId.get(deviceId) || [];
       if (memberships.length === 0) return; // already ungrouped
@@ -1583,7 +1586,7 @@ function attachGroupHandlers(groupsWithDevices) {
         for (const m of memberships) await cui.withImpactAck((o) => api.removeDeviceFromGroup(m.id, deviceId, o));
         showToast(tn('dashboard.toast.removed_device', memberships.length, { name: deviceName }), 'success');
         loadDashboard();
-      } catch (err) { showToast(err.message, err.cancelled ? 'info' : 'error'); loadDashboard(); }
+      } catch (err) { showToast(err.uiMessage || err.message, err.cancelled ? 'info' : 'error'); loadDashboard(); }
     });
   });
 
@@ -1615,7 +1618,7 @@ function attachGroupHandlers(groupsWithDevices) {
         const result = await api.groupAssignPlaylist(groupId, playlistId);
         showToast(tn('dashboard.toast.playlist_assigned', result.devices_updated), 'success');
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
       e.target.value = '';
     });
@@ -1631,7 +1634,7 @@ function attachGroupHandlers(groupsWithDevices) {
         showToast(enabled ? t('dashboard.group_sync.toast_on') : t('dashboard.group_sync.toast_off'), 'success');
         loadDashboard(); // re-render so the Resync button shows/hides
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
         e.target.checked = !enabled;
       }
     });
@@ -1655,7 +1658,7 @@ function attachGroupHandlers(groupsWithDevices) {
         }
         loadDashboard();
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
         e.target.value = previous;
       }
     });
@@ -1670,7 +1673,7 @@ function attachGroupHandlers(groupsWithDevices) {
         await api.resyncGroup(groupId);
         showToast(t('dashboard.group_sync.toast_resync'), 'success');
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
     });
   });
@@ -1734,7 +1737,7 @@ function attachGroupHandlers(groupsWithDevices) {
         }
         showToast(msg, refused > 0 && !result.sent ? 'error' : (result.offline > 0 || result.unsupported > 0 || refused > 0) ? 'warning' : 'success');
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
       e.target.value = '';
     });
@@ -1750,7 +1753,7 @@ function attachGroupHandlers(groupsWithDevices) {
         await cui.withImpactAck((o) => api.deleteGroup(id, o));
         showToast(t('dashboard.toast.group_deleted'), 'success');
         loadDashboard();
-      } catch (e) { showToast(e.message, e.cancelled ? 'info' : 'error'); }
+      } catch (e) { showToast(e.uiMessage || e.message, e.cancelled ? 'info' : 'error'); }
     });
   });
 
@@ -1833,12 +1836,12 @@ async function toggleBroadcast(btn) {
     const client = new BroadcastTalkClient(descriptorPath, {});
     await client.start();
     activeBroadcast = { key, client, btn, label, scope };
-    btn.textContent = '⏹ ' + t('dashboard.talk.end');
+    bindMessage(btn, '⏹ ' + t('dashboard.talk.end'));
     btn.classList.add('btn-danger');
     showToast(t('dashboard.talk.on_air'), 'info');
   } catch (e) {
     try { stopGroupTalk(scope); } catch (_) {}
-    showToast(t('dashboard.talk.failed') + (e && e.message ? ': ' + e.message : ''), 'error');
+    showToast(t('dashboard.talk.failed') + (e && (e.uiMessage || e.message) ? ': ' + (e.uiMessage || e.message) : ''), 'error');
   } finally {
     btn.disabled = false;
   }
@@ -1850,7 +1853,7 @@ function endBroadcast() {
   activeBroadcast = null;
   try { b.client.stop(); } catch (_) {}
   try { stopGroupTalk(b.scope); } catch (_) {}
-  try { b.btn.textContent = b.label; b.btn.classList.remove('btn-danger'); } catch (_) {}
+  try { bindMessage(b.btn, b.label); b.btn.classList.remove('btn-danger'); } catch (_) {}
 }
 
 export function cleanup() {

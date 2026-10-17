@@ -1,3 +1,5 @@
+import { uiText, renderHTML } from '../lib/i18n-bindings.js';
+
 /*
  * Settings → Organization → "Corporate content" (spec §7.2). Organization owners and admins only —
  * the server enforces that (403 CORPORATE_ADMIN_REQUIRED); this card is simply not shown to anyone
@@ -9,7 +11,7 @@
  * the change without that acknowledgement (409 CORPORATE_IMPACT_UNACKNOWLEDGED) whatever this does.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
 import { ask, forgetCorporateCache, confirmStoreTriggerImpact } from './corporate-ui.js';
@@ -24,45 +26,45 @@ export async function mountCorporateSettings(host) {
   const hqLocked = (s.corporate_playlists || 0) > 0;
   const capMin = Math.round((s.store_trigger_cap_sec || 300) / 60);
   host.innerHTML = `
-    <h3>${esc(t('corp.settings.title'))}</h3>
-    <p class="corp-help" style="margin-bottom:10px">${esc(t('corp.settings.help'))}</p>
-    ${!s.available ? `<div class="corp-notice corp-notice-danger">${esc(t('corp.err.CORPORATE_UNAVAILABLE'))}</div>` : ''}
-    <label class="corp-check"><input type="checkbox" id="csEnabled" ${s.corporate_enabled ? 'checked' : ''}> <strong>${esc(t('corp.settings.toggle'))}</strong></label>
+    <h3>${uiText(t('corp.settings.title'))}</h3>
+    <p class="corp-help" style="margin-bottom:10px">${uiText(t('corp.settings.help'))}</p>
+    ${renderHTML(!s.available ? `<div class="corp-notice corp-notice-danger">${uiText(t('corp.err.CORPORATE_UNAVAILABLE'))}</div>` : '')}
+    <label class="corp-check"><input type="checkbox" id="csEnabled" ${s.corporate_enabled ? 'checked' : ''}> <strong>${uiText(t('corp.settings.toggle'))}</strong></label>
 
-    <div class="form-group" style="margin-top:12px"><label for="csHq">${esc(t('corp.settings.hq'))}</label>
+    <div class="form-group" style="margin-top:12px"><label for="csHq">${uiText(t('corp.settings.hq'))}</label>
       <div class="corp-row">
         <select id="csHq" class="input" style="min-width:220px" ${hqLocked ? 'disabled' : ''}>
-          <option value="">${esc(t('corp.settings.hq_none'))}</option>
-          ${(s.workspaces || []).map((w) => `<option value="${esc(w.id)}" ${w.id === s.hq_workspace_id ? 'selected' : ''} ${w.replicated ? 'disabled' : ''}>${esc(w.name)}${w.replicated ? ' — ' + esc(t('corp.where.replicated')) : ''}</option>`).join('')}
+          <option value="">${uiText(t('corp.settings.hq_none'))}</option>
+          ${renderHTML((s.workspaces || []).map((w) => `<option value="${esc(w.id)}" ${w.id === s.hq_workspace_id ? 'selected' : ''} ${w.replicated ? 'disabled' : ''}>${uiText(w.name)}${renderHTML(w.replicated ? ' — ' + t('corp.where.replicated') : '')}</option>`).join(''))}
         </select>
-        ${hqLocked ? '' : `<button type="button" class="btn btn-secondary btn-sm" id="csCreateHq">${esc(t('corp.settings.hq_create'))}</button>`}
+        ${renderHTML(hqLocked ? '' : `<button type="button" class="btn btn-secondary btn-sm" id="csCreateHq">${uiText(t('corp.settings.hq_create'))}</button>`)}
       </div>
-      <div class="corp-help">${esc(hqLocked ? tn('corp.settings.hq_locked', s.corporate_playlists) : t('corp.settings.hq_help'))}</div>
+      <div class="corp-help">${uiText(hqLocked ? tn('corp.settings.hq_locked', s.corporate_playlists) : t('corp.settings.hq_help'))}</div>
     </div>
 
-    <div class="form-group"><label>${esc(t('corp.settings.authors'))}</label>
-      <label class="corp-check"><input type="radio" name="csAuthors" value="org_admins" ${s.corporate_authors !== 'org_admins_and_hq_editors' ? 'checked' : ''}> ${esc(t('corp.settings.authors_admins'))}</label>
-      <label class="corp-check"><input type="radio" name="csAuthors" value="org_admins_and_hq_editors" ${s.corporate_authors === 'org_admins_and_hq_editors' ? 'checked' : ''}> ${esc(t('corp.settings.authors_editors'))}</label>
+    <div class="form-group"><label>${uiText(t('corp.settings.authors'))}</label>
+      <label class="corp-check"><input type="radio" name="csAuthors" value="org_admins" ${s.corporate_authors !== 'org_admins_and_hq_editors' ? 'checked' : ''}> ${uiText(t('corp.settings.authors_admins'))}</label>
+      <label class="corp-check"><input type="radio" name="csAuthors" value="org_admins_and_hq_editors" ${s.corporate_authors === 'org_admins_and_hq_editors' ? 'checked' : ''}> ${uiText(t('corp.settings.authors_editors'))}</label>
     </div>
 
-    <div class="corp-hq-note">${esc(t('corp.settings.store_shape'))}</div>
+    <div class="corp-hq-note">${uiText(t('corp.settings.store_shape'))}</div>
 
-    <div class="form-group" style="margin-top:12px"><label>${esc(t('corp.settings.store_triggers'))}</label>
-      <label class="corp-check" style="display:flex"><input type="radio" name="csPolicy" value="off" ${s.store_triggers_under_mandate === 'off' ? 'checked' : ''}> ${esc(t('corp.settings.policy_off'))}</label>
-      <div class="corp-help" style="margin:0 0 6px 22px">${esc(t('corp.settings.policy_off_help'))}</div>
+    <div class="form-group" style="margin-top:12px"><label>${uiText(t('corp.settings.store_triggers'))}</label>
+      <label class="corp-check" style="display:flex"><input type="radio" name="csPolicy" value="off" ${s.store_triggers_under_mandate === 'off' ? 'checked' : ''}> ${uiText(t('corp.settings.policy_off'))}</label>
+      <div class="corp-help" style="margin:0 0 6px 22px">${uiText(t('corp.settings.policy_off_help'))}</div>
       <label class="corp-check" style="display:flex"><input type="radio" name="csPolicy" value="leased" ${s.store_triggers_under_mandate === 'leased' ? 'checked' : ''}>
-        ${esc(t('corp.settings.policy_leased'))} <input type="number" id="csCap" class="input" min="1" max="60" value="${esc(String(capMin))}" style="width:64px;padding:2px 6px"> ${esc(t('corp.settings.minutes'))}</label>
-      <div class="corp-help" style="margin:0 0 6px 22px">${esc(t('corp.settings.policy_leased_help'))}</div>
-      <label class="corp-check" style="display:flex"><input type="radio" name="csPolicy" value="allow" ${s.store_triggers_under_mandate === 'allow' ? 'checked' : ''}> ${esc(t('corp.settings.policy_allow'))}</label>
-      <div class="corp-help" style="margin:0 0 6px 22px">${esc(t('corp.settings.policy_allow_help'))}</div>
+        ${uiText(t('corp.settings.policy_leased'))} <input type="number" id="csCap" class="input" min="1" max="60" value="${esc(String(capMin))}" style="width:64px;padding:2px 6px"> ${uiText(t('corp.settings.minutes'))}</label>
+      <div class="corp-help" style="margin:0 0 6px 22px">${uiText(t('corp.settings.policy_leased_help'))}</div>
+      <label class="corp-check" style="display:flex"><input type="radio" name="csPolicy" value="allow" ${s.store_triggers_under_mandate === 'allow' ? 'checked' : ''}> ${uiText(t('corp.settings.policy_allow'))}</label>
+      <div class="corp-help" style="margin:0 0 6px 22px">${uiText(t('corp.settings.policy_allow_help'))}</div>
       <div id="csImpact"></div>
     </div>
 
-    <div class="form-group"><label class="corp-check"><input type="checkbox" id="csEmergency" ${s.emergency_triggers_enabled ? 'checked' : ''}> <strong>${esc(t('corp.settings.emergency'))}</strong></label>
-      <div class="corp-help">${esc(t('corp.settings.emergency_help'))}</div>
+    <div class="form-group"><label class="corp-check"><input type="checkbox" id="csEmergency" ${s.emergency_triggers_enabled ? 'checked' : ''}> <strong>${uiText(t('corp.settings.emergency'))}</strong></label>
+      <div class="corp-help">${uiText(t('corp.settings.emergency_help'))}</div>
     </div>
 
-    <button type="button" class="btn btn-primary" id="csSave">${esc(t('common.save'))}</button>`;
+    <button type="button" class="btn btn-primary" id="csSave">${uiText(t('common.save'))}</button>`;
 
   const q = (sel) => host.querySelector(sel);
   const policy = () => (host.querySelector('input[name="csPolicy"]:checked') || {}).value || 'off';
@@ -74,19 +76,19 @@ export async function mountCorporateSettings(host) {
     const p = policy();
     impact = [];
     if (p === 'allow') { box.innerHTML = ''; return; }
-    box.innerHTML = `<div class="corp-help">${esc(t('common.loading'))}</div>`;
+    box.innerHTML = `<div class="corp-help">${uiText(t('common.loading'))}</div>`;
     try {
       const r = await api.getStoreTriggerImpact(p, p === 'leased' ? capSec() : undefined);
       impact = r.impact || [];
       box.innerHTML = impact.length ? `
         <div class="corp-notice corp-notice-warn">
-          <div>${esc(t(p === 'off' ? 'corp.settings.impact_hidden' : 'corp.settings.impact_limited', { k: impact.length, m: r.workspaces }))}</div>
-          <details class="corp-details"><summary>${esc(t('corp.settings.impact_show'))}</summary>
-            <ul class="corp-list">${impact.map((i) => `<li>${esc(i.workspace_name)} — ${esc(i.name)} (${esc(i.mode === 'until_cleared' ? t('corp.em.mode_until_short') : t('corp.em.mode_once_short'))}${i.mode === 'until_cleared' && i.lease_sec ? ', ' + esc(t('corp.sec', { n: i.lease_sec })) : ''})</li>`).join('')}</ul>
+          <div>${uiText(t(p === 'off' ? 'corp.settings.impact_hidden' : 'corp.settings.impact_limited', { k: impact.length, m: r.workspaces }))}</div>
+          <details class="corp-details"><summary>${uiText(t('corp.settings.impact_show'))}</summary>
+            <ul class="corp-list">${renderHTML(impact.map((i) => `<li>${uiText(i.workspace_name)} — ${uiText(i.name)} (${uiText(i.mode === 'until_cleared' ? t('corp.em.mode_until_short') : t('corp.em.mode_once_short'))}${renderHTML(i.mode === 'until_cleared' && i.lease_sec ? ', ' + t('corp.sec', { n: i.lease_sec }) : '')})</li>`).join(''))}</ul>
           </details>
-          <label class="corp-check"><input type="checkbox" id="csAck"> ${esc(t('corp.settings.impact_ack'))}</label>
-        </div>` : `<div class="corp-help">${esc(t('corp.settings.impact_none'))}</div>`;
-    } catch (e) { box.innerHTML = `<div class="corp-notice corp-notice-danger">${esc(e.message)}</div>`; }
+          <label class="corp-check"><input type="checkbox" id="csAck"> ${uiText(t('corp.settings.impact_ack'))}</label>
+        </div>` : `<div class="corp-help">${uiText(t('corp.settings.impact_none'))}</div>`;
+    } catch (e) { box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
   }
   host.querySelectorAll('input[name="csPolicy"]').forEach((r) => r.addEventListener('change', showImpact));
   q('#csCap').addEventListener('change', () => { if (policy() === 'leased') showImpact(); });
@@ -132,6 +134,6 @@ export async function mountCorporateSettings(host) {
       mountCorporateSettings(host);
       // The sidebar's Corporate item and the head office bar follow these settings.
       if (body.corporate_enabled !== undefined || body.hq_workspace_id !== undefined) setTimeout(() => window.location.reload(), 600);
-    } catch (e) { if (e.code !== 'CORPORATE_IMPACT_UNACKNOWLEDGED' || !(e.body && e.body.impact)) showToast(e.message, 'error'); }
+    } catch (e) { if (e.code !== 'CORPORATE_IMPACT_UNACKNOWLEDGED' || !(e.body && e.body.impact)) showToast(e.uiMessage || e.message, 'error'); }
   });
 }

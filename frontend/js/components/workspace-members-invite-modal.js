@@ -1,3 +1,5 @@
+import { renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 // Invite-member modal. Mirrors workspace-rename-modal.js's structure
 // (overlay + listeners + close + esc/click-outside/enter) with two key
 // differences:
@@ -14,7 +16,7 @@
 //      (not toast) so user can correct + resubmit without closing.
 
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -30,8 +32,8 @@ export function openInviteMemberModal(workspace, opts = {}) {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
-        <h3>${t('members.modal.invite_title', { workspace: esc(workspace.name) })}</h3>
-        <button class="btn-icon" type="button" data-invite-close aria-label="${t('common.close')}">
+        <h3>${renderHTML(t('members.modal.invite_title', { workspace: esc(workspace.name) }))}</h3>
+        <button class="btn-icon" type="button" data-invite-close aria-label="${t('common.close')}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -39,22 +41,22 @@ export function openInviteMemberModal(workspace, opts = {}) {
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label for="inviteEmail">${t('members.modal.email_label')}</label>
-          <input id="inviteEmail" type="email" class="input" placeholder="${t('members.modal.email_placeholder')}" style="width:100%" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="inviteEmail">${renderHTML(t('members.modal.email_label'))}</label>
+          <input id="inviteEmail" type="email" class="input" placeholder="${t('members.modal.email_placeholder')}" data-fil-i18n-placeholder="${binding('members.modal.email_placeholder', undefined)}" style="width:100%" autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
         <div class="form-group">
-          <label for="inviteRole">${t('members.modal.role_label')}</label>
+          <label for="inviteRole">${renderHTML(t('members.modal.role_label'))}</label>
           <select id="inviteRole" class="input" style="width:100%">
-            <option value="workspace_viewer">${t('members.role.workspace_viewer')}</option>
-            <option value="workspace_editor">${t('members.role.workspace_editor')}</option>
-            <option value="workspace_admin">${t('members.role.workspace_admin')}</option>
+            <option value="workspace_viewer">${renderHTML(t('members.role.workspace_viewer'))}</option>
+            <option value="workspace_editor">${renderHTML(t('members.role.workspace_editor'))}</option>
+            <option value="workspace_admin">${renderHTML(t('members.role.workspace_admin'))}</option>
           </select>
         </div>
         <div id="inviteModalError" style="display:none;color:var(--danger);font-size:13px;margin-top:8px"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" type="button" data-invite-close>${t('members.modal.cancel')}</button>
-        <button class="btn btn-primary" type="button" id="inviteSendBtn">${t('members.modal.send')}</button>
+        <button class="btn btn-secondary" type="button" data-invite-close>${renderHTML(t('members.modal.cancel'))}</button>
+        <button class="btn btn-primary" type="button" id="inviteSendBtn">${renderHTML(t('members.modal.send'))}</button>
       </div>
     </div>
   `;
@@ -88,7 +90,7 @@ export function openInviteMemberModal(workspace, opts = {}) {
       return;
     }
     sendBtn.disabled = true;
-    sendBtn.textContent = t('members.modal.sending');
+    bindText(sendBtn, 'members.modal.sending', undefined);
     try {
       const result = await api.inviteWorkspaceMember(workspace.id, { email, role });
       close();
@@ -101,7 +103,7 @@ export function openInviteMemberModal(workspace, opts = {}) {
       }
     } catch (err) {
       sendBtn.disabled = false;
-      sendBtn.textContent = t('members.modal.send');
+      bindText(sendBtn, 'members.modal.send', undefined);
       // Map via parent-supplied helper. Fallback to raw message if no mapper
       // was provided (shouldn't happen in normal use, defensive only).
       const msg = (typeof mapError === 'function')
@@ -112,7 +114,7 @@ export function openInviteMemberModal(workspace, opts = {}) {
   }
 
   function showError(msg) {
-    errorEl.textContent = msg;
+    bindMessage(errorEl, msg);
     errorEl.style.display = 'block';
   }
 

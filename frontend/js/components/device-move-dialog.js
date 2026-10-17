@@ -1,3 +1,5 @@
+import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
+
 /*
  * "Move to another workspace" — for one screen (device page) or a selection (dashboard).
  *
@@ -14,7 +16,7 @@
  * target account has no storage for is refused by the preview itself, before anyone ticks anything.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { displayValue, displayQuantity, message as t, messageCount as tn } from '../i18n.js';
 import { esc, isPlatformAdmin } from '../utils.js';
 import { showToast } from './toast.js';
 import * as cui from './corporate-ui.js';
@@ -24,8 +26,8 @@ const BROUGHT_KEYS = ['playlists', 'widgets', 'kiosk_pages', 'data_sources', 'sh
 
 function size(bytes) {
   const n = Number(bytes) || 0;
-  if (n >= 1024 * 1024 * 1024) return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  if (n >= 1024 * 1024 * 1024) return displayQuantity((n / (1024 * 1024 * 1024)),'GB',1);
+  if (n >= 1024 * 1024) return displayQuantity((n / (1024 * 1024)),'MB',1);
   if (n >= 1024) return `${Math.round(n / 1024)} KB`;
   return `${n} B`;
 }
@@ -33,15 +35,15 @@ function size(bytes) {
 function droppedSummary(screens) {
   const totals = {};
   for (const s of screens || []) for (const [k, v] of Object.entries(s.dropped || {})) totals[k] = (totals[k] || 0) + (Number(v) || 0);
-  const items = DROPPED_KEYS.filter((k) => totals[k]).map((k) => `<li>${esc(tn(`move.dropped.${k}`, totals[k]))}</li>`);
-  return items.length ? `<div class="corp-help">${esc(t('move.stays_behind'))}</div><ul class="corp-list">${items.join('')}</ul>` : '';
+  const items = DROPPED_KEYS.filter((k) => totals[k]).map((k) => `<li>${uiText(tn(`move.dropped.${k}`, totals[k]))}</li>`);
+  return items.length ? `<div class="corp-help">${uiText(t('move.stays_behind'))}</div><ul class="corp-list">${renderHTML(items.join(''))}</ul>` : '';
 }
 
 function headOfficeSummary(screens) {
   const after = [...new Set((screens || []).map((s) => s.head_office_after).filter(Boolean))];
   const before = [...new Set((screens || []).map((s) => s.head_office_before).filter(Boolean))];
-  if (after.length) return `<div class="corp-notice">${esc(t('move.head_office_after', { name: after.join(', ') }))}</div>`;
-  if (before.length) return `<div class="corp-notice">${esc(t('move.head_office_leaves', { name: before.join(', ') }))}</div>`;
+  if (after.length) return `<div class="corp-notice">${uiText(t('move.head_office_after', { name: after.join(', ') }))}</div>`;
+  if (before.length) return `<div class="corp-notice">${uiText(t('move.head_office_leaves', { name: before.join(', ') }))}</div>`;
   return '';
 }
 
@@ -53,25 +55,25 @@ function broughtSummary(screens) {
   const lines = [];
   for (const x of b) {
     if (!x.playlist_name) continue;
-    lines.push(`<li>${esc(t('move.bring.playlist', { name: x.playlist_name }))}${x.playlist_others ? ` — ${esc(tn('move.bring.others', x.playlist_others))}` : ''}</li>`);
+    lines.push(`<li>${uiText(t('move.bring.playlist', { name: x.playlist_name }))}${renderHTML(x.playlist_others ? ` — ${esc(tn('move.bring.others', x.playlist_others))}` : '')}</li>`);
   }
   const content = sum('content');
-  if (content) lines.push(`<li>${esc(tn('move.bring.content', content, { size: size(sum('bytes')) }))}</li>`);
-  for (const k of BROUGHT_KEYS) { const n = sum(k); if (n && k !== 'playlists') lines.push(`<li>${esc(tn(`move.bring.${k}`, n))}</li>`); }
-  if (sum('playlists') > b.filter((x) => x.playlist_name).length) lines.push(`<li>${esc(tn('move.bring.playlists', sum('playlists')))}</li>`);
-  if (b.some((x) => x.layout)) lines.push(`<li>${esc(t('move.bring.layout'))}</li>`);
-  if (b.some((x) => x.default_content)) lines.push(`<li>${esc(t('move.bring.default_content'))}</li>`);
+  if (content) lines.push(`<li>${uiText(tn('move.bring.content', content, { size: size(sum('bytes')) }))}</li>`);
+  for (const k of BROUGHT_KEYS) { const n = sum(k); if (n && k !== 'playlists') lines.push(`<li>${uiText(tn(`move.bring.${k}`, n))}</li>`); }
+  if (sum('playlists') > b.filter((x) => x.playlist_name).length) lines.push(`<li>${uiText(tn('move.bring.playlists', sum('playlists')))}</li>`);
+  if (b.some((x) => x.layout)) lines.push(`<li>${uiText(t('move.bring.layout'))}</li>`);
+  if (b.some((x) => x.default_content)) lines.push(`<li>${uiText(t('move.bring.default_content'))}</li>`);
   const reused = b.reduce((n, x) => n + ((x.reused || []).length), 0);
-  if (reused) lines.push(`<li>${esc(tn('move.bring.reused', reused))}</li>`);
-  const smart = b.some((x) => x.smart) ? `<div class="corp-help">${esc(t('move.bring.smart'))}</div>` : '';
-  const mandated = (screens || []).some((s) => s.brought && s.head_office_after) ? `<div class="corp-help">${esc(t('move.bring.mandated'))}</div>` : '';
-  return `<div class="corp-help">${esc(t('move.bring_summary'))}</div><ul class="corp-list">${lines.join('')}</ul>${smart}${mandated}`;
+  if (reused) lines.push(`<li>${uiText(tn('move.bring.reused', reused))}</li>`);
+  const smart = b.some((x) => x.smart) ? `<div class="corp-help">${uiText(t('move.bring.smart'))}</div>` : '';
+  const mandated = (screens || []).some((s) => s.brought && s.head_office_after) ? `<div class="corp-help">${uiText(t('move.bring.mandated'))}</div>` : '';
+  return `<div class="corp-help">${uiText(t('move.bring_summary'))}</div><ul class="corp-list">${renderHTML(lines.join(''))}</ul>${renderHTML(smart)}${renderHTML(mandated)}`;
 }
 
 function targetOptions(targets, grouped, filter) {
   const f = String(filter || '').trim().toLowerCase();
   const shown = f ? targets.filter((w) => `${w.name} ${w.organization_name || ''}`.toLowerCase().includes(f)) : targets;
-  const opt = (w) => `<option value="${esc(w.id)}">${esc(w.name)}</option>`;
+  const opt = (w) => `<option value="${esc(w.id)}">${uiText(w.name)}</option>`;
   if (!grouped) return shown.map(opt).join('');
   const byOrg = new Map();
   for (const w of shown) {
@@ -79,7 +81,7 @@ function targetOptions(targets, grouped, filter) {
     if (!byOrg.has(k)) byOrg.set(k, { name: w.organization_name || '', list: [] });
     byOrg.get(k).list.push(w);
   }
-  return [...byOrg.values()].map((g) => `<optgroup label="${esc(g.name)}">${g.list.map(opt).join('')}</optgroup>`).join('');
+  return [...byOrg.values()].map((g) => `<optgroup label="${esc(g.name)}">${renderHTML(g.list.map(opt).join(''))}</optgroup>`).join('');
 }
 
 /**
@@ -113,22 +115,22 @@ export async function openDeviceMoveDialog(deviceIds, { currentWorkspaceId, onMo
     title: tn('move.title_n', ids.length),
     body: `
       <div class="form-group">
-        <label for="moveWsSelect">${esc(t('move.to_label'))}</label>
-        ${searchable ? `<input type="search" id="moveWsSearch" class="input" style="width:100%;margin-bottom:6px" placeholder="${esc(t('move.search'))}" autocomplete="off">` : ''}
+        <label for="moveWsSelect">${uiText(t('move.to_label'))}</label>
+        ${renderHTML(searchable ? `<input type="search" id="moveWsSearch" class="input" style="width:100%;margin-bottom:6px" placeholder="${esc(t('move.search'))}" data-fil-i18n-placeholder="${binding('move.search', undefined)}" autocomplete="off">` : '')}
         <select id="moveWsSelect" class="input" style="width:100%">
-          <option value="">${esc(t('move.choose'))}</option>
-          ${targetOptions(targets, grouped, '')}
+          <option value="">${uiText(t('move.choose'))}</option>
+          ${renderHTML(targetOptions(targets, grouped, ''))}
         </select>
       </div>
       <div class="form-group" id="moveBringRow" style="display:none">
         <label class="corp-check" style="display:flex;gap:8px;align-items:flex-start">
-          <input type="checkbox" id="moveBring" checked> <span>${esc(t('move.bring'))}</span>
+          <input type="checkbox" id="moveBring" checked> <span>${uiText(t('move.bring'))}</span>
         </label>
-        <div class="corp-help" style="margin-left:22px">${esc(t('move.bring_help'))}</div>
+        <div class="corp-help" style="margin-left:22px">${uiText(t('move.bring_help'))}</div>
       </div>
-      <div id="movePreview" class="corp-help">${esc(t('move.pick_first'))}</div>`,
-    footer: `<button type="button" class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button>
-             <button type="button" class="btn btn-primary" id="moveConfirmBtn" disabled>${esc(tn('move.confirm', ids.length))}</button>`,
+      <div id="movePreview" class="corp-help">${uiText(t('move.pick_first'))}</div>`,
+    footer: `<button type="button" class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button>
+             <button type="button" class="btn btn-primary" id="moveConfirmBtn" disabled>${uiText(tn('move.confirm', ids.length))}</button>`,
   });
   const sel = m.q('#moveWsSelect');
   const search = m.q('#moveWsSearch');
@@ -153,7 +155,7 @@ export async function openDeviceMoveDialog(deviceIds, { currentWorkspaceId, onMo
   if (search) {
     search.addEventListener('input', () => {
       const keep = sel.value;
-      sel.innerHTML = `<option value="">${esc(t('move.choose'))}</option>${targetOptions(targets, grouped, search.value)}`;
+      sel.innerHTML = `<option value="">${uiText(t('move.choose'))}</option>${renderHTML(targetOptions(targets, grouped, search.value))}`;
       if ([...sel.options].some((o) => o.value === keep)) sel.value = keep;
     });
   }
@@ -178,10 +180,10 @@ export async function openDeviceMoveDialog(deviceIds, { currentWorkspaceId, onMo
       refused = !!(pv.storage_refusal && (bring.checked && hasOwn));
       const s = await cui.corporateSettings();
       if (mine !== seq) return;
-      const orgNotice = otherOrg ? `<div class="corp-notice corp-notice-warn">${esc(t('move.other_org', { org: otherOrg.name }))}
-          <label class="corp-check" style="display:flex;gap:8px;margin-top:8px"><input type="checkbox" id="moveOrgAck"> ${esc(t('move.other_org_ack'))}</label></div>` : '';
-      const plan = pv.plan_warning ? `<div class="corp-notice corp-notice-warn">${esc(t('move.plan_warning', { plan: pv.plan_warning.plan, after: pv.plan_warning.devices_after, limit: pv.plan_warning.devices_limit }))}</div>` : '';
-      const storage = refused ? `<div class="corp-notice corp-notice-danger">${esc(pv.storage_refusal.error)}</div>` : '';
+      const orgNotice = otherOrg ? `<div class="corp-notice corp-notice-warn">${uiText(t('move.other_org', { org: otherOrg.name }))}
+          <label class="corp-check" style="display:flex;gap:8px;margin-top:8px"><input type="checkbox" id="moveOrgAck"> ${uiText(t('move.other_org_ack'))}</label></div>` : '';
+      const plan = pv.plan_warning ? `<div class="corp-notice corp-notice-warn">${uiText(t('move.plan_warning', { plan: pv.plan_warning.plan, after: pv.plan_warning.devices_after, limit: pv.plan_warning.devices_limit }))}</div>` : '';
+      const storage = refused ? `<div class="corp-notice corp-notice-danger">${uiText(pv.storage_refusal.error)}</div>` : '';
       box.innerHTML = `${orgNotice}${plan}${storage}${headOfficeSummary(pv.screens)}
         ${bring.checked && hasOwn ? broughtSummary(pv.screens) : ''}${droppedSummary(pv.screens)}
         ${cui.storeTriggerImpactHtml(impact, s && s.store_triggers_under_mandate, { ackId: 'moveTrigAck' })}`;
@@ -190,7 +192,7 @@ export async function openDeviceMoveDialog(deviceIds, { currentWorkspaceId, onMo
     } catch (e) {
       if (mine !== seq) return;
       impact = [];
-      box.innerHTML = `<div class="corp-notice corp-notice-danger">${esc(e.message)}</div>`;
+      box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`;
       btn.disabled = true;
     }
   }
@@ -218,7 +220,7 @@ export async function openDeviceMoveDialog(deviceIds, { currentWorkspaceId, onMo
       cui.forgetCorporateCache();
       if (typeof onMoved === 'function') onMoved(r);
     } catch (e) {
-      showToast(e.message, e.cancelled ? 'info' : 'error');
+      showToast(e.uiMessage || e.message, e.cancelled ? 'info' : 'error');
       syncBtn();
     }
   });

@@ -1,3 +1,10 @@
+import {builtinLayoutName, builtinZoneName} from '../lib/builtin-layout-labels.js';
+import { renderHTML, uiText, translatedAttribute, bindMessage, bindAttribute, attributeBinding, bindText, binding } from '../lib/i18n-bindings.js';
+
+import { displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
+
+import { localizeServerError } from '../api.js';
+
 import { api } from '../api.js';
 import { publishOrSubmit } from '../components/release.js';
 import { isSimpleMode } from '../components/ui-mode.js';
@@ -7,7 +14,7 @@ import { renderScreenShareCard, startScreenShare } from '../components/screen-sh
 import { showToast } from '../components/toast.js';
 import { openContentPicker } from '../components/content-picker.js';
 import { esc, livenessBadge, hydrateAuthImages, screenshotUrl } from '../utils.js';
-import { t, tn } from '../i18n.js';
+
 import { showDeviceOwnerQRModal } from '../components/device-owner-qr-modal.js';
 import { frameDeviceOutput, displayAspectRatio } from '../lib/device-frame.js';
 import * as gettingStarted from '../components/getting-started.js';
@@ -66,7 +73,7 @@ async function wirePowerSchedule(device) {
       });
       bind();
     } catch (err) {
-      host.textContent = err.message;
+      bindMessage(host, (err.uiMessage || err.message));
     }
   }
 
@@ -109,7 +116,7 @@ async function wirePowerSchedule(device) {
         showToast(t('power.saved'), 'success');
         await load();
       } catch (err) {
-        showToast(`${t('power.save_failed')}: ${err.message}`, 'error');
+        showToast(`${t('power.save_failed')}: ${(err.uiMessage || err.message)}`, 'error');
       }
     });
 
@@ -120,7 +127,7 @@ async function wirePowerSchedule(device) {
         showToast(t('power.saved'), 'success');
         await load();
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
     });
   }
@@ -236,14 +243,14 @@ const DEBUG_PANEL_MAX = 500;     // panel rows AND the held-while-frozen cap
 const DEBUG_LEVEL_COLOR = { e: '#f87171', w: '#fbbf24', d: '#64748b' };
 
 function debugLineText(d) {
-  return `${new Date(d.ts || Date.now()).toLocaleTimeString()} [${d.tag || ''}] ${d.message || ''}`;
+  return `${displayValue(new Date(d.ts || Date.now()), "toLocaleTimeString", undefined)} [${d.tag || ''}] ${d.message || ''}`;
 }
 
 function appendDebugLine(d) {
   const panel = document.getElementById('debugLogPanel');
   if (!panel) return;
   const line = document.createElement('div');
-  line.textContent = debugLineText(d);                       // textContent — no HTML injection
+  bindMessage(line, debugLineText(d));                       // textContent — no HTML injection
   const tone = DEBUG_LEVEL_COLOR[(d.level || '').toLowerCase()];
   if (tone) line.style.color = tone;
   panel.appendChild(line);
@@ -254,14 +261,14 @@ function appendDebugLine(d) {
 function updateDebugTools() {
   const btn = document.getElementById('debugFreezeBtn');
   const status = document.getElementById('debugLogStatus');
-  if (btn) btn.textContent = debugFrozen ? t('device.debug.resume') : t('device.debug.freeze');
+  if (btn) bindMessage(btn, debugFrozen ? t('device.debug.resume') : t('device.debug.freeze'));
   if (status) {
     // Say how many are waiting, so freezing never feels like the device went quiet.
-    status.textContent = debugFrozen
+    bindMessage(status, debugFrozen
       ? (debugHeld.length >= DEBUG_PANEL_MAX
           ? t('device.debug.held_max', { n: debugHeld.length })
           : t('device.debug.held', { n: debugHeld.length }))
-      : '';
+      : '');
   }
 }
 
@@ -290,7 +297,7 @@ function formatEmbeddedLogs(entry) {
   const bat = entry.battery ?? raw?.battery;
   const rssi = entry.wifi_rssi ?? raw?.rssi;
   const ver = entry.version ?? raw?.version;
-  const uploadedAt = entry.uploaded_at ? new Date(entry.uploaded_at * 1000).toLocaleString() : new Date().toLocaleString();
+  const uploadedAt = entry.uploaded_at ? displayValue(new Date(entry.uploaded_at * 1000), "toLocaleString", undefined) : displayValue(new Date(), "toLocaleString", undefined);
 
   const metaParts = [t('device.embedded.logs_meta_uploaded', { time: uploadedAt })];
   if (ver) metaParts.push(t('device.embedded.logs_meta_version', { version: ver }));
@@ -322,8 +329,8 @@ function renderEmbeddedLogsData(data) {
   const panelEl = document.getElementById('embeddedLogsPanel');
   if (!metaEl || !panelEl) return;
   const { meta, text } = formatEmbeddedLogs(data);
-  metaEl.textContent = meta;
-  panelEl.textContent = text;
+  bindMessage(metaEl, meta);
+  bindMessage(panelEl, text);
 }
 
 /*
@@ -378,67 +385,67 @@ if (typeof window !== 'undefined') {
 // #161 device-owner Terminal presets. Commands chosen to work at the APP UID (not root) — getprop,
 // /proc + /sys reads, df, pm list, ip. dumpsys/settings are deliberately avoided (OS-denied to apps).
 const TERMINAL_PRESETS = [
-  { label: 'Device info', cmd: 'getprop ro.product.manufacturer; getprop ro.product.model; echo "Android $(getprop ro.build.version.release) (sdk $(getprop ro.build.version.sdk))"' },
-  { label: 'Build', cmd: 'getprop ro.build.fingerprint; echo "serial=$(getprop ro.serialno)"' },
-  { label: 'Memory', cmd: 'head -3 /proc/meminfo' },
+  { label: t("ui.labels.device_info_8015c4"), cmd: 'getprop ro.product.manufacturer; getprop ro.product.model; echo "Android $(getprop ro.build.version.release) (sdk $(getprop ro.build.version.sdk))"' },
+  { label: t("ui.labels.build_bbd80c"), cmd: 'getprop ro.build.fingerprint; echo "serial=$(getprop ro.serialno)"' },
+  { label: t("ui.labels.memory_89c8a2"), cmd: 'head -3 /proc/meminfo' },
   { label: 'CPU', cmd: 'grep -iE "hardware|processor" /proc/cpuinfo | head; echo "cores=$(cat /proc/cpuinfo | grep -c ^processor)"' },
-  { label: 'Storage', cmd: 'df -h /data 2>/dev/null; df -h /storage/emulated/0 2>/dev/null' },
-  { label: 'Uptime', cmd: 'echo "up $(cut -d. -f1 /proc/uptime)s"' },
-  { label: 'Date / TZ', cmd: 'date; echo "tz=$(getprop persist.sys.timezone)"' },
-  { label: 'Display', cmd: 'getprop | grep -iE "lcd_density|ro.sf.lcd|ro.hwui|ro.surface_flinger" | head' },
-  { label: '3rd-party apps', cmd: 'pm list packages -3 2>/dev/null | sed s/package:// | head -40 || echo "pm list denied at app uid"' },
-  { label: 'Props', cmd: 'getprop | grep -iE "model|version.release|serialno|wifi.interface|timezone"' },
-  { label: 'Whoami', cmd: 'id' },
+  { label: t("ui.labels.storage_9e092d"), cmd: 'df -h /data 2>/dev/null; df -h /storage/emulated/0 2>/dev/null' },
+  { label: t("ui.labels.uptime_6aafa8"), cmd: 'echo "up $(cut -d. -f1 /proc/uptime)s"' },
+  { label: t("ui.labels.date_tz_2f7375"), cmd: 'date; echo "tz=$(getprop persist.sys.timezone)"' },
+  { label: t("ui.labels.display_574ff9"), cmd: 'getprop | grep -iE "lcd_density|ro.sf.lcd|ro.hwui|ro.surface_flinger" | head' },
+  { label: t("ui.labels.3rd_party_apps_3fce12"), cmd: 'pm list packages -3 2>/dev/null | sed s/package:// | head -40 || echo "pm list denied at app uid"' },
+  { label: t("ui.labels.props_e5561b"), cmd: 'getprop | grep -iE "model|version.release|serialno|wifi.interface|timezone"' },
+  { label: t("ui.labels.whoami_d16912"), cmd: 'id' },
 ];
 
 // The same idea for the native Raspberry Pi / Linux player. Read-only diagnostics that are safe to
 // run as the player's service user; anything needing root is for Interactive mode, where sudo can
 // actually prompt.
 const LINUX_TERMINAL_PRESETS = [
-  { label: 'System', cmd: 'uname -a; cat /etc/os-release 2>/dev/null | head -2' },
-  { label: 'Model', cmd: 'tr -d "\\0" < /proc/device-tree/model 2>/dev/null; echo' },
-  { label: 'SoC temp', cmd: 'vcgencmd measure_temp 2>/dev/null || cat /sys/class/thermal/thermal_zone0/temp' },
-  { label: 'Throttled', cmd: 'vcgencmd get_throttled 2>/dev/null || echo "vcgencmd not available"' },
-  { label: 'Storage', cmd: 'df -h' },
-  { label: 'Memory', cmd: 'free -m' },
-  { label: 'Network', cmd: 'ip -br a' },
-  { label: 'Uptime', cmd: 'uptime' },
-  { label: 'Player status', cmd: 'systemctl status screentinker-pi --no-pager' },
-  { label: 'Player log', cmd: 'journalctl -u screentinker-pi -n 50 --no-pager' },
-  { label: 'Whoami', cmd: 'id' },
+  { label: t("ui.labels.system_bc0792"), cmd: 'uname -a; cat /etc/os-release 2>/dev/null | head -2' },
+  { label: t("ui.labels.model_68c2cc"), cmd: 'tr -d "\\0" < /proc/device-tree/model 2>/dev/null; echo' },
+  { label: t("ui.labels.soc_temp_441d51"), cmd: 'vcgencmd measure_temp 2>/dev/null || cat /sys/class/thermal/thermal_zone0/temp' },
+  { label: t("ui.labels.throttled_de4b81"), cmd: 'vcgencmd get_throttled 2>/dev/null || echo "vcgencmd not available"' },
+  { label: t("ui.labels.storage_9e092d"), cmd: 'df -h' },
+  { label: t("ui.labels.memory_89c8a2"), cmd: 'free -m' },
+  { label: t("ui.labels.network_53ebc5"), cmd: 'ip -br a' },
+  { label: t("ui.labels.uptime_6aafa8"), cmd: 'uptime' },
+  { label: t("ui.labels.player_status_f4c1d8"), cmd: 'systemctl status screentinker-pi --no-pager' },
+  { label: t("ui.labels.player_log_d646d4"), cmd: 'journalctl -u screentinker-pi -n 50 --no-pager' },
+  { label: t("ui.labels.whoami_d16912"), cmd: 'id' },
 ];
 
 // The native macOS player: /bin/sh as the signed-in user, read-only diagnostics. There is no
 // privileged helper on a Mac, so nothing here could reach root even if it tried.
 const MAC_TERMINAL_PRESETS = [
-  { label: 'System', cmd: 'sw_vers; sysctl -n hw.model' },
-  { label: 'Storage', cmd: 'df -h /' },
-  { label: 'Memory', cmd: 'vm_stat | head -6' },
-  { label: 'Network', cmd: 'ifconfig | grep -E "^[a-z]|inet "' },
-  { label: 'Uptime', cmd: 'uptime' },
-  { label: 'Power', cmd: 'pmset -g | head -20' },
-  { label: 'Player status', cmd: 'launchctl print gui/$(id -u)/com.screentinker.player | head -25' },
-  { label: 'Player log', cmd: 'tail -n 50 "$HOME/Library/Application Support/ScreenTinker/state/player.log"' },
-  { label: 'Whoami', cmd: 'id' },
+  { label: t("ui.labels.system_bc0792"), cmd: 'sw_vers; sysctl -n hw.model' },
+  { label: t("ui.labels.storage_9e092d"), cmd: 'df -h /' },
+  { label: t("ui.labels.memory_89c8a2"), cmd: 'vm_stat | head -6' },
+  { label: t("ui.labels.network_53ebc5"), cmd: 'ifconfig | grep -E "^[a-z]|inet "' },
+  { label: t("ui.labels.uptime_6aafa8"), cmd: 'uptime' },
+  { label: t("ui.labels.power_7548ab"), cmd: 'pmset -g | head -20' },
+  { label: t("ui.labels.player_status_f4c1d8"), cmd: 'launchctl print gui/$(id -u)/com.screentinker.player | head -25' },
+  { label: t("ui.labels.player_log_d646d4"), cmd: 'tail -n 50 "$HOME/Library/Application Support/ScreenTinker/state/player.log"' },
+  { label: t("ui.labels.whoami_d16912"), cmd: 'id' },
 ];
 
 // The native Windows player: its one-shot shell is PowerShell (`powershell -NoProfile -Command`), run
 // as the signed-in player user. Read-only diagnostics only; anything needing elevation is not
 // reachable from here at all (the SYSTEM helper takes a fixed verb list, not commands).
 const WINDOWS_TERMINAL_PRESETS = [
-  { label: 'System', cmd: 'Get-ComputerInfo | Select-Object WindowsProductName,OsBuildNumber,CsModel' },
-  { label: 'Memory', cmd: 'Get-CimInstance Win32_OperatingSystem | Select FreePhysicalMemory,TotalVisibleMemorySize' },
-  { label: 'Storage', cmd: 'Get-PSDrive C' },
-  { label: 'Network', cmd: 'Get-NetIPAddress -AddressFamily IPv4 | Select InterfaceAlias,IPAddress' },
-  { label: 'Helper service', cmd: 'Get-Service ScreenTinkerHelper' },
-  { label: 'Player process', cmd: 'Get-Process ScreenTinker*' },
-  { label: 'Player events', cmd: "Get-WinEvent -LogName Application -MaxEvents 30 | ? ProviderName -like '*ScreenTinker*'" },
-  { label: 'Whoami', cmd: 'whoami /all' },
+  { label: t("ui.labels.system_bc0792"), cmd: 'Get-ComputerInfo | Select-Object WindowsProductName,OsBuildNumber,CsModel' },
+  { label: t("ui.labels.memory_89c8a2"), cmd: 'Get-CimInstance Win32_OperatingSystem | Select FreePhysicalMemory,TotalVisibleMemorySize' },
+  { label: t("ui.labels.storage_9e092d"), cmd: 'Get-PSDrive C' },
+  { label: t("ui.labels.network_53ebc5"), cmd: 'Get-NetIPAddress -AddressFamily IPv4 | Select InterfaceAlias,IPAddress' },
+  { label: t("ui.labels.helper_service_eef95f"), cmd: 'Get-Service ScreenTinkerHelper' },
+  { label: t("ui.labels.player_process_c37007"), cmd: 'Get-Process ScreenTinker*' },
+  { label: t("ui.labels.player_events_30e5c6"), cmd: "Get-WinEvent -LogName Application -MaxEvents 30 | ? ProviderName -like '*ScreenTinker*'" },
+  { label: t("ui.labels.whoami_d16912"), cmd: 'whoami /all' },
 ];
 
 function formatBytes(mb) {
   if (mb === null || mb === undefined) return '--';
-  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
+  if (mb >= 1024) return displayQuantity((mb / 1024),'GB',1);
   return `${mb} MB`;
 }
 
@@ -461,13 +468,12 @@ function renderDeviceClock(device) {
   const skewSec = Math.abs(Math.round(device.reported_utc / 1000) - device.reported_at);
   let local = '';
   try {
-    local = new Date(device.reported_utc).toLocaleString(undefined,
-      { timeZone: device.reported_timezone || undefined, hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
+    local = displayValue(new Date(device.reported_utc), "toLocaleString", { timeZone: device.reported_timezone || undefined, hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
   } catch (e) { /* bad tz id -> skip local render */ }
   const warn = skewSec > 120
-    ? `<div style="color:#f59e0b;font-size:11px;margin-top:2px">${t('device.clock.skew', { amount: skewSec >= 3600 ? Math.round(skewSec / 3600) + 'h' : Math.round(skewSec / 60) + 'm' })}</div>`
+    ? `<div style="color:#f59e0b;font-size:11px;margin-top:2px">${renderHTML(t('device.clock.skew', { amount: skewSec >= 3600 ? Math.round(skewSec / 3600) + 'h' : Math.round(skewSec / 60) + 'm' }))}</div>`
     : '';
-  return `${tz}${local ? `<div style="font-size:11px;color:var(--text-muted)">${t('device.clock.reported', { time: local })}</div>` : ''}${warn}`;
+  return `${tz}${local ? `<div style="font-size:11px;color:var(--text-muted)">${renderHTML(t('device.clock.reported', { time: local }))}</div>` : ''}${warn}`;
 }
 
 // A BrightSign runs the same web player, so client_type is 'player' and it would otherwise read as
@@ -500,7 +506,7 @@ function captureModeNotice(device) {
   const mode = device && device.capture_mode;
   if (!mode || mode === 'accessibility') return '';   // unknown, or already on the durable path
   const line = (colour, text) =>
-    `<span style="font-size:10px;color:${colour};line-height:1.3;display:block;margin-top:6px">${text}</span>`;
+    `<span style="font-size:10px;color:${colour};line-height:1.3;display:block;margin-top:6px">${uiText(text)}</span>`;
   if (mode === 'projection') {
     return line('var(--text-muted)', t('device.remote.capture_projection'));
   }
@@ -610,7 +616,6 @@ function terminalPresets(device) {
   return TERMINAL_PRESETS;
 }
 
-
 /*
  * Location field (lib/local-conditions.js): search a place, pick it, Save stores its coordinates.
  * Delegated from the document and installed once, because this page re-renders its form and a
@@ -633,8 +638,8 @@ function wireLocationSearch() {
       if (q.length < 2) { results.innerHTML = ''; return; }
       try {
         rows = await api.get(`/devices/geocode?q=${encodeURIComponent(q)}`);
-        results.innerHTML = rows.map((r, i) => `<button type="button" class="btn btn-secondary btn-sm" data-loc-i="${i}" style="text-align:left">${esc([r.name, r.region, r.country].filter(Boolean).join(', '))}</button>`).join('');
-      } catch (err) { results.innerHTML = `<span style="font-size:12px;color:var(--danger)">${esc(err.message)}</span>`; }
+        results.innerHTML = rows.map((r, i) => `<button type="button" class="btn btn-secondary btn-sm" data-loc-i="${i}" style="text-align:left">${uiText([r.name, r.region, r.country].filter(Boolean).join(', '))}</button>`).join('');
+      } catch (err) { results.innerHTML = `<span style="font-size:12px;color:var(--danger)">${uiText((err.uiMessage || err.message))}</span>`; }
     }, 300);
   });
   document.addEventListener('click', (e) => {
@@ -665,10 +670,10 @@ export function render(container, deviceId) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
         </svg>
-        ${t('device.back')}
+        ${renderHTML(t('device.back'))}
       </a>
       <div id="deviceContent">
-        <div class="empty-state"><h3>${t('common.loading')}</h3></div>
+        <div class="empty-state"><h3>${renderHTML(t('common.loading'))}</h3></div>
       </div>
     </div>
   `;
@@ -682,8 +687,8 @@ export function render(container, deviceId) {
     if (badge) {
       const b = livenessBadge(data); // v4: 3-state liveness when present, else binary status
       badge.className = `device-status-badge ${b.state}`;
-      badge.textContent = b.label;
-      badge.title = b.title || ''; // exit-reason hover (empty for non-offline / no-reason)
+      bindMessage(badge, b.label);
+      bindAttribute(badge, "title", b.title || ''); // exit-reason hover (empty for non-offline / no-reason)
     }
     if (data.telemetry) updateTelemetryDisplay(data.telemetry);
   };
@@ -705,7 +710,7 @@ export function render(container, deviceId) {
         const img = document.createElement('img');
         img.id = 'currentScreenshot';
         img.src = imgSrc;
-        img.alt = 'Current screen';
+        img.alt = t("ui.device_detail.current_screen_0485f9");
         img.style.cssText = 'width:100%;height:100%;object-fit:contain';
         screenshotEl.replaceWith(img);
       }
@@ -734,7 +739,7 @@ export function render(container, deviceId) {
     if (currentDevice && currentDevice.mirror_source) return;
     const el = document.getElementById('nowPlayingInfo');
     if (el && data.current_content_id) {
-      el.textContent = t('device.now_playing_id', { id: data.current_content_id });
+      bindText(el, 'device.now_playing_id', { id: data.current_content_id });
     }
   };
 
@@ -823,34 +828,34 @@ async function loadDevice(deviceId, activeTab = null) {
     contentEl.innerHTML = `
       <div class="device-header">
         <div class="device-header-left">
-          <h1 id="deviceName">${esc(device.name)}</h1>
-          ${(() => { const b = livenessBadge(device); return `<span class="device-status-badge ${b.state}"${b.title ? ` title="${esc(b.title)}"` : ''}>${esc(b.label)}</span>`; })()}
-          ${device.owner_name || device.owner_email ? `<span style="font-size:12px;color:var(--text-muted)">${t('device.owner_label', { owner: esc(device.owner_name || device.owner_email) })}</span>` : ''}
+          <h1 id="deviceName">${uiText(device.name)}</h1>
+          ${renderHTML((() => { const b = livenessBadge(device); return `<span class="device-status-badge ${b.state}"${b.title ? ` title="${esc(b.title)}"` : ''}>${uiText(b.label)}</span>`; })())}
+          ${renderHTML(device.owner_name || device.owner_email ? `<span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('device.owner_label', { owner: esc(device.owner_name || device.owner_email) }))}</span>` : '')}
         </div>
         <div class="device-header-actions">
-          <button class="btn btn-secondary btn-sm" id="devicePreviewBtn">${t('device.preview_btn')}</button>
-          <button class="btn btn-secondary btn-sm" id="renameBtn">${t('device.rename')}</button>
-          ${can('remote.screenshot') ? `
+          <button class="btn btn-secondary btn-sm" id="devicePreviewBtn">${renderHTML(t('device.preview_btn'))}</button>
+          <button class="btn btn-secondary btn-sm" id="renameBtn">${renderHTML(t('device.rename'))}</button>
+          ${renderHTML(can('remote.screenshot') ? `
           <button class="btn btn-secondary btn-sm" id="screenshotBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
             </svg>
-            ${t('device.screenshot_btn')}
-          </button>` : ''}
-          ${talkAvailable && can('remote.talk') ? `
-          <button data-advanced-ui class="btn btn-secondary btn-sm" id="startTalkBtn">🎙️ ${t('device.talk.start')}</button>
-          ${can('remote.talk') ? `<button data-advanced-ui class="btn btn-secondary btn-sm" id="start2wayBtn">🎙️ ${t('device.talk.two_way')}</button>` : ''}
-          <button class="btn btn-danger btn-sm" id="stopTalkBtn" style="display:none">${t('device.talk.stop')}</button>
-          <button class="btn btn-secondary btn-sm" id="muteTalkBtn" style="display:none">${t('device.talk.mute')}</button>` : ''}
+            ${renderHTML(t('device.screenshot_btn'))}
+          </button>` : '')}
+          ${renderHTML(talkAvailable && can('remote.talk') ? `
+          <button data-advanced-ui class="btn btn-secondary btn-sm" id="startTalkBtn">🎙️ ${renderHTML(t('device.talk.start'))}</button>
+          ${renderHTML(can('remote.talk') ? `<button data-advanced-ui class="btn btn-secondary btn-sm" id="start2wayBtn">🎙️ ${renderHTML(t('device.talk.two_way'))}</button>` : '')}
+          <button class="btn btn-danger btn-sm" id="stopTalkBtn" style="display:none">${renderHTML(t('device.talk.stop'))}</button>
+          <button class="btn btn-secondary btn-sm" id="muteTalkBtn" style="display:none">${renderHTML(t('device.talk.mute'))}</button>` : '')}
           ${/* 3.0 screen share: hidden until the card below has asked the server whether this person
-                can share to this screen (capability, workspace switch, edit rights). */ ''}
-          ${can('remote.screen_share') ? `<button class="btn btn-secondary btn-sm" id="shareScreenBtn" style="display:none">&#128421;&#65039; ${t('screen_share.start')}</button>` : ''}
-          ${device.android_version && !device.android_version.startsWith('Web/') && !isNativeDevice(device) && !isRokuDevice(device) ? `
-          <button data-advanced-ui class="btn btn-secondary btn-sm" id="deviceOwnerBtn" title="${t('device.owner_provision.tip')}">${t('device.owner_provision.btn')}</button>` : ''}
-          <button data-advanced-ui class="btn btn-secondary btn-sm" id="moveDeviceBtn">${t('move.button')}</button>
-          <button data-advanced-ui class="btn btn-secondary btn-sm" id="blockDeviceBtn">${device.blocked ? 'Unblock' : 'Block'}</button>
-          <button class="btn btn-danger btn-sm" id="deleteDeviceBtn">${t('device.remove')}</button>
+                can share to this screen (capability, workspace switch, edit rights). */ renderHTML('')}
+          ${renderHTML(can('remote.screen_share') ? `<button class="btn btn-secondary btn-sm" id="shareScreenBtn" style="display:none">🖥️ ${renderHTML(t('screen_share.start'))}</button>` : '')}
+          ${renderHTML(device.android_version && !device.android_version.startsWith('Web/') && !isNativeDevice(device) && !isRokuDevice(device) ? `
+          <button data-advanced-ui class="btn btn-secondary btn-sm" id="deviceOwnerBtn" title="${t('device.owner_provision.tip')}" data-fil-i18n-title="${binding('device.owner_provision.tip', undefined)}">${renderHTML(t('device.owner_provision.btn'))}</button>` : '')}
+          <button data-advanced-ui class="btn btn-secondary btn-sm" id="moveDeviceBtn">${renderHTML(t('move.button'))}</button>
+          <button data-advanced-ui class="btn btn-secondary btn-sm" id="blockDeviceBtn">${renderHTML(device.blocked ? t("ui.device_detail.unblock_12aabd") : t("ui.device_detail.block_82dd2c"))}</button>
+          <button class="btn btn-danger btn-sm" id="deleteDeviceBtn">${renderHTML(t('device.remove'))}</button>
         </div>
       </div>
 
@@ -860,55 +865,55 @@ async function loadDevice(deviceId, activeTab = null) {
         /* system.kiosk opens the row too: COMMAND_CAPABILITY accepts it for lock_now / power_menu,
            and it is how a Linux player that runs its own kiosk session gets these controls without
            claiming to be an Android device owner. Each button is gated on what it sends. */
-        (device.tier === 2 || can('system.device_owner') || can('system.kiosk')) ? `
+        renderHTML((device.tier === 2 || can('system.device_owner') || can('system.kiosk')) ? `
       <div data-advanced-ui style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 0 4px" title="${isNativeDevice(device) ? t('device.tier2.tip_linux') : t('device.tier2.tip')}">
-        <span style="font-size:12px;color:var(--text-muted)">${isNativeDevice(device) ? t('device.tier2.label_linux') : t('device.tier2.label')}</span>
-        ${(device.tier === 2 || can('system.reboot')) ? `
-        <button class="btn btn-secondary btn-sm" id="t2Reboot">${t('device.tier2.reboot')}</button>` : ''}
-        <button class="btn btn-secondary btn-sm" id="t2Lock">${t('device.tier2.lock')}</button>
-        ${(device.tier === 2 || can('system.kiosk')) ? `
-        <button class="btn btn-secondary btn-sm" id="t2KioskOn">${t('device.tier2.kiosk_on')}</button>
-        <button class="btn btn-secondary btn-sm" id="t2KioskOff">${t('device.tier2.kiosk_off')}</button>` : ''}
-        <button class="btn btn-secondary btn-sm" id="t2PowerMenu">${t('device.tier2.power_menu')}</button>
-      </div>` : ''}
+        <span style="font-size:12px;color:var(--text-muted)">${renderHTML(isNativeDevice(device) ? t('device.tier2.label_linux') : t('device.tier2.label'))}</span>
+        ${renderHTML((device.tier === 2 || can('system.reboot')) ? `
+        <button class="btn btn-secondary btn-sm" id="t2Reboot">${renderHTML(t('device.tier2.reboot'))}</button>` : '')}
+        <button class="btn btn-secondary btn-sm" id="t2Lock">${renderHTML(t('device.tier2.lock'))}</button>
+        ${renderHTML((device.tier === 2 || can('system.kiosk')) ? `
+        <button class="btn btn-secondary btn-sm" id="t2KioskOn">${renderHTML(t('device.tier2.kiosk_on'))}</button>
+        <button class="btn btn-secondary btn-sm" id="t2KioskOff">${renderHTML(t('device.tier2.kiosk_off'))}</button>` : '')}
+        <button class="btn btn-secondary btn-sm" id="t2PowerMenu">${renderHTML(t('device.tier2.power_menu'))}</button>
+      </div>` : '')}
 
       ${/* 3.0 display-link mirrors: a mirror plays its original's content, so say so up front. */
-        device.mirror_source ? `
+        renderHTML(device.mirror_source ? `
       <div class="info-card" id="mirrorBanner" style="margin:8px 0;padding:10px 14px;border-left:3px solid var(--accent, #3b82f6)">
-        ${esc(t('device.mirror.banner_prefix'))}
-        <a href="#/device/${esc(device.mirror_source.id)}"><strong>${esc(device.mirror_source.name)}</strong></a>.
-        ${esc(t('device.mirror.banner_body'))}
-        ${device.mirror_location ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${esc(t('device.mirror.location', { location: device.mirror_location }))}</div>` : ''}
-      </div>` : ''}
+        ${renderHTML(t('device.mirror.banner_prefix'))}
+        <a href="#/device/${esc(device.mirror_source.id)}"><strong>${uiText(device.mirror_source.name)}</strong></a>.
+        ${renderHTML(t('device.mirror.banner_body'))}
+        ${renderHTML(device.mirror_location ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${uiText(t('device.mirror.location', { location: device.mirror_location }))}</div>` : '')}
+      </div>` : '')}
 
       <!-- Step 4 sends you to this page to assign a playlist. Losing the checklist on arrival is
            the same dead end the Content, Playlists and playlist-detail pages had. -->
       <div id="gettingStarted"></div>
 
       <div class="tabs">
-        <div class="tab active" data-tab="nowplaying">${t('device.tab.now_playing')} <span class="help-tip" data-tip="${t('device.tab.now_playing_tip')}">?</span></div>
-        <div class="tab" data-tab="playlist">${t('device.tab.playlist')} <span class="help-tip" data-tip="${t('device.tab.playlist_tip')}">?</span></div>
-        <div class="tab" data-tab="info">${t('device.tab.info')} <span class="help-tip" data-tip="${t('device.tab.info_tip')}">?</span></div>
-        ${(can('remote.stream') || can('remote.input') || can('remote.screenshot')) ? `<div class="tab" data-tab="remote" data-advanced-ui>${t('device.tab.remote')} <span class="help-tip" data-tip="${t('device.tab.remote_tip')}">?</span></div>` : ''}
-        ${((can('audio.volume') || can('display.brightness') || can('system.brightness') || can('system.screen_timeout')) || isEmbeddedDevice(device)) ? `<div class="tab" data-tab="controls" data-advanced-ui>${t('device.tab.controls')} <span class="help-tip" data-tip="${t('device.tab.controls_tip')}">?</span></div>` : ''}
-        ${(device.tier === 2 || can('system.shell') || can('system.pty')) ? `<div class="tab" data-tab="terminal" data-advanced-ui>${t('device.tab.terminal')} <span class="help-tip" data-tip="${t('device.tab.terminal_tip')}">?</span></div>` : ''}
+        <div class="tab active" data-tab="nowplaying">${renderHTML(t('device.tab.now_playing'))} <span class="help-tip" ${translatedAttribute("data-tip", 'device.tab.now_playing_tip')}>?</span></div>
+        <div class="tab" data-tab="playlist">${renderHTML(t('device.tab.playlist'))} <span class="help-tip" ${translatedAttribute("data-tip", 'device.tab.playlist_tip')}>?</span></div>
+        <div class="tab" data-tab="info">${renderHTML(t('device.tab.info'))} <span class="help-tip" ${translatedAttribute("data-tip", 'device.tab.info_tip')}>?</span></div>
+        ${renderHTML((can('remote.stream') || can('remote.input') || can('remote.screenshot')) ? `<div class="tab" data-tab="remote" data-advanced-ui>${renderHTML(t('device.tab.remote'))} <span class="help-tip" ${translatedAttribute("data-tip", 'device.tab.remote_tip')}>?</span></div>` : '')}
+        ${renderHTML(((can('audio.volume') || can('display.brightness') || can('system.brightness') || can('system.screen_timeout')) || isEmbeddedDevice(device)) ? `<div class="tab" data-tab="controls" data-advanced-ui>${renderHTML(t('device.tab.controls'))} <span class="help-tip" ${translatedAttribute("data-tip", 'device.tab.controls_tip')}>?</span></div>` : '')}
+        ${renderHTML((device.tier === 2 || can('system.shell') || can('system.pty')) ? `<div class="tab" data-tab="terminal" data-advanced-ui>${renderHTML(t('device.tab.terminal'))} <span class="help-tip" ${translatedAttribute("data-tip", 'device.tab.terminal_tip')}>?</span></div>` : '')}
         <!--
           #313 — only for a display that actually HAS an enrolment key, i.e. one created for a
           player that cannot stay paired. Every other display keeps its own credentials and would
           gain nothing from this tab but a durable secret it never needed.
         -->
-        <div class="tab" data-tab="forecast" data-advanced-ui>${t('forecast.tab')} <span class="help-tip" data-tip="${t('forecast.tab_tip')}">?</span></div>
-        ${!device.mirror_of ? `<div class="tab" data-tab="webplayer">${t('device.tab.webplayer')} <span class="help-tip" data-tip="${t('device.tab.webplayer_tip')}">?</span></div>` : ''}
+        <div class="tab" data-tab="forecast" data-advanced-ui>${renderHTML(t('forecast.tab'))} <span class="help-tip" ${translatedAttribute("data-tip", 'forecast.tab_tip')}>?</span></div>
+        ${renderHTML(!device.mirror_of ? `<div class="tab" data-tab="webplayer">${renderHTML(t('device.tab.webplayer'))} <span class="help-tip" ${translatedAttribute("data-tip", 'device.tab.webplayer_tip')}>?</span></div>` : '')}
       </div>
 
       <!-- Preview at… (docs/preview-at-time.md): mounted on first open, it asks the server. -->
       <div class="tab-content" id="tab-forecast">
         <div id="forecastHost"></div>
         <details class="pat-group" id="forecastGroup">
-          <summary>${t('forecast.group.title')}</summary>
+          <summary>${renderHTML(t('forecast.group.title'))}</summary>
           <div class="pat-group-controls">
-            <select class="input" id="forecastGroupSel"><option value="">${t('forecast.group.pick')}</option></select>
-            <button type="button" class="btn btn-secondary btn-sm" id="forecastGroupGo">${t('forecast.group.show')}</button>
+            <select class="input" id="forecastGroupSel"><option value="">${renderHTML(t('forecast.group.pick'))}</option></select>
+            <button type="button" class="btn btn-secondary btn-sm" id="forecastGroupGo">${renderHTML(t('forecast.group.show'))}</button>
           </div>
           <div id="forecastGroupOut"></div>
         </details>
@@ -918,19 +923,19 @@ async function loadDevice(deviceId, activeTab = null) {
       <div class="tab-content active" id="tab-nowplaying">
         ${/* #632: the page opens on THIS tab, and the only sign of an unpublished edit was the banner
               on the Playlist tab — so "I added a picture and the screen never changed" looked like a
-              player fault. Say it where the operator is looking; the Publish button stays where it was. */ ''}
-        ${device.playlist_status === 'draft' && device.playlist_source !== 'corporate' && !device.mirror_source ? `
+              player fault. Say it where the operator is looking; the Publish button stays where it was. */ renderHTML('')}
+        ${renderHTML(device.playlist_status === 'draft' && device.playlist_source !== 'corporate' && !device.mirror_source ? `
         <div id="deviceDraftNotice" role="status" style="background:#78350f;border:1px solid #92400e;border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#fbbf24">
-          <div style="font-size:13px"><strong>${t('device.draft.banner_title')}.</strong> <span style="color:#fcd34d">${device.playlist_has_published ? t('device.draft.notice_published') : t('device.draft.never_published')}</span></div>
-          <button class="btn btn-sm" id="deviceDraftReviewBtn" style="background:#f59e0b;color:#000;font-weight:600;border:none">${t('device.draft.review_publish')}</button>
-        </div>` : ''}
+          <div style="font-size:13px"><strong>${renderHTML(t('device.draft.banner_title'))}.</strong> <span style="color:#fcd34d">${renderHTML(device.playlist_has_published ? t('device.draft.notice_published') : t('device.draft.never_published'))}</span></div>
+          <button class="btn btn-sm" id="deviceDraftReviewBtn" style="background:#f59e0b;color:#000;font-weight:600;border:none">${renderHTML(t('device.draft.review_publish'))}</button>
+        </div>` : '')}
         <div class="screenshot-container" id="screenshotStage">
           <!-- Live WebRTC overlay (#go2rtc). Present but hidden; the viewer reveals it only once a
                stream connects, and re-hides on any failure so the screenshot below shows through. -->
           <video id="liveVideo" class="live-video" hidden autoplay playsinline muted></video>
-          <span id="liveBadge" class="live-badge" hidden>${t('device.live_badge')}</span>
-          ${device.screenshot
-            ? `<img id="currentScreenshot" src="${screenshotUrl(device.id, Date.now())}" alt="Current screen">`
+          <span id="liveBadge" class="live-badge" hidden>${renderHTML(t('device.live_badge'))}</span>
+          ${renderHTML(device.screenshot
+            ? `<img id="currentScreenshot" src="${screenshotUrl(device.id, Date.now())}" ${translatedAttribute("alt", "ui.device_detail.alt_current_screen_87e519")}>`
             : `<div class="no-screenshot" id="currentScreenshot">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
@@ -940,13 +945,13 @@ async function loadDevice(deviceId, activeTab = null) {
                 <!-- The default copy tells the operator to click a button that is only rendered
                      for a panel that can capture. On one that cannot, pointing at a control that
                      is not on the page reads as a broken dashboard. -->
-                <span>${can('remote.screenshot') ? t('device.no_screenshot') : t('device.no_screenshot_unsupported')}</span>
-              </div>`
+                <span>${renderHTML(can('remote.screenshot') ? t('device.no_screenshot') : t('device.no_screenshot_unsupported'))}</span>
+              </div>`)
           }
         </div>
         <p id="nowPlayingInfo" style="color:var(--text-secondary);font-size:13px;">
-          ${device.mirror_source ? esc(mirrorPlayingText(device))
-            : device.assignments?.length ? tn('device.playlist_count', device.assignments.length) : t('device.no_content_assigned')}
+          ${renderHTML(device.mirror_source ? esc(mirrorPlayingText(device))
+            : device.assignments?.length ? tn('device.playlist_count', device.assignments.length) : t('device.no_content_assigned'))}
         </p>
         <div id="screenShareCard"></div>
       </div>
@@ -954,23 +959,23 @@ async function loadDevice(deviceId, activeTab = null) {
       <!-- Playlist Tab -->
       <div class="tab-content" id="tab-playlist">
         ${/* Head office decides what plays here: its own section replaces the picker, the layout
-              selector, the draft banner (head office's draft, not the store's) and the item list. */ ''}
-        ${device.playlist_source === 'corporate' ? corporatePlaylistTab(device) : `
-        ${device.playlist_status === 'draft' ? `
+              selector, the draft banner (head office's draft, not the store's) and the item list. */ renderHTML('')}
+        ${renderHTML(device.playlist_source === 'corporate' ? corporatePlaylistTab(device) : `
+        ${renderHTML(device.playlist_status === 'draft' ? `
         <div id="deviceDraftBanner" style="background:#78350f;border:1px solid #92400e;border-radius:var(--radius);padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px">
           <div style="display:flex;align-items:center;gap:10px;color:#fbbf24">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <div>
-              <div style="font-weight:600;font-size:14px">${t('device.draft.banner_title')}</div>
-              <div style="font-size:12px;color:#fcd34d;opacity:0.85">${device.playlist_has_published ? t('device.draft.devices_showing_published') : t('device.draft.never_published')}</div>
+              <div style="font-weight:600;font-size:14px">${renderHTML(t('device.draft.banner_title'))}</div>
+              <div style="font-size:12px;color:#fcd34d;opacity:0.85">${renderHTML(device.playlist_has_published ? t('device.draft.devices_showing_published') : t('device.draft.never_published'))}</div>
             </div>
           </div>
           <div style="display:flex;gap:8px;flex-shrink:0">
-            ${device.playlist_has_published ? `<button class="btn btn-secondary btn-sm" id="deviceDiscardDraftBtn" style="color:#fbbf24;border-color:#92400e">${t('device.draft.discard')}</button>` : ''}
-            <button class="btn btn-sm" id="devicePublishBtn" style="background:#f59e0b;color:#000;font-weight:600;border:none">${t('device.draft.publish')}</button>
+            ${renderHTML(device.playlist_has_published ? `<button class="btn btn-secondary btn-sm" id="deviceDiscardDraftBtn" style="color:#fbbf24;border-color:#92400e">${renderHTML(t('device.draft.discard'))}</button>` : '')}
+            <button class="btn btn-sm" id="devicePublishBtn" style="background:#f59e0b;color:#000;font-weight:600;border:none">${renderHTML(t('device.draft.publish'))}</button>
           </div>
         </div>
-        ` : ''}
+        ` : '')}
         <!-- Layout selector. 3.0: Advanced view only — unless this screen already runs a multi-zone
              layout, in which case hiding it would hide why its content is split up. -->
         <div ${activeLayoutIdOf(device) ? '' : 'data-advanced-ui'} style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
@@ -978,41 +983,41 @@ async function loadDevice(deviceId, activeTab = null) {
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
           </svg>
           <div style="flex:1">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${t('device.layout.label')}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t('device.layout.label'))}</div>
             <select id="deviceLayoutSelect" class="input" style="background:var(--bg-input);padding:4px 8px;font-size:13px">
-              <option value="">${t('device.layout.fullscreen_default')}</option>
+              <option value="">${renderHTML(t('device.layout.fullscreen_default'))}</option>
             </select>
-            ${layoutSourceNote(device)}
+            ${renderHTML(layoutSourceNote(device))}
           </div>
-          <button class="btn btn-secondary btn-sm" id="applyLayoutBtn">${t('device.layout.apply')}</button>
+          <button class="btn btn-secondary btn-sm" id="applyLayoutBtn">${renderHTML(t('device.layout.apply'))}</button>
         </div>
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div style="display:flex;align-items:center;gap:12px">
-            <h3 style="font-size:16px">${t('device.playlist.label')}</h3>
+            <h3 style="font-size:16px">${renderHTML(t('device.playlist.label'))}</h3>
             <select class="input" id="playlistPicker" style="font-size:12px;padding:4px 8px;width:200px">
-              <option value="">${t('device.playlist.no_playlist')}</option>
+              <option value="">${renderHTML(t('device.playlist.no_playlist'))}</option>
             </select>
-            ${playlistSourceBadge(device)}
+            ${renderHTML(playlistSourceBadge(device))}
           </div>
           <div style="display:flex;gap:6px">
-            <button class="btn btn-secondary btn-sm" id="copyPlaylistBtn" data-advanced-ui>${t('device.playlist.copy_to_btn')}</button>
+            <button class="btn btn-secondary btn-sm" id="copyPlaylistBtn" data-advanced-ui>${renderHTML(t('device.playlist.copy_to_btn'))}</button>
             <button class="btn btn-primary btn-sm" id="addContentBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            ${t('device.playlist.add_content_btn')}
+            ${uiText(t('device.playlist.add_content_btn'))}
           </button>
           </div>
         </div>
         <div class="playlist-container" id="playlistContainer">
-          ${renderPlaylist(device.assignments || [])}
-        </div>`}
+          ${renderHTML(renderPlaylist(device.assignments || []))}
+        </div>`)}
       </div>
 
       <!-- Info Tab -->
       <div class="tab-content" id="tab-info">
-        ${diagWidget ? renderDiagPanel(diagWidget) : ''}
+        ${renderHTML(diagWidget ? renderDiagPanel(diagWidget) : '')}
 
         <!-- The actions an operator opens this page to take. They used to sit below the info
              grid, the reboot schedule and the debug log panel, which on a phone meant scrolling
@@ -1020,150 +1025,146 @@ async function loadDevice(deviceId, activeTab = null) {
              so a narrow screen reflows rather than clipping, and each button still renders only
              where the display can honour it. -->
         <div style="margin:20px 0;display:flex;gap:8px;flex-wrap:wrap">
-          ${can('system.reboot') ? `
+          ${renderHTML(can('system.reboot') ? `
           <button class="btn btn-secondary btn-sm" id="rebootBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
-            ${t('device.ctl.reboot_device')}
-          </button>` : ''}
-          ${can('display.power') ? `
+            ${renderHTML(t('device.ctl.reboot_device'))}
+          </button>` : '')}
+          ${renderHTML(can('display.power') ? `
           <button class="btn btn-secondary btn-sm" id="screenOffBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
-            ${t('device.ctl.screen_off')}
-          </button>` : ''}
-          ${can('display.power') ? `
+            ${renderHTML(t('device.ctl.screen_off'))}
+          </button>` : '')}
+          ${renderHTML(can('display.power') ? `
           <button class="btn btn-secondary btn-sm" id="screenOnBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
             </svg>
-            ${t('device.ctl.screen_on')}
-          </button>` : ''}
-          ${can('system.restart_player') ? `
+            ${renderHTML(t('device.ctl.screen_on'))}
+          </button>` : '')}
+          ${renderHTML(can('system.restart_player') ? `
           <button class="btn btn-secondary btn-sm" id="launchAppBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
-            ${t('device.ctl.launch_player')}
-          </button>` : ''}
+            ${renderHTML(t('device.ctl.launch_player'))}
+          </button>` : '')}
           ${/* #632: the `refresh` command (lib/device-command.js, write tier) had a handler on every
                 player that declares system.restart_player and no control anywhere that sent it. A web
-                player reloads its page; Android reconnects and re-fetches its playlist. */ ''}
-          ${can('system.restart_player') && canEditWorkspace() ? `
-          <button class="btn btn-secondary btn-sm" id="reloadPlayerBtn" title="${esc(t('device.ctl.reload_player_tip'))}">
+                player reloads its page; Android reconnects and re-fetches its playlist. */ renderHTML('')}
+          ${renderHTML(can('system.restart_player') && canEditWorkspace() ? `
+          <button class="btn btn-secondary btn-sm" id="reloadPlayerBtn" title="${esc(t('device.ctl.reload_player_tip'))}" data-fil-i18n-title="${binding('device.ctl.reload_player_tip', undefined)}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
             </svg>
-            ${t('device.ctl.reload_player')}
-          </button>` : ''}
-          ${can('system.self_update') ? `
+            ${renderHTML(t('device.ctl.reload_player'))}
+          </button>` : '')}
+          ${renderHTML(can('system.self_update') ? `
           <button class="btn btn-secondary btn-sm" id="forceUpdateBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            ${isEmbeddedDevice(device) ? t('device.ctl.update_firmware') : t('device.ctl.force_update')}
+            ${renderHTML(isEmbeddedDevice(device) ? t('device.ctl.update_firmware') : t('device.ctl.force_update'))}
           </button>
-          ${!isEmbeddedDevice(device) ? `
-          <button class="btn btn-secondary btn-sm" id="clearUpdateCacheBtn" title="${t('device.ctl.clear_update_cache_tip')}">
+          ${renderHTML(!isEmbeddedDevice(device) ? `
+          <button class="btn btn-secondary btn-sm" id="clearUpdateCacheBtn" title="${t('device.ctl.clear_update_cache_tip')}" data-fil-i18n-title="${binding('device.ctl.clear_update_cache_tip', undefined)}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
             </svg>
-            ${t('device.ctl.clear_update_cache')}
-          </button>` : ''}` : ''}
-          ${can('system.reboot') && !isEmbeddedDevice(device) ? `
+            ${renderHTML(t('device.ctl.clear_update_cache'))}
+          </button>` : '')}` : '')}
+          ${renderHTML(can('system.reboot') && !isEmbeddedDevice(device) ? `
           <button class="btn btn-danger btn-sm" id="shutdownBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
             </svg>
-            ${t('device.ctl.shutdown')}
-          </button>` : ''}
-          ${can('remote.set_server_url') ? `
-          <button class="btn btn-secondary btn-sm" id="setServerUrlBtn" title="${t('device.ctl.set_server_url_tip')}">
+            ${renderHTML(t('device.ctl.shutdown'))}
+          </button>` : '')}
+          ${renderHTML(can('remote.set_server_url') ? `
+          <button class="btn btn-secondary btn-sm" id="setServerUrlBtn" title="${t('device.ctl.set_server_url_tip')}" data-fil-i18n-title="${binding('device.ctl.set_server_url_tip', undefined)}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
             </svg>
-            ${t('device.ctl.set_server_url')}
-          </button>` : ''}
+            ${renderHTML(t('device.ctl.set_server_url'))}
+          </button>` : '')}
         </div>
 
         <div class="info-grid">
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.status')}</div>
-            <div class="info-card-value" style="color:var(--${device.status === 'online' ? 'success' : 'danger'})">${device.status}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.status'))}</div>
+            <div class="info-card-value" style="color:var(--${device.status === 'online' ? 'success' : 'danger'})">${renderHTML(device.status)}</div>
           </div>
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.ip_address')}</div>
-            <div class="info-card-value small">${device.ip_address || '--'}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.ip_address'))}</div>
+            <div class="info-card-value small">${renderHTML(device.ip_address || '--')}</div>
           </div>
           <div class="info-card">
             <!-- Two different addresses, and conflating them confused a customer into reading their
                  ISP's address as the screen's. Above is where the connection comes FROM (public);
                  this is what the screen calls itself on its own network. -->
-            <div class="info-card-label">${t('device.info.local_ip')}</div>
-            <div class="info-card-value small" id="telLocalIp">${esc(device.local_ip || '--')}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.local_ip'))}</div>
+            <div class="info-card-value small" id="telLocalIp">${uiText(device.local_ip || '--')}</div>
           </div>
-          ${device.local_ip6 ? `
+          ${renderHTML(device.local_ip6 ? `
           <div class="info-card">
             <!-- Rendered only when the panel actually has one. A v6 address is long, and showing an
                  empty row for the overwhelmingly v4 fleet would cost every operator screen space to
                  tell them nothing. A dual-stack panel shows both cards; a v6-only panel used to
                  show a dash here and nothing else, because the player only ever collected v4. -->
-            <div class="info-card-label">${t('device.info.local_ip6')}</div>
-            <div class="info-card-value small" id="telLocalIp6">${esc(device.local_ip6)}</div>
-          </div>` : ''}
-          ${(device.android_version && !device.android_version.startsWith('Web/')) || latestTelemetry.battery_level != null || (isEmbeddedDevice(device) && device.power_source) ? `
+            <div class="info-card-label">${renderHTML(t('device.info.local_ip6'))}</div>
+            <div class="info-card-value small" id="telLocalIp6">${uiText(device.local_ip6)}</div>
+          </div>` : '')}
+          ${renderHTML((device.android_version && !device.android_version.startsWith('Web/')) || latestTelemetry.battery_level != null || (isEmbeddedDevice(device) && device.power_source) ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.battery')}</div>
-            <div class="info-card-value" id="telBattery">${
-              // Charging / mains annotations are an embedded-panel reading; every other player keeps
-              // the plain percentage it has always shown.
-              !isEmbeddedDevice(device)
+            <div class="info-card-label">${renderHTML(t('device.info.battery'))}</div>
+            <div class="info-card-value" id="telBattery">${renderHTML(!isEmbeddedDevice(device)
                 ? (latestTelemetry.battery_level != null ? latestTelemetry.battery_level + '%' : '--')
                 : latestTelemetry.battery_charging
                   ? (latestTelemetry.battery_level != null ? t('device.info.battery_charging_pct', { level: latestTelemetry.battery_level }) : t('device.info.battery_charging'))
                   : (device.power_source === 'usb' || latestTelemetry.power_source === 'usb')
                     ? (latestTelemetry.battery_level != null ? t('device.info.battery_mains_pct', { level: latestTelemetry.battery_level }) : t('device.info.battery_mains'))
-                    : (latestTelemetry.battery_level != null ? `${latestTelemetry.battery_level}%` : '--')
-            }</div>
-            ${latestTelemetry.battery_level != null ? `
+                    : (latestTelemetry.battery_level != null ? `${latestTelemetry.battery_level}%` : '--'))}            }</div>
+            ${renderHTML(latestTelemetry.battery_level != null ? `
             <div class="progress-bar">
               <div class="progress-bar-fill ${latestTelemetry.battery_level > 50 ? 'success' : latestTelemetry.battery_level > 20 ? 'warning' : 'danger'}"
                    style="width:${latestTelemetry.battery_level}%"></div>
-            </div>` : ''}
-          </div>` : ''}
-          ${device.android_version && !device.android_version.startsWith('Web/') ? `
+            </div>` : '')}
+          </div>` : '')}
+          ${renderHTML(device.android_version && !device.android_version.startsWith('Web/') ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.storage')}</div>
-            <div class="info-card-value small" id="telStorage">${latestTelemetry.storage_free_mb ? t('device.info.size_free', { size: formatBytes(latestTelemetry.storage_free_mb) }) : '--'}</div>
-            ${latestTelemetry.storage_total_mb ? `
+            <div class="info-card-label">${renderHTML(t('device.info.storage'))}</div>
+            <div class="info-card-value small" id="telStorage">${renderHTML(latestTelemetry.storage_free_mb ? t('device.info.size_free', { size: formatBytes(latestTelemetry.storage_free_mb) }) : '--')}</div>
+            ${renderHTML(latestTelemetry.storage_total_mb ? `
             <div class="progress-bar">
               <div class="progress-bar-fill ${((latestTelemetry.storage_total_mb - latestTelemetry.storage_free_mb) / latestTelemetry.storage_total_mb) < 0.8 ? 'success' : 'warning'}"
                    style="width:${((latestTelemetry.storage_total_mb - latestTelemetry.storage_free_mb) / latestTelemetry.storage_total_mb * 100)}%"></div>
-            </div>` : ''}
+            </div>` : '')}
           </div>
           ` : `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.player_type')}</div>
-            <div class="info-card-value small">${isEmbeddedDevice(device) ? (String(device.screen_profile || '').includes('seeed-reterminal-sticky') ? t('device.info.reterminal_sticky_player') : t('device.info.embedded_player')) : isBrightSignDevice(device) ? t('device.info.brightsign_player') : isLinuxDevice(device) ? t('device.info.linux_player') : isWindowsDevice(device) ? t('device.info.windows_player') : isRokuDevice(device) ? t('device.info.roku_player') : t('device.info.web_player')}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.player_type'))}</div>
+            <div class="info-card-value small">${renderHTML(isEmbeddedDevice(device) ? (String(device.screen_profile || '').includes('seeed-reterminal-sticky') ? t('device.info.reterminal_sticky_player') : t('device.info.embedded_player')) : isBrightSignDevice(device) ? t('device.info.brightsign_player') : isLinuxDevice(device) ? t('device.info.linux_player') : isWindowsDevice(device) ? t('device.info.windows_player') : isRokuDevice(device) ? t('device.info.roku_player') : t('device.info.web_player'))}</div>
           </div>
-          ${device.hardware_model ? `
+          ${renderHTML(device.hardware_model ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.hardware_model')}</div>
-            <div class="info-card-value small">${esc(device.hardware_model)}${device.output_index > 1 ? ` <span style="color:var(--text-muted)">${t('device.info.output_n', { n: device.output_index })}</span>` : ''}</div>
-          </div>` : ''}
-          ${device.hardware_os_version ? `
+            <div class="info-card-label">${renderHTML(t('device.info.hardware_model'))}</div>
+            <div class="info-card-value small">${uiText(device.hardware_model)}${renderHTML(device.output_index > 1 ? ` <span style="color:var(--text-muted)">${renderHTML(t('device.info.output_n', { n: device.output_index }))}</span>` : '')}</div>
+          </div>` : '')}
+          ${renderHTML(device.hardware_os_version ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.os_version')}</div>
-            <div class="info-card-value small">${esc(device.hardware_os_version)}</div>
-          </div>` : ''}
-          ${device.hardware_serial ? `
+            <div class="info-card-label">${renderHTML(t('device.info.os_version'))}</div>
+            <div class="info-card-value small">${uiText(device.hardware_os_version)}</div>
+          </div>` : '')}
+          ${renderHTML(device.hardware_serial ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.serial')}</div>
-            <div class="info-card-value small">${esc(device.hardware_serial)}</div>
-          </div>` : ''}
-          ${latestTelemetry.storage_total_mb ? `
+            <div class="info-card-label">${renderHTML(t('device.info.serial'))}</div>
+            <div class="info-card-value small">${uiText(device.hardware_serial)}</div>
+          </div>` : '')}
+          ${renderHTML(latestTelemetry.storage_total_mb ? `
           <div class="info-card">
             <!-- This used to be labelled "player storage" because the number WAS the widget's
                  cache quota rather than the disk — a real XT245 with a 119 GB NVMe reported
@@ -1173,70 +1174,70 @@ async function loadDevice(deviceId, activeTab = null) {
                  labelled the same. ⚠️ The bridge is served per page load, so a player that has not
                  re-fetched it yet still reports the quota — see the CDN caching note in
                  docs/player-parity.md before trusting a suspiciously round ~1 GB here. -->
-            <div class="info-card-label">${t('device.info.storage')}</div>
-            <div class="info-card-value small" id="telStorage">${latestTelemetry.storage_free_mb != null ? t('device.info.size_free', { size: formatBytes(latestTelemetry.storage_free_mb) }) : '--'}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.storage'))}</div>
+            <div class="info-card-value small" id="telStorage">${renderHTML(latestTelemetry.storage_free_mb != null ? t('device.info.size_free', { size: formatBytes(latestTelemetry.storage_free_mb) }) : '--')}</div>
             <div class="progress-bar">
               <div class="progress-bar-fill ${((latestTelemetry.storage_total_mb - latestTelemetry.storage_free_mb) / latestTelemetry.storage_total_mb) < 0.8 ? 'success' : 'warning'}"
                    style="width:${((latestTelemetry.storage_total_mb - latestTelemetry.storage_free_mb) / latestTelemetry.storage_total_mb * 100)}%"></div>
             </div>
-          </div>` : ''}
-          `}
+          </div>` : '')}
+          `)}
           <!-- The physical panel, from its EDID, and the mode the output is negotiated to. Shown
                only when the player reports them, like every other card here: a family that cannot
                read its own output must not grow an empty row. On a dual-output player each device
                row is one output, so this is THAT output's screen — not the box's first. -->
           <!-- ⚠️ BrightSign-only, like the two cards below. It renders for nobody on a fleet
                with no BrightSign players, which is not the same as being unused. -->
-          ${latestTelemetry.temperature_c != null ? `
+          ${renderHTML(latestTelemetry.temperature_c != null ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.temperature')}</div>
-            <div class="info-card-value small" id="telTemp">${latestTelemetry.temperature_c}&deg;C</div>
-          </div>` : ''}
-          ${latestTelemetry.humidity != null ? `
+            <div class="info-card-label">${renderHTML(t('device.info.temperature'))}</div>
+            <div class="info-card-value small" id="telTemp">${renderHTML(latestTelemetry.temperature_c)}°C</div>
+          </div>` : '')}
+          ${renderHTML(latestTelemetry.humidity != null ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.humidity')}</div>
-            <div class="info-card-value small" id="telHumidity">${t('device.info.humidity_value', { n: latestTelemetry.humidity })}</div>
-          </div>` : ''}
-          ${latestTelemetry.attached_display ? `
+            <div class="info-card-label">${renderHTML(t('device.info.humidity'))}</div>
+            <div class="info-card-value small" id="telHumidity">${renderHTML(t('device.info.humidity_value', { n: latestTelemetry.humidity }))}</div>
+          </div>` : '')}
+          ${renderHTML(latestTelemetry.attached_display ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.attached_display')}</div>
-            <div class="info-card-value small" id="telDisplay">${esc(latestTelemetry.attached_display)}</div>
-          </div>` : ''}
-          ${latestTelemetry.video_mode ? `
+            <div class="info-card-label">${renderHTML(t('device.info.attached_display'))}</div>
+            <div class="info-card-value small" id="telDisplay">${uiText(latestTelemetry.attached_display)}</div>
+          </div>` : '')}
+          ${renderHTML(latestTelemetry.video_mode ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.video_mode')}</div>
-            <div class="info-card-value small" id="telVideoMode">${esc(latestTelemetry.video_mode)}</div>
-          </div>` : ''}
+            <div class="info-card-label">${renderHTML(t('device.info.video_mode'))}</div>
+            <div class="info-card-value small" id="telVideoMode">${uiText(latestTelemetry.video_mode)}</div>
+          </div>` : '')}
           <!-- The panel's own EDID, parsed server-side from the raw block the player reported.
                Answers the questions the player's DWS answers and the dashboard previously could
                not: which panel is this, how old is it, what does it actually want to be driven at.
                Absent entirely on a device that never reported one, rather than an empty card. -->
-          ${device.edid ? `
+          ${renderHTML(device.edid ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.edid')}</div>
-            <div class="info-card-value small">${esc(device.edid.manufacturer || '')} ${esc(device.edid.monitorName || device.edid.productHex || '')}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.edid'))}</div>
+            <div class="info-card-value small">${uiText(device.edid.manufacturer || '')} ${uiText(device.edid.monitorName || device.edid.productHex || '')}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5">
-              ${device.edid.preferredMode ? `${t('device.info.edid_preferred')}: <strong>${esc(device.edid.preferredMode)}</strong><br>` : ''}
-              ${device.edid.widthCm ? `${esc(device.edid.widthCm)}&times;${esc(device.edid.heightCm)} cm &middot; ` : ''}${device.edid.digital ? 'digital' : 'analog'} &middot; EDID ${esc(device.edid.edidVersion)}<br>
-              ${device.edid.yearOfManufacture ? `${t('device.info.edid_made')}: ${esc(device.edid.yearOfManufacture)}w${String(device.edid.weekOfManufacture).padStart(2, '0')}<br>` : ''}
-              ${device.edid.serialNumber ? `${t('device.info.edid_serial')}: ${esc(device.edid.serialNumber)} &middot; ` : ''}${t('device.info.edid_product')}: ${esc(device.edid.productHex)}
-              ${device.edid.cea && (device.edid.cea.bt2020Rgb || device.edid.cea.bt2020Ycc) ? `<br>BT.2020${device.edid.cea.hdrSt2084 ? ' &middot; HDR10' : ''}` : ''}
-              ${device.edid.checksumValid === false ? `<br><span style="color:var(--warning,#f59e0b)">${t('device.info.edid_checksum_bad')}</span>` : ''}
+              ${renderHTML(device.edid.preferredMode ? `${renderHTML(t('device.info.edid_preferred'))}: <strong>${uiText(device.edid.preferredMode)}</strong><br>` : '')}
+              ${renderHTML(device.edid.widthCm ? `${esc(device.edid.widthCm)}&times;${esc(device.edid.heightCm)} cm &middot; ` : '')}${renderHTML(device.edid.digital ? 'digital' : 'analog')} &middot; EDID ${uiText(device.edid.edidVersion)}<br>
+              ${renderHTML(device.edid.yearOfManufacture ? `${renderHTML(t('device.info.edid_made'))}: ${uiText(device.edid.yearOfManufacture)}w${renderHTML(String(device.edid.weekOfManufacture).padStart(2, '0'))}<br>` : '')}
+              ${renderHTML(device.edid.serialNumber ? `${t('device.info.edid_serial')}: ${esc(device.edid.serialNumber)} &middot; ` : '')}${renderHTML(t('device.info.edid_product'))}: ${uiText(device.edid.productHex)}
+              ${renderHTML(device.edid.cea && (device.edid.cea.bt2020Rgb || device.edid.cea.bt2020Ycc) ? `<br>${renderHTML(t("ui.device_detail.bt_2020_705858", {value0: device.edid.cea.hdrSt2084 ? ' &middot; HDR10' : ''}))}` : '')}
+              ${renderHTML(device.edid.checksumValid === false ? `<br><span style="color:var(--warning,#f59e0b)">${renderHTML(t('device.info.edid_checksum_bad'))}</span>` : '')}
             </div>
-          </div>` : ''}
-          ${(device.android_version && !device.android_version.startsWith('Web/')) || (isNativeDevice(device) && latestTelemetry.wifi_rssi != null) || latestTelemetry.wifi_rssi != null ? `
+          </div>` : '')}
+          ${renderHTML((device.android_version && !device.android_version.startsWith('Web/')) || (isNativeDevice(device) && latestTelemetry.wifi_rssi != null) || latestTelemetry.wifi_rssi != null ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.wifi')}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.wifi'))}</div>
             <!-- ⚠️ The network NAME is deliberately gone (Phase −1). An SSID is geolocatable
                  against public wardriving databases, so it could place a customer's premises
                  on a map — and 94% of the stored values were never SSIDs anyway. Signal
                  strength stays: it is what an installer actually acts on. -->
-            <div class="info-card-value small" id="telRssi">${latestTelemetry.wifi_rssi != null ? latestTelemetry.wifi_rssi + ' dBm' : '--'}</div>
+            <div class="info-card-value small" id="telRssi">${renderHTML(latestTelemetry.wifi_rssi != null ? latestTelemetry.wifi_rssi + ' dBm' : '--')}</div>
           </div>
-          ` : ''}
+          ` : '')}
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.uptime')}</div>
-            <div class="info-card-value small" id="telUptime">${formatUptime(latestTelemetry.uptime_seconds)}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.uptime'))}</div>
+            <div class="info-card-value small" id="telUptime">${renderHTML(formatUptime(latestTelemetry.uptime_seconds))}</div>
           </div>
           <!-- Player version, on EVERY platform. This card used to sit inside the Android-only
                block below, so a BrightSign or Tizen panel never showed a version at all: they
@@ -1246,45 +1247,45 @@ async function loadDevice(deviceId, activeTab = null) {
                differ, both are worth showing: the pair is what tells you whether a panel is
                running a stale host against a fresh page. -->
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.app_version')}</div>
-            <div class="info-card-value small">${esc(device.app_version || '--')}</div>
-            ${device.client_version && device.client_version !== device.app_version ? `
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(device.client_version)}</div>` : ''}
+            <div class="info-card-label">${renderHTML(t('device.info.app_version'))}</div>
+            <div class="info-card-value small">${uiText(device.app_version || '--')}</div>
+            ${renderHTML(device.client_version && device.client_version !== device.app_version ? `
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${uiText(device.client_version)}</div>` : '')}
           </div>
           <!-- The Linux player sends android_version '' (it is not Android), so it never reaches the
                Android arm; its OS and model are on the hardware_os_version / hardware_model cards
                above. It DOES have an on-device settings menu behind the same PIN, so the PIN card
                is rendered for it too. -->
-          ${(device.android_version && !device.android_version.startsWith('Web/')) || isNativeDevice(device) ? `
-          ${device.android_version && !device.android_version.startsWith('Web/') ? `
+          ${renderHTML((device.android_version && !device.android_version.startsWith('Web/')) || isNativeDevice(device) ? `
+          ${renderHTML(device.android_version && !device.android_version.startsWith('Web/') ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.android_version')}</div>
-            <div class="info-card-value small">${esc(device.android_version)}</div>
-          </div>` : ''}
+            <div class="info-card-label">${renderHTML(t('device.info.android_version'))}</div>
+            <div class="info-card-value small">${uiText(device.android_version)}</div>
+          </div>` : '')}
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.settings_pin')}</div>
-            <div class="info-card-value small" style="font-family:monospace;letter-spacing:1px">${device.settings_pin || '--'}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t('device.info.settings_pin_hint')}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.settings_pin'))}</div>
+            <div class="info-card-value small" style="font-family:monospace;letter-spacing:1px">${renderHTML(device.settings_pin || '--')}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${renderHTML(t('device.info.settings_pin_hint'))}</div>
             <div style="display:flex;gap:6px;margin-top:6px">
-              <button class="btn btn-secondary btn-sm" id="rotatePinBtn">${t('device.pin.rotate')}</button>
-              <button class="btn btn-secondary btn-sm" id="setPinBtn">${t('device.pin.set')}</button>
+              <button class="btn btn-secondary btn-sm" id="rotatePinBtn">${renderHTML(t('device.pin.rotate'))}</button>
+              <button class="btn btn-secondary btn-sm" id="setPinBtn">${renderHTML(t('device.pin.set'))}</button>
             </div>
           </div>
-          ` : ''}
+          ` : '')}
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.screen_resolution')}</div>
-            <div class="info-card-value small">${device.screen_width && device.screen_height
+            <div class="info-card-label">${renderHTML(t('device.info.screen_resolution'))}</div>
+            <div class="info-card-value small">${renderHTML(device.screen_width && device.screen_height
               ? esc(device.screen_width + 'x' + device.screen_height) +
                 // #134: show the UI render surface alongside the HDMI output when they differ
                 // (TV boxes that render at 720p and upscale to a 1080p signal).
                 (device.render_width && device.render_height &&
                  (device.render_width !== device.screen_width || device.render_height !== device.screen_height)
                   ? ` (UI ${esc(device.render_width + 'x' + device.render_height)})` : '')
-              : '--'}</div>
+              : '--')}</div>
           </div>
           <div class="info-card">
-            <div class="info-card-label">${t('device.clock.label')}</div>
-            <div class="info-card-value small">${renderDeviceClock(device)}</div>
+            <div class="info-card-label">${renderHTML(t('device.clock.label'))}</div>
+            <div class="info-card-value small">${renderHTML(renderDeviceClock(device))}</div>
           </div>
           <!-- Shown for Android as before, and now for ANY player that actually reports the value.
                These were platform-gated when Android was the only family that could measure them;
@@ -1292,17 +1293,17 @@ async function loadDevice(deviceId, activeTab = null) {
                and the load average, so the numbers exist and were being thrown away by a gate that
                asked what the device IS instead of what it SENT. Keeping the Android arm means a
                panel that reports nothing still shows "--" there rather than losing its cards. -->
-          ${(device.android_version && !device.android_version.startsWith('Web/')) || latestTelemetry.ram_free_mb != null ? `
+          ${renderHTML((device.android_version && !device.android_version.startsWith('Web/')) || latestTelemetry.ram_free_mb != null ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.ram')}</div>
-            <div class="info-card-value small" id="telRam">${latestTelemetry.ram_free_mb ? t('device.info.size_free', { size: formatBytes(latestTelemetry.ram_free_mb) }) : '--'}</div>
-          </div>` : ''}
-          ${(device.android_version && !device.android_version.startsWith('Web/')) || latestTelemetry.cpu_usage != null ? `
+            <div class="info-card-label">${renderHTML(t('device.info.ram'))}</div>
+            <div class="info-card-value small" id="telRam">${renderHTML(latestTelemetry.ram_free_mb ? t('device.info.size_free', { size: formatBytes(latestTelemetry.ram_free_mb) }) : '--')}</div>
+          </div>` : '')}
+          ${renderHTML((device.android_version && !device.android_version.startsWith('Web/')) || latestTelemetry.cpu_usage != null ? `
           <div class="info-card">
-            <div class="info-card-label">${t('device.info.cpu_usage')}</div>
-            <div class="info-card-value small" id="telCpu">${latestTelemetry.cpu_usage != null ? latestTelemetry.cpu_usage.toFixed(1) + '%' : '--'}</div>
+            <div class="info-card-label">${renderHTML(t('device.info.cpu_usage'))}</div>
+            <div class="info-card-value small" id="telCpu">${renderHTML(latestTelemetry.cpu_usage != null ? displayValue(latestTelemetry.cpu_usage / 100,'toLocaleString',{style:'percent',minimumFractionDigits:1,maximumFractionDigits:1}) : '--')}</div>
           </div>
-          ` : ''}
+          ` : '')}
         </div>
 
         <!-- What this display can do.
@@ -1311,28 +1312,28 @@ async function loadDevice(deviceId, activeTab = null) {
              button go" — it names the exact set the panel reported, and says plainly when the set
              is a per-platform assumption rather than something the player actually declared. -->
         <div style="margin-top:20px">
-          <h4 style="font-size:13px;margin-bottom:8px">${t('device.caps.title')}</h4>
+          <h4 style="font-size:13px;margin-bottom:8px">${renderHTML(t('device.caps.title'))}</h4>
           <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">
-            ${caps ? t('device.caps.declared') : t('device.caps.assumed')}
+            ${renderHTML(caps ? t('device.caps.declared') : t('device.caps.assumed'))}
           </div>
           <!-- #473: interactive web pages come in two strengths, and the difference is a privacy one -->
           <div style="font-size:12px;margin-bottom:8px">
-            <strong>${t('device.caps.web_interactive')}</strong>
-            ${can('playback.web_interactive') && caps ? esc(t('device.caps.web_interactive_full'))
-              : can('playback.web_interactive_framed') && caps ? `<span style="color:#b45309">${esc(t('device.caps.web_interactive_framed'))}</span>`
-              : esc(t('device.caps.web_interactive_none'))}
+            <strong>${renderHTML(t('device.caps.web_interactive'))}</strong>
+            ${renderHTML(can('playback.web_interactive') && caps ? t('device.caps.web_interactive_full')
+              : can('playback.web_interactive_framed') && caps ? `<span style="color:#b45309">${uiText(t('device.caps.web_interactive_framed'))}</span>`
+              : t('device.caps.web_interactive_none'))}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px">
-            ${(device.capabilities || []).map(c => `<span style="font-family:monospace;font-size:11px;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;padding:2px 6px">${esc(c)}</span>`).join('')
-              || `<span style="font-size:12px;color:var(--danger)">${t('device.caps.none')}</span>`}
+            ${renderHTML((device.capabilities || []).map(c => `<span style="font-family:monospace;font-size:11px;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;padding:2px 6px">${uiText(c)}</span>`).join('')
+              || `<span style="font-size:12px;color:var(--danger)">${renderHTML(t('device.caps.none'))}</span>`)}
           </div>
         </div>
 
-        ${/* Triggers are LAN-fired interrupts no Roku or embedded panel implements (player-capabilities.js). */ ''}
-        ${!isEmbeddedDevice(device) && !isRokuDevice(device) ? `
+        ${renderHTML('')}
+        ${renderHTML(!isEmbeddedDevice(device) && !isRokuDevice(device) ? `
         ${renderTriggerConfig(device)}
         ${renderTriggerDiagnostics(device)}
-        ` : ''}
+        ` : '')}
 
         <div id="viewAccessCard"></div>
 
@@ -1341,131 +1342,131 @@ async function loadDevice(deviceId, activeTab = null) {
 
         <!-- Uptime Timeline (24h) -->
         <div style="margin-top:20px">
-          <h4 style="font-size:13px;margin-bottom:8px">${t('device.timeline.title')}</h4>
+          <h4 style="font-size:13px;margin-bottom:8px">${renderHTML(t('device.timeline.title'))}</h4>
           <div id="uptimeTimeline" style="display:flex;height:32px;border-radius:4px;overflow:hidden;border:1px solid var(--border);background:var(--bg-primary)"></div>
           <div style="display:flex;justify-content:space-between;margin-top:4px">
-            <span style="font-size:10px;color:var(--text-muted)">${t('device.timeline.h24_ago')}</span>
-            <span style="font-size:10px;color:var(--text-muted)">${t('device.timeline.now')}</span>
+            <span style="font-size:10px;color:var(--text-muted)">${renderHTML(t('device.timeline.h24_ago'))}</span>
+            <span style="font-size:10px;color:var(--text-muted)">${renderHTML(t('device.timeline.now'))}</span>
           </div>
           <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--text-muted)">
-            <span><span style="display:inline-block;width:10px;height:10px;background:var(--success);border-radius:2px;vertical-align:-1px"></span> ${t('device.timeline.online')}</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:2px;vertical-align:-1px"></span> ${t('device.timeline.offline')}</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:2px;vertical-align:-1px"></span> ${t('device.timeline.no_data')}</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--success);border-radius:2px;vertical-align:-1px"></span> ${renderHTML(t('device.timeline.online'))}</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:2px;vertical-align:-1px"></span> ${renderHTML(t('device.timeline.offline'))}</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:2px;vertical-align:-1px"></span> ${renderHTML(t('device.timeline.no_data'))}</span>
             <span id="uptimePercent" style="margin-left:auto;font-weight:600"></span>
           </div>
         </div>
 
         <!-- Recent incidents (device diagnostics / offline-cause log) -->
         <div style="margin-top:20px">
-          <h4 style="font-size:13px;margin-bottom:8px">${t('device.incidents.title')}</h4>
+          <h4 style="font-size:13px;margin-bottom:8px">${renderHTML(t('device.incidents.title'))}</h4>
           <div id="incidentsPanel"></div>
         </div>
 
         <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h4 style="font-size:14px;font-weight:600;margin:0">${t('nav.settings')}</h4>
-            <button class="btn btn-primary btn-sm" id="saveSettingsTopBtn">${t('device.form.save_settings')}</button>
+            <h4 style="font-size:14px;font-weight:600;margin:0">${renderHTML(t('nav.settings'))}</h4>
+            <button class="btn btn-primary btn-sm" id="saveSettingsTopBtn">${renderHTML(t('device.form.save_settings'))}</button>
           </div>
           <div style="display:flex;gap:12px;margin-bottom:12px">
             <div class="form-group" style="flex:1;margin:0">
-              <label>${t('device.form.orientation_label')}</label>
+              <label>${renderHTML(t('device.form.orientation_label'))}</label>
               <select id="deviceOrientation" class="input" style="background:var(--bg-input)">
-                <option value="landscape" ${'landscape' === (device.orientation || 'landscape') ? 'selected' : ''}>${t('device.form.orientation.landscape')}</option>
-                <option value="portrait" ${'portrait' === device.orientation ? 'selected' : ''}>${t('device.form.orientation.portrait')}</option>
-                <option value="landscape-flipped" ${'landscape-flipped' === device.orientation ? 'selected' : ''}>${t('device.form.orientation.landscape_flipped')}</option>
-                <option value="portrait-flipped" ${'portrait-flipped' === device.orientation ? 'selected' : ''}>${t('device.form.orientation.portrait_flipped')}</option>
+                <option value="landscape" ${'landscape' === (device.orientation || 'landscape') ? 'selected' : ''}>${renderHTML(t('device.form.orientation.landscape'))}</option>
+                <option value="portrait" ${'portrait' === device.orientation ? 'selected' : ''}>${renderHTML(t('device.form.orientation.portrait'))}</option>
+                <option value="landscape-flipped" ${'landscape-flipped' === device.orientation ? 'selected' : ''}>${renderHTML(t('device.form.orientation.landscape_flipped'))}</option>
+                <option value="portrait-flipped" ${'portrait-flipped' === device.orientation ? 'selected' : ''}>${renderHTML(t('device.form.orientation.portrait_flipped'))}</option>
               </select>
             </div>
               <div class="form-group">
-                <label>${t('device.form.background_label')}</label>
+                <label>${renderHTML(t('device.form.background_label'))}</label>
                 <div style="display:flex;align-items:center;gap:8px">
                   <input type="color" id="devBackground" value="${device.background_color || '#000000'}" style="width:60px;height:32px;border:none;cursor:pointer">
-                  <button type="button" class="btn btn-secondary btn-sm" id="devBackgroundReset">${t('device.form.background_reset')}</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="devBackgroundReset">${renderHTML(t('device.form.background_reset'))}</button>
                 </div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('device.form.background_hint')}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('device.form.background_hint'))}</div>
               </div>
               <div class="form-group" style="flex:1;margin:0">
-                <label>${t('device.form.default_content_label')}</label>
+                <label>${renderHTML(t('device.form.default_content_label'))}</label>
                 <select id="deviceDefaultContent" class="input" style="background:var(--bg-input)">
-                  <option value="">${t('device.form.default_content_none')}</option>
+                  <option value="">${renderHTML(t('device.form.default_content_none'))}</option>
                 </select>
               </div>
             </div>
-            ${isEmbeddedDevice(device) ? `
+            ${renderHTML(isEmbeddedDevice(device) ? `
             <div class="form-group">
-              <label>${t('device.form.dither_label')}</label>
+              <label>${renderHTML(t('device.form.dither_label'))}</label>
               <select id="epdDither" class="input" style="background:var(--bg-input)">
                 <option value="floyd-steinberg" ${currentDither === 'floyd-steinberg' ? 'selected' : ''}>Floyd–Steinberg</option>
                 <option value="atkinson" ${currentDither === 'atkinson' ? 'selected' : ''}>Atkinson</option>
-                <option value="none" ${currentDither === 'none' ? 'selected' : ''}>${t('device.form.dither_none')}</option>
+                <option value="none" ${currentDither === 'none' ? 'selected' : ''}>${renderHTML(t('device.form.dither_none'))}</option>
               </select>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('device.form.dither_hint')}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('device.form.dither_hint'))}</div>
             </div>
-            ` : ''}
+            ` : '')}
             <div class="form-group">
-            <label>${t('device.form.tags_label')}</label>
-            <input id="deviceTags" class="input" value="${esc((Array.isArray(device.tags) ? device.tags : []).join(', '))}" placeholder="${t('device.form.tags_placeholder')}">
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('device.form.tags_hint')}</div>
+            <label>${renderHTML(t('device.form.tags_label'))}</label>
+            <input id="deviceTags" class="input" value="${esc((Array.isArray(device.tags) ? device.tags : []).join(', '))}" placeholder="${t('device.form.tags_placeholder')}" data-fil-i18n-placeholder="${binding('device.form.tags_placeholder', undefined)}">
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('device.form.tags_hint'))}</div>
           </div>
           <div class="form-group">
-            <label>${t('device.form.location_label')}</label>
+            <label>${renderHTML(t('device.form.location_label'))}</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input id="deviceLocSearch" class="input" style="flex:1;min-width:200px" value="${esc(device.location_label || (device.latitude != null ? `${device.latitude}, ${device.longitude}` : ''))}" placeholder="${t('device.form.location_placeholder')}"
+              <input id="deviceLocSearch" class="input" style="flex:1;min-width:200px" value="${esc(device.location_label || (device.latitude != null ? `${device.latitude}, ${device.longitude}` : ''))}" placeholder="${t('device.form.location_placeholder')}" data-fil-i18n-placeholder="${binding('device.form.location_placeholder', undefined)}"
                 data-lat="${device.latitude != null ? esc(String(device.latitude)) : ''}" data-lon="${device.longitude != null ? esc(String(device.longitude)) : ''}">
-              <button type="button" class="btn btn-secondary btn-sm" id="deviceLocClear">${t('device.form.location_clear')}</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="deviceLocClear">${renderHTML(t('device.form.location_clear'))}</button>
             </div>
             <div id="deviceLocResults" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${device.local_weather
-              ? esc(t('device.form.location_weather', { cond: t(`playlist.condition.wx.${device.local_weather.group || 'clear'}`), temp: Math.round(device.local_weather.temperature_c) }))
-              : t('device.form.location_hint')}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(device.local_weather
+              ? t('device.form.location_weather', { cond: t(`playlist.condition.wx.${device.local_weather.group || 'clear'}`), temp: Math.round(device.local_weather.temperature_c) })
+              : t('device.form.location_hint'))}</div>
           </div>
           <div class="form-group">
-            <label>${t('device.form.notes_label')}</label>
-            <textarea id="deviceNotes" class="input" rows="3" placeholder="${t('device.form.notes_placeholder')}" style="resize:vertical">${esc(device.notes || '')}</textarea>
+            <label>${renderHTML(t('device.form.notes_label'))}</label>
+            <textarea id="deviceNotes" class="input" rows="3" placeholder="${t('device.form.notes_placeholder')}" data-fil-i18n-placeholder="${binding('device.form.notes_placeholder', undefined)}" style="resize:vertical">${uiText(device.notes || '')}</textarea>
           </div>
-          ${!isEmbeddedDevice(device) ? `
+          ${renderHTML(!isEmbeddedDevice(device) ? `
           <div style="margin:12px 0">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-              <input type="checkbox" id="otaToggle" ${device.ota_enabled === 0 ? '' : 'checked'}> ${t('device.ota.toggle')}
+              <input type="checkbox" id="otaToggle" ${device.ota_enabled === 0 ? '' : 'checked'}> ${renderHTML(t('device.ota.toggle'))}
             </label>
-            <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 24px">${t('device.ota.hint')}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 24px">${renderHTML(t('device.ota.hint'))}</div>
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-top:8px">
-                <input type="checkbox" id="otaBetaToggle" ${device.ota_beta === 1 ? 'checked' : ''}> ${t('device.ota.beta')}
+                <input type="checkbox" id="otaBetaToggle" ${device.ota_beta === 1 ? 'checked' : ''}> ${renderHTML(t('device.ota.beta'))}
               </label>
-              <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 24px">${t('device.ota.beta_hint')}</div>
-          </div>` : ''}
-          ${liveVideoAvailable ? `
+              <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 24px">${renderHTML(t('device.ota.beta_hint'))}</div>
+          </div>` : '')}
+          ${renderHTML(liveVideoAvailable ? `
           <div style="margin:12px 0">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-              <input type="checkbox" id="liveVideoToggle" ${device.live_video_enabled === 1 ? 'checked' : ''}> ${t('device.live_video.toggle')}
+              <input type="checkbox" id="liveVideoToggle" ${device.live_video_enabled === 1 ? 'checked' : ''}> ${renderHTML(t('device.live_video.toggle'))}
             </label>
-            <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 24px">${t('device.live_video.hint')}</div>
-          </div>` : ''}
-          ${(!isEmbeddedDevice(device) || device.power_source === 'usb') ? `
+            <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 24px">${renderHTML(t('device.live_video.hint'))}</div>
+          </div>` : '')}
+          ${renderHTML((!isEmbeddedDevice(device) || device.power_source === 'usb') ? `
           <div class="form-group" style="max-width:280px">
-            <label>${t('device.reboot_schedule.label')}</label>
+            <label>${renderHTML(t('device.reboot_schedule.label'))}</label>
             <input type="time" id="rebootSchedule" class="input" style="background:var(--bg-input)" value="${esc(device.reboot_schedule || '')}">
-            <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0">${t('device.reboot_schedule.hint')}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0">${renderHTML(t('device.reboot_schedule.hint'))}</div>
           </div>
-          ` : ''}
+          ` : '')}
           <div style="margin-top:16px;display:flex;gap:8px;align-items:center">
-            <button class="btn btn-primary" id="saveNotesBtn">${t('device.form.save_settings')}</button>
-            <button class="btn btn-secondary btn-sm" id="reAdoptBtn" title="${t('device.readopt.button_hint')}">${t('device.readopt.button')}</button>
+            <button class="btn btn-primary" id="saveNotesBtn">${renderHTML(t('device.form.save_settings'))}</button>
+            <button class="btn btn-secondary btn-sm" id="reAdoptBtn" title="${t('device.readopt.button_hint')}" data-fil-i18n-title="${binding('device.readopt.button_hint', undefined)}">${renderHTML(t('device.readopt.button'))}</button>
           </div>
         </div>
 
-        ${isEmbeddedDevice(device) ? `
+        ${renderHTML(isEmbeddedDevice(device) ? `
         <div style="margin-top:20px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div>
-              <h4 style="font-size:13px;font-weight:600;margin:0">${t('device.embedded.logs_title')}</h4>
+              <h4 style="font-size:13px;font-weight:600;margin:0">${renderHTML(t('device.embedded.logs_title'))}</h4>
               <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
-                ${t('device.embedded.logs_hint')}
+                ${renderHTML(t('device.embedded.logs_hint'))}
               </div>
             </div>
             <div style="display:flex;gap:6px">
-              <button class="btn btn-secondary btn-sm" id="requestDiagLogsBtn">${t('device.embedded.logs_request')}</button>
-              <button class="btn btn-secondary btn-sm" id="copyDiagLogsBtn">${t('device.embedded.logs_copy')}</button>
+              <button class="btn btn-secondary btn-sm" id="requestDiagLogsBtn">${renderHTML(t('device.embedded.logs_request'))}</button>
+              <button class="btn btn-secondary btn-sm" id="copyDiagLogsBtn">${renderHTML(t('device.embedded.logs_copy'))}</button>
             </div>
           </div>
           <div id="embeddedLogsMeta" style="font-size:11px;color:var(--text-muted);margin-bottom:6px"></div>
@@ -1474,67 +1475,66 @@ async function loadDevice(deviceId, activeTab = null) {
         ` : `
         <div style="margin-top:20px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-            <input type="checkbox" id="debugLogToggle"> ${t('device.debug.toggle')}
+            <input type="checkbox" id="debugLogToggle"> ${renderHTML(t('device.debug.toggle'))}
           </label>
-          <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 24px">${t('device.debug.hint')}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin:4px 0 0 24px">${renderHTML(t('device.debug.hint'))}</div>
           <!-- Freeze holds the view still WITHOUT dropping what arrives: a log you are reading
                scrolls the interesting line off the top, and pausing the stream instead would lose
                exactly the lines that follow the fault. Copy exists because the useful next step is
                pasting this into an issue. -->
           <div id="debugLogTools" style="display:none;margin-top:8px;gap:6px;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-secondary btn-sm" id="debugFreezeBtn">${t('device.debug.freeze')}</button>
-            <button class="btn btn-secondary btn-sm" id="debugCopyBtn">${t('device.debug.copy')}</button>
-            <button class="btn btn-secondary btn-sm" id="debugClearBtn">${t('device.debug.clear')}</button>
+            <button class="btn btn-secondary btn-sm" id="debugFreezeBtn">${renderHTML(t('device.debug.freeze'))}</button>
+            <button class="btn btn-secondary btn-sm" id="debugCopyBtn">${renderHTML(t('device.debug.copy'))}</button>
+            <button class="btn btn-secondary btn-sm" id="debugClearBtn">${renderHTML(t('device.debug.clear'))}</button>
             <span id="debugLogStatus" style="font-size:11px;color:var(--text-muted)"></span>
           </div>
           <div id="debugLogPanel" style="display:none;margin-top:8px;background:#0b0f1a;border:1px solid var(--border);border-radius:6px;padding:8px;height:220px;overflow-y:auto;font-family:monospace;font-size:11px;line-height:1.45;color:#cbd5e1"></div>
         </div>
-        `}
-
+        `)}
 
         <!-- #109: PiP overlay tester. Pushes device:pip-show/clear via POST /api/pip
              (real triggers are external via the API token; this is for testing). -->
-        ${can('playback.pip') ? `
+        ${renderHTML(can('playback.pip') ? `
         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-          <div style="font-weight:600;margin-bottom:8px">Overlay (PiP) — test</div>
+          <div style="font-weight:600;margin-bottom:8px">${renderHTML(t("ui.device_detail.overlay_pip_test"))}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <select id="pipType" class="btn btn-secondary btn-sm" style="min-width:90px">
-              <option value="image">image</option>
-              <option value="web">web</option>
+              <option value="image">${renderHTML(t("ui.device_detail.image"))}</option>
+              <option value="web">${renderHTML(t("ui.device_detail.web"))}</option>
             </select>
             <input id="pipUri" type="url" placeholder="https://… (image or page URL)" style="flex:1;min-width:240px;padding:6px 8px;background:#0b0f1a;border:1px solid var(--border);border-radius:6px;color:var(--text)">
             <select id="pipPosition" class="btn btn-secondary btn-sm" style="min-width:120px">
-              <option value="top-right">top-right</option>
-              <option value="top-left">top-left</option>
-              <option value="bottom-right">bottom-right</option>
-              <option value="bottom-left">bottom-left</option>
-              <option value="center">center</option>
+              <option value="top-right">${renderHTML(t("ui.device_detail.top_right"))}</option>
+              <option value="top-left">${renderHTML(t("ui.device_detail.top_left"))}</option>
+              <option value="bottom-right">${renderHTML(t("ui.device_detail.bottom_right"))}</option>
+              <option value="bottom-left">${renderHTML(t("ui.device_detail.bottom_left"))}</option>
+              <option value="center">${renderHTML(t("ui.device_detail.center"))}</option>
             </select>
-            <input id="pipDuration" type="number" min="0" value="30" title="seconds (0 = until cleared)" style="width:90px;padding:6px 8px;background:#0b0f1a;border:1px solid var(--border);border-radius:6px;color:var(--text)">
-            <button class="btn btn-primary btn-sm" id="sendPipBtn">Send overlay</button>
-            <button class="btn btn-secondary btn-sm" id="clearPipBtn">Clear overlay</button>
+            <input id="pipDuration" type="number" min="0" value="30" ${translatedAttribute("title", "ui.device_detail.title_seconds_0_until_cleared_0b2bed")} style="width:90px;padding:6px 8px;background:#0b0f1a;border:1px solid var(--border);border-radius:6px;color:var(--text)">
+            <button class="btn btn-primary btn-sm" id="sendPipBtn">${renderHTML(t("ui.device_detail.send_overlay"))}</button>
+            <button class="btn btn-secondary btn-sm" id="clearPipBtn">${renderHTML(t("ui.device_detail.clear_overlay"))}</button>
           </div>
         </div>
-        ` : ''}
+        ` : '')}
       </div>
 
       <!-- Web player Tab (#313). 3.0: on every display that is not itself a mirror — one without a
            link offers to create one, and the display's mirrors are listed here. Outside the remote
            block below: a display without remote capabilities still has a link. -->
-      ${!device.mirror_of ? `
+      ${renderHTML(!device.mirror_of ? `
       <div class="tab-content" id="tab-webplayer">
-        <h3 style="font-size:16px;margin-bottom:4px">${t('device.enrol.label')}</h3>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;max-width:70ch">${t('device.enrol.hint')}</div>
+        <h3 style="font-size:16px;margin-bottom:4px">${renderHTML(t('device.enrol.label'))}</h3>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;max-width:70ch">${renderHTML(t('device.enrol.hint'))}</div>
         <div id="enrolBody"></div>
         <div id="mirrorList" style="margin-top:22px"></div>
       </div>
-      ` : ''}
+      ` : '')}
 
-      ${(can('remote.stream') || can('remote.input') || can('remote.screenshot')) ? `
+      ${renderHTML((can('remote.stream') || can('remote.input') || can('remote.screenshot')) ? `
       <!-- Remote Control Tab -->
       <div class="tab-content" id="tab-remote">
         <div class="remote-container">
-          ${can('remote.stream') ? `
+          ${renderHTML(can('remote.stream') ? `
           <div class="remote-screen" id="remoteScreen">
             <!-- Deliberately NOT rotated with the rest of the previews (#238). This is a control
                  surface: taps and swipes are sent as fractions of THIS canvas, which is the raw
@@ -1549,19 +1549,19 @@ async function loadDevice(deviceId, activeTab = null) {
                   <line x1="8" y1="21" x2="16" y2="21"/>
                   <line x1="12" y1="17" x2="12" y2="21"/>
                 </svg>
-                <p style="color:var(--text-secondary)">${t('device.remote.start_prompt')}</p>
+                <p style="color:var(--text-secondary)">${renderHTML(t('device.remote.start_prompt'))}</p>
               </div>
             </div>
-          </div>` : ''}
+          </div>` : '')}
           <div class="remote-controls">
-            ${can('remote.stream') ? `
-            <button class="btn btn-primary" id="startRemoteBtn">${t('device.remote.start')}</button>
-            <button class="btn btn-secondary" id="stopRemoteBtn" style="display:none">${t('device.remote.stop')}</button>
-            <hr style="border-color:var(--border);margin:8px 0">` : ''}
-            ${can('remote.input') ? `
+            ${renderHTML(can('remote.stream') ? `
+            <button class="btn btn-primary" id="startRemoteBtn">${renderHTML(t('device.remote.start'))}</button>
+            <button class="btn btn-secondary" id="stopRemoteBtn" style="display:none">${renderHTML(t('device.remote.stop'))}</button>
+            <hr style="border-color:var(--border);margin:8px 0">` : '')}
+            ${renderHTML(can('remote.input') ? `
             <!-- Key pad -->
-            <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_VOLUME_UP')">${t('device.remote.vol_up')}</button>
-            <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_VOLUME_DOWN')">${t('device.remote.vol_down')}</button>
+            <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_VOLUME_UP')">${renderHTML(t('device.remote.vol_up'))}</button>
+            <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_VOLUME_DOWN')">${renderHTML(t('device.remote.vol_down'))}</button>
             <hr style="border-color:var(--border);margin:8px 0">
             <!-- System View controls — auto-unlocked on a device owner (#161: full-screen via the
                  accessibility path, no MediaProjection consent); locked until enabled otherwise.
@@ -1582,13 +1582,13 @@ async function loadDevice(deviceId, activeTab = null) {
                  NOTE: no backticks anywhere in this comment - it lives inside a template literal
                  and one would terminate the string. -->
             <div id="systemViewControls" style="opacity:${isAndroidDevice(device) && device.tier !== 2 ? '0.4' : '1'};pointer-events:${isAndroidDevice(device) && device.tier !== 2 ? 'none' : 'auto'}">
-              <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_HOME')">${t('device.remote.home')}</button>
-              <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_BACK')">${t('device.remote.back')}</button>
-              ${isAndroidDevice(device) ? `
+              <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_HOME')">${renderHTML(t('device.remote.home'))}</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_BACK')">${renderHTML(t('device.remote.back'))}</button>
+              ${renderHTML(isAndroidDevice(device) ? `
               <!-- KEYCODE_APP_SWITCH is handled only by the APK (WebSocketService.kt). The web
                    player and Tizen have no case for it, so off Android it is a dead button. -->
-              <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_APP_SWITCH')">${t('device.remote.recents')}</button>` : ''}
-              <button class="btn btn-danger btn-sm" onclick="window._sendKey('KEYCODE_POWER')">${t('device.remote.power')}</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_APP_SWITCH')">${renderHTML(t('device.remote.recents'))}</button>` : '')}
+              <button class="btn btn-danger btn-sm" onclick="window._sendKey('KEYCODE_POWER')">${renderHTML(t('device.remote.power'))}</button>
               <hr style="border-color:var(--border);margin:8px 0">
               <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_DPAD_UP')">&#9650;</button>
               <div style="display:flex;gap:4px">
@@ -1596,34 +1596,34 @@ async function loadDevice(deviceId, activeTab = null) {
                 <button class="btn btn-secondary btn-sm" style="flex:1" onclick="window._sendKey('KEYCODE_DPAD_RIGHT')">&#9654;</button>
               </div>
               <button class="btn btn-secondary btn-sm" onclick="window._sendKey('KEYCODE_DPAD_DOWN')">&#9660;</button>
-              <button class="btn btn-primary btn-sm" onclick="window._sendKey('KEYCODE_DPAD_CENTER')">${t('device.remote.ok')}</button>
-              ${isAndroidDevice(device) ? `
+              <button class="btn btn-primary btn-sm" onclick="window._sendKey('KEYCODE_DPAD_CENTER')">${renderHTML(t('device.remote.ok'))}</button>
+              ${renderHTML(isAndroidDevice(device) ? `
               <hr style="border-color:var(--border);margin:8px 0">
               <!-- 'settings' opens the Android settings activity. It is not in COMMAND_CAPABILITY,
                    so the server forwards it to any player and a non-Android one silently drops it
                    (tizen/js/app.js falls through to "unknown command"). -->
-              <button class="btn btn-secondary btn-sm" onclick="window._sendCmd('settings')">${t('device.remote.settings')}</button>` : ''}
-              ${can('display.power') ? `
+              <button class="btn btn-secondary btn-sm" onclick="window._sendCmd('settings')">${renderHTML(t('device.remote.settings'))}</button>` : '')}
+              ${renderHTML(can('display.power') ? `
               <hr style="border-color:var(--border);margin:8px 0">
               <div style="display:flex;gap:4px">
-                <button class="btn btn-secondary btn-sm" id="remoteScreenOffBtn" style="flex:1" onclick="window._sendCmd('screen_off')">${t('device.remote.scrn_off')}</button>
-                <button class="btn btn-secondary btn-sm" style="flex:1" onclick="window._sendCmd('screen_on')">${t('device.remote.scrn_on')}</button>
-              </div>` : ''}
-            </div>` : ''}
-            ${device.tier === 2 ? `
-            <span style="font-size:10px;color:var(--success);line-height:1.2;display:block;margin-top:8px">${t('device.remote.system_view_owner')}</span>
+                <button class="btn btn-secondary btn-sm" id="remoteScreenOffBtn" style="flex:1" onclick="window._sendCmd('screen_off')">${renderHTML(t('device.remote.scrn_off'))}</button>
+                <button class="btn btn-secondary btn-sm" style="flex:1" onclick="window._sendCmd('screen_on')">${renderHTML(t('device.remote.scrn_on'))}</button>
+              </div>` : '')}
+            </div>` : '')}
+            ${renderHTML(device.tier === 2 ? `
+            <span style="font-size:10px;color:var(--success);line-height:1.2;display:block;margin-top:8px">${renderHTML(t('device.remote.system_view_owner'))}</span>
             ` : `
             ${isAndroidDevice(device) ? `
-            <button class="btn btn-primary btn-sm" id="enableSystemCaptureBtn" onclick="window._enableSystemView()" title="${t('device.remote.system_view_tooltip')}" style="margin-top:8px">
-              ${t('device.remote.enable_system_view')}
+            <button class="btn btn-primary btn-sm" id="enableSystemCaptureBtn" onclick="window._enableSystemView()" title="${t('device.remote.system_view_tooltip')}" data-fil-i18n-title="${binding('device.remote.system_view_tooltip', undefined)}" style="margin-top:8px">
+              ${renderHTML(t('device.remote.enable_system_view'))}
             </button>
-            <span id="systemViewHint" style="font-size:10px;color:var(--text-muted);line-height:1.2;display:block;margin-top:4px">${t('device.remote.system_view_hint')}</span>` : ''}
-            ${captureModeNotice(device)}`}
+            <span id="systemViewHint" style="font-size:10px;color:var(--text-muted);line-height:1.2;display:block;margin-top:4px">${renderHTML(t('device.remote.system_view_hint'))}</span>` : ''}
+            ${captureModeNotice(device)}`)}
           </div>
         </div>
-      </div>` : ''}
+      </div>` : '')}
 
-      ${((can('audio.volume') || can('display.brightness') || can('system.brightness') || can('system.screen_timeout')) || isEmbeddedDevice(device)) ? `
+      ${renderHTML(((can('audio.volume') || can('display.brightness') || can('system.brightness') || can('system.screen_timeout')) || isEmbeddedDevice(device)) ? `
       <!-- Controls Tab (#160 Track-A system control — no device owner needed). ⚠️ ALSO for e-paper and
            other embedded panels, which have none of those controls but DO honour a device power
            schedule (the embedded renderer evaluates it and tells the panel how long to sleep). Without
@@ -1637,81 +1637,81 @@ async function loadDevice(deviceId, activeTab = null) {
           that this page knows nothing about.
         -->
         <div id="powerScheduleSection" style="margin-bottom:22px">
-          <h4 style="margin:0 0 8px">${t('power.section_title')}</h4>
+          <h4 style="margin:0 0 8px">${renderHTML(t('power.section_title'))}</h4>
           <div id="powerScheduleHost" style="font-size:13px;color:var(--text-muted)">…</div>
         </div>
-        ${!isEmbeddedDevice(device) ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">${t('device.sysctl.subtitle')}</div>` : ''}
+        ${renderHTML(!isEmbeddedDevice(device) ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">${renderHTML(t('device.sysctl.subtitle'))}</div>` : '')}
         <div style="display:grid;grid-template-columns:130px 1fr;gap:14px 14px;align-items:center;font-size:13px;max-width:480px">
-          ${can('audio.volume') ? `
-          <label>${t('device.sysctl.volume')}</label>
-          <input type="range" min="0" max="100" value="${Math.round((device.media_volume != null ? device.media_volume : 0.5) * 100)}" id="sysVolume" style="width:100%">` : ''}
-          ${can('display.brightness') ? `
-          <label>${t('device.sysctl.brightness_window')}</label>
-          <input type="range" min="5" max="100" value="${Math.round((device.window_brightness != null && device.window_brightness >= 0 ? device.window_brightness : 1) * 100)}" id="sysWinBrightness" style="width:100%">` : ''}
-          ${(device.can_write_settings || device.tier === 2 || can('system.brightness') || can('system.screen_timeout')) ? `
-          <label>${t('device.sysctl.brightness_system')}</label>
+          ${renderHTML(can('audio.volume') ? `
+          <label>${renderHTML(t('device.sysctl.volume'))}</label>
+          <input type="range" min="0" max="100" value="${Math.round((device.media_volume != null ? device.media_volume : 0.5) * 100)}" id="sysVolume" style="width:100%">` : '')}
+          ${renderHTML(can('display.brightness') ? `
+          <label>${renderHTML(t('device.sysctl.brightness_window'))}</label>
+          <input type="range" min="5" max="100" value="${Math.round((device.window_brightness != null && device.window_brightness >= 0 ? device.window_brightness : 1) * 100)}" id="sysWinBrightness" style="width:100%">` : '')}
+          ${renderHTML((device.can_write_settings || device.tier === 2 || can('system.brightness') || can('system.screen_timeout')) ? `
+          <label>${renderHTML(t('device.sysctl.brightness_system'))}</label>
           <input type="range" min="5" max="100" value="${Math.round((device.system_brightness != null ? device.system_brightness : 0.8) * 100)}" id="sysBrightness" style="width:100%">
-          <label>${t('device.sysctl.sleep')}</label>
+          <label>${renderHTML(t('device.sysctl.sleep'))}</label>
           <select id="sysTimeout" class="input" style="background:var(--bg-input);max-width:160px">
-            <option value="0" ${(!device.screen_off_timeout_ms || device.screen_off_timeout_ms > 3600000) ? 'selected' : ''}>${t('device.sysctl.never')}</option>
-            <option value="60000" ${device.screen_off_timeout_ms === 60000 ? 'selected' : ''}>1 min</option>
-            <option value="300000" ${device.screen_off_timeout_ms === 300000 ? 'selected' : ''}>5 min</option>
-            <option value="900000" ${device.screen_off_timeout_ms === 900000 ? 'selected' : ''}>15 min</option>
-            <option value="1800000" ${device.screen_off_timeout_ms === 1800000 ? 'selected' : ''}>30 min</option>
+            <option value="0" ${(!device.screen_off_timeout_ms || device.screen_off_timeout_ms > 3600000) ? 'selected' : ''}>${renderHTML(t('device.sysctl.never'))}</option>
+            <option value="60000" ${device.screen_off_timeout_ms === 60000 ? 'selected' : ''}>${renderHTML(t("ui.device_detail.1_min_75adba"))}</option>
+            <option value="300000" ${device.screen_off_timeout_ms === 300000 ? 'selected' : ''}>${renderHTML(t("ui.device_detail.5_min_53bc57"))}</option>
+            <option value="900000" ${device.screen_off_timeout_ms === 900000 ? 'selected' : ''}>${renderHTML(t("ui.device_detail.15_min_8d616d"))}</option>
+            <option value="1800000" ${device.screen_off_timeout_ms === 1800000 ? 'selected' : ''}>${renderHTML(t("ui.device_detail.30_min_f69fa2"))}</option>
           </select>
           ` : `
-          <div style="grid-column:1/-1;font-size:11px;color:var(--text-muted);line-height:1.4">${t('device.sysctl.write_hint')}</div>
-          `}
+          <div style="grid-column:1/-1;font-size:11px;color:var(--text-muted);line-height:1.4">${renderHTML(t('device.sysctl.write_hint'))}</div>
+          `)}
         </div>
-      </div>` : ''}
+      </div>` : '')}
 
-      ${(device.tier === 2 || can('system.shell') || can('system.pty')) ? `
+      ${renderHTML((device.tier === 2 || can('system.shell') || can('system.pty')) ? `
       <!-- Terminal Tab. Android: the device-owner app-UID shell (tier 2). Linux: a one-shot shell
            (system.shell) and, where the player declares system.pty, an Interactive mode that is a
            real PTY relayed by server/lib/pty-relay.js into xterm.js. Each half is gated on its own
            capability, so a player may offer either without the other. -->
       <div class="tab-content" id="tab-terminal">
-        ${can('system.pty') && (device.tier === 2 || can('system.shell')) ? `
+        ${renderHTML(can('system.pty') && (device.tier === 2 || can('system.shell')) ? `
         <div style="display:flex;gap:6px;margin-bottom:10px">
-          <button class="btn btn-primary btn-sm" id="termModeOneshot">${t('device.terminal.mode_oneshot')}</button>
-          <button class="btn btn-secondary btn-sm" id="termModeInteractive">${t('device.terminal.mode_interactive')}</button>
-        </div>` : ''}
-        ${(device.tier === 2 || can('system.shell')) ? `
+          <button class="btn btn-primary btn-sm" id="termModeOneshot">${renderHTML(t('device.terminal.mode_oneshot'))}</button>
+          <button class="btn btn-secondary btn-sm" id="termModeInteractive">${renderHTML(t('device.terminal.mode_interactive'))}</button>
+        </div>` : '')}
+        ${renderHTML((device.tier === 2 || can('system.shell')) ? `
         <div id="termOneshot">
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
-            ${terminalPresets(device).map(p => `<button class="btn btn-secondary btn-sm term-preset" data-cmd="${esc(p.cmd)}" title="${esc(p.cmd)}">${esc(p.label)}</button>`).join('')}
+            ${renderHTML(terminalPresets(device).map(p => `<button class="btn btn-secondary btn-sm term-preset" data-cmd="${esc(p.cmd)}" title="${esc(p.cmd)}"${attributeBinding("title", p.cmd)}>${uiText(p.label)}</button>`).join(''))}
           </div>
-          <div id="termOut" style="background:#0b1020;color:#c8e1ff;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.45;padding:12px;border-radius:8px;height:360px;overflow:auto;white-space:pre-wrap;border:1px solid var(--border)">${isWindowsDevice(device) ? t('device.terminal.welcome_windows') : isLinuxDevice(device) ? t('device.terminal.welcome_linux') : t('device.terminal.welcome')}\n</div>
+          <div id="termOut" style="background:#0b1020;color:#c8e1ff;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.45;padding:12px;border-radius:8px;height:360px;overflow:auto;white-space:pre-wrap;border:1px solid var(--border)">${renderHTML(isWindowsDevice(device) ? t('device.terminal.welcome_windows') : isLinuxDevice(device) ? t('device.terminal.welcome_linux') : t('device.terminal.welcome'))}\n</div>
           <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
             <span style="color:var(--success);font-family:monospace;font-weight:700">$</span>
             <input id="termCmd" class="input" style="flex:1;font-family:monospace;font-size:13px" placeholder="${isWindowsDevice(device) ? t('device.terminal.placeholder_windows') : isLinuxDevice(device) ? t('device.terminal.placeholder_linux') : t('device.terminal.placeholder')}" autocomplete="off" spellcheck="false"/>
-            <button class="btn btn-primary btn-sm" id="termRun">${t('device.terminal.run')}</button>
-            <button class="btn btn-secondary btn-sm" id="termClear">${t('device.terminal.clear')}</button>
+            <button class="btn btn-primary btn-sm" id="termRun">${renderHTML(t('device.terminal.run'))}</button>
+            <button class="btn btn-secondary btn-sm" id="termClear">${renderHTML(t('device.terminal.clear'))}</button>
           </div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${isWindowsDevice(device) ? t('device.terminal.uid_note_windows') : isLinuxDevice(device) ? t('device.terminal.uid_note_linux') : t('device.terminal.uid_note')}</div>
-        </div>` : ''}
-        ${can('system.pty') ? `
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${renderHTML(isWindowsDevice(device) ? t('device.terminal.uid_note_windows') : isLinuxDevice(device) ? t('device.terminal.uid_note_linux') : t('device.terminal.uid_note'))}</div>
+        </div>` : '')}
+        ${renderHTML(can('system.pty') ? `
         <div id="termInteractive" style="display:${(device.tier === 2 || can('system.shell')) ? 'none' : 'block'}">
           <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
-            <button class="btn btn-primary btn-sm" id="ptyConnect">${t('device.terminal.pty_connect')}</button>
-            <button class="btn btn-secondary btn-sm" id="ptyDisconnect" disabled>${t('device.terminal.pty_disconnect')}</button>
+            <button class="btn btn-primary btn-sm" id="ptyConnect">${renderHTML(t('device.terminal.pty_connect'))}</button>
+            <button class="btn btn-secondary btn-sm" id="ptyDisconnect" disabled>${renderHTML(t('device.terminal.pty_disconnect'))}</button>
             <span id="ptyStatus" style="font-size:11px;color:var(--text-muted)"></span>
           </div>
           <div id="ptyHost" style="background:#0b1020;border-radius:8px;height:420px;padding:6px;border:1px solid var(--border);overflow:hidden"></div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${t('device.terminal.pty_hint')}</div>
-        </div>` : ''}
-        ${(device.tier === 2 || can('system.install_apk')) ? `
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${renderHTML(t('device.terminal.pty_hint'))}</div>
+        </div>` : '')}
+        ${renderHTML((device.tier === 2 || can('system.install_apk')) ? `
         <hr style="border-color:var(--border);margin:14px 0 10px">
         <!-- Same install_apk command on every platform; a Linux player hands the URL to dpkg and a
              Windows player to its helper service, so the field names the package type each accepts
              rather than inviting an APK it would refuse. -->
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${isWindowsDevice(device) ? t('device.terminal.push_exe') : isLinuxDevice(device) ? t('device.terminal.push_deb') : t('device.terminal.push_apk')}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(isWindowsDevice(device) ? t('device.terminal.push_exe') : isLinuxDevice(device) ? t('device.terminal.push_deb') : t('device.terminal.push_apk'))}</div>
         <div style="display:flex;gap:6px">
           <input id="apkUrl" class="input" placeholder="${isWindowsDevice(device) ? t('device.terminal.exe_ph') : isLinuxDevice(device) ? t('device.terminal.deb_ph') : t('device.owner_tools.apk_ph')}" style="flex:1;font-size:12px"/>
-          <button class="btn btn-secondary btn-sm" id="apkInstall">${isNativeDevice(device) ? t('device.terminal.deb_install') : t('device.owner_tools.install')}</button>
+          <button class="btn btn-secondary btn-sm" id="apkInstall">${renderHTML(isNativeDevice(device) ? t('device.terminal.deb_install') : t('device.owner_tools.install'))}</button>
         </div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${isWindowsDevice(device) ? t('device.terminal.push_exe_hint') : isLinuxDevice(device) ? t('device.terminal.push_deb_hint') : t('device.terminal.push_apk_hint')}</div>` : ''}
-      </div>` : ''}
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${renderHTML(isWindowsDevice(device) ? t('device.terminal.push_exe_hint') : isLinuxDevice(device) ? t('device.terminal.push_deb_hint') : t('device.terminal.push_apk_hint'))}</div>` : '')}
+      </div>` : '')}
     `;
     // If this device is assigned the smoothness-diagnostic widget, poll THIS device's reported stats.
     if (diagWidget) startDiagPoll(diagWidget.widget_id, deviceId);
@@ -1727,7 +1727,7 @@ async function loadDevice(deviceId, activeTab = null) {
       if (!currentDevice) return;
       // A refusal (head office's screen, a gated command) must not vanish: say why.
       sendCommand(currentDevice.id, type, {}, (ack) => {
-        if (ack && ack.reason === 'corporate') showToast(ack.error || t('corp.locked.title'), 'error');
+        if (ack && ack.reason === 'corporate') showToast(localizeServerError(ack.error) || t('corp.locked.title'), 'error');
       });
     };
     window._enableSystemView = () => {
@@ -1736,13 +1736,13 @@ async function loadDevice(deviceId, activeTab = null) {
       // Unlock the system controls after a short delay (user needs to tap "Start now" on device)
       const btn = document.getElementById('enableSystemCaptureBtn');
       const hint = document.getElementById('systemViewHint');
-      if (btn) { btn.textContent = t('device.remote.waiting_for_approval'); btn.disabled = true; }
+      if (btn) { bindText(btn, 'device.remote.waiting_for_approval', undefined); btn.disabled = true; }
       // Check periodically if the device granted it (we'll know because screenshots keep coming even after Home)
       setTimeout(() => {
         const controls = document.getElementById('systemViewControls');
         if (controls) { controls.style.opacity = '1'; controls.style.pointerEvents = 'auto'; }
-        if (btn) { btn.textContent = t('device.remote.system_view_enabled'); btn.style.background = 'var(--success)'; }
-        if (hint) hint.textContent = t('device.remote.unlocked_hint');
+        if (btn) { bindText(btn, 'device.remote.system_view_enabled', undefined); btn.style.background = 'var(--success)'; }
+        if (hint) bindText(hint, 'device.remote.unlocked_hint', undefined);
       }, 5000);
     };
 
@@ -1757,7 +1757,7 @@ async function loadDevice(deviceId, activeTab = null) {
       document.getElementById('termRun')?.addEventListener('click', () => { const c = termCmd?.value?.trim(); if (c) { runCmd(c); termCmd.value = ''; } });
       termCmd?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const c = e.target.value.trim(); if (c) { runCmd(c); e.target.value = ''; } } });
       document.querySelectorAll('.term-preset').forEach(b => b.addEventListener('click', () => runCmd(b.dataset.cmd)));
-      document.getElementById('termClear')?.addEventListener('click', () => { if (termOut) termOut.textContent = ''; });
+      document.getElementById('termClear')?.addEventListener('click', () => { if (termOut) bindMessage(termOut, ''); });
       document.getElementById('apkInstall')?.addEventListener('click', () => {
         const url = document.getElementById('apkUrl')?.value?.trim();
         if (!url) return;
@@ -1851,7 +1851,7 @@ async function loadDevice(deviceId, activeTab = null) {
     }
 
   } catch (err) {
-    contentEl.innerHTML = `<div class="empty-state"><h3>${t('device.failed_load')}</h3><p>${esc(err.message)}</p></div>`;
+    contentEl.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('device.failed_load'))}</h3><p>${uiText((err.uiMessage || err.message))}</p></div>`;
   }
 }
 
@@ -1881,41 +1881,41 @@ function renderTriggerConfig(device) {
   const box = 'padding:6px 8px;background:#0b0f1a;border:1px solid var(--border);border-radius:6px;color:var(--text)';
   return `
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-        <div style="font-weight:600;margin-bottom:4px">${t('device.trigcfg.title')}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">${esc(t('device.trigcfg.intro'))}</div>
-        ${headOfficeTriggerNotes(device)}
+        <div style="font-weight:600;margin-bottom:4px">${renderHTML(t('device.trigcfg.title'))}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">${uiText(t('device.trigcfg.intro'))}</div>
+        ${renderHTML(headOfficeTriggerNotes(device))}
 
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
           <label style="display:flex;gap:6px;align-items:center;font-size:13px">
             <input type="checkbox" id="trigHttp" ${device.triggers_accept_http ? 'checked' : ''}>
-            ${t('device.trigcfg.accept_http')}
+            ${renderHTML(t('device.trigcfg.accept_http'))}
           </label>
           <input id="trigHttpPort" type="number" min="1024" max="65534" placeholder="8079"
                  value="${device.trigger_http_port || ''}" style="width:100px;${box}">
           <label style="display:flex;gap:6px;align-items:center;font-size:13px">
             <input type="checkbox" id="trigUdp" ${device.triggers_accept_udp ? 'checked' : ''}>
-            ${t('device.trigcfg.accept_udp')}
+            ${renderHTML(t('device.trigcfg.accept_udp'))}
           </label>
           <input id="trigUdpPort" type="number" min="1024" max="65534" placeholder="7847"
                  value="${device.trigger_udp_port || ''}" style="width:100px;${box}">
         </div>
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-          <input id="trigGroup" type="text" placeholder="${t('device.trigcfg.group_ph')}"
+          <input id="trigGroup" type="text" placeholder="${t('device.trigcfg.group_ph')}" data-fil-i18n-placeholder="${binding('device.trigcfg.group_ph', undefined)}"
                  value="${esc(device.trigger_multicast_group || '')}" style="width:180px;${box}">
-          <input id="trigClearAll" type="text" placeholder="${t('device.trigcfg.clear_all_ph')}"
+          <input id="trigClearAll" type="text" placeholder="${t('device.trigcfg.clear_all_ph')}" data-fil-i18n-placeholder="${binding('device.trigcfg.clear_all_ph', undefined)}"
                  value="${esc(device.trigger_clear_all_token || '')}" style="width:180px;${box}">
-          <button class="btn btn-primary btn-sm" id="saveTrigCfgBtn">${t('device.trigcfg.save')}</button>
+          <button class="btn btn-primary btn-sm" id="saveTrigCfgBtn">${renderHTML(t('device.trigcfg.save'))}</button>
         </div>
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:13px">${t('device.trigcfg.secret')}:</span>
+          <span style="font-size:13px">${renderHTML(t('device.trigcfg.secret'))}:</span>
           <code id="trigSecretVal" style="font-size:12px;background:#0b0f1a;border:1px solid var(--border);
-                border-radius:6px;padding:4px 8px">${secretSet ? esc(device.trigger_secret) : t('device.trigcfg.secret_unset')}</code>
+                border-radius:6px;padding:4px 8px">${renderHTML(secretSet ? esc(device.trigger_secret) : t('device.trigcfg.secret_unset'))}</code>
           <button class="btn btn-secondary btn-sm" id="rotateTrigSecretBtn">
-            ${secretSet ? t('device.trigcfg.rotate') : t('device.trigcfg.generate')}</button>
+            ${renderHTML(secretSet ? t('device.trigcfg.rotate') : t('device.trigcfg.generate'))}</button>
         </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${esc(t('device.trigcfg.secret_note'))}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${uiText(t('device.trigcfg.secret_note'))}</div>
       </div>`;
 }
 
@@ -1926,7 +1926,7 @@ function renderTriggerDiagnostics(device) {
 
   const chip = (label, tone) => `<span style="font-family:monospace;font-size:11px;background:var(--bg-input);` +
     `border:1px solid var(--${tone || 'border'});color:var(--${tone === 'border' ? 'text' : (tone || 'text')});` +
-    `border-radius:4px;padding:2px 6px">${esc(label)}</span>`;
+    `border-radius:4px;padding:2px 6px">${uiText(label)}</span>`;
 
   const mc = st.multicast || {};
   const rej = st.rejected || {};
@@ -1948,26 +1948,23 @@ function renderTriggerDiagnostics(device) {
 
   return `
       <div style="margin-top:20px">
-        <h4 style="font-size:13px;margin-bottom:8px">${t('device.trig.title')}</h4>
-        <div style="font-size:12px;color:var(--${tone});margin-bottom:8px">${esc(verdict)}</div>
+        <h4 style="font-size:13px;margin-bottom:8px">${renderHTML(t('device.trig.title'))}</h4>
+        <div style="font-size:12px;color:var(--${tone});margin-bottom:8px">${uiText(verdict)}</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-          ${st.listeners && st.listeners.http ? chip('HTTP :' + st.listeners.http) : ''}
-          ${st.listeners && st.listeners.udp ? chip('UDP :' + st.listeners.udp) : ''}
-          ${mc.group ? chip(mc.group + (mc.iface ? ' @ ' + mc.iface : '')) : ''}
-          ${loop}
-          ${mc.rejoin_count ? chip(t('device.trig.rejoins', { n: mc.rejoin_count })) : ''}
+          ${renderHTML(st.listeners && st.listeners.http ? chip('HTTP :' + st.listeners.http) : '')}
+          ${renderHTML(st.listeners && st.listeners.udp ? chip('UDP :' + st.listeners.udp) : '')}
+          ${renderHTML(mc.group ? chip(mc.group + (mc.iface ? ' @ ' + mc.iface : '')) : '')}
+          ${renderHTML(loop)}
+          ${renderHTML(mc.rejoin_count ? chip(t('device.trig.rejoins', { n: mc.rejoin_count })) : '')}
         </div>
         <div style="font-size:11px;color:var(--text-muted)">
-          ${esc(t('device.trig.counts', { received: st.received || 0, accepted: st.accepted || 0, rejected: rejTotal }))}
-          ${st.last_datagram_at ? ' · ' + esc(t('device.trig.last_seen', { when: new Date(st.last_datagram_at).toLocaleString() })) : ''}
-          · ${esc(t('device.trig.definitions', { n: st.definitions || 0 }))}
+          ${uiText(t('device.trig.counts', { received: st.received || 0, accepted: st.accepted || 0, rejected: rejTotal }))}
+          ${renderHTML(st.last_datagram_at ? ' · ' + t('device.trig.last_seen', { when: displayValue(new Date(st.last_datagram_at), "toLocaleString", undefined) }) : '')}
+          · ${uiText(t('device.trig.definitions', { n: st.definitions || 0 }))}
         </div>
-        ${rejTotal ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${
-          Object.entries(rej).filter(([, v]) => v).map(([k, v]) => esc(k + ' ' + v)).join(' · ')}</div>` : ''}
-        ${st.active ? `<div style="font-size:12px;margin-top:8px">${
-          esc(t('device.trig.showing', { name: st.active.name, source: st.active.source }))}</div>` : ''}
-        ${mc.last_join_error ? `<div style="font-size:11px;color:var(--danger);margin-top:4px">${
-          esc(t('device.trig.join_error', { err: mc.last_join_error }))}</div>` : ''}
+        ${renderHTML(rejTotal ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(Object.entries(rej).filter(([, v]) => v).map(([k, v]) => esc(k + ' ' + v)).join(' · '))}</div>` : '')}
+        ${renderHTML(st.active ? `<div style="font-size:12px;margin-top:8px">${uiText(t('device.trig.showing', { name: st.active.name, source: st.active.source }))}</div>` : '')}
+        ${renderHTML(mc.last_join_error ? `<div style="font-size:11px;color:var(--danger);margin-top:4px">${uiText(t('device.trig.join_error', { err: mc.last_join_error }))}</div>` : '')}
       </div>`;
 }
 
@@ -1985,8 +1982,8 @@ function renderTriggerDiagnostics(device) {
  */
 function playlistSourceBadge(device) {
   const chip = (text, title, color) =>
-    `<span title="${esc(title)}" style="font-size:11px;padding:2px 8px;border-radius:10px;`
-    + `background:var(--bg-input);color:${color};white-space:nowrap">${esc(text)}</span>`;
+    `<span title="${esc(title)}"${attributeBinding("title", title)} style="font-size:11px;padding:2px 8px;border-radius:10px;`
+    + `background:var(--bg-input);color:${renderHTML(color)};white-space:nowrap">${uiText(text)}</span>`;
 
   /*
    * Head office (corporate) decides what plays here. The playlist is NAMED, as plain text — not a
@@ -1998,13 +1995,13 @@ function playlistSourceBadge(device) {
     if (corp.dark) return chip(t('corp.badge.dark'), t('corp.tip.dark'), 'var(--warning, #f59e0b)');
     const name = corp.playlist_name;
     return chip(t('corp.badge.locked'), t('corp.tip.locked'), 'var(--warning, #f59e0b)')
-      + (name ? ` <span class="corp-playlist-name" style="font-size:12px;color:var(--text-secondary)">${esc(name)}</span>` : '');
+      + (name ? ` <span class="corp-playlist-name" style="font-size:12px;color:var(--text-secondary)">${uiText(name)}</span>` : '');
   }
 
   if (device.playlist_source === 'device') {
     return chip(t('device.playlist.overridden'), t('device.playlist.overridden_tip'), 'var(--text-secondary)')
-      + `<button class="btn btn-secondary btn-sm" id="revertPlaylistBtn" title="${esc(t('device.playlist.revert_tip'))}"`
-      + ` style="font-size:11px;padding:2px 8px">${t('device.playlist.revert')}</button>`;
+      + `<button class="btn btn-secondary btn-sm" id="revertPlaylistBtn" title="${esc(t('device.playlist.revert_tip'))}" data-fil-i18n-title="${binding('device.playlist.revert_tip', undefined)}"`
+      + ` style="font-size:11px;padding:2px 8px">${renderHTML(t('device.playlist.revert'))}</button>`;
   }
   if (device.playlist_source === 'group' || device.playlist_source === 'wall') {
     const name = device.playlist_source_name;
@@ -2029,35 +2026,35 @@ function corporatePlaylistTab(device) {
   const corp = device.corporate || {};
   const target = corp.mandate ? corp.mandate.target_label : '';
   if (corp.dark) {
-    return `<div class="corp-notice">${cui.chip(t('corp.badge.dark'), 'dark', '', { lock: true })} ${esc(t('corp.dev.dark', { target }))}
-      ${corp.can_change ? `<a class="btn btn-secondary btn-sm" href="#/corporate/where">${esc(t('corp.dev.change_in_corporate'))}</a>` : ''}</div>`;
+    return `<div class="corp-notice">${renderHTML(cui.chip(t('corp.badge.dark'), 'dark', '', { lock: true }))} ${renderHTML(t('corp.dev.dark', { target }))}
+      ${renderHTML(corp.can_change ? `<a class="btn btn-secondary btn-sm" href="#/corporate/where">${uiText(t('corp.dev.change_in_corporate'))}</a>` : '')}</div>`;
   }
   const slots = corp.slots || [];
   const items = corp.items || [];
   const slotName = (id) => (slots.find((x) => x.id === id) || {}).name || '';
   return `
     <div class="corp-notice">
-      ${cui.chip(t('corp.badge.locked'), 'hq', t('corp.tip.locked'), { lock: true })}
-      ${esc(t('corp.dev.plays_here', { name: corp.playlist_name || '', target }))}
-      · ${esc(corp.layout_id ? t('corp.dev.layout_hq') : t('corp.dev.layout_full'))}
-      ${corp.can_change ? `<a class="btn btn-secondary btn-sm" href="#/corporate/where">${esc(t('corp.dev.change_in_corporate'))}</a>` : ''}
+      ${renderHTML(cui.chip(t('corp.badge.locked'), 'hq', t('corp.tip.locked'), { lock: true }))}
+      ${renderHTML(t('corp.dev.plays_here', { name: corp.playlist_name || '', target }))}
+      · ${uiText(corp.layout_id ? t('corp.dev.layout_hq') : t('corp.dev.layout_full'))}
+      ${renderHTML(corp.can_change ? `<a class="btn btn-secondary btn-sm" href="#/corporate/where">${uiText(t('corp.dev.change_in_corporate'))}</a>` : '')}
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0">
-      <h3 style="font-size:16px">${esc(t('corp.dev.loop_title'))}</h3>
-      <button class="btn btn-primary btn-sm" id="corpAddContentBtn">${esc(t('device.playlist.add_content_btn'))}</button>
+      <h3 style="font-size:16px">${uiText(t('corp.dev.loop_title'))}</h3>
+      <button class="btn btn-primary btn-sm" id="corpAddContentBtn">${uiText(t('device.playlist.add_content_btn'))}</button>
     </div>
     <div class="playlist-container" id="corpLoop">
-      ${items.length ? items.map((a, i) => `
+      ${renderHTML(items.length ? items.map((a, i) => `
         <div class="playlist-item ${a.locked ? 'corp-locked-item' : ''}" data-corp-item="${i}" ${a.locked ? 'role="button" tabindex="0"' : ''}>
           <div class="playlist-item-info">
-            <div class="playlist-item-name">${a.locked ? cui.LOCK_SVG + ' ' : ''}${esc(a.filename || t('common.unknown'))}</div>
-            <div class="playlist-item-meta">${a.origin === 'slot' ? cui.chip(t('corp.dev.from_slot', { slot: slotName(a.slot_id) }), 'slot') : a.origin === 'fallback' ? cui.chip(t('corp.preview.tag_fallback'), 'muted') : cui.chip(t('corp.preview.tag_corporate'), 'hq')}
-              ${a.duration_sec ? ` &middot; ${esc(cui.formatSec(a.duration_sec))}` : ''}</div>
+            <div class="playlist-item-name">${renderHTML(a.locked ? cui.LOCK_SVG + ' ' : '')}${uiText(a.filename || t('common.unknown'))}</div>
+            <div class="playlist-item-meta">${renderHTML(a.origin === 'slot' ? cui.chip(t('corp.dev.from_slot', { slot: slotName(a.slot_id) }), 'slot') : a.origin === 'fallback' ? cui.chip(t('corp.preview.tag_fallback'), 'muted') : cui.chip(t('corp.preview.tag_corporate'), 'hq'))}
+              ${renderHTML(a.duration_sec ? ` &middot; ${esc(cui.formatSec(a.duration_sec))}` : '')}</div>
           </div>
-        </div>`).join('') : `<div class="empty-state"><p>${esc(t('corp.preview.empty'))}</p></div>`}
+        </div>`).join('') : `<div class="empty-state"><p>${uiText(t('corp.preview.empty'))}</p></div>`)}
     </div>
-    <h3 style="font-size:16px;margin:18px 0 10px">${esc(t('corp.store.slots'))}</h3>
-    ${slots.length ? slots.map((sl) => corporateSlotSection(sl)).join('') : `<div class="corp-help">${esc(t('corp.err.CORPORATE_NO_SLOT', { name: corp.playlist_name || '' }))}</div>`}`;
+    <h3 style="font-size:16px;margin:18px 0 10px">${uiText(t('corp.store.slots'))}</h3>
+    ${renderHTML(slots.length ? slots.map((sl) => corporateSlotSection(sl)).join('') : `<div class="corp-help">${uiText(t('corp.err.CORPORATE_NO_SLOT', { name: corp.playlist_name || '' }))}</div>`)}`;
 }
 
 function corporateSlotSection(sl) {
@@ -2066,22 +2063,22 @@ function corporateSlotSection(sl) {
   return `
     <div class="corp-card corp-slot-card" data-corp-slot="${esc(sl.id)}">
       <div class="corp-card-head">
-        <strong class="corp-card-title">${esc(t('corp.store.slot_title', { slot: sl.name }))}</strong>
-        <span class="corp-help">${esc(cui.limitsText(sl.limits))}</span>
+        <strong class="corp-card-title">${uiText(t('corp.store.slot_title', { slot: sl.name }))}</strong>
+        <span class="corp-help">${uiText(cui.limitsText(sl.limits))}</span>
       </div>
-      ${sl.help_text ? `<div class="corp-hq-note">${esc(t('corp.store.hq_says'))} ${esc(sl.help_text)}</div>` : ''}
-      ${f ? `
-        <div class="corp-card-meta">${esc(t('corp.dev.from_level', { level }))} · ${esc(tn('corp.n_screens', f.screens || 0))}</div>
-        ${f.fill_state === 'over_limit' ? `<div class="corp-notice corp-notice-danger">${esc(t('corp.slot.over_limit'))}</div>` : ''}
-        ${f.status === 'draft' ? `<div class="corp-notice">${esc(f.has_published ? t('corp.dev.unpublished') : t('corp.dev.never_published'))}
-          <button class="btn btn-primary btn-sm" data-corp-publish="${esc(f.fill_playlist_id)}">${esc(tn('corp.hq.publish_n', f.screens || 0))}</button></div>` : ''}
-        ${sl.own ? `<div class="corp-notice">${esc(t('corp.slot.own_chip_here', { slot: sl.name }))}
-          <button class="btn btn-secondary btn-sm" data-corp-unown="${esc(f.fill_id)}">${esc(t('corp.slot.use_shared'))}</button></div>` : ''}`
-        : `<div class="corp-help">${esc(sl.has_fallback ? t('corp.dev.empty_fallback') : t('corp.store.empty_slot_skip'))}</div>`}
+      ${renderHTML(sl.help_text ? `<div class="corp-hq-note">${uiText(t('corp.store.hq_says'))} ${uiText(sl.help_text)}</div>` : '')}
+      ${renderHTML(f ? `
+        <div class="corp-card-meta">${uiText(t('corp.dev.from_level', { level }))} · ${uiText(tn('corp.n_screens', f.screens || 0))}</div>
+        ${renderHTML(f.fill_state === 'over_limit' ? `<div class="corp-notice corp-notice-danger">${uiText(t('corp.slot.over_limit'))}</div>` : '')}
+        ${renderHTML(f.status === 'draft' ? `<div class="corp-notice">${uiText(f.has_published ? t('corp.dev.unpublished') : t('corp.dev.never_published'))}
+          <button class="btn btn-primary btn-sm" data-corp-publish="${esc(f.fill_playlist_id)}">${uiText(tn('corp.hq.publish_n', f.screens || 0))}</button></div>` : '')}
+        ${renderHTML(sl.own ? `<div class="corp-notice">${uiText(t('corp.slot.own_chip_here', { slot: sl.name }))}
+          <button class="btn btn-secondary btn-sm" data-corp-unown="${esc(f.fill_id)}">${uiText(t('corp.slot.use_shared'))}</button></div>` : '')}`
+        : `<div class="corp-help">${uiText(sl.has_fallback ? t('corp.dev.empty_fallback') : t('corp.store.empty_slot_skip'))}</div>`)}
       <div class="corp-card-actions">
-        <button class="btn btn-secondary btn-sm" data-corp-add="${esc(sl.id)}">${esc(t('device.playlist.add_content_btn'))}</button>
-        ${f ? `<a class="btn btn-secondary btn-sm" href="#/playlists/${esc(f.fill_playlist_id)}">${esc(t('corp.locked.edit_slot'))}</a>` : ''}
-        ${!sl.own ? `<button class="btn btn-secondary btn-sm" data-corp-own="${esc(sl.id)}">${esc(t('corp.slot.give_own'))}</button>` : ''}
+        <button class="btn btn-secondary btn-sm" data-corp-add="${esc(sl.id)}">${uiText(t('device.playlist.add_content_btn'))}</button>
+        ${renderHTML(f ? `<a class="btn btn-secondary btn-sm" href="#/playlists/${esc(f.fill_playlist_id)}">${uiText(t('corp.locked.edit_slot'))}</a>` : '')}
+        ${renderHTML(!sl.own ? `<button class="btn btn-secondary btn-sm" data-corp-own="${esc(sl.id)}">${uiText(t('corp.slot.give_own'))}</button>` : '')}
       </div>
     </div>`;
 }
@@ -2090,8 +2087,8 @@ function corporateSlotSection(sl) {
 function headOfficeTriggerNotes(device) {
   const h = device.head_office_triggers;
   if (!h) return '';
-  return `${h.listeners_off ? `<div class="corp-notice corp-notice-warn">${esc(t('corp.em.device_warn'))}</div>` : ''}
-    ${h.settings_locked ? `<div class="corp-notice">${cui.LOCK_SVG} ${esc(t('corp.em.locked_settings'))}</div>` : ''}`;
+  return `${h.listeners_off ? `<div class="corp-notice corp-notice-warn">${uiText(t('corp.em.device_warn'))}</div>` : ''}
+    ${h.settings_locked ? `<div class="corp-notice">${renderHTML(cui.LOCK_SVG)} ${uiText(t('corp.em.locked_settings'))}</div>` : ''}`;
 }
 
 /*
@@ -2124,7 +2121,7 @@ function setupCorporateDevice(device) {
       const el = document.getElementById(id);
       if (!el || el.dataset.corpLocked) return;
       el.dataset.corpLocked = gated[id] ? 'mandate' : 'emergency';
-      el.title = t('corp.locked.title');
+      bindAttribute(el, "title", t('corp.locked.title'));
       if (el.tagName === 'INPUT' && el.type !== 'checkbox') el.readOnly = true;
     });
     mark();
@@ -2166,7 +2163,7 @@ function setupCorporateDevice(device) {
   document.querySelectorAll('[data-corp-add]').forEach((b) => b.addEventListener('click', () => corporateAdd(device, b.dataset.corpAdd)));
   document.querySelectorAll('[data-corp-publish]').forEach((b) => b.addEventListener('click', async () => {
     try { b.disabled = true; await api.publishPlaylist(b.dataset.corpPublish); showToast(t('corp.dev.published'), 'success'); loadDevice(device.id, 'playlist'); }
-    catch (e) { b.disabled = false; showToast(e.message, 'error'); }
+    catch (e) { b.disabled = false; showToast(e.uiMessage || e.message, 'error'); }
   }));
   document.querySelectorAll('[data-corp-own]').forEach((b) => b.addEventListener('click', async () => {
     const sl = (corp.slots || []).find((x) => x.id === b.dataset.corpOwn);
@@ -2176,13 +2173,13 @@ function setupCorporateDevice(device) {
       const f = await api.createFill(sl.id, { scope_kind: device.wall_id ? 'wall' : 'device', scope_id: device.wall_id || device.id });
       showToast(t('corp.slot.own_created'), 'success');
       window.location.hash = `#/playlists/${f.fill_playlist_id}`;
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   }));
   document.querySelectorAll('[data-corp-unown]').forEach((b) => b.addEventListener('click', async () => {
     const ok = await cui.ask({ title: t('corp.slot.use_shared'), text: t('corp.slot.use_shared_confirm'), confirmLabel: t('corp.slot.use_shared'), danger: true });
     if (!ok) return;
     try { await api.deleteFill(b.dataset.corpUnown); showToast(t('corp.slot.level_removed'), 'success'); loadDevice(device.id, 'playlist'); }
-    catch (e) { showToast(e.message, 'error'); }
+    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   }));
 }
 
@@ -2201,8 +2198,8 @@ async function corporateAdd(device, slotId) {
       let picked = null;
       const m = cui.openModal({
         title: t('corp.slot.which'),
-        body: `<select id="corpWhich" class="input" style="width:100%">${slots.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</select>`,
-        footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button><button class="btn btn-primary" id="corpWhichGo">${esc(t('corp.slot.next'))}</button>`,
+        body: `<select id="corpWhich" class="input" style="width:100%">${renderHTML(slots.map((x) => `<option value="${esc(x.id)}">${uiText(x.name)}</option>`).join(''))}</select>`,
+        footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button><button class="btn btn-primary" id="corpWhichGo">${uiText(t('corp.slot.next'))}</button>`,
         onClose: () => resolve(picked),
       });
       m.q('#corpWhichGo').addEventListener('click', () => { picked = slots.find((x) => x.id === m.q('#corpWhich').value) || null; m.close(); });
@@ -2216,11 +2213,11 @@ async function corporateAdd(device, slotId) {
     const shared = f && f.scope_kind !== 'device' && f.scope_kind !== 'wall';
     const m = cui.openModal({
       title: t('corp.slot.add_title', { slot: slot.name }),
-      body: `<p class="corp-explain">${esc(f ? tn('corp.slot.confirm_add', f.screens || 0, { slot: slot.name, level }) : t('corp.slot.confirm_add_new', { slot: slot.name }))}</p>
-             <p class="corp-help">${esc(t('corp.slot.draft_note'))}</p>`,
-      footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button>
-               ${!f || shared ? `<button class="btn btn-secondary" id="corpOnlyThis">${esc(t('corp.slot.only_this'))}</button>` : ''}
-               <button class="btn btn-primary" id="corpForLevel">${esc(f ? t('corp.slot.add_for', { level }) : t('corp.slot.add_for_ws'))}</button>`,
+      body: `<p class="corp-explain">${uiText(f ? tn('corp.slot.confirm_add', f.screens || 0, { slot: slot.name, level }) : t('corp.slot.confirm_add_new', { slot: slot.name }))}</p>
+             <p class="corp-help">${uiText(t('corp.slot.draft_note'))}</p>`,
+      footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button>
+               ${renderHTML(!f || shared ? `<button class="btn btn-secondary" id="corpOnlyThis">${uiText(t('corp.slot.only_this'))}</button>` : '')}
+               <button class="btn btn-primary" id="corpForLevel">${uiText(f ? t('corp.slot.add_for', { level }) : t('corp.slot.add_for_ws'))}</button>`,
       onClose: () => resolve(chosen),
     });
     m.q('#corpOnlyThis')?.addEventListener('click', () => { chosen = 'device'; m.close(); });
@@ -2249,7 +2246,7 @@ async function corporateAdd(device, slotId) {
 
 function renderPlaylist(assignments) {
   if (!assignments.length) {
-    return `<div class="empty-state"><h3>${t('device.playlist.empty_title')}</h3><p>${t('device.playlist.empty_desc')}</p></div>`;
+    return `<div class="empty-state"><h3>${renderHTML(t('device.playlist.empty_title'))}</h3><p>${renderHTML(t('device.playlist.empty_desc'))}</p></div>`;
   }
   return assignments.map((a, i) => `
     <div class="playlist-item" data-assignment-id="${a.id}" draggable="true" data-sort="${i}">
@@ -2258,11 +2255,11 @@ function renderPlaylist(assignments) {
           <line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/>
         </svg>
       </div>
-      ${a.child_playlist_id
+      ${renderHTML(a.child_playlist_id
         ? `<div class="playlist-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted)">☰</div>`
         : a.widget_id && !a.content_id
         ? `<div class="playlist-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:20px">
-            ${{clock:'&#128339;',weather:'&#9925;',rss:'&#128240;',text:'&#128221;',webpage:'&#127760;',social:'&#128172;',slide:'&#128444;',template:'&#10024;'}[a.widget_type] || '&#9881;'}
+            ${renderHTML({clock:'&#128339;',weather:'&#9925;',rss:'&#128240;',text:'&#128221;',webpage:'&#127760;',social:'&#128172;',slide:'&#128444;',template:'&#10024;'}[a.widget_type] || '&#9881;')}
           </div>`
         : a.thumbnail_path
           ? `<img class="playlist-item-thumb" data-auth-src="/api/content/${a.content_id}/thumbnail" alt="">`
@@ -2270,33 +2267,33 @@ function renderPlaylist(assignments) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="5 3 19 12 5 21 5 3"/>
               </svg>
-            </div>`
+            </div>`)
       }
       <div class="playlist-item-info">
-        <div class="playlist-item-name">${esc(a.filename || a.widget_name || t('common.unknown'))}</div>
+        <div class="playlist-item-name">${uiText(a.filename || a.widget_name || t('common.unknown'))}</div>
         <div class="playlist-item-meta">
-          ${a.child_playlist_id ? esc(tn('device.pl_item.playlist_with_count', a.child_item_count || 0)) : a.widget_id && !a.content_id ? t('device.pl_item.widget_with_type', { type: a.widget_type || 'custom' }) : a.mime_type === 'video/youtube' ? t('device.pl_item.youtube') : a.mime_type?.startsWith('video/') ? t('device.pl_item.video') : t('device.pl_item.image')}
-          ${a.zone_id ? ` &middot; <span style="color:var(--accent)">${t('device.pl_item.zone_label', { id: a.zone_id.slice(0,8) })}</span>` : ''}
-          ${a.content_duration ? ` &middot; ${Math.floor(a.content_duration / 60)}:${String(Math.floor(a.content_duration % 60)).padStart(2, '0')}` : ''}
-          ${!a.content_duration && !a.mime_type?.startsWith('video/') && a.duration_sec ? ` &middot; ${a.duration_sec}s` : ''}
-          ${a.schedule_start ? ` &middot; ${a.schedule_start}-${a.schedule_end}` : ''}
+          ${renderHTML(a.child_playlist_id ? tn('device.pl_item.playlist_with_count', a.child_item_count || 0) : a.widget_id && !a.content_id ? t('device.pl_item.widget_with_type', { type: a.widget_type || 'custom' }) : a.mime_type === 'video/youtube' ? t('device.pl_item.youtube') : a.mime_type?.startsWith('video/') ? t('device.pl_item.video') : t('device.pl_item.image'))}
+          ${renderHTML(a.zone_id ? ` &middot; <span style="color:var(--accent)">${renderHTML(t('device.pl_item.zone_label', { id: a.zone_id.slice(0,8) }))}</span>` : '')}
+          ${renderHTML(a.content_duration ? ` &middot; ${Math.floor(a.content_duration / 60)}:${String(Math.floor(a.content_duration % 60)).padStart(2, '0')}` : '')}
+          ${renderHTML(!a.content_duration && !a.mime_type?.startsWith('video/') && a.duration_sec ? ` &middot; ${a.duration_sec}s` : '')}
+          ${renderHTML(a.schedule_start ? ` &middot; ${a.schedule_start}-${a.schedule_end}` : '')}
         </div>
-        ${a.orphan ? `<div class="pl-orphan-warning" data-orphan-assignment="${a.id}" title="${t('device.pl_item.orphan_zone_tip')}" style="margin-top:4px;font-size:11px;color:var(--danger);cursor:pointer;display:inline-flex;align-items:center;gap:4px">
+        ${renderHTML(a.orphan ? `<div class="pl-orphan-warning" data-orphan-assignment="${a.id}" title="${t('device.pl_item.orphan_zone_tip')}" data-fil-i18n-title="${binding('device.pl_item.orphan_zone_tip', undefined)}" style="margin-top:4px;font-size:11px;color:var(--danger);cursor:pointer;display:inline-flex;align-items:center;gap:4px">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          ${t('device.pl_item.orphan_zone')}
-        </div>` : ''}
+          ${renderHTML(t('device.pl_item.orphan_zone'))}
+        </div>` : '')}
       </div>
       <div class="playlist-item-actions" style="display:flex;align-items:center;gap:4px">
         <select class="input zone-select" data-assignment-id="${a.id}" data-current-zone-id="${a.zone_id || ''}" style="width:100px;font-size:11px;padding:2px 4px;background:var(--bg-input);display:none">
-          <option value="">${t('device.pl_item.no_zone')}</option>
+          <option value="">${renderHTML(t('device.pl_item.no_zone'))}</option>
         </select>
         <button class="btn-icon mute-toggle" data-mute-assignment="${a.id}" data-muted="${a.muted ? '1' : '0'}" title="${a.muted ? t('device.pl_item.unmute') : t('device.pl_item.mute')}" style="color:${a.muted ? 'var(--danger)' : 'var(--text-muted)'}">
-          ${a.muted
-            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>'
-            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>'
+          ${renderHTML(a.muted
+            ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`
+            : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`)
           }
         </button>
-        <button class="btn-icon" title="${t('device.pl_item.remove')}" data-remove-assignment="${a.id}">
+        <button class="btn-icon" title="${t('device.pl_item.remove')}" data-fil-i18n-title="${binding('device.pl_item.remove', undefined)}" data-remove-assignment="${a.id}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
           </svg>
@@ -2328,22 +2325,22 @@ function renderMirrors(device) {
   if (!el) return;
   const list = Array.isArray(device.mirrors) ? device.mirrors : [];
   if (!list.length) {
-    el.innerHTML = `<div style="font-size:12px;color:var(--text-muted);max-width:70ch">${esc(t('device.mirrors.none'))}</div>`;
+    el.innerHTML = `<div style="font-size:12px;color:var(--text-muted);max-width:70ch">${uiText(t('device.mirrors.none'))}</div>`;
     return;
   }
-  const seen = (ts) => (ts ? new Date(ts * 1000).toLocaleString() : t('device.mirrors.never'));
+  const seen = (ts) => (ts ? displayValue(new Date(ts * 1000), "toLocaleString", undefined) : t('device.mirrors.never'));
   el.innerHTML = `
-    <h3 style="font-size:15px;margin-bottom:4px">${esc(t('device.mirrors.title', { n: list.length }))}</h3>
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;max-width:70ch">${esc(t('device.mirrors.hint'))}</div>
+    <h3 style="font-size:15px;margin-bottom:4px">${uiText(t('device.mirrors.title', { n: list.length }))}</h3>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;max-width:70ch">${uiText(t('device.mirrors.hint'))}</div>
     <div class="mirror-rows" style="display:flex;flex-direction:column;gap:6px">
-      ${list.map((m) => { const b = livenessBadge(m); return `
+      ${renderHTML(list.map((m) => { const b = livenessBadge(m); return `
       <div class="mirror-row" data-mirror-id="${esc(m.id)}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
-        <a href="#/device/${esc(m.id)}" style="font-weight:600">${esc(m.name)}</a>
-        <span class="device-status-badge ${esc(b.state)}">${esc(b.label)}</span>
-        <span style="font-size:12px;color:var(--text-muted)">${esc(m.location || '')}</span>
-        <span style="font-size:12px;color:var(--text-muted)">${esc(t('device.mirrors.last_seen', { when: seen(m.last_heartbeat) }))}</span>
-        ${canEditWorkspace() ? `<button class="btn btn-danger btn-sm" data-remove-mirror="${esc(m.id)}" style="margin-left:auto">${esc(t('device.mirrors.remove'))}</button>` : ''}
-      </div>`; }).join('')}
+        <a href="#/device/${esc(m.id)}" style="font-weight:600">${uiText(m.name)}</a>
+        <span class="device-status-badge ${esc(b.state)}">${uiText(b.label)}</span>
+        <span style="font-size:12px;color:var(--text-muted)">${uiText(m.location || '')}</span>
+        <span style="font-size:12px;color:var(--text-muted)">${uiText(t('device.mirrors.last_seen', { when: seen(m.last_heartbeat) }))}</span>
+        ${renderHTML(canEditWorkspace() ? `<button class="btn btn-danger btn-sm" data-remove-mirror="${esc(m.id)}" style="margin-left:auto">${uiText(t('device.mirrors.remove'))}</button>` : '')}
+      </div>`; }).join(''))}
     </div>`;
   el.querySelectorAll('[data-remove-mirror]').forEach((btn) => btn.addEventListener('click', async () => {
     const id = btn.getAttribute('data-remove-mirror');
@@ -2354,7 +2351,7 @@ function renderMirrors(device) {
       device.mirrors = list.filter((x) => x.id !== id);
       renderMirrors(device);
       showToast(t('device.mirrors.removed'));
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   }));
 }
 
@@ -2372,9 +2369,9 @@ function setupEnrolKey(device) {
      */
     if (!device.enrol_key) {
       host.innerHTML = canEditWorkspace()
-        ? `<button class="btn btn-primary btn-sm" id="enrolCreateBtn">${esc(t('device.enrol.create'))}</button>
-           <div style="font-size:12px;color:var(--text-muted);margin-top:6px;max-width:70ch">${esc(t('device.enrol.create_hint'))}</div>`
-        : `<div style="font-size:13px;color:var(--text-muted)">${esc(t('device.enrol.none'))}</div>`;
+        ? `<button class="btn btn-primary btn-sm" id="enrolCreateBtn">${uiText(t('device.enrol.create'))}</button>
+           <div style="font-size:12px;color:var(--text-muted);margin-top:6px;max-width:70ch">${uiText(t('device.enrol.create_hint'))}</div>`
+        : `<div style="font-size:13px;color:var(--text-muted)">${uiText(t('device.enrol.none'))}</div>`;
       host.querySelector('#enrolCreateBtn')?.addEventListener('click', () => mint(false));
       return;
     }
@@ -2383,10 +2380,10 @@ function setupEnrolKey(device) {
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
         <input class="input" id="enrolUrl" readonly value="${esc(url)}"
                style="flex:1;min-width:260px;font-family:monospace;font-size:11px">
-        <button class="btn btn-secondary btn-sm" id="enrolCopyBtn">${t('device.enrol.copy')}</button>
-        ${canEditWorkspace() ? `<button class="btn btn-secondary btn-sm" id="enrolRollBtn">${t('device.enrol.roll')}</button>` : ''}
+        <button class="btn btn-secondary btn-sm" id="enrolCopyBtn">${renderHTML(t('device.enrol.copy'))}</button>
+        ${renderHTML(canEditWorkspace() ? `<button class="btn btn-secondary btn-sm" id="enrolRollBtn">${renderHTML(t('device.enrol.roll'))}</button>` : '')}
       </div>
-      <div style="font-size:11px;color:#fbbf24;margin-top:6px">${t('device.enrol.warning')}</div>`;
+      <div style="font-size:11px;color:#fbbf24;margin-top:6px">${renderHTML(t('device.enrol.warning'))}</div>`;
 
     host.querySelector('#enrolCopyBtn').addEventListener('click', () => {
       const el = host.querySelector('#enrolUrl');
@@ -2416,7 +2413,7 @@ function setupEnrolKey(device) {
       device.enrol_key = r.enrol_key;
       showToast(rolled ? t('device.enrol.rolled') : t('device.enrol.created'));
       draw();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   }
 
   draw();
@@ -2492,7 +2489,7 @@ function setupInteractiveTerminal(device) {
   const status = document.getElementById('ptyStatus');
   const connectBtn = document.getElementById('ptyConnect');
   const disconnectBtn = document.getElementById('ptyDisconnect');
-  const setStatus = (text) => { if (status) status.textContent = text || ''; };
+  const setStatus = (text) => { if (status) bindMessage(status, text || ''); };
   const setConnected = (on) => {
     if (connectBtn) connectBtn.disabled = on;
     if (disconnectBtn) disconnectBtn.disabled = !on;
@@ -2596,7 +2593,7 @@ function setupForecast(device) {
       for (const g of (Array.isArray(groups) ? groups : [])) {
         const o = document.createElement('option');
         o.value = g.id;
-        o.textContent = g.name;
+        bindMessage(o, g.name);
         sel.appendChild(o);
       }
     } catch { /* the picker simply stays empty */ }
@@ -2637,8 +2634,8 @@ function showDevicePreview(device) {
   overlay.innerHTML = `
     <div style="background:var(--bg-card);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);max-width:95vw;max-height:92vh">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);gap:12px">
-        <strong style="color:var(--text-primary)">${t('device.preview_btn')} — ${esc(device.name)}</strong>
-        <button class="btn btn-secondary btn-sm" id="dpvClose">${t('widget.close')}</button>
+        <strong style="color:var(--text-primary)">${renderHTML(t('device.preview_btn'))} — ${uiText(device.name)}</strong>
+        <button class="btn btn-secondary btn-sm" id="dpvClose">${renderHTML(t('widget.close'))}</button>
       </div>
       <div style="padding:16px;display:flex;align-items:center;justify-content:center;background:#000">
         <div id="dpvStage" style="height:78vh;max-width:92vw;aspect-ratio:${displayAspectRatio(device.orientation)};background:#000">
@@ -2666,7 +2663,7 @@ const ORIENT_LABELS = {
   'portrait-flipped': 'device.form.orientation.portrait_flipped',
 };
 const orientLabel = (o) => t(ORIENT_LABELS[o] || ORIENT_LABELS.landscape);
-const fmtTs = (ts) => (ts ? new Date(ts * 1000).toLocaleString() : '—');
+const fmtTs = (ts) => (ts ? displayValue(new Date(ts * 1000), "toLocaleString", undefined) : '—');
 
 // #161: device-owner provisioning helper — QR (scan after factory-reset, tap welcome 6×) + the ADB
 // one-liner. Device owner is optional; it unlocks silent updates, reboot, kiosk, time control.
@@ -2678,7 +2675,7 @@ async function showReAdoptModal(device) {
       api.getRemovedDevices(),
       api.getPlaylists().catch(() => []),   // best-effort: only used to label the restored playlist
     ]);
-  } catch (err) { showToast(err.message || t('device.readopt.error'), 'error'); return; }
+  } catch (err) { showToast(err.uiMessage || err.message || t('device.readopt.error'), 'error'); return; }
 
   const plById = new Map((playlists || []).map(p => [p.id, p.name]));
   const playlistLabel = (s) => !s.playlist_id
@@ -2687,28 +2684,28 @@ async function showReAdoptModal(device) {
 
   const rowsHtml = (snapshots || []).map((s, i) => {
     const blockedBadge = s.blocked
-      ? `<span style="background:var(--danger,#dc2626);color:#fff;padding:1px 7px;border-radius:4px;font-size:11px;margin-left:8px;vertical-align:middle">${t('device.readopt.blocked')}</span>`
+      ? `<span style="background:var(--danger,#dc2626);color:#fff;padding:1px 7px;border-radius:4px;font-size:11px;margin-left:8px;vertical-align:middle">${renderHTML(t('device.readopt.blocked'))}</span>`
       : '';
     // Fingerprint is the key but not an operator-facing identifier — truncated + on-hover only.
     const fpShort = (s.fingerprint || '').slice(0, 8);
     return `
       <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600">${esc(s.device_name || t('device.readopt.unnamed'))}${blockedBadge}</div>
+          <div style="font-weight:600">${uiText(s.device_name || t('device.readopt.unnamed'))}${renderHTML(blockedBadge)}</div>
           <div style="font-size:12px;color:var(--text-muted);margin-top:3px">
-            ${t('device.readopt.summary_orientation')}: ${esc(orientLabel(s.orientation))}
-            &nbsp;·&nbsp; ${t('device.readopt.summary_timezone')}: ${esc(s.timezone || 'UTC')}
-            &nbsp;·&nbsp; ${t('device.readopt.summary_playlist')}: ${esc(playlistLabel(s))}
+            ${renderHTML(t('device.readopt.summary_orientation'))}: ${uiText(orientLabel(s.orientation))}
+             ·  ${renderHTML(t('device.readopt.summary_timezone'))}: ${uiText(s.timezone || 'UTC')}
+             ·  ${renderHTML(t('device.readopt.summary_playlist'))}: ${uiText(playlistLabel(s))}
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px" title="fp ${esc(fpShort)}…">
-            ${t('device.readopt.last_seen')}: ${esc(fmtTs(s.last_seen))} &nbsp;·&nbsp; ${t('device.readopt.removed')}: ${esc(fmtTs(s.removed_at))}
+            ${renderHTML(t('device.readopt.last_seen'))}: ${uiText(fmtTs(s.last_seen))}  ·  ${renderHTML(t('device.readopt.removed'))}: ${uiText(fmtTs(s.removed_at))}
           </div>
         </div>
-        <button class="btn btn-primary btn-sm readopt-apply" data-i="${i}">${t('device.readopt.apply')}</button>
+        <button class="btn btn-primary btn-sm readopt-apply" data-i="${i}">${renderHTML(t('device.readopt.apply'))}</button>
       </div>`;
   }).join('');
 
-  const emptyHtml = `<div style="text-align:center;color:var(--text-muted);padding:36px 12px">${t('device.readopt.empty')}</div>`;
+  const emptyHtml = `<div style="text-align:center;color:var(--text-muted);padding:36px 12px">${renderHTML(t('device.readopt.empty'))}</div>`;
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -2716,14 +2713,14 @@ async function showReAdoptModal(device) {
   overlay.innerHTML = `
     <div class="modal" style="max-width:600px;width:95vw">
       <div class="modal-header">
-        <h3>${t('device.readopt.title')}</h3>
+        <h3>${renderHTML(t('device.readopt.title'))}</h3>
         <button class="btn-icon" id="readoptClose">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="modal-body">
-        <p style="color:var(--text-muted);font-size:13px;margin-top:0">${t('device.readopt.help', { name: esc(device.name || '') })}</p>
-        ${(snapshots && snapshots.length) ? rowsHtml : emptyHtml}
+        <p style="color:var(--text-muted);font-size:13px;margin-top:0">${renderHTML(t('device.readopt.help', { name: esc(device.name || '') }))}</p>
+        ${renderHTML((snapshots && snapshots.length) ? rowsHtml : emptyHtml)}
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -2745,7 +2742,7 @@ async function showReAdoptModal(device) {
         loadDevice(device.id);   // refresh so restored orientation/name/etc show immediately
       } catch (err) {
         // Server messages: 404 no snapshot, 403 cross-workspace, 400 bad request.
-        showToast(err.message || t('device.readopt.error'), 'error');
+        showToast(err.uiMessage || err.message || t('device.readopt.error'), 'error');
         btn.disabled = false;
       }
     });
@@ -2763,10 +2760,10 @@ function setupActions(device) {
       const r = await api.setDevicePin(device.id, body);
       device.settings_pin = r.settings_pin;
       const el = document.querySelector('#rotatePinBtn')?.closest('.info-card')?.querySelector('.info-card-value');
-      if (el) el.textContent = r.settings_pin;
+      if (el) bindMessage(el, r.settings_pin);
       showToast(r.delivered ? t('device.pin.updated_live') : t('device.pin.updated_offline'), 'success');
     } catch (e) {
-      showToast(e?.message || t('device.pin.failed'), 'error');
+      showToast((e.uiMessage || e?.message) || t('device.pin.failed'), 'error');
     }
   }
 
@@ -2799,11 +2796,11 @@ function setupActions(device) {
     if (name && name !== device.name) {
       try {
         await api.updateDevice(device.id, { name });
-        document.getElementById('deviceName').textContent = name;
+        bindMessage(document.getElementById('deviceName'), name);
         currentDevice.name = name;
         showToast(t('device.toast.renamed'), 'success');
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
     }
   });
@@ -2819,7 +2816,7 @@ function setupActions(device) {
     if (defaultSelect) {
       content.forEach(c => {
         const opt = document.createElement('option');
-        opt.value = c.id; opt.textContent = c.filename;
+        opt.value = c.id; bindMessage(opt, c.filename);
         if (device.default_content_id === c.id) opt.selected = true;
         defaultSelect.appendChild(opt);
       });
@@ -2846,7 +2843,7 @@ function setupActions(device) {
 
   document.getElementById('debugClearBtn')?.addEventListener('click', () => {
     const panel = document.getElementById('debugLogPanel');
-    if (panel) panel.textContent = '';
+    if (panel) bindMessage(panel, '');
     debugHeld = [];
     updateDebugTools();
   });
@@ -2866,7 +2863,7 @@ function setupActions(device) {
   if (isEmbeddedDevice(device)) {
     const showNoLogs = () => {
       const panelEl = document.getElementById('embeddedLogsPanel');
-      if (panelEl) panelEl.textContent = t('device.embedded.logs_none_hint');
+      if (panelEl) bindText(panelEl, 'device.embedded.logs_none_hint', undefined);
     };
     if (device.diagnostic_logs_latest) {
       refreshEmbeddedLogs(device.id).then((found) => { if (!found) showNoLogs(); });
@@ -2877,7 +2874,7 @@ function setupActions(device) {
     document.getElementById('requestDiagLogsBtn')?.addEventListener('click', () => {
       sendCommand(device.id, 'upload_logs', {}, (ack) => {
         if (ack && ack.delivered === false && ack.reason && ack.reason !== 'offline') {
-          showToast(t('device.embedded.logs_request_failed', { reason: ack.error || ack.reason }), 'error');
+          showToast(t('device.embedded.logs_request_failed', { reason: localizeServerError(ack.error) || ack.reason }), 'error');
         } else {
           showToast(t('device.embedded.logs_requested'));
         }
@@ -2978,7 +2975,7 @@ function setupActions(device) {
         if (el) el.value = saved.tags.join(', ');   // show what was stored (normalised), not what was typed
       }
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
   });
 
@@ -2998,14 +2995,14 @@ function setupActions(device) {
     devicePublishBtn.addEventListener('click', async () => {
       try {
         devicePublishBtn.disabled = true;
-        devicePublishBtn.textContent = t('device.draft.publishing');
+        bindText(devicePublishBtn, 'device.draft.publishing', undefined);
         await api.publishPlaylist(device.playlist_id);
         showToast(t('device.toast.published'));
         loadDevice(device.id, 'playlist');
       } catch (err) {
         devicePublishBtn.disabled = false;
-        devicePublishBtn.textContent = t('device.draft.publish');
-        showToast(err.message, 'error');
+        bindText(devicePublishBtn, 'device.draft.publish', undefined);
+        showToast(err.uiMessage || err.message, 'error');
       }
     });
   }
@@ -3018,7 +3015,7 @@ function setupActions(device) {
         showToast(t('device.toast.draft_discarded'));
         loadDevice(device.id, 'playlist');
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
     });
   }
@@ -3030,9 +3027,9 @@ function setupActions(device) {
       playlists.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = p.is_auto_generated
+        bindMessage(opt, p.is_auto_generated
           ? t('device.playlist_picker.with_auto', { name: p.name, n: p.item_count })
-          : t('device.playlist_picker.with_count', { name: p.name, n: p.item_count });
+          : t('device.playlist_picker.with_count', { name: p.name, n: p.item_count }));
         if (p.id === device.playlist_id) opt.selected = true;
         playlistPicker.appendChild(opt);
       });
@@ -3068,7 +3065,7 @@ function setupActions(device) {
          */
         loadDevice(device.id, 'playlist');
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
     });
   }
@@ -3081,7 +3078,7 @@ function setupActions(device) {
       showToast(t('device.toast.playlist_reverted'));
       loadDevice(device.id, 'playlist');
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
   });
 
@@ -3105,8 +3102,8 @@ function setupActions(device) {
       });
       const data = await res.json();
       if (res.ok) showToast(t('device.copy.toast', { n: data.copied, device: target.name }), 'success');
-      else showToast(data.error, 'error');
-    } catch (err) { showToast(err.message, 'error'); }
+      else showToast(localizeServerError(data.error), 'error');
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   });
 
   // #146 Item D: operator block/unblock — takes effect on the device's next register,
@@ -3142,10 +3139,10 @@ function setupActions(device) {
   blockBtn?.addEventListener('click', async () => {
     blockBtn.disabled = true;
     try {
-      if (device.blocked) { await api.unblockDevice(device.id); device.blocked = 0; showToast('Device unblocked', 'success'); }
-      else { await api.blockDevice(device.id); device.blocked = 1; showToast('Device blocked — refused on next reconnect', 'success'); }
-      blockBtn.textContent = device.blocked ? 'Unblock' : 'Block';
-    } catch (err) { showToast(err.message, 'error'); }
+      if (device.blocked) { await api.unblockDevice(device.id); device.blocked = 0; showToast(t("ui.device_detail.device_unblocked"), 'success'); }
+      else { await api.blockDevice(device.id); device.blocked = 1; showToast(t("ui.device_detail.device_blocked_refused_on_next_reconnect"), 'success'); }
+      bindMessage(blockBtn, device.blocked ? t("ui.device_detail.unblock_12aabd") : t("ui.device_detail.block_82dd2c"));
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     finally { blockBtn.disabled = false; }
   });
 
@@ -3163,27 +3160,27 @@ function setupActions(device) {
   deleteBtn?.addEventListener('click', async () => {
     if (deleteConfirming) {
       try {
-        deleteBtn.textContent = t('device.toast.removing');
+        bindText(deleteBtn, 'device.toast.removing', undefined);
         deleteBtn.disabled = true;
         await api.deleteDevice(device.id);
         showToast(t('device.toast.removed'), 'success');
         window.location.hash = '/';
       } catch (err) {
-        showToast(err.message, 'error');
-        deleteBtn.textContent = t('device.remove');
+        showToast(err.uiMessage || err.message, 'error');
+        bindText(deleteBtn, 'device.remove', undefined);
         deleteBtn.disabled = false;
         deleteConfirming = false;
       }
       return;
     }
     deleteConfirming = true;
-    deleteBtn.textContent = t('device.click_to_confirm');
+    bindText(deleteBtn, 'device.click_to_confirm', undefined);
     deleteBtn.style.background = 'var(--danger)';
     deleteBtn.style.color = 'white';
     clearTimeout(deleteTimeout);
     deleteTimeout = setTimeout(() => {
       deleteConfirming = false;
-      deleteBtn.textContent = t('device.remove');
+      bindText(deleteBtn, 'device.remove', undefined);
       deleteBtn.style.background = '';
       deleteBtn.style.color = '';
     }, 3000);
@@ -3213,17 +3210,17 @@ function setupActions(device) {
   let rebootTimeout = null;
   rebootBtn?.addEventListener('click', () => {
     if (rebootConfirming) {
-      sendWithFeedback('reboot', 'Reboot', 'device.toast.reboot_sent');
+      sendWithFeedback('reboot', t("ui.device_detail.reboot_c71166"), 'device.toast.reboot_sent');
       rebootConfirming = false;
-      rebootBtn.textContent = t('device.ctl.reboot_device');
+      bindText(rebootBtn, 'device.ctl.reboot_device', undefined);
       return;
     }
     rebootConfirming = true;
-    rebootBtn.textContent = t('device.click_to_confirm');
+    bindText(rebootBtn, 'device.click_to_confirm', undefined);
     clearTimeout(rebootTimeout);
     rebootTimeout = setTimeout(() => {
       rebootConfirming = false;
-      rebootBtn.textContent = t('device.ctl.reboot_device');
+      bindText(rebootBtn, 'device.ctl.reboot_device', undefined);
     }, 3000);
   });
 
@@ -3233,19 +3230,19 @@ function setupActions(device) {
   let shutdownTimeout = null;
   shutdownBtn?.addEventListener('click', () => {
     if (shutdownConfirming) {
-      sendWithFeedback('shutdown', 'Shutdown', 'device.toast.shutdown_sent');
+      sendWithFeedback('shutdown', t("ui.device_detail.shutdown_7fddb7"), 'device.toast.shutdown_sent');
       shutdownConfirming = false;
-      shutdownBtn.textContent = t('device.ctl.shutdown');
+      bindText(shutdownBtn, 'device.ctl.shutdown', undefined);
       return;
     }
     shutdownConfirming = true;
-    shutdownBtn.textContent = t('device.click_to_confirm');
+    bindText(shutdownBtn, 'device.click_to_confirm', undefined);
     shutdownBtn.style.background = 'var(--danger)';
     shutdownBtn.style.color = 'white';
     clearTimeout(shutdownTimeout);
     shutdownTimeout = setTimeout(() => {
       shutdownConfirming = false;
-      shutdownBtn.textContent = t('device.ctl.shutdown');
+      bindText(shutdownBtn, 'device.ctl.shutdown', undefined);
       shutdownBtn.style.background = '';
       shutdownBtn.style.color = '';
     }, 3000);
@@ -3262,26 +3259,26 @@ function setupActions(device) {
     if (!confirm(t('device.ctl.set_server_url_confirm', { url }))) return;
     sendCommand(device.id, 'set_server_url', { url }, (ack) => {
       if (ack?.delivered) showToast(t('device.ctl.set_server_url_dispatched', { url }), 'success');
-      else if (ack?.reason === 'unsupported') showToast(t('device.toast.command_unsupported', { cmd: 'Set server URL', cap: ack.capability || '' }), 'error');
-      else if (ack?.reason === 'invalid') showToast(ack.error || t('device.ctl.set_server_url_bad'), 'error');
-      else if (ack?.queued) showToast(t('device.toast.command_queued', { cmd: 'Set server URL' }), 'warning');
-      else showToast(t('device.toast.command_undeliverable', { cmd: 'Set server URL' }), 'error');
+      else if (ack?.reason === 'unsupported') showToast(t('device.toast.command_unsupported', { cmd: t("ui.device_detail.set_server_url_898059"), cap: ack.capability || '' }), 'error');
+      else if (ack?.reason === 'invalid') showToast(localizeServerError(ack.error) || t('device.ctl.set_server_url_bad'), 'error');
+      else if (ack?.queued) showToast(t('device.toast.command_queued', { cmd: t("ui.device_detail.set_server_url_898059") }), 'warning');
+      else showToast(t('device.toast.command_undeliverable', { cmd: t("ui.device_detail.set_server_url_898059") }), 'error');
     });
   });
 
   // Screen Off
   document.getElementById('screenOffBtn')?.addEventListener('click', () => {
-    sendWithFeedback('screen_off', 'Screen off', 'device.toast.screen_off_sent');
+    sendWithFeedback('screen_off', t("ui.device_detail.screen_off_3df795"), 'device.toast.screen_off_sent');
   });
 
   // Screen On
   document.getElementById('screenOnBtn')?.addEventListener('click', () => {
-    sendWithFeedback('screen_on', 'Screen on', 'device.toast.screen_on_sent');
+    sendWithFeedback('screen_on', t("ui.device_detail.screen_on_dfbff6"), 'device.toast.screen_on_sent');
   });
 
   // Launch Player
   document.getElementById('launchAppBtn')?.addEventListener('click', () => {
-    sendWithFeedback('launch', 'Launch', 'device.toast.launch_sent');
+    sendWithFeedback('launch', t("ui.device_detail.launch_4ad48a"), 'device.toast.launch_sent');
   });
 
   // Reload player (#632): reload the player on the screen, which re-fetches its playlist.
@@ -3292,7 +3289,7 @@ function setupActions(device) {
   // Force Update
   document.getElementById('forceUpdateBtn')?.addEventListener('click', () => {
     if (isEmbeddedDevice(device)) { sendFirmwareUpdate(); return; }
-    sendWithFeedback('update', 'Update', 'device.toast.update_triggered');
+    sendWithFeedback('update', t("ui.device_detail.update_fb91e2"), 'device.toast.update_triggered');
   });
 
   /*
@@ -3310,7 +3307,7 @@ function setupActions(device) {
       } else if (ack?.reason === 'rejected') {
         showToast(ack.code === 'EMBEDDED_BOARD_MISMATCH' ? t('device.toast.fw_board_mismatch') : t('device.toast.fw_no_firmware'), 'error');
       } else if (ack?.reason === 'corporate') {
-        showToast(ack.error || t('device.toast.command_undeliverable', { cmd: t('device.ctl.update_firmware') }), 'error');
+        showToast(localizeServerError(ack.error) || t('device.toast.command_undeliverable', { cmd: t('device.ctl.update_firmware') }), 'error');
       } else if (ack?.reason === 'unsupported') {
         showToast(t('device.toast.command_unsupported', { cmd: t('device.ctl.update_firmware'), cap: ack.capability || '' }), 'error');
       } else if (ack?.reason === 'no_ack') {
@@ -3324,13 +3321,13 @@ function setupActions(device) {
   // Drops every staged APK on the panel so the next check downloads afresh. The escape hatch for a
   // player holding a bad download — a cached file that cannot install but is reused every attempt.
   document.getElementById('clearUpdateCacheBtn')?.addEventListener('click', () => {
-    sendWithFeedback('clear_update_cache', 'Clear update cache', 'device.toast.update_cache_cleared');
+    sendWithFeedback('clear_update_cache', t("ui.device_detail.clear_update_cache_f9cd2d"), 'device.toast.update_cache_cleared');
   });
 
   // #109: PiP overlay tester — pushes/clears an overlay via the public API (POST /api/pip).
   document.getElementById('sendPipBtn')?.addEventListener('click', async () => {
     const uri = (document.getElementById('pipUri')?.value || '').trim();
-    if (!uri) { showToast('Enter an overlay URL', 'error'); return; }
+    if (!uri) { showToast(t("ui.device_detail.enter_an_overlay_url"), 'error'); return; }
     try {
       const res = await api.sendPip(device.id, {
         type: document.getElementById('pipType').value,
@@ -3338,12 +3335,12 @@ function setupActions(device) {
         position: document.getElementById('pipPosition').value,
         duration: Number(document.getElementById('pipDuration').value) || 0,
       });
-      showToast(`Overlay sent (${res.sent} sent, ${res.offline} offline)`, res.sent ? 'success' : 'warning');
-    } catch (err) { showToast(err.message, 'error'); }
+      showToast(t("ui.device_detail.overlay_sent_value0_sent_value1_offline_7a78c4", {value0: res.sent, value1: res.offline}), res.sent ? 'success' : 'warning');
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   });
   document.getElementById('clearPipBtn')?.addEventListener('click', async () => {
-    try { await api.clearPip(device.id); showToast('Overlay cleared', 'success'); }
-    catch (err) { showToast(err.message, 'error'); }
+    try { await api.clearPip(device.id); showToast(t("ui.device_detail.overlay_cleared"), 'success'); }
+    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   });
 
   // Trigger listener settings. `delivered` distinguishes "the panel has this now" from "it will
@@ -3368,7 +3365,7 @@ function setupActions(device) {
       });
       showToast(res.delivered ? t('device.trigcfg.saved_live') : t('device.trigcfg.saved_queued'),
         res.delivered ? 'success' : 'warning');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   });
 
   document.getElementById('rotateTrigSecretBtn')?.addEventListener('click', async () => {
@@ -3379,11 +3376,11 @@ function setupActions(device) {
       const res = await api.setTriggerSecret(device.id, { rotate: true });
       if (res.secret) {
         const el = document.getElementById('trigSecretVal');
-        if (el) el.textContent = res.secret;
+        if (el) bindMessage(el, res.secret);
       }
       showToast(res.delivered ? t('device.trigcfg.saved_live') : t('device.trigcfg.saved_queued'),
         res.delivered ? 'success' : 'warning');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   });
 }
 
@@ -3462,11 +3459,11 @@ function setupRemote(device) {
       });
       talkClient = new TalkClient(device.id, {
         duplex,
-        onError: (e) => { showToast((t('device.talk.failed')) + (e?.message ? ': ' + e.message : ''), 'error'); },
+        onError: (e) => { showToast((t('device.talk.failed')) + ((e.uiMessage || e?.message) ? ': ' + (e.uiMessage || e.message) : ''), 'error'); },
       });
       await talkClient.start();
       talkMuted = false;
-      if (talkMuteBtn) talkMuteBtn.textContent = t('device.talk.mute');
+      if (talkMuteBtn) bindText(talkMuteBtn, 'device.talk.mute', undefined);
       showTalk(true);
       showToast(t('device.talk.started'), 'info');
       if (duplex) armNoMicNotice();
@@ -3474,7 +3471,7 @@ function setupRemote(device) {
       stopTalkSession(device.id);
       showTalk(false);
       disarmNoMicNotice();
-      showToast((t('device.talk.failed')) + (e?.message ? ': ' + e.message : ''), 'error');
+      showToast((t('device.talk.failed')) + ((e.uiMessage || e?.message) ? ': ' + (e.uiMessage || e.message) : ''), 'error');
     } finally {
       if (talkStartBtn) talkStartBtn.disabled = false;
       if (talk2wayBtn) talk2wayBtn.disabled = false;
@@ -3492,7 +3489,7 @@ function setupRemote(device) {
   talkMuteBtn?.addEventListener('click', () => {
     talkMuted = !talkMuted;
     try { talkClient?.setMuted(talkMuted); } catch (_) {}
-    talkMuteBtn.textContent = talkMuted ? t('device.talk.unmute') : t('device.talk.mute');
+    bindMessage(talkMuteBtn, talkMuted ? t('device.talk.unmute') : t('device.talk.mute'));
   });
 
   // #159: mouse-as-finger. A click = tap; a drag = swipe (scroll). Pointer events so a press-move-
@@ -3542,7 +3539,7 @@ async function setupPlaylistActions(device) {
       layouts.filter(l => !l.is_template).forEach(l => {
         const opt = document.createElement('option');
         opt.value = l.id;
-        opt.textContent = t('device.layout.zones_count', { name: l.name, n: l.zones?.length || 0 });
+        bindText(opt, 'device.layout.zones_count', { name: builtinLayoutName(l), n: l.zones?.length || 0 });
         if (device.layout_id === l.id) opt.selected = true;
         select.appendChild(opt);
       });
@@ -3550,7 +3547,7 @@ async function setupPlaylistActions(device) {
       layouts.filter(l => l.is_template).forEach(l => {
         const opt = document.createElement('option');
         opt.value = l.id;
-        opt.textContent = t('device.layout.template_zones_count', { name: l.name, n: l.zones?.length || 0 });
+        bindText(opt, 'device.layout.template_zones_count', { name: builtinLayoutName(l), n: l.zones?.length || 0 });
         if (device.layout_id === l.id) opt.selected = true;
         select.appendChild(opt);
       });
@@ -3575,7 +3572,7 @@ async function setupPlaylistActions(device) {
       // Reload the device page to show updated zone selectors, stay on playlist tab
       loadDevice(device.id, 'playlist');
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
   });
 
@@ -3604,16 +3601,15 @@ async function setupPlaylistActions(device) {
     }
     const zoneHtml = zones.length > 0 ? `
         <select id="assignZone" class="input" style="background:var(--bg-input)">
-          <option value="">${t('device.assign.zone_default')}</option>
-          ${zones.map(z => `<option value="${esc(z.id)}">${esc(z.name)} (${Math.round(z.width_percent)}% x ${Math.round(z.height_percent)}%)</option>`).join('')}
+          <option value="">${renderHTML(t('device.assign.zone_default'))}</option>
+          ${renderHTML(zones.map(z => `<option value="${esc(z.id)}">${uiText(z.name)} (${renderHTML(Math.round(z.width_percent))}% x ${renderHTML(Math.round(z.height_percent))}%)</option>`).join(''))}
         </select>`
-      : `<div style="font-size:12px;color:${zonesFetchFailed ? 'var(--danger)' : 'var(--text-muted)'};padding:6px 0;line-height:1.5">${
-        !activeLayoutIdOf(device) ? t('device.assign.zone_no_layout') : zonesFetchFailed ? t('device.assign.zone_load_failed') : t('device.assign.zone_empty_layout')}</div>`;
+      : `<div style="font-size:12px;color:${zonesFetchFailed ? 'var(--danger)' : 'var(--text-muted)'};padding:6px 0;line-height:1.5">${renderHTML(!activeLayoutIdOf(device) ? t('device.assign.zone_no_layout') : zonesFetchFailed ? t('device.assign.zone_load_failed') : t('device.assign.zone_empty_layout'))}</div>`;
     const extraFieldsHtml = `
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-        <div class="form-group" style="flex:1;min-width:200px;margin:0"><label>${t('device.assign.zone_label')}</label>${zoneHtml}</div>
+        <div class="form-group" style="flex:1;min-width:200px;margin:0"><label>${renderHTML(t('device.assign.zone_label'))}</label>${renderHTML(zoneHtml)}</div>
         <div class="form-group" style="width:190px;margin:0">
-          <label>${t('device.assign.duration_label')}</label>
+          <label>${renderHTML(t('device.assign.duration_label'))}</label>
           <!-- max is the server's absurd-duration ceiling (12h). -->
           <input type="number" id="assignDuration" class="input" value="10" min="1" max="43200">
         </div>
@@ -3693,7 +3689,7 @@ async function publishForSimpleMode(playlistId) {
     showToast(t('device.simple.sent_to_screen'), 'success');
     api.trackEvent('first_publish', { from: 'device_page' });
   } catch (err) {
-    showToast(err.message || t('device.simple.publish_failed'), 'error');
+    showToast(err.uiMessage || err.message || t('device.simple.publish_failed'), 'error');
   }
 }
 
@@ -3711,7 +3707,7 @@ function layoutSourceNote(device) {
   const r = device && device.resolved_layout;
   if (!r || r.source === 'device') return '';
   const key = r.source === 'playlist' ? 'layoutpl.device_from_playlist' : r.source === 'schedule' ? 'layoutpl.device_from_schedule' : 'layoutpl.device_from_mandate';
-  return `<div id="layoutSourceNote" style="font-size:12px;color:var(--text-muted);margin-top:4px">${esc(t(key, { name: r.name || '' }))}</div>`;
+  return `<div id="layoutSourceNote" style="font-size:12px;color:var(--text-muted);margin-top:4px">${uiText(t(key, { name: r.name || '' }))}</div>`;
 }
 
 function attachRemoveHandlers(device) {
@@ -3746,7 +3742,7 @@ function attachRemoveHandlers(device) {
         (zones || []).forEach(z => {
           const opt = document.createElement('option');
           opt.value = z.id;
-          opt.textContent = z.name;
+          bindMessage(opt, z.name);
           select.appendChild(opt);
         });
         const orphan = !!currentZoneId && !activeIds.has(currentZoneId);
@@ -3757,7 +3753,7 @@ function attachRemoveHandlers(device) {
             await api.updateAssignment(assignmentId, { zone_id: select.value || null }, device.id);
             showToast(t('device.toast.zone_updated'), 'success');
             loadDevice(device.id, 'playlist');
-          } catch (err) { showToast(err.message, 'error'); }
+          } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
         };
       });
     };
@@ -3787,7 +3783,7 @@ function attachRemoveHandlers(device) {
         await api.updateAssignment(id, { muted: !currentlyMuted }, device.id);
         showToast(currentlyMuted ? t('device.toast.unmuted') : t('device.toast.muted'), 'success');
         loadDevice(device.id, 'playlist');
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     });
   });
 
@@ -3802,7 +3798,7 @@ function attachRemoveHandlers(device) {
         showToast(t('device.toast.removed_publish_to_update'), 'info', 7000);
         loadDevice(device.id, 'playlist');
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
     });
   });
@@ -3853,7 +3849,7 @@ function attachRemoveHandlers(device) {
         showToast(t('device.toast.playlist_reordered'), 'success');
         loadDevice(device.id, 'playlist');
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
         loadDevice(device.id, 'playlist');
       }
     });
@@ -3911,9 +3907,9 @@ function renderUptimeTimeline(uptimeData, statusLog = []) {
   const onlineSlots = slotStatus.filter(s => s === 'online').length;
   const uptimePct = knownSlots > 0 ? Math.round((onlineSlots / knownSlots) * 100) : 0;
   if (percentEl) {
-    percentEl.textContent = knownSlots > 0
+    bindMessage(percentEl, knownSlots > 0
       ? t('device.timeline.uptime_pct_tracked', { pct: uptimePct, n: knownSlots * 15 })
-      : t('device.timeline.uptime_pct_no_data', { pct: uptimePct });
+      : t('device.timeline.uptime_pct_no_data', { pct: uptimePct }));
   }
 
   // Color map
@@ -3927,14 +3923,14 @@ function renderUptimeTimeline(uptimeData, statusLog = []) {
   // Render bars
   timeline.innerHTML = slotStatus.map((status, i) => {
     const time = new Date((dayAgo + i * slotDuration) * 1000);
-    const label = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const label = displayValue(time, "toLocaleTimeString", { hour: '2-digit', minute: '2-digit' });
     const statusLabel = status === 'unknown' ? t('device.timeline.no_data') : status === 'online' ? t('device.timeline.online') : t('device.timeline.offline');
     let title = `${label} - ${statusLabel}`;
     if (status === 'offline' && slotReason[i]) {
       const r = slotReason[i];
       title = `${label} – ${statusLabel} · ${eventLabel(r.reason)}${r.detail ? ` (${r.detail})` : ''}`;
     }
-    return `<div style="flex:1;background:${colors[status]};opacity:${opacities[status]}" title="${esc(title)}"></div>`;
+    return `<div style="flex:1;background:${colors[status]};opacity:${opacities[status]}" title="${esc(title)}"${attributeBinding("title", title)}></div>`;
   }).join('');
 }
 
@@ -3971,13 +3967,13 @@ function formatDur(seconds) {
 // Compact relative time ("2h ago").
 function relTime(tsSec, nowSec = Math.floor(Date.now() / 1000)) {
   const diff = Math.max(0, nowSec - tsSec);
-  if (diff < 60) return diff + 's ago';
+  if (diff < 60) return t('ui.device.seconds_ago',{n:diff});
   const m = Math.floor(diff / 60);
-  if (m < 60) return m + 'm ago';
+  if (m < 60) return t('sv.ago_m',{n:m});
   const h = Math.floor(m / 60);
-  if (h < 24) return h + 'h ago';
+  if (h < 24) return t('sv.ago_h',{n:h});
   const d = Math.floor(h / 24);
-  return d + 'd ago';
+  return t('sv.ago_d',{n:d});
 }
 
 // "Recent incidents" panel: a newest-first, time-sorted merge of typed device_events
@@ -4026,7 +4022,7 @@ function renderIncidents(deviceEvents = [], statusLog = []) {
   }
 
   if (!incidents.length) {
-    panel.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px 0">${t('device.incidents.none')}</div>`;
+    panel.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px 0">${renderHTML(t('device.incidents.none'))}</div>`;
     return;
   }
 
@@ -4035,19 +4031,19 @@ function renderIncidents(deviceEvents = [], statusLog = []) {
   panel.innerHTML = incidents.slice(0, 15).map(inc => {
     const label = eventLabel(inc.reason || inc.type);
     const detail = inc.detail
-      ? `<span style="color:var(--text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(inc.detail)}</span>`
+      ? `<span style="color:var(--text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(inc.detail)}</span>`
       : '';
     const dur = (inc.durationSec != null)
-      ? `<span style="color:var(--text-muted);font-size:11px;flex:none">${esc(t('device.incidents.down_for', { dur: formatDur(inc.durationSec) }) + (inc.ongoing ? '…' : ''))}</span>`
+      ? `<span style="color:var(--text-muted);font-size:11px;flex:none">${uiText(t('device.incidents.down_for', { dur: formatDur(inc.durationSec) }) + (inc.ongoing ? '…' : ''))}</span>`
       : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
         <span title="${esc(eventLabel(inc.type))}" style="flex:none;width:9px;height:9px;border-radius:50%;background:${incidentColor(inc.type)}"></span>
-        <span style="font-weight:600;color:var(--text-primary);flex:none">${esc(label)}</span>
-        ${detail}
+        <span style="font-weight:600;color:var(--text-primary);flex:none">${uiText(label)}</span>
+        ${renderHTML(detail)}
         <span style="margin-left:auto;display:flex;gap:8px;align-items:center;flex:none">
-          ${dur}
-          <span style="color:var(--text-muted);font-size:11px">${esc(relTime(inc.timestamp, nowSec))}</span>
+          ${renderHTML(dur)}
+          <span style="color:var(--text-muted);font-size:11px">${uiText(relTime(inc.timestamp, nowSec))}</span>
         </span>
       </div>`;
   }).join('');
@@ -4056,7 +4052,7 @@ function renderIncidents(deviceEvents = [], statusLog = []) {
 function updateTelemetryDisplay(telemetry) {
   const update = (id, val) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = val;
+    if (el) bindMessage(el, val);
   };
   if (!isEmbeddedDevice(currentDevice)) {
     if (telemetry.battery_level != null) update('telBattery', telemetry.battery_level + '%');
@@ -4079,7 +4075,7 @@ function updateTelemetryDisplay(telemetry) {
   if (telemetry.wifi_rssi) update('telRssi', telemetry.wifi_rssi + ' dBm');
   if (telemetry.uptime_seconds) update('telUptime', formatUptime(telemetry.uptime_seconds));
   if (telemetry.ram_free_mb) update('telRam', t('device.info.size_free', { size: formatBytes(telemetry.ram_free_mb) }));
-  if (telemetry.cpu_usage != null) update('telCpu', telemetry.cpu_usage.toFixed(1) + '%');
+  if (telemetry.cpu_usage != null) update('telCpu', displayValue(telemetry.cpu_usage / 100,'toLocaleString',{style:'percent',minimumFractionDigits:1,maximumFractionDigits:1}));
   if (telemetry.temperature_c != null) update('telTemp', telemetry.temperature_c + '°C');
   if (telemetry.humidity != null) update('telHumidity', t('device.info.humidity_value', { n: telemetry.humidity }));
 }
@@ -4089,16 +4085,16 @@ function renderDiagPanel(w) {
   return `
     <div class="info-card" id="diagCard" style="grid-column:1/-1;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
-        <div class="info-card-label">Frame-rate diagnostic${w.widget_name ? ' · ' + esc(w.widget_name) : ''}</div>
-        <span id="diagVerdict" style="font-weight:700;font-size:15px;color:var(--text-muted)">waiting for panel…</span>
+        <div class="info-card-label">${renderHTML(t("ui.device_detail.frame_rate_diagnostic_bc5fab", {value0: w.widget_name ? ' · ' + esc(w.widget_name) : ''}))}</div>
+        <span id="diagVerdict" style="font-weight:700;font-size:15px;color:var(--text-muted)">${renderHTML(t("ui.device_detail.waiting_for_panel"))}</span>
       </div>
       <div class="info-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
-        <div class="info-card"><div class="info-card-label">FPS</div><div class="info-card-value" id="diagFps">--</div></div>
-        <div class="info-card"><div class="info-card-label">Refresh</div><div class="info-card-value" id="diagHz">--</div></div>
-        <div class="info-card"><div class="info-card-label">Long frames</div><div class="info-card-value" id="diagLong">--</div></div>
-        <div class="info-card"><div class="info-card-label">Worst stall</div><div class="info-card-value" id="diagWorst">--</div></div>
+        <div class="info-card"><div class="info-card-label">${renderHTML(t("ui.device_detail.fps"))}</div><div class="info-card-value" id="diagFps">--</div></div>
+        <div class="info-card"><div class="info-card-label">${renderHTML(t("ui.device_detail.refresh"))}</div><div class="info-card-value" id="diagHz">--</div></div>
+        <div class="info-card"><div class="info-card-label">${renderHTML(t("ui.device_detail.long_frames"))}</div><div class="info-card-value" id="diagLong">--</div></div>
+        <div class="info-card"><div class="info-card-label">${renderHTML(t("ui.device_detail.worst_stall"))}</div><div class="info-card-value" id="diagWorst">--</div></div>
       </div>
-      <div style="margin-top:10px;font-size:12px;color:var(--text-muted)" id="diagMeta">The panel running this widget reports its frame timing here every few seconds.</div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-muted)" id="diagMeta">${renderHTML(t("ui.device_detail.the_panel_running_this_widget_reports_its"))}</div>
       <div style="margin-top:6px;font-size:12px;color:var(--danger);font-family:ui-monospace,Menlo,monospace" id="diagStalls"></div>
     </div>`;
 }
@@ -4119,10 +4115,10 @@ function startDiagPoll(widgetId, deviceId) {
 function updateDiagPanel(d) {
   const v = document.getElementById('diagVerdict');
   if (!v) { if (diagPollTimer) { clearInterval(diagPollTimer); diagPollTimer = null; } return; } // navigated away
-  const set = (id, val, color) => { const el = document.getElementById(id); if (el) { el.textContent = val; if (color) el.style.color = color; } };
+  const set = (id, val, color) => { const el = document.getElementById(id); if (el) { bindMessage(el, val); if (color) el.style.color = color; } };
   if (!d) {
-    v.textContent = 'no report yet'; v.style.color = 'var(--text-muted)';
-    set('diagMeta', 'No data received yet — make sure the panel is showing this widget, then give it a few seconds.');
+    bindText(v, "ui.device_detail.no_report_yet"); v.style.color = 'var(--text-muted)';
+    set('diagMeta', t("ui.device_detail.no_data_received_yet_make_sure_the_panel_is_showing_thi_aeb17b"));
     return;
   }
   const age = d.receivedAt ? Math.max(0, Math.round((Date.now() - d.receivedAt) / 1000)) : null;
@@ -4130,19 +4126,14 @@ function updateDiagPanel(d) {
   const verdict = d.verdict || 'measuring';
   const vcolor = verdict === 'SMOOTH' ? 'var(--success)' : (verdict === 'STALLING' ? 'var(--danger)' : 'var(--text-muted)');
   // If we haven't heard from THIS panel recently, say so plainly rather than showing stale numbers as live.
-  if (stale) { v.textContent = 'no live report'; v.style.color = 'var(--text-muted)'; }
-  else { v.textContent = verdict; v.style.color = vcolor; }
+  if (stale) { bindText(v, "ui.device_detail.no_live_report"); v.style.color = 'var(--text-muted)'; }
+  else { bindMessage(v, t(({SMOOTH:'ui.device.diag_smooth',STALLING:'ui.device.diag_stalling'})[verdict] || 'ui.device.diag_measuring')); v.style.color = vcolor; }
   set('diagFps', d.fps != null ? String(d.fps) : '--');
   set('diagHz', d.refreshHz != null ? d.refreshHz + ' Hz' : '--');
   set('diagLong', d.longFrames != null ? String(d.longFrames) : '--', d.longFrames > 0 ? 'var(--danger)' : 'var(--success)');
   set('diagWorst', d.worstStallMs != null ? d.worstStallMs + ' ms' : '--', d.worstStallMs > 50 ? 'var(--danger)' : 'var(--text)');
-  const meta = [];
-  if (d.vp) meta.push('viewport ' + d.vp);
-  if (d.dpr) meta.push('dpr ' + d.dpr);
-  if (d.elapsedS != null) meta.push('running ' + d.elapsedS + 's');
-  if (age != null) meta.push('last report ' + age + 's ago');
-  set('diagMeta', meta.join(' · '));
-  set('diagStalls', Array.isArray(d.recent) && d.recent.length ? ('recent stalls: ' + d.recent.join('   ')) : '');
+  set('diagMeta', t('ui.device.diag_meta',{viewport:d.vp||'—',dpr:d.dpr||'—',seconds:d.elapsedS??'—',age:age??'—'}));
+  set('diagStalls', Array.isArray(d.recent) && d.recent.length ? t('ui.device.diag_recent',{values:d.recent.join('   ')}) : '');
 }
 
 export function cleanup() {

@@ -1,3 +1,4 @@
+import { bindMessage } from '../lib/i18n-bindings.js';
 /*
  * Collapsible sidebar groups (index.html: <li class="nav-group"> around the nav <li>s).
  *
@@ -110,7 +111,7 @@ export function initNavGroups(root = document) {
           }
         }
         badge.hidden = n === 0;
-        badge.textContent = n > 99 ? '99+' : String(n);
+        bindMessage(badge, n > 99 ? '99+' : String(n));
       }
     }
   }

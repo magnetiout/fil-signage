@@ -1,4 +1,5 @@
 'use strict';
+const {runInViewContext}=require('./helpers/admin-render');
 
 // devices.capture_mode — which screen-capture tier a panel can actually use.
 //
@@ -79,7 +80,7 @@ test('the dashboard notice fires on exactly the tiers that need it', () => {
   const fn = src.slice(start, src.indexOf('// Mirrors platformFamily'));
   // Run the REAL function rather than pattern-matching its source: a regex over the body passes
   // just as happily when the branches are wrong.
-  const notice = vm.runInNewContext(fn + '; captureModeNotice', { t: (k) => k });
+  const notice = runInViewContext(fn + '; captureModeNotice', { t: (k) => k });
 
   // NULL is "this panel has not told us" — every non-Android player and every older Android build.
   // Rendering a fault there would put a warning on hundreds of displays that have nothing wrong.

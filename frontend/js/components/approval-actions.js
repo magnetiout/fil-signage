@@ -1,9 +1,11 @@
+import { uiText, renderHTML } from '../lib/i18n-bindings.js';
+
 // The compact bar every editor shows: History, and, when the workspace requires approval,
 // Submit for review / Withdraw / Publish approved; plus Publish draft / Discard draft for the
 // three resources that hold a separate draft (widgets, layouts, content). The server enforces
 // all of this; the bar only reflects what the settings and history endpoints say.
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 import { openHistoryModal } from './history-modal.js';
 
@@ -32,7 +34,7 @@ export async function renderApprovalBar(host, o) {
   }
   const separateDraft = ['widget', 'layout', 'content'].includes(o.type);
   const hasDraft = !!(hist && hist.has_draft);
-  const btn = (attr, label, cls = 'btn-secondary') => `<button class="btn ${cls} btn-sm" ${attr}>${esc(label)}</button>`;
+  const btn = (attr, label, cls = 'btn-secondary') => `<button class="btn ${cls} btn-sm" ${attr}>${uiText(label)}</button>`;
   let html = btn('data-history', t('history.button'));
   let status = '';
   if (s.require_approval) {
@@ -45,7 +47,7 @@ export async function renderApprovalBar(host, o) {
     status = t('review.state.draft_pending');
     html += btn('data-publish-draft', t('review.publish_draft'), 'btn-primary') + btn('data-discard', t('review.discard_draft'));
   }
-  host.innerHTML = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${html}${status ? `<span style="font-size:12px;color:var(--text-muted)">${esc(status)}</span>` : ''}</div>`;
+  host.innerHTML = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${renderHTML(html)}${renderHTML(status ? `<span style="font-size:12px;color:var(--text-muted)">${uiText(status)}</span>` : '')}</div>`;
 
   const refresh = async () => { settingsCache = null; await renderApprovalBar(host, o); if (o.onChanged) o.onChanged(); };
   host.onclick = async (e) => {
@@ -58,6 +60,6 @@ export async function renderApprovalBar(host, o) {
       if (b.hasAttribute('data-publish-draft')) { await api.publishDraft(o.type, o.id); showToast(t('review.toast.published'), 'success'); }
       if (b.hasAttribute('data-discard')) { if (!confirm(t('review.discard_confirm'))) return; await api.discardDraft(o.type, o.id); showToast(t('review.toast.discarded')); }
       await refresh();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   };
 }

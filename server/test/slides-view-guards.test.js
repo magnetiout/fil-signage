@@ -96,7 +96,9 @@ test('the motion tab shows timing against the slide dwell', () => {
   // never arrives, and only the comparison can say so.
   assert.match(CODE, /function renderMiniTimeline\s*\(/, 'the motion timing view is gone');
   assert.match(CODE, /dwell_sec/, 'the timing view does not consult the dwell');
-  assert.match(VIEW, /never finish/, 'nothing tells an operator when motion outlives its slide');
+  assert.match(VIEW, /tn\('ui\.slides\.motion_overrun',overruns\)/,
+    'the number of overrunning motions must be rendered');
+  assert.match(fs.readFileSync(path.join(__dirname,'../../frontend/js/i18n/en.js'),'utf8'), /never finish/, 'nothing tells an operator when motion outlives its slide');
 });
 
 test('⚠️ the editor previews the same fonts and keyframes the server emits', () => {

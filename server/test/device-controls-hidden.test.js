@@ -1,4 +1,5 @@
 'use strict';
+const {runInViewContext}=require('./helpers/admin-render');
 
 // The dashboard offered every control to every display. "Reboot device" on a browser tab, screen
 // power on a Tizen TV, a Remote tab whose live view is a permanently black canvas on a player with
@@ -127,7 +128,7 @@ function render(device, telemetry) {
     canEditWorkspace: () => render.canEdit !== false,
     Math, Date, JSON, String, Array, Object,
   };
-  return vm.runInNewContext('`' + template + '`', sandbox);
+  return runInViewContext('`' + template + '`', sandbox);
 }
 
 const ANDROID_FULL = {
@@ -805,7 +806,7 @@ test('the shipped isWindowsDevice / terminalPresets agree with the harness stubs
     return null;
   };
   const ctx = { WINDOWS_TERMINAL_PRESETS: ['W'], LINUX_TERMINAL_PRESETS: ['L'], MAC_TERMINAL_PRESETS: ['M'], TERMINAL_PRESETS: ['A'] };
-  vm.runInNewContext([grab('isLinuxDevice'), grab('isWindowsDevice'), grab('isMacDevice'), grab('isNativeDevice'), grab('terminalPresets')].join('\n')
+  runInViewContext([grab('isLinuxDevice'), grab('isWindowsDevice'), grab('isMacDevice'), grab('isNativeDevice'), grab('terminalPresets')].join('\n')
     + '\nthis.w = isWindowsDevice; this.m = isMacDevice; this.n = isNativeDevice; this.p = terminalPresets;', ctx);
   // The native macOS player: client_type 'mac' or platform 'macOS/…'; Safari on a Mac is a browser.
   assert.equal(ctx.m({ client_type: 'mac' }), true);
@@ -839,7 +840,7 @@ test('the shipped isEmbeddedDevice agrees with embedded display checks', () => {
     return null;
   };
   const ctx = {};
-  vm.runInNewContext(grab('isEmbeddedDevice') + '\nthis.isEmbeddedDevice = isEmbeddedDevice;', ctx);
+  runInViewContext(grab('isEmbeddedDevice') + '\nthis.isEmbeddedDevice = isEmbeddedDevice;', ctx);
   assert.equal(ctx.isEmbeddedDevice({ client_type: 'embedded' }), true);
   assert.equal(ctx.isEmbeddedDevice({ platform: 'embedded/esp32s3' }), true);
   assert.equal(ctx.isEmbeddedDevice({ client_type: 'apk' }), false);
@@ -921,7 +922,7 @@ test('the shipped isAndroidDevice and isRokuDevice agree that a Roku is a Roku',
   assert.ok(android.indexOf("'roku'") !== -1 && android.indexOf("'roku'") < android.indexOf("startsWith('Web/')"),
     'the Roku short-circuit must come BEFORE the android_version test');
   const ctx = {};
-  vm.runInNewContext(`${android}\n${grab('isRokuDevice')}\nthis.a = isAndroidDevice; this.r = isRokuDevice;`, ctx);
+  runInViewContext(`${android}\n${grab('isRokuDevice')}\nthis.a = isAndroidDevice; this.r = isRokuDevice;`, ctx);
   assert.equal(ctx.a({ client_type: 'roku', android_version: 'Roku OS 13.0' }), false, 'client_type alone');
   assert.equal(ctx.a({ platform: 'roku', android_version: '13' }), false, 'platform alone');
   assert.equal(ctx.a({ client_type: 'apk', android_version: '13' }), true, 'Android unchanged');

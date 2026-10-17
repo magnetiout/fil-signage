@@ -1,7 +1,9 @@
-import { t } from './i18n.js';
+import { message as t, isMessage, escapeMessage, isDisplay, escapeDisplay } from './i18n.js';
 
 // HTML escape helper — prevents XSS when inserting user data into innerHTML
 export function esc(str) {
+  if (isMessage(str)) return escapeMessage(str);
+  if (isDisplay(str)) return escapeDisplay(str);
   if (str == null) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
@@ -136,7 +138,6 @@ export function hydrateAuthImages(root, { eager = false } = {}) {
   }
   imgs.forEach(img => _authImgObserver.observe(img));
 }
-
 
 /*
  * Where a screen's picture comes from.

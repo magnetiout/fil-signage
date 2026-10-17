@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage, binding } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 news feeds: choosing what a news widget reads (server: routes/news-feeds.js, lib/news-feed).
  *
@@ -15,7 +17,7 @@
  * Everything from the server reaches the page through esc() or textContent.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 
 /** Words for a server error code (lib/news-feed FeedError codes). */
@@ -46,10 +48,10 @@ function sourceText(source) {
 }
 
 function itemsHtml(items, max = 5) {
-  if (!items || !items.length) return `<p class="simple-muted">${esc(t('news.picker.preview_empty'))}</p>`;
-  return `<ul class="news-picker-items">${items.slice(0, max).map((it) => `
-    <li>${it.image ? `<img src="${esc(it.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="news-picker-noimg" aria-hidden="true">&#128240;</span>'}
-      <span>${esc(it.title)}</span></li>`).join('')}</ul>`;
+  if (!items || !items.length) return `<p class="simple-muted">${uiText(t('news.picker.preview_empty'))}</p>`;
+  return `<ul class="news-picker-items">${renderHTML(items.slice(0, max).map((it) => `
+    <li>${renderHTML(it.image ? `<img src="${esc(it.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="news-picker-noimg" aria-hidden="true">&#128240;</span>`)}
+      <span>${uiText(it.title)}</span></li>`).join(''))}</ul>`;
 }
 
 /*
@@ -63,7 +65,7 @@ function placeholderOnError(root) {
     const ph = document.createElement('span');
     ph.className = 'news-picker-noimg';
     ph.setAttribute('aria-hidden', 'true');
-    ph.textContent = '\u{1F4F0}';
+    bindMessage(ph, '\u{1F4F0}');
     img.replaceWith(ph);
   }, { once: true }));
 }
@@ -80,12 +82,12 @@ export function mountFeedPicker(host, { url = '', mode = 'feed', simple = false,
   const uid = `np${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;
   host.innerHTML = `
     <div class="news-picker${simple ? ' news-picker--simple' : ''}">
-      <label for="${uid}Url">${esc(t('news.picker.address'))}</label>
+      <label for="${uid}Url">${uiText(t('news.picker.address'))}</label>
       <div class="news-picker-row">
         <input id="${uid}Url" type="url" class="input" data-np-url autocomplete="off" spellcheck="false" placeholder="https://www.example.com" value="${esc(state.url)}">
-        <button type="button" class="btn ${simple ? 'btn-primary' : 'btn-secondary btn-sm'}" data-np-find>${esc(t('news.picker.find'))}</button>
+        <button type="button" class="btn ${simple ? 'btn-primary' : 'btn-secondary btn-sm'}" data-np-find>${uiText(t('news.picker.find'))}</button>
       </div>
-      <div class="form-hint news-picker-hint">${esc(t('news.picker.hint'))}</div>
+      <div class="form-hint news-picker-hint">${uiText(t('news.picker.hint'))}</div>
       <p class="news-picker-status" data-np-status role="status"></p>
       <div data-np-results></div>
       <div data-np-preview></div>
@@ -98,20 +100,20 @@ export function mountFeedPicker(host, { url = '', mode = 'feed', simple = false,
   let seq = 0;
 
   const changed = () => { if (typeof onChange === 'function') onChange({ feed_url: state.url, feed_mode: state.mode }); };
-  const setStatus = (text, kind = '') => { status.textContent = text; status.dataset.kind = kind; };
+  const setStatus = (text, kind = '') => { bindMessage(status, text); status.dataset.kind = kind; };
 
   async function showPreview() {
     const mine = ++seq;
     if (!state.url) { preview.innerHTML = ''; return; }
-    preview.innerHTML = `<p class="simple-muted">${esc(t('news.picker.previewing'))}</p>`;
+    preview.innerHTML = `<p class="simple-muted">${uiText(t('news.picker.previewing'))}</p>`;
     try {
       const r = await api.newsPreview(state.url, state.mode);
       if (mine !== seq) return;
-      preview.innerHTML = `<div class="news-picker-preview"><div class="news-picker-preview-head">${esc(t('news.picker.preview_title'))}${r.title ? ` &middot; ${esc(r.title)}` : ''}</div>${itemsHtml(r.items)}</div>`;
+      preview.innerHTML = `<div class="news-picker-preview"><div class="news-picker-preview-head">${uiText(t('news.picker.preview_title'))}${renderHTML(r.title ? ` &middot; ${esc(r.title)}` : '')}</div>${renderHTML(itemsHtml(r.items))}</div>`;
       placeholderOnError(preview);
     } catch (err) {
       if (mine !== seq) return;
-      preview.innerHTML = `<p class="news-picker-error">${esc(feedErrorText(err.code, err.message))}</p>`;
+      preview.innerHTML = `<p class="news-picker-error">${uiText(feedErrorText(err.code, (err.uiMessage || err.message)))}</p>`;
     }
   }
 
@@ -126,29 +128,29 @@ export function mountFeedPicker(host, { url = '', mode = 'feed', simple = false,
   const feedOption = (f, i) => {
     const checked = f.url === state.url && state.mode === 'feed' ? 'checked' : '';
     return `<label><input type="radio" name="${esc(uid)}Pick" value="${i}" ${checked}>
-      <span><strong>${esc(f.title || f.url)}</strong><small>${esc(f.url)}</small></span></label>`;
+      <span><strong>${uiText(f.title || f.url)}</strong><small>${uiText(f.url)}</small></span></label>`;
   };
 
   function drawResults(found) {
     const feeds = found.feeds || [];
     let html = '';
     if (feeds.length) {
-      html += `<p class="news-picker-found">${esc(tn('news.picker.found', feeds.length))}</p>
-        <div class="simple-choice news-picker-list" role="radiogroup" aria-label="${esc(t('news.picker.found_label'))}">
-        ${feeds.map((f, i) => feedOption(f, i)).join('')}
+      html += `<p class="news-picker-found">${uiText(tn('news.picker.found', feeds.length))}</p>
+        <div class="simple-choice news-picker-list" role="radiogroup" aria-label="${esc(t('news.picker.found_label'))}" data-fil-i18n-aria-label="${binding('news.picker.found_label', undefined)}">
+        ${renderHTML(feeds.map((f, i) => feedOption(f, i)).join(''))}
         </div>`;
     } else if (found.page && found.page.available) {
       const p = found.page;
       html += `<div class="news-picker-nofeed">
-        <p><strong>${esc(t('news.picker.no_feed'))}</strong></p>
-        <p class="simple-muted">${esc(t('news.picker.build_desc'))}</p>
+        <p><strong>${uiText(t('news.picker.no_feed'))}</strong></p>
+        <p class="simple-muted">${uiText(t('news.picker.build_desc'))}</p>
         <div class="simple-choice"><label><input type="radio" name="${uid}Pick" value="page" ${state.mode === 'page' && state.url === found.url ? 'checked' : ''}>
-          <span><strong>${esc(t('news.picker.build'))}</strong><small>${esc(sourceText(p.source))}</small></span></label></div>
-        ${itemsHtml(p.items)}
+          <span><strong>${uiText(t('news.picker.build'))}</strong><small>${uiText(sourceText(p.source))}</small></span></label></div>
+        ${renderHTML(itemsHtml(p.items))}
       </div>`;
     } else if (found.page) {
-      html += `<div class="news-picker-nofeed"><p><strong>${esc(t('news.picker.no_feed'))}</strong></p>
-        <p class="news-picker-error">${esc(feedErrorText(found.page.reason, found.page.message))}</p></div>`;
+      html += `<div class="news-picker-nofeed"><p><strong>${uiText(t('news.picker.no_feed'))}</strong></p>
+        <p class="news-picker-error">${uiText(feedErrorText(found.page.reason, found.page.message))}</p></div>`;
     }
     results.innerHTML = html;
     placeholderOnError(results);

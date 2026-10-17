@@ -1,6 +1,13 @@
+import {translatedAttribute} from '../lib/i18n-bindings.js';
+import { renderHTML, uiText, bindAttribute, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { displayValue, message as t } from '../i18n.js';
+
+import { localizeServerError } from '../api.js';
+
 import { api, assertLocalCallAllowed } from '../api.js';
 import { showToast } from '../components/toast.js';
-import { t } from '../i18n.js';
+
 import { openHistoryModal } from '../components/history-modal.js';
 import { renderApprovalBar } from '../components/approval-actions.js';
 
@@ -23,7 +30,7 @@ function timezoneField(selected) {
     return `<input type="text" id="wTimezone" class="input" value="${escAttr(selected)}" placeholder="Europe/London">`;
   }
   const all = [...new Set([selected, dashboardTimezone(), 'UTC', ...zones].filter(Boolean))].sort();
-  return `<select id="wTimezone" class="input" style="background:var(--bg-input)">${all.map((z) => `<option value="${escAttr(z)}" ${z === selected ? 'selected' : ''}>${escAttr(z)}</option>`).join('')}</select>`;
+  return `<select id="wTimezone" class="input" style="background:var(--bg-input)">${renderHTML(all.map((z) => `<option value="${escAttr(z)}" ${z === selected ? 'selected' : ''}>${renderHTML(escAttr(z))}</option>`).join(''))}</select>`;
 }
 
 function dateFormatLabel(format) {
@@ -33,7 +40,7 @@ function dateFormatLabel(format) {
     : format === 'long' ? { year: 'numeric', month: 'long', day: 'numeric' }
       : format === 'medium' ? { year: 'numeric', month: 'short', day: 'numeric' }
         : { year: '2-digit', month: '2-digit', day: '2-digit' };
-  return `${name} — ${new Date(Date.UTC(2026, 8, 3)).toLocaleDateString(undefined, options)}`;
+  return `${name} — ${displayValue(new Date(Date.UTC(2026, 8, 3)), "toLocaleDateString", options)}`;
 }
 /*
  * ⚠️ esc IS AN IMPORT, NOT A GLOBAL — and it was missing for sixteen days.
@@ -66,8 +73,8 @@ const API = (url, opts = {}) => {
   // ⚠️ This helper bypasses api.js's routing, so it must ask the same question itself.
   assertLocalCallAllowed(url, opts.method);
   return fetch('/api' + url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error('Session expired'); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `Request failed (${r.status})`); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.widgets.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
   });
 };
@@ -149,7 +156,7 @@ const _DI_META_ARRAY_KEYS = new Set(['advertisements', 'ads', 'announcements', '
 function _diNormalizeJson(data) {
   const meta = {}; const warnings = [];
   const title = _diPick(data, ['company', 'title', 'name', 'building', 'property']);
-  if (title != null) meta.title = String(title).trim();
+  if (title != null) bindAttribute(meta, "title", String(title).trim());
   let footer = _diPick(data, ['footer_text', 'footer', 'footertext', 'leasing', 'contact']);
   const ads = data.advertisements || data.ads || data.announcements;
   if (footer == null && Array.isArray(ads)) footer = ads.map(a => (typeof a === 'string' ? a : _diPick(a, ['text', 'message', 'content']))).filter(Boolean).join('   •   ');
@@ -307,20 +314,20 @@ export function openContentPicker({ multiple = false, title, returnItem = false 
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;padding:16px';
     overlay.innerHTML = `
       <div id="cpBox" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;width:100%;max-width:640px;max-height:90vh;display:flex;flex-direction:column">
-        <h3 style="margin:0 0 12px;color:var(--text-primary)">${esc(title || t('widget.picker.default_title'))}</h3>
+        <h3 style="margin:0 0 12px;color:var(--text-primary)">${uiText(title || t('widget.picker.default_title'))}</h3>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
-          <input type="text" id="cpSearch" class="input" placeholder="${t('widget.picker.search')}" style="flex:1;min-width:150px;margin:0">
-          <button type="button" class="btn btn-secondary btn-sm" id="cpUploadBtn">${t('widget.picker.upload')}</button>
+          <input type="text" id="cpSearch" class="input" placeholder="${t('widget.picker.search')}" data-fil-i18n-placeholder="${binding('widget.picker.search', undefined)}" style="flex:1;min-width:150px;margin:0">
+          <button type="button" class="btn btn-secondary btn-sm" id="cpUploadBtn">${renderHTML(t('widget.picker.upload'))}</button>
           <input type="file" id="cpFile" accept="image/*" ${multiple ? 'multiple' : ''} hidden>
         </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">${t('widget.picker.drop_hint')}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">${renderHTML(t('widget.picker.drop_hint'))}</div>
         <div id="cpStatus" style="display:none;font-size:12px;margin-bottom:8px"></div>
         <div id="cpList" style="flex:1;overflow-y:auto;min-height:200px"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;flex-wrap:wrap">
           <div style="font-size:12px;color:var(--text-muted)" id="cpSelCount"></div>
           <div style="display:flex;gap:8px;margin-left:auto">
-            <button class="btn btn-secondary" id="cpCancel">${t('common.cancel')}</button>
-            ${multiple ? `<button class="btn btn-primary" id="cpDone">${t('common.done')}</button>` : ''}
+            <button class="btn btn-secondary" id="cpCancel">${renderHTML(t('common.cancel'))}</button>
+            ${renderHTML(multiple ? `<button class="btn btn-primary" id="cpDone">${renderHTML(t('common.done'))}</button>` : '')}
           </div>
         </div>
       </div>`;
@@ -333,12 +340,12 @@ export function openContentPicker({ multiple = false, title, returnItem = false 
     const resolveUrl = (item) => (returnItem ? item : (item.remote_url || `/api/content/${item.id}/file`));
     const updateCount = () => {
       const el = overlay.querySelector('#cpSelCount');
-      if (el && multiple) el.textContent = t('widget.picker.selected_count', { n: selected.size });
+      if (el && multiple) bindText(el, 'widget.picker.selected_count', { n: selected.size });
     };
     function setStatus(msg, kind) {
       const el = overlay.querySelector('#cpStatus');
       if (!el) return;
-      el.textContent = msg || '';
+      bindMessage(el, msg || '');
       el.style.color = kind === 'error' ? '#ff6b6b' : 'var(--text-muted)';
       el.style.display = msg ? 'block' : 'none';
     }
@@ -362,21 +369,21 @@ export function openContentPicker({ multiple = false, title, returnItem = false 
       const list = overlay.querySelector('#cpList');
       if (!list) return;
       if (!filtered.length) {
-        list.innerHTML = `<div style="color:var(--text-muted);padding:32px;text-align:center;font-size:13px">${items.length ? t('widget.picker.no_matches') : t('widget.picker.no_images')}</div>`;
+        list.innerHTML = `<div style="color:var(--text-muted);padding:32px;text-align:center;font-size:13px">${renderHTML(items.length ? t('widget.picker.no_matches') : t('widget.picker.no_images'))}</div>`;
         return;
       }
       list.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">${
-        filtered.map(c => {
+        renderHTML(filtered.map(c => {
           const isSel = selected.has(String(c.id));
           const isRemote = !!c.remote_url;
           const thumb = c.remote_url || `/api/content/${c.id}/thumbnail`;
           return `
             <div data-pick-id="${escAttr(c.id)}" style="position:relative;cursor:pointer;border-radius:6px;overflow:hidden;border:2px solid ${isSel ? 'var(--primary, #4a7cff)' : 'transparent'};aspect-ratio:4/3;background:var(--bg-input)">
               <img ${isRemote ? `src="${escAttr(thumb)}"` : `data-auth-src="${escAttr(thumb)}"`} style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.opacity='0.2'">
-              <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.75);color:#fff;padding:4px 6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escAttr(c.filename)}</div>
+              <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.75);color:#fff;padding:4px 6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${renderHTML(escAttr(c.filename))}</div>
               <div data-check style="display:${isSel ? 'flex' : 'none'};position:absolute;top:6px;right:6px;width:22px;height:22px;background:var(--primary, #4a7cff);color:#fff;border-radius:50%;align-items:center;justify-content:center;font-size:14px;line-height:1">&#10003;</div>
             </div>`;
-        }).join('')
+        }).join(''))
       }</div>`;
       hydrateAuthImages(list, { eager: true });
       list.querySelectorAll('[data-pick-id]').forEach(el => el.onclick = () => {
@@ -477,13 +484,13 @@ function showPreviewModal(sessionId, widgetType) {
   // embedded in a browser preview — and an XFO refusal is provably indistinguishable
   // client-side from a working embed, so we don't guess. Always show the honest note.
   const webpageNote = widgetType === 'webpage' || widgetType === 'cloud-doc'
-    ? `<div style="padding:8px 16px;border-top:1px solid var(--border);color:var(--text-secondary);font-size:13px;text-align:center">${t(widgetType === 'cloud-doc' ? 'widget.cloud.preview_note' : 'widget.webpage_blocked_note')}</div>`
+    ? `<div style="padding:8px 16px;border-top:1px solid var(--border);color:var(--text-secondary);font-size:13px;text-align:center">${renderHTML(t(widgetType === 'cloud-doc' ? 'widget.cloud.preview_note' : 'widget.webpage_blocked_note'))}</div>`
     : '';
   overlay.innerHTML = `
     <div style="width:100%;max-width:1400px;height:90vh;background:var(--bg-card);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)">
-        <strong style="color:var(--text-primary)">${t('widget.preview_title')}</strong>
-        <button class="btn btn-secondary btn-sm" id="pvClose">${t('widget.close')}</button>
+        <strong style="color:var(--text-primary)">${renderHTML(t('widget.preview_title'))}</strong>
+        <button class="btn btn-secondary btn-sm" id="pvClose">${renderHTML(t('widget.close'))}</button>
       </div>
       <!-- ALWAYS 'allow-scripts', never allow-same-origin, regardless of the org's
            widget_sandbox_isolation_disabled setting. This preview loads
@@ -495,7 +502,7 @@ function showPreviewModal(sessionId, widgetType) {
            PLAYERS embed origin-strict sites; it is not a licence to de-isolate the
            dashboard. Covered by widget-preview-stays-isolated.test.js. -->
       <iframe id="pvIframe" sandbox="allow-scripts" style="flex:1;width:100%;border:0;background:#000"></iframe>
-      ${webpageNote}
+      ${renderHTML(webpageNote)}
     </div>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#pvIframe').src = '/api/widgets/preview-session/' + sessionId;
@@ -510,22 +517,22 @@ function showPreviewModal(sessionId, widgetType) {
 export async function render(container) {
   container.innerHTML = `
     <div class="page-header">
-      <div><h1>${t('widget.title')} <span class="help-tip" data-tip="${t('widget.help_tip')}">?</span></h1><div class="subtitle">${t('widget.subtitle')}</div></div>
+      <div><h1>${renderHTML(t('widget.title'))} <span class="help-tip" ${translatedAttribute("data-tip", 'widget.help_tip')}>?</span></h1><div class="subtitle">${renderHTML(t('widget.subtitle'))}</div></div>
       <button class="btn btn-primary" id="newWidgetBtn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        ${t('widget.new_widget')}
+        ${renderHTML(t('widget.new_widget'))}
       </button>
     </div>
     <div id="widgetTypeGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px;display:none">
-      ${WIDGET_TYPES.map(id => `
+      ${renderHTML(WIDGET_TYPES.map(id => `
         <div class="content-item" style="cursor:pointer" data-create-type="${id}">
           <div style="padding:20px;text-align:center">
-            <div style="font-size:36px;margin-bottom:8px">${WIDGET_ICONS[id]}</div>
-            <div style="font-weight:600;font-size:14px">${widgetTypeName(id)}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${widgetTypeDesc(id)}</div>
+            <div style="font-size:36px;margin-bottom:8px">${renderHTML(WIDGET_ICONS[id])}</div>
+            <div style="font-weight:600;font-size:14px">${renderHTML(widgetTypeName(id))}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(widgetTypeDesc(id))}</div>
           </div>
         </div>
-      `).join('')}
+      `).join(''))}
     </div>
     <div class="content-grid" id="widgetGrid"></div>
     <div id="pluginSubmitCard" style="display:none;margin-top:32px" class="corp-card"></div>
@@ -533,16 +540,16 @@ export async function render(container) {
     <!-- Widget Config Modal -->
     <div class="modal-overlay" id="widgetModal" style="display:none">
       <div class="modal" style="width:560px">
-        <div class="modal-header"><h3 id="widgetModalTitle">${t('widget.configure')}</h3>
+        <div class="modal-header"><h3 id="widgetModalTitle">${renderHTML(t('widget.configure'))}</h3>
           <button class="btn-icon" onclick="document.getElementById('widgetModal').style.display='none'">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         <div class="modal-body" id="widgetConfigForm"></div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="document.getElementById('widgetModal').style.display='none'">${t('common.cancel')}</button>
-          <button class="btn btn-secondary" id="previewWidgetBtn">${t('widget.preview')}</button>
-          <button class="btn btn-primary" id="saveWidgetBtn">${t('common.save')}</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('widgetModal').style.display='none'">${renderHTML(t('common.cancel'))}</button>
+          <button class="btn btn-secondary" id="previewWidgetBtn">${renderHTML(t('widget.preview'))}</button>
+          <button class="btn btn-primary" id="saveWidgetBtn">${renderHTML(t('common.save'))}</button>
         </div>
       </div>
     </div>
@@ -589,9 +596,9 @@ export async function render(container) {
       card.dataset.createType = p.type;
       card.innerHTML = `
         <div style="padding:20px;text-align:center">
-          <div style="font-size:36px;margin-bottom:8px">${esc(p.icon || '🔌')}</div>
-          <div style="font-weight:600;font-size:14px">${esc(p.label || p.type)}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${esc(p.plugin_id || 'plugin')}</div>
+          <div style="font-size:36px;margin-bottom:8px">${uiText(p.icon || '🔌')}</div>
+          <div style="font-weight:600;font-size:14px">${uiText(p.label || p.type)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${uiText(p.plugin_id || 'plugin')}</div>
         </div>`;
       card.onclick = () => {
         creatingType = p.type;
@@ -623,12 +630,12 @@ export async function render(container) {
     card.style.display = '';
     const pending = (mine.submissions || []).filter((s) => s.status === 'pending');
     card.innerHTML = `
-      <h3 style="margin:0 0 6px;font-size:14px">${t('widget.plugin_submit.title')}</h3>
-      <p style="margin:0 0 10px;color:var(--text-muted);font-size:12px">${t('widget.plugin_submit.desc')}</p>
-      ${pending.length ? `<p style="font-size:12px;margin:0 0 8px">${t('widget.plugin_submit.pending')}: ${pending.map((s) => esc(s.plugin_id)).join(', ')}</p>` : ''}
+      <h3 style="margin:0 0 6px;font-size:14px">${renderHTML(t('widget.plugin_submit.title'))}</h3>
+      <p style="margin:0 0 10px;color:var(--text-muted);font-size:12px">${renderHTML(t('widget.plugin_submit.desc'))}</p>
+      ${renderHTML(pending.length ? `<p style="font-size:12px;margin:0 0 8px">${renderHTML(t('widget.plugin_submit.pending'))}: ${renderHTML(pending.map((s) => esc(s.plugin_id)).join(', '))}</p>` : '')}
       <form id="widgetPluginSubmitForm" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
         <input type="file" id="widgetPluginZip" accept=".zip,application/zip" />
-        <button type="submit" class="btn btn-secondary btn-sm">${t('widget.plugin_submit.cta')}</button>
+        <button type="submit" class="btn btn-secondary btn-sm">${renderHTML(t('widget.plugin_submit.cta'))}</button>
       </form>`;
     const form = document.getElementById('widgetPluginSubmitForm');
     form.addEventListener('submit', async (ev) => {
@@ -644,11 +651,11 @@ export async function render(container) {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           body: fd,
         });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         showToast(t('widget.plugin_submit.ok'), 'success');
         await loadPluginSubmit();
       } catch (e) {
-        showToast(e.message || t('admin.plugins.failed'), 'error');
+        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
       }
     });
   }
@@ -657,11 +664,11 @@ export async function render(container) {
     formBaseConfig = config || {};
     const plugin = pluginTypeById().get(type);
     const typeName = plugin ? (plugin.label || plugin.type) : widgetTypeName(type);
-    document.getElementById('widgetModalTitle').textContent = editingWidget
+    bindMessage(document.getElementById('widgetModalTitle'), editingWidget
       ? t('widget.edit_x', { type: typeName })
-      : t('widget.new_x', { type: typeName });
+      : t('widget.new_x', { type: typeName }));
 
-    let html = `<div class="form-group"><label>${t('widget.field.name')}</label><input type="text" id="wName" class="input" value="${escAttr(config._name || typeName)}"></div>`;
+    let html = `<div class="form-group"><label>${renderHTML(t('widget.field.name'))}</label><input type="text" id="wName" class="input" value="${escAttr(config._name || typeName)}"></div>`;
 
     if (plugin) {
       html += pluginFieldsHtml(plugin.fields || [], config, 'wPlugin_');
@@ -688,99 +695,99 @@ export async function render(container) {
           const datePosition = ['above', 'below', 'left', 'right'].includes(config.date_position) ? config.date_position : 'below';
           const dateFormat = ['full', 'long', 'medium', 'short'].includes(config.date_format) ? config.date_format : 'full';
         html += `
-          <div class="form-group"><label>${t('widget.field.format')}</label><select id="wFormat" class="input" style="background:var(--bg-input)"><option value="12h" ${config.format === '12h' ? 'selected' : ''}>${t('widget.field.format_12h')}</option><option value="24h" ${config.format === '24h' ? 'selected' : ''}>${t('widget.field.format_24h')}</option></select></div>
-          <div class="form-group"><label>${t('widget.field.timezone')}</label>${timezoneField(timezone)}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="wUseDashboardTimezone">${t('widget.field.use_dashboard_timezone')}</button><button type="button" class="btn btn-secondary btn-sm" id="wUseServerTimezone">${t('widget.field.use_server_timezone')}</button></div><div class="form-hint" id="wTimezoneHint" style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('widget.field.timezone_hint')}</div></div>
-          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wShowSeconds" ${config.show_seconds === false ? '' : 'checked'}> ${t('widget.field.show_seconds')}</label></div>
-          <div class="form-group"><label>${t('widget.field.locale')}</label><input type="text" id="wLocale" class="input" value="${escAttr(config.locale || '')}" placeholder="es-ES"><div class="form-hint" style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('widget.field.locale_hint')}</div></div>
-          <div class="form-group"><label>${t('widget.field.font_size_px')}</label><input type="number" id="wFontSize" class="input" value="${escAttr(config.font_size || 64)}"></div>
-          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wShowDate" ${config.show_date === false ? '' : 'checked'}> ${t('widget.field.show_date')}</label></div>
-          <div class="form-group"><label>${t('widget.field.date_format')}</label><select id="wDateFormat" class="input" style="background:var(--bg-input)"><option value="full" ${dateFormat === 'full' ? 'selected' : ''}>${dateFormatLabel('full')}</option><option value="long" ${dateFormat === 'long' ? 'selected' : ''}>${dateFormatLabel('long')}</option><option value="medium" ${dateFormat === 'medium' ? 'selected' : ''}>${dateFormatLabel('medium')}</option><option value="short" ${dateFormat === 'short' ? 'selected' : ''}>${dateFormatLabel('short')}</option></select></div>
-          <div class="form-group"><label>${t('widget.field.date_position')}</label><select id="wDatePosition" class="input" style="background:var(--bg-input)"><option value="below" ${datePosition === 'below' ? 'selected' : ''}>${t('widget.field.date_position_below')}</option><option value="above" ${datePosition === 'above' ? 'selected' : ''}>${t('widget.field.date_position_above')}</option><option value="left" ${datePosition === 'left' ? 'selected' : ''}>${t('widget.field.date_position_left')}</option><option value="right" ${datePosition === 'right' ? 'selected' : ''}>${t('widget.field.date_position_right')}</option></select></div>
-          <div class="form-group"><label>${t('widget.field.date_font_size_px')}</label><input type="number" id="wDateFontSize" class="input" value="${escAttr(config.date_font_size || Math.max(16, Math.round((config.font_size || 64) / 3)))}" min="8"></div>
-          <div class="form-group"><label>${t('widget.field.date_color')}</label><input type="color" id="wDateColor" value="${escAttr(config.date_color || config.color || '#FFFFFF')}" style="width:60px;height:32px;border:none"></div>
-          <div class="form-group"><label>${t('widget.field.color')}</label><input type="color" id="wColor" value="${escAttr(config.color || '#FFFFFF')}" style="width:60px;height:32px;border:none"></div>
-          <div class="form-group"><label>${t('widget.field.background')}</label><input type="color" id="wBg" value="${escAttr(config.background || '#000000')}" style="width:60px;height:32px;border:none"></div>`;
+          <div class="form-group"><label>${renderHTML(t('widget.field.format'))}</label><select id="wFormat" class="input" style="background:var(--bg-input)"><option value="12h" ${config.format === '12h' ? 'selected' : ''}>${renderHTML(t('widget.field.format_12h'))}</option><option value="24h" ${config.format === '24h' ? 'selected' : ''}>${renderHTML(t('widget.field.format_24h'))}</option></select></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.timezone'))}</label>${renderHTML(timezoneField(timezone))}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="wUseDashboardTimezone">${renderHTML(t('widget.field.use_dashboard_timezone'))}</button><button type="button" class="btn btn-secondary btn-sm" id="wUseServerTimezone">${renderHTML(t('widget.field.use_server_timezone'))}</button></div><div class="form-hint" id="wTimezoneHint" style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('widget.field.timezone_hint'))}</div></div>
+          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wShowSeconds" ${config.show_seconds === false ? '' : 'checked'}> ${renderHTML(t('widget.field.show_seconds'))}</label></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.locale'))}</label><input type="text" id="wLocale" class="input" value="${escAttr(config.locale || '')}" placeholder="es-ES"><div class="form-hint" style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('widget.field.locale_hint'))}</div></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.font_size_px'))}</label><input type="number" id="wFontSize" class="input" value="${escAttr(config.font_size || 64)}"></div>
+          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wShowDate" ${config.show_date === false ? '' : 'checked'}> ${renderHTML(t('widget.field.show_date'))}</label></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.date_format'))}</label><select id="wDateFormat" class="input" style="background:var(--bg-input)"><option value="full" ${dateFormat === 'full' ? 'selected' : ''}>${renderHTML(dateFormatLabel('full'))}</option><option value="long" ${dateFormat === 'long' ? 'selected' : ''}>${renderHTML(dateFormatLabel('long'))}</option><option value="medium" ${dateFormat === 'medium' ? 'selected' : ''}>${renderHTML(dateFormatLabel('medium'))}</option><option value="short" ${dateFormat === 'short' ? 'selected' : ''}>${renderHTML(dateFormatLabel('short'))}</option></select></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.date_position'))}</label><select id="wDatePosition" class="input" style="background:var(--bg-input)"><option value="below" ${datePosition === 'below' ? 'selected' : ''}>${renderHTML(t('widget.field.date_position_below'))}</option><option value="above" ${datePosition === 'above' ? 'selected' : ''}>${renderHTML(t('widget.field.date_position_above'))}</option><option value="left" ${datePosition === 'left' ? 'selected' : ''}>${renderHTML(t('widget.field.date_position_left'))}</option><option value="right" ${datePosition === 'right' ? 'selected' : ''}>${renderHTML(t('widget.field.date_position_right'))}</option></select></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.date_font_size_px'))}</label><input type="number" id="wDateFontSize" class="input" value="${escAttr(config.date_font_size || Math.max(16, Math.round((config.font_size || 64) / 3)))}" min="8"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.date_color'))}</label><input type="color" id="wDateColor" value="${escAttr(config.date_color || config.color || '#FFFFFF')}" style="width:60px;height:32px;border:none"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.color'))}</label><input type="color" id="wColor" value="${escAttr(config.color || '#FFFFFF')}" style="width:60px;height:32px;border:none"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.background'))}</label><input type="color" id="wBg" value="${escAttr(config.background || '#000000')}" style="width:60px;height:32px;border:none"></div>`;
         }
         break;
       case 'weather':
         html += `
-          <div class="form-group"><label>${t('widget.field.location')}</label><input type="text" id="wLocation" class="input" value="${esc(config.location || '')}" placeholder="${t('widget.field.location_placeholder')}"></div>
-          <div class="form-group"><label>${t('widget.field.units')}</label><select id="wUnits" class="input" style="background:var(--bg-input)"><option value="imperial" ${config.units !== 'metric' ? 'selected' : ''}>${t('widget.field.units_imperial')}</option><option value="metric" ${config.units === 'metric' ? 'selected' : ''}>${t('widget.field.units_metric')}</option></select></div>
-          <div class="form-group"><label>${t('widget.field.font_size')}</label><input type="number" id="wFontSize" class="input" value="${escAttr(config.font_size || 48)}"></div>
-          <div class="form-group"><label>${t('widget.field.color')}</label><input type="color" id="wColor" value="${escAttr(config.color || '#FFFFFF')}" style="width:60px;height:32px;border:none"></div>
-          <div class="form-group"><label>${t('widget.field.layout')}</label><select id="wLayout" class="input" style="background:var(--bg-input)"><option value="vertical" ${config.layout !== 'horizontal' ? 'selected' : ''}>${t('widget.field.layout_vertical')}</option><option value="horizontal" ${config.layout === 'horizontal' ? 'selected' : ''}>${t('widget.field.layout_horizontal')}</option></select></div>
-          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wShowLocation" ${config.show_location === false ? '' : 'checked'}> ${t('widget.field.show_location')}</label></div>
-          <div class="form-group"><label>${t('widget.field.locale')}</label><input type="text" id="wWeatherLocale" class="input" value="${escAttr(config.locale || '')}" placeholder="es"><div class="form-hint" style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('widget.field.weather_locale_hint')}</div></div>`;
+          <div class="form-group"><label>${renderHTML(t('widget.field.location'))}</label><input type="text" id="wLocation" class="input" value="${esc(config.location || '')}" placeholder="${t('widget.field.location_placeholder')}" data-fil-i18n-placeholder="${binding('widget.field.location_placeholder', undefined)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.units'))}</label><select id="wUnits" class="input" style="background:var(--bg-input)"><option value="imperial" ${config.units !== 'metric' ? 'selected' : ''}>${renderHTML(t('widget.field.units_imperial'))}</option><option value="metric" ${config.units === 'metric' ? 'selected' : ''}>${renderHTML(t('widget.field.units_metric'))}</option></select></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.font_size'))}</label><input type="number" id="wFontSize" class="input" value="${escAttr(config.font_size || 48)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.color'))}</label><input type="color" id="wColor" value="${escAttr(config.color || '#FFFFFF')}" style="width:60px;height:32px;border:none"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.layout'))}</label><select id="wLayout" class="input" style="background:var(--bg-input)"><option value="vertical" ${config.layout !== 'horizontal' ? 'selected' : ''}>${renderHTML(t('widget.field.layout_vertical'))}</option><option value="horizontal" ${config.layout === 'horizontal' ? 'selected' : ''}>${renderHTML(t('widget.field.layout_horizontal'))}</option></select></div>
+          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wShowLocation" ${config.show_location === false ? '' : 'checked'}> ${renderHTML(t('widget.field.show_location'))}</label></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.locale'))}</label><input type="text" id="wWeatherLocale" class="input" value="${escAttr(config.locale || '')}" placeholder="es"><div class="form-hint" style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('widget.field.weather_locale_hint'))}</div></div>`;
         break;
       case 'rss':
         html += `
           <!-- 3.0 news feeds: a site or a feed, read by the server (components/news-feed-picker.js). -->
           <div class="form-group" id="wFeedPicker"></div>
-          <div class="form-group"><label>${t('news.field.layout')}</label><select id="wNewsLayout" class="input" style="background:var(--bg-input)">
-            <option value="ticker" ${config.layout !== 'headlines' ? 'selected' : ''}>${t('news.layout.ticker')}</option>
-            <option value="headlines" ${config.layout === 'headlines' ? 'selected' : ''}>${t('news.layout.headlines')}</option></select></div>
-          <div class="form-group" data-news-look="ticker"><label>${t('widget.field.scroll_speed_seconds')}</label><input type="number" id="wScrollSpeed" class="input" value="${escAttr(config.scroll_speed || 30)}"></div>
-          <div class="form-group" data-news-look="headlines"><label>${t('news.field.interval')}</label><input type="number" id="wNewsInterval" class="input" min="3" max="300" value="${escAttr(config.interval_sec || 10)}"></div>
-          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wNewsImages" ${config.show_images === false ? '' : 'checked'}> ${t('news.field.show_images')}</label></div>
-          <div class="form-group"><label>${t('widget.field.max_items')}</label><input type="number" id="wMaxItems" class="input" value="${escAttr(config.max_items || 10)}"></div>
-          <div class="form-group"><label>${t('widget.field.font_size')}</label><input type="number" id="wFontSize" class="input" value="${escAttr(config.font_size || 24)}"></div>
-          <div class="form-group"><label>${t('widget.field.color')}</label><input type="color" id="wColor" value="${escAttr(config.color || '#FFFFFF')}" style="width:60px;height:32px;border:none"></div>
-          <div class="form-group"><label>${t('widget.field.background')}</label><input type="color" id="wBg" value="${escAttr(config.background || '#000000')}" style="width:60px;height:32px;border:none"></div>`;
+          <div class="form-group"><label>${renderHTML(t('news.field.layout'))}</label><select id="wNewsLayout" class="input" style="background:var(--bg-input)">
+            <option value="ticker" ${config.layout !== 'headlines' ? 'selected' : ''}>${renderHTML(t('news.layout.ticker'))}</option>
+            <option value="headlines" ${config.layout === 'headlines' ? 'selected' : ''}>${renderHTML(t('news.layout.headlines'))}</option></select></div>
+          <div class="form-group" data-news-look="ticker"><label>${renderHTML(t('widget.field.scroll_speed_seconds'))}</label><input type="number" id="wScrollSpeed" class="input" value="${escAttr(config.scroll_speed || 30)}"></div>
+          <div class="form-group" data-news-look="headlines"><label>${renderHTML(t('news.field.interval'))}</label><input type="number" id="wNewsInterval" class="input" min="3" max="300" value="${escAttr(config.interval_sec || 10)}"></div>
+          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wNewsImages" ${config.show_images === false ? '' : 'checked'}> ${renderHTML(t('news.field.show_images'))}</label></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.max_items'))}</label><input type="number" id="wMaxItems" class="input" value="${escAttr(config.max_items || 10)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.font_size'))}</label><input type="number" id="wFontSize" class="input" value="${escAttr(config.font_size || 24)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.color'))}</label><input type="color" id="wColor" value="${escAttr(config.color || '#FFFFFF')}" style="width:60px;height:32px;border:none"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.background'))}</label><input type="color" id="wBg" value="${escAttr(config.background || '#000000')}" style="width:60px;height:32px;border:none"></div>`;
         break;
       case 'text':
         html += `
-          <div class="form-group"><label>${t('widget.field.html_content')}</label><textarea id="wHtml" class="input" rows="6" style="font-family:monospace;font-size:12px">${escAttr(config.html || '<h1 style="color:white;text-align:center;margin-top:40px">Hello World</h1>')}</textarea></div>
-          <div class="form-group"><label>${t('widget.field.css_optional')}</label><textarea id="wCss" class="input" rows="3" style="font-family:monospace;font-size:12px">${escAttr(config.css || '')}</textarea></div>
-          <div class="form-group"><label>${t('widget.field.background')}</label><input type="color" id="wBg" value="${escAttr(config.background || '#000000')}" style="width:60px;height:32px;border:none"></div>`;
+          <div class="form-group"><label>${renderHTML(t('widget.field.html_content'))}</label><textarea id="wHtml" class="input" rows="6" style="font-family:monospace;font-size:12px">${escAttr(config.html || '<h1 style="color:white;text-align:center;margin-top:40px">Hello World</h1>')}</textarea></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.css_optional'))}</label><textarea id="wCss" class="input" rows="3" style="font-family:monospace;font-size:12px">${escAttr(config.css || '')}</textarea></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.background'))}</label><input type="color" id="wBg" value="${escAttr(config.background || '#000000')}" style="width:60px;height:32px;border:none"></div>`;
         break;
       case 'webpage':
         html += `
-          <div class="form-group"><label>${t('widget.field.url')}</label><input type="text" id="wUrl" class="input" value="${escAttr(config.url || '')}" placeholder="https://example.com"></div>
-          <div class="form-group"><label>${t('widget.field.zoom_pct')}</label><input type="number" id="wZoom" class="input" value="${escAttr(Number(config.zoom) || 100)}"></div>
-          <div class="form-group"><label>${t('widget.field.refresh_interval')}</label><input type="number" id="wRefresh" class="input" value="${escAttr(Number(config.refresh_interval) || 0)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.url'))}</label><input type="text" id="wUrl" class="input" value="${escAttr(config.url || '')}" placeholder="https://example.com"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.zoom_pct'))}</label><input type="number" id="wZoom" class="input" value="${escAttr(Number(config.zoom) || 100)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.refresh_interval'))}</label><input type="number" id="wRefresh" class="input" value="${escAttr(Number(config.refresh_interval) || 0)}"></div>
           <!-- #473: walk-up interactive page. Android players only; elsewhere it stays a passive page. -->
           <div class="form-group" style="padding:10px;border:1px dashed var(--border);border-radius:6px">
             <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer">
               <input type="checkbox" id="wInteractive" ${config.interactive ? 'checked' : ''} style="margin-top:3px">
-              <span><strong>${t('widget.web.interactive')}</strong><br><span style="font-size:12px;color:var(--text-muted)">${t('widget.web.interactive_hint')}</span></span>
+              <span><strong>${renderHTML(t('widget.web.interactive'))}</strong><br><span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('widget.web.interactive_hint'))}</span></span>
             </label>
             <div id="wInteractiveOpts" style="margin-top:10px;${config.interactive ? '' : 'display:none'}">
               <div id="wInteractiveSupport" style="font-size:12px;color:var(--text-muted);margin-bottom:10px"></div>
-              <div class="form-group"><label>${t('widget.web.idle_timeout')}</label><input type="number" id="wIdle" class="input" min="15" max="3600" value="${escAttr(Number(config.idle_timeout_sec) || 60)}"></div>
-              <div class="form-group"><label>${t('widget.web.idle_warning')}</label>${idleWarningSelect(config)}
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('widget.web.idle_warning_hint')}</div></div>
-              <div class="form-group"><label>${t('widget.web.allowed_domains')}</label><input type="text" id="wDomains" class="input" value="${esc(Array.isArray(config.allowed_domains) ? config.allowed_domains.join(', ') : (config.allowed_domains || ''))}" placeholder="${esc(t('widget.web.allowed_domains_ph'))}">
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('widget.web.allowed_domains_hint')}</div></div>
+              <div class="form-group"><label>${renderHTML(t('widget.web.idle_timeout'))}</label><input type="number" id="wIdle" class="input" min="15" max="3600" value="${escAttr(Number(config.idle_timeout_sec) || 60)}"></div>
+              <div class="form-group"><label>${renderHTML(t('widget.web.idle_warning'))}</label>${renderHTML(idleWarningSelect(config))}
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('widget.web.idle_warning_hint'))}</div></div>
+              <div class="form-group"><label>${renderHTML(t('widget.web.allowed_domains'))}</label><input type="text" id="wDomains" class="input" value="${esc(Array.isArray(config.allowed_domains) ? config.allowed_domains.join(', ') : (config.allowed_domains || ''))}" placeholder="${esc(t('widget.web.allowed_domains_ph'))}" data-fil-i18n-placeholder="${binding('widget.web.allowed_domains_ph', undefined)}">
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('widget.web.allowed_domains_hint'))}</div></div>
               <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;margin-bottom:8px">
                 <input type="checkbox" id="wHomeBtn" ${config.home_button === false ? '' : 'checked'} style="margin-top:3px">
-                <span>${t('widget.web.home_button')}</span>
+                <span>${renderHTML(t('widget.web.home_button'))}</span>
               </label>
               <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer">
                 <input type="checkbox" id="wKeepConsent" ${config.keep_consent ? 'checked' : ''} style="margin-top:3px">
-                <span>${t('widget.web.keep_consent')}<br><span style="font-size:12px;color:var(--text-muted)">${t('widget.web.keep_consent_hint')}</span></span>
+                <span>${renderHTML(t('widget.web.keep_consent'))}<br><span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('widget.web.keep_consent_hint'))}</span></span>
               </label>
               <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;margin-top:8px">
                 <input type="checkbox" id="wWipeSite" ${config.wipe_site_data === false ? '' : 'checked'} style="margin-top:3px">
-                <span>${t('widget.web.wipe_site_data')}<br><span style="font-size:12px;color:var(--text-muted)">${t('widget.web.wipe_site_data_hint')}</span></span>
+                <span>${renderHTML(t('widget.web.wipe_site_data'))}<br><span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('widget.web.wipe_site_data_hint'))}</span></span>
               </label>
-              <div id="wKeepNamesRow" class="form-group" style="margin-top:8px;${config.keep_consent ? '' : 'display:none'}"><label>${t('widget.web.keep_cookie_names')}</label><input type="text" id="wKeepNames" class="input" value="${esc(Array.isArray(config.keep_cookie_names) ? config.keep_cookie_names.join(', ') : (config.keep_cookie_names || ''))}" placeholder="${esc(t('widget.web.keep_cookie_names_ph'))}">
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('widget.web.keep_cookie_names_hint')}</div></div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:8px">${t('widget.web.zoom_hint')}</div>
+              <div id="wKeepNamesRow" class="form-group" style="margin-top:8px;${config.keep_consent ? '' : 'display:none'}"><label>${renderHTML(t('widget.web.keep_cookie_names'))}</label><input type="text" id="wKeepNames" class="input" value="${esc(Array.isArray(config.keep_cookie_names) ? config.keep_cookie_names.join(', ') : (config.keep_cookie_names || ''))}" placeholder="${esc(t('widget.web.keep_cookie_names_ph'))}" data-fil-i18n-placeholder="${binding('widget.web.keep_cookie_names_ph', undefined)}">
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('widget.web.keep_cookie_names_hint'))}</div></div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:8px">${renderHTML(t('widget.web.zoom_hint'))}</div>
             </div>
           </div>`;
         break;
       case 'cloud-doc':
         // The server rebuilds the link (lib/cloud-docs.js); #wCloudCheck shows what it resolved to.
         html += `
-          <div class="form-group"><label>${t('widget.cloud.url')}</label>
+          <div class="form-group"><label>${renderHTML(t('widget.cloud.url'))}</label>
             <textarea id="wCloudUrl" class="input" rows="2" spellcheck="false" placeholder="https://docs.google.com/presentation/d/…">${escAttr(config.url || '')}</textarea>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('widget.cloud.url_hint')}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('widget.cloud.url_hint'))}</div>
             <div id="wCloudCheck" style="font-size:12px;margin-top:6px"></div></div>
-          <div class="form-group"><label>${t('widget.cloud.delay')}</label><input type="number" id="wCloudDelay" class="input" min="1" max="3600" value="${escAttr(Number(config.delay_sec) || 10)}"></div>
-          <div class="form-group"><label>${t('widget.cloud.refresh')}</label><input type="number" id="wCloudRefresh" class="input" min="0" max="1440" value="${escAttr(config.refresh_min ?? '')}" placeholder="${escAttr(t('widget.cloud.refresh_ph'))}">
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('widget.cloud.refresh_hint')}</div></div>
-          <div class="form-group"><label>${t('widget.field.zoom_pct')}</label><input type="number" id="wZoom" class="input" min="25" max="400" value="${escAttr(Number(config.zoom) || 100)}"></div>
-          <div class="form-group"><label>${t('widget.field.background')}</label><input type="color" id="wBg" value="${escAttr(config.background || '#000000')}" style="width:60px;height:32px;border:none"></div>`;
+          <div class="form-group"><label>${renderHTML(t('widget.cloud.delay'))}</label><input type="number" id="wCloudDelay" class="input" min="1" max="3600" value="${escAttr(Number(config.delay_sec) || 10)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.cloud.refresh'))}</label><input type="number" id="wCloudRefresh" class="input" min="0" max="1440" value="${escAttr(config.refresh_min ?? '')}" placeholder="${escAttr(t('widget.cloud.refresh_ph'))}">
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('widget.cloud.refresh_hint'))}</div></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.zoom_pct'))}</label><input type="number" id="wZoom" class="input" min="25" max="400" value="${escAttr(Number(config.zoom) || 100)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.field.background'))}</label><input type="color" id="wBg" value="${escAttr(config.background || '#000000')}" style="width:60px;height:32px;border:none"></div>`;
         break;
       case 'social':
         html += `<div id="wSocialEditor"></div>`;
@@ -799,30 +806,30 @@ export async function render(container) {
       case 'directory-board':
         html += `
           <div class="form-group" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;border:1px dashed var(--border);border-radius:6px;background:var(--bg-input)">
-            <button type="button" class="btn btn-secondary btn-sm" id="dbImportData">${t('widget.dir.import_btn')}</button>
-            <span style="font-size:11px;color:var(--text-muted);flex:1;min-width:160px">${t('widget.dir.import_hint')}</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="dbImportData">${renderHTML(t('widget.dir.import_btn'))}</button>
+            <span style="font-size:11px;color:var(--text-muted);flex:1;min-width:160px">${renderHTML(t('widget.dir.import_hint'))}</span>
           </div>
-          <div class="form-group"><label>${t('widget.dir.title_label')}</label><input type="text" id="wTitle" class="input" value="${escAttr(config.title)}" placeholder="${t('widget.dir.title_placeholder')}"></div>
-          <div class="form-group"><label>${t('widget.dir.logo_label')}</label><div id="wLogoBox"></div></div>
-          <div class="form-group"><label>${t('widget.dir.footer_text_label')}</label><input type="text" id="wFooter" class="input" value="${escAttr(config.footer_text)}" placeholder="${t('widget.dir.footer_placeholder')}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.dir.title_label'))}</label><input type="text" id="wTitle" class="input" value="${escAttr(config.title)}" placeholder="${t('widget.dir.title_placeholder')}" data-fil-i18n-placeholder="${binding('widget.dir.title_placeholder', undefined)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.dir.logo_label'))}</label><div id="wLogoBox"></div></div>
+          <div class="form-group"><label>${renderHTML(t('widget.dir.footer_text_label'))}</label><input type="text" id="wFooter" class="input" value="${escAttr(config.footer_text)}" placeholder="${t('widget.dir.footer_placeholder')}" data-fil-i18n-placeholder="${binding('widget.dir.footer_placeholder', undefined)}"></div>
           <div class="form-group">
-            <label>${t('widget.dir.bg_images_label')}</label>
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${t('widget.dir.bg_images_hint')}</div>
+            <label>${renderHTML(t('widget.dir.bg_images_label'))}</label>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${renderHTML(t('widget.dir.bg_images_hint'))}</div>
             <div id="wBgList"></div>
-            <button type="button" class="btn btn-secondary btn-sm" id="wBgAdd" style="margin-top:8px">${t('widget.dir.add_bg_image')}</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="wBgAdd" style="margin-top:8px">${renderHTML(t('widget.dir.add_bg_image'))}</button>
           </div>
           <div class="form-group" style="display:flex;gap:12px;flex-wrap:wrap">
-            <div style="flex:1;min-width:140px"><label>${t('widget.dir.theme')}</label><select id="wTheme" class="input" style="background:var(--bg-input)">
-              <option value="dark" ${!config.theme || config.theme === 'dark' ? 'selected' : ''}>${t('widget.dir.theme_dark')}</option>
-              <option value="light" ${config.theme === 'light' ? 'selected' : ''}>${t('widget.dir.theme_light')}</option>
+            <div style="flex:1;min-width:140px"><label>${renderHTML(t('widget.dir.theme'))}</label><select id="wTheme" class="input" style="background:var(--bg-input)">
+              <option value="dark" ${!config.theme || config.theme === 'dark' ? 'selected' : ''}>${renderHTML(t('widget.dir.theme_dark'))}</option>
+              <option value="light" ${config.theme === 'light' ? 'selected' : ''}>${renderHTML(t('widget.dir.theme_light'))}</option>
             </select></div>
-            <div style="flex:1;min-width:140px"><label>${t('widget.dir.scroll_speed')}</label><select id="wSpeed" class="input" style="background:var(--bg-input)">
-              <option value="slow" ${config.scroll_speed === 'slow' ? 'selected' : ''}>${t('widget.dir.speed_slow')}</option>
-              <option value="medium" ${!config.scroll_speed || config.scroll_speed === 'medium' ? 'selected' : ''}>${t('widget.dir.speed_medium')}</option>
-              <option value="fast" ${config.scroll_speed === 'fast' ? 'selected' : ''}>${t('widget.dir.speed_fast')}</option>
+            <div style="flex:1;min-width:140px"><label>${renderHTML(t('widget.dir.scroll_speed'))}</label><select id="wSpeed" class="input" style="background:var(--bg-input)">
+              <option value="slow" ${config.scroll_speed === 'slow' ? 'selected' : ''}>${renderHTML(t('widget.dir.speed_slow'))}</option>
+              <option value="medium" ${!config.scroll_speed || config.scroll_speed === 'medium' ? 'selected' : ''}>${renderHTML(t('widget.dir.speed_medium'))}</option>
+              <option value="fast" ${config.scroll_speed === 'fast' ? 'selected' : ''}>${renderHTML(t('widget.dir.speed_fast'))}</option>
             </select></div>
-            <div style="flex:1;min-width:140px"><label>${t('widget.dir.columns')}</label><select id="wCols" class="input" style="background:var(--bg-input)">
-              <option value="auto" ${!config.columns || config.columns === 'auto' ? 'selected' : ''}>${t('widget.dir.columns_auto')}</option>
+            <div style="flex:1;min-width:140px"><label>${renderHTML(t('widget.dir.columns'))}</label><select id="wCols" class="input" style="background:var(--bg-input)">
+              <option value="auto" ${!config.columns || config.columns === 'auto' ? 'selected' : ''}>${renderHTML(t('widget.dir.columns_auto'))}</option>
               <option value="1" ${config.columns === '1' ? 'selected' : ''}>1</option>
               <option value="2" ${config.columns === '2' ? 'selected' : ''}>2</option>
               <option value="3" ${config.columns === '3' ? 'selected' : ''}>3</option>
@@ -830,61 +837,61 @@ export async function render(container) {
             </select></div>
           </div>
           <div class="form-group">
-            <label>${t('widget.dir.categories')}</label>
+            <label>${renderHTML(t('widget.dir.categories'))}</label>
             <div id="dbCategories"></div>
-            <button type="button" class="btn btn-secondary btn-sm" id="dbAddCategory" style="margin-top:10px">${t('widget.dir.add_category')}</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="dbAddCategory" style="margin-top:10px">${renderHTML(t('widget.dir.add_category'))}</button>
           </div>`;
         break;
       case 'directory-search': {
         const boards = (loadedWidgets || []).filter(w => w.widget_type === 'directory-board');
         const sourceField = boards.length
           ? `<select id="wSource" class="input" style="background:var(--bg-input)">
-               ${boards.map(w => `<option value="${escAttr(w.id)}" ${config.source_widget_id === w.id ? 'selected' : ''}>${escAttr(w.name)}</option>`).join('')}
+               ${renderHTML(boards.map(w => `<option value="${escAttr(w.id)}" ${config.source_widget_id === w.id ? 'selected' : ''}>${renderHTML(escAttr(w.name))}</option>`).join(''))}
              </select>
-             <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${t('widget.dirsearch.source_hint')}</div>`
-          : `<div style="font-size:13px;color:var(--text-muted);padding:10px;border:1px dashed var(--border);border-radius:6px">${t('widget.dirsearch.source_empty')}</div>`;
+             <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${renderHTML(t('widget.dirsearch.source_hint'))}</div>`
+          : `<div style="font-size:13px;color:var(--text-muted);padding:10px;border:1px dashed var(--border);border-radius:6px">${renderHTML(t('widget.dirsearch.source_empty'))}</div>`;
         html += `
-          <div class="form-group"><label>${t('widget.dirsearch.source_label')}</label>${sourceField}</div>
-          <div class="form-group"><label>${t('widget.dirsearch.title_label')}</label><input type="text" id="wTitle" class="input" value="${escAttr(config.title)}" placeholder="${t('widget.dirsearch.title_placeholder')}"></div>
-          <div class="form-group"><label>${t('widget.dirsearch.logo_label')}</label><div id="wLogoBox"></div></div>
-          <div class="form-group"><label>${t('widget.dirsearch.placeholder_label')}</label><input type="text" id="wPlaceholder" class="input" value="${escAttr(config.placeholder_text)}" placeholder="${t('widget.dirsearch.placeholder_hint')}"></div>
-          <div class="form-group" style="max-width:220px"><label>${t('widget.dirsearch.theme')}</label><select id="wTheme" class="input" style="background:var(--bg-input)">
-            <option value="dark" ${!config.theme || config.theme === 'dark' ? 'selected' : ''}>${t('widget.dir.theme_dark')}</option>
-            <option value="light" ${config.theme === 'light' ? 'selected' : ''}>${t('widget.dir.theme_light')}</option>
+          <div class="form-group"><label>${renderHTML(t('widget.dirsearch.source_label'))}</label>${renderHTML(sourceField)}</div>
+          <div class="form-group"><label>${renderHTML(t('widget.dirsearch.title_label'))}</label><input type="text" id="wTitle" class="input" value="${escAttr(config.title)}" placeholder="${t('widget.dirsearch.title_placeholder')}" data-fil-i18n-placeholder="${binding('widget.dirsearch.title_placeholder', undefined)}"></div>
+          <div class="form-group"><label>${renderHTML(t('widget.dirsearch.logo_label'))}</label><div id="wLogoBox"></div></div>
+          <div class="form-group"><label>${renderHTML(t('widget.dirsearch.placeholder_label'))}</label><input type="text" id="wPlaceholder" class="input" value="${escAttr(config.placeholder_text)}" placeholder="${t('widget.dirsearch.placeholder_hint')}" data-fil-i18n-placeholder="${binding('widget.dirsearch.placeholder_hint', undefined)}"></div>
+          <div class="form-group" style="max-width:220px"><label>${renderHTML(t('widget.dirsearch.theme'))}</label><select id="wTheme" class="input" style="background:var(--bg-input)">
+            <option value="dark" ${!config.theme || config.theme === 'dark' ? 'selected' : ''}>${renderHTML(t('widget.dir.theme_dark'))}</option>
+            <option value="light" ${config.theme === 'light' ? 'selected' : ''}>${renderHTML(t('widget.dir.theme_light'))}</option>
           </select></div>
-          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wKeyboard" ${config.show_onscreen_keyboard === false ? '' : 'checked'}> ${t('widget.dirsearch.keyboard_label')}</label></div>`;
+          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="wKeyboard" ${config.show_onscreen_keyboard === false ? '' : 'checked'}> ${renderHTML(t('widget.dirsearch.keyboard_label'))}</label></div>`;
         break;
       }
       case 'transition':
         html += `
-          <div class="form-group"><label>${t('widget.trans.shader')}</label>
+          <div class="form-group"><label>${renderHTML(t('widget.trans.shader'))}</label>
             <div id="wTransList" style="max-height:158px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;background:var(--bg-input)"></div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-              <button type="button" class="btn btn-secondary btn-sm" id="wTransUpload">${t('widget.trans.upload')}</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="wTransUpload">${renderHTML(t('widget.trans.upload'))}</button>
               <input type="file" id="wTransUploadFile" accept=".glsl,text/plain" style="display:none">
-              <span style="font-size:12px;color:var(--text-muted)">${t('widget.trans.upload_hint')}</span>
+              <span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('widget.trans.upload_hint'))}</span>
             </div>
-            <div class="hint" style="font-size:11px;color:var(--text-muted);margin-top:6px">${t('widget.trans.multi_hint')}</div>
+            <div class="hint" style="font-size:11px;color:var(--text-muted);margin-top:6px">${renderHTML(t('widget.trans.multi_hint'))}</div>
             <div id="wTransBlurb" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div></div>
           <div class="form-group">
             <div style="position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9">
               <canvas id="wTransCanvas" style="width:100%;height:100%;display:block"></canvas>
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-              <button type="button" id="wTransPlay" class="btn btn-secondary" style="min-width:84px">${t('widget.trans.play')}</button>
+              <button type="button" id="wTransPlay" class="btn btn-secondary" style="min-width:84px">${renderHTML(t('widget.trans.play'))}</button>
               <input type="range" id="wTransScrub" min="0" max="1000" value="0" style="flex:1;accent-color:var(--accent)">
             </div>
             <div id="wTransProgress" style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px">0.00</div>
           </div>
-          <div class="form-group"><label>${t('widget.trans.params')}</label><div id="wTransParams"></div></div>
-          <div class="form-group" style="max-width:220px"><label>${t('widget.trans.duration')}</label>
+          <div class="form-group"><label>${renderHTML(t('widget.trans.params'))}</label><div id="wTransParams"></div></div>
+          <div class="form-group" style="max-width:220px"><label>${renderHTML(t('widget.trans.duration'))}</label>
             <input type="number" id="wTransDuration" class="input" value="${escAttr(config.durationMs || 800)}" min="150" max="3000" step="50"></div>
-          <div class="form-group" style="max-width:300px"><label>${t('widget.trans.scope')}</label>
+          <div class="form-group" style="max-width:300px"><label>${renderHTML(t('widget.trans.scope'))}</label>
             <select id="wTransScope" class="input" style="background:var(--bg-input)">
-              <option value="all" ${config.scope !== 'next' ? 'selected' : ''}>${t('widget.trans.scope_all')}</option>
-              <option value="next" ${config.scope === 'next' ? 'selected' : ''}>${t('widget.trans.scope_next')}</option>
+              <option value="all" ${config.scope !== 'next' ? 'selected' : ''}>${renderHTML(t('widget.trans.scope_all'))}</option>
+              <option value="next" ${config.scope === 'next' ? 'selected' : ''}>${renderHTML(t('widget.trans.scope_next'))}</option>
             </select>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${t('widget.trans.scope_hint')}</div></div>`;
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${renderHTML(t('widget.trans.scope_hint'))}</div></div>`;
         break;
     }
 
@@ -912,7 +919,7 @@ export async function render(container) {
             else if (c.includes('playback.web_interactive_framed')) n.framed++;
             else n.none++;
           }
-          if (n.full + n.framed + n.none) sup.textContent = t('widget.web.support', n);
+          if (n.full + n.framed + n.none) bindText(sup, 'widget.web.support', n);
         }).catch(() => {});
       }
       const keep = document.getElementById('wKeepConsent');
@@ -979,17 +986,17 @@ export async function render(container) {
     let seq = 0;
     const check = async () => {
       const url = box.value.trim();
-      if (!url) { out.textContent = ''; return; }
+      if (!url) { bindMessage(out, ''); return; }
       const mine = ++seq;
       try {
         const r = await API('/widgets/cloud-doc/check', { method: 'POST', body: JSON.stringify({ url, delay_sec: document.getElementById('wCloudDelay')?.value }) });
         if (mine !== seq) return;
         out.style.color = 'var(--success,#15803d)';
-        out.innerHTML = `✓ ${esc(r.provider === 'google' ? 'Google' : 'Microsoft')} · ${esc(KIND[r.kind] || r.kind)} — <a href="${escAttr(r.url)}" target="_blank" rel="noopener noreferrer">${esc(t('widget.cloud.open'))}</a>`;
+        out.innerHTML = `✓ ${uiText(r.provider === 'google' ? 'Google' : 'Microsoft')} · ${uiText(KIND[r.kind] || r.kind)} — <a href="${escAttr(r.url)}" target="_blank" rel="noopener noreferrer">${renderHTML(t('widget.cloud.open'))}</a>`;
       } catch (e) {
         if (mine !== seq) return;
         out.style.color = 'var(--danger,#b91c1c)';
-        out.textContent = e.message;
+        bindMessage(out, (e.uiMessage || e.message));
       }
     };
     box.addEventListener('change', check);
@@ -1011,7 +1018,7 @@ export async function render(container) {
       try {
         const defaults = await API('/widgets/clock-defaults');
         setTimezone(defaults.timezone);
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     });
   }
 
@@ -1066,13 +1073,13 @@ export async function render(container) {
           showToast(t('widget.trans.uploaded'), 'success');
           initTransitionForm(config);   // re-read the list so it appears in the picker
         } catch (e) {
-          showToast(e.message, 'error');   // the server's own words: why it was refused
+          showToast(e.uiMessage || e.message, 'error');   // the server's own words: why it was refused
         } finally { upFile.value = ''; }
       });
     }
 
     const ready = await ensureTransitionRuntime();
-    if (!ready || !window.__TRANSITION_MANIFEST) { blurb.textContent = t('widget.trans.unavailable'); return; }
+    if (!ready || !window.__TRANSITION_MANIFEST) { bindText(blurb, 'widget.trans.unavailable', undefined); return; }
     /*
      * #320: the workspace's uploaded shaders join the shipped manifest for the picker and the live
      * preview. Appended, never merged over: a built-in with the same id would win, and the server
@@ -1102,7 +1109,7 @@ export async function render(container) {
       transState.to = transPlaceholder(['#0ea5e9', '#155e75'], 'B');
       transState.renderer.setFrom(transState.from);
       transState.renderer.setTo(transState.to);
-    } catch (e) { blurb.textContent = t('widget.trans.unavailable'); return; }
+    } catch (e) { bindText(blurb, 'widget.trans.unavailable', undefined); return; }
 
     const paramsFor = (id) => {
       if (transState.params[id]) return transState.params[id];
@@ -1114,7 +1121,7 @@ export async function render(container) {
     };
     const render = () => {
       if (!transState.focus) return;
-      const p = (+scrub.value) / 1000; progLbl.textContent = p.toFixed(2);
+      const p = (+scrub.value) / 1000; bindMessage(progLbl, displayValue(p,'toLocaleString',{minimumFractionDigits:2,maximumFractionDigits:2}));
       try { transState.renderer.render(p, paramsFor(transState.focus)); } catch (e) {}
     };
     const buildSliders = (id) => {
@@ -1122,26 +1129,26 @@ export async function render(container) {
       paramsBox.innerHTML = '';
       m.params.forEach((pp) => {
         const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:6px';
-        const lab = document.createElement('label'); lab.textContent = pp.name; lab.style.cssText = 'font-size:12px;color:var(--text-muted);min-width:104px';
+        const lab = document.createElement('label'); bindMessage(lab, pp.name); lab.style.cssText = 'font-size:12px;color:var(--text-muted);min-width:104px';
         const r = document.createElement('input'); r.type = 'range'; r.min = pp.min; r.max = pp.max; r.step = (pp.max - pp.min) / 200 || 0.001; r.value = vals[pp.name]; r.style.cssText = 'flex:1;accent-color:var(--accent)';
-        const v = document.createElement('span'); v.textContent = (+vals[pp.name]).toFixed(2); v.style.cssText = 'font:600 11px ui-monospace,monospace;color:var(--text-muted);min-width:44px;text-align:right';
-        r.oninput = () => { vals[pp.name] = +r.value; v.textContent = (+r.value).toFixed(2); render(); };
+        const v = document.createElement('span'); bindMessage(v, displayValue(+vals[pp.name],'toLocaleString',{minimumFractionDigits:2,maximumFractionDigits:2})); v.style.cssText = 'font:600 11px ui-monospace,monospace;color:var(--text-muted);min-width:44px;text-align:right';
+        r.oninput = () => { vals[pp.name] = +r.value; bindMessage(v, displayValue(+r.value,'toLocaleString',{minimumFractionDigits:2,maximumFractionDigits:2})); render(); };
         row.appendChild(lab); row.appendChild(r); row.appendChild(v); paramsBox.appendChild(row);
       });
     };
     const focusShader = (id) => {
       transState.focus = id;
-      const m = byId(id); blurb.textContent = m ? (m.blurb || '') : '';
+      const m = byId(id); bindMessage(blurb, m ? (m.blurb || '') : '');
       list.querySelectorAll('[data-focus]').forEach((el) => { el.style.fontWeight = el.dataset.focus === id ? '700' : '400'; });
       try { transState.renderer.setShader(window.__TRANSITION_SHADERS[id]); }
-      catch (e) { blurb.textContent = t('widget.trans.compile_error'); return; }
+      catch (e) { bindText(blurb, 'widget.trans.compile_error', undefined); return; }
       buildSliders(id); render();
     };
 
     list.innerHTML = MAN.map((m) => `
       <label style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer">
         <input type="checkbox" data-id="${escAttr(m.id)}" ${initialSel.includes(m.id) ? 'checked' : ''}>
-        <span data-focus="${escAttr(m.id)}" style="flex:1">${escAttr(m.name)}</span>
+        <span data-focus="${escAttr(m.id)}" style="flex:1">${renderHTML(escAttr(m.name))}</span>
       </label>`).join('');
     list.querySelectorAll('input[type=checkbox]').forEach((cb) => {
       cb.onchange = () => { if (cb.checked) focusShader(cb.dataset.id); };
@@ -1163,7 +1170,7 @@ export async function render(container) {
     };
     playBtn.onclick = () => {
       transState.playing = !transState.playing;
-      playBtn.textContent = transState.playing ? t('widget.trans.pause') : t('widget.trans.play');
+      bindMessage(playBtn, transState.playing ? t('widget.trans.pause') : t('widget.trans.play'));
       if (transState.playing) { transState.t0 = 0; transState.raf = requestAnimationFrame(loop); }
       else cancelAnimationFrame(transState.raf);
     };
@@ -1174,23 +1181,23 @@ export async function render(container) {
     const cont = document.getElementById('dbCategories');
     if (!cont) return;
     if (!dirState.categories.length) {
-      cont.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);border:1px dashed var(--border);border-radius:6px;font-size:13px">${t('widget.dir.empty_categories')}</div>`;
+      cont.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);border:1px dashed var(--border);border-radius:6px;font-size:13px">${renderHTML(t('widget.dir.empty_categories'))}</div>`;
       return;
     }
     cont.innerHTML = dirState.categories.map((cat, i) => {
       const entryRows = (cat.entries || []).map((e, j) => `
         <div class="db-entry" style="display:flex;gap:6px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap">
-          <input type="text" class="input" data-entry-id="${i}-${j}" value="${escAttr(e.identifier)}" placeholder="${t('widget.dir.entry_id_placeholder')}" style="width:90px">
+          <input type="text" class="input" data-entry-id="${i}-${j}" value="${escAttr(e.identifier)}" placeholder="${t('widget.dir.entry_id_placeholder')}" data-fil-i18n-placeholder="${binding('widget.dir.entry_id_placeholder', undefined)}" style="width:90px">
           <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:140px">
-            <input type="text" class="input" data-entry-name="${i}-${j}" value="${escAttr(e.name)}" placeholder="${t('widget.dir.entry_name_placeholder')}">
-            <input type="text" class="input" data-entry-subtitle="${i}-${j}" value="${escAttr(e.subtitle)}" placeholder="${t('widget.dir.entry_subtitle_placeholder')}" style="font-size:12px">
+            <input type="text" class="input" data-entry-name="${i}-${j}" value="${escAttr(e.name)}" placeholder="${t('widget.dir.entry_name_placeholder')}" data-fil-i18n-placeholder="${binding('widget.dir.entry_name_placeholder', undefined)}">
+            <input type="text" class="input" data-entry-subtitle="${i}-${j}" value="${escAttr(e.subtitle)}" placeholder="${t('widget.dir.entry_subtitle_placeholder')}" data-fil-i18n-placeholder="${binding('widget.dir.entry_subtitle_placeholder', undefined)}" style="font-size:12px">
           </div>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;color:var(--text-muted);padding-top:8px">
-            <input type="checkbox" data-entry-avail="${i}-${j}" ${e.available ? 'checked' : ''}> ${t('widget.dir.available')}
+            <input type="checkbox" data-entry-avail="${i}-${j}" ${e.available ? 'checked' : ''}> ${renderHTML(t('widget.dir.available'))}
           </label>
-          <button type="button" class="btn-icon" data-entry-up="${i}-${j}" ${j === 0 ? 'disabled' : ''} title="${t('widget.dir.move_up')}" style="padding:4px 6px">&#8593;</button>
-          <button type="button" class="btn-icon" data-entry-down="${i}-${j}" ${j === cat.entries.length - 1 ? 'disabled' : ''} title="${t('widget.dir.move_down')}" style="padding:4px 6px">&#8595;</button>
-          <button type="button" class="btn-icon" data-entry-delete="${i}-${j}" title="${t('widget.dir.delete_entry')}" style="padding:4px 6px;color:#ff6b6b">&#215;</button>
+          <button type="button" class="btn-icon" data-entry-up="${i}-${j}" ${j === 0 ? 'disabled' : ''} title="${t('widget.dir.move_up')}" data-fil-i18n-title="${binding('widget.dir.move_up', undefined)}" style="padding:4px 6px">&#8593;</button>
+          <button type="button" class="btn-icon" data-entry-down="${i}-${j}" ${j === cat.entries.length - 1 ? 'disabled' : ''} title="${t('widget.dir.move_down')}" data-fil-i18n-title="${binding('widget.dir.move_down', undefined)}" style="padding:4px 6px">&#8595;</button>
+          <button type="button" class="btn-icon" data-entry-delete="${i}-${j}" title="${t('widget.dir.delete_entry')}" data-fil-i18n-title="${binding('widget.dir.delete_entry', undefined)}" style="padding:4px 6px;color:#ff6b6b">&#215;</button>
         </div>
       `).join('');
 
@@ -1200,19 +1207,19 @@ export async function render(container) {
       return `
         <div class="db-category" style="border:1px solid var(--border);border-radius:6px;margin-bottom:8px;padding:8px;background:var(--bg-input)">
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <button type="button" class="btn-icon" data-cat-toggle="${i}" title="${cat._expanded ? t('widget.dir.collapse') : t('widget.dir.expand')}" style="padding:4px 8px">${cat._expanded ? '&#9660;' : '&#9654;'}</button>
-            <input type="text" class="input" data-cat-name="${i}" value="${escAttr(cat.name)}" placeholder="${t('widget.dir.category_name_placeholder')}" style="flex:1;min-width:140px;font-weight:600">
-            <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${entryCount} ${entriesLabel}</span>
-            <button type="button" class="btn-icon" data-cat-up="${i}" ${i === 0 ? 'disabled' : ''} title="${t('widget.dir.move_up')}" style="padding:4px 6px">&#8593;</button>
-            <button type="button" class="btn-icon" data-cat-down="${i}" ${i === dirState.categories.length - 1 ? 'disabled' : ''} title="${t('widget.dir.move_down')}" style="padding:4px 6px">&#8595;</button>
-            <button type="button" class="btn-icon" data-cat-delete="${i}" title="${t('widget.dir.delete_category')}" style="padding:4px 6px;color:#ff6b6b">&#215;</button>
+            <button type="button" class="btn-icon" data-cat-toggle="${i}" title="${cat._expanded ? t('widget.dir.collapse') : t('widget.dir.expand')}" style="padding:4px 8px">${renderHTML(cat._expanded ? '&#9660;' : '&#9654;')}</button>
+            <input type="text" class="input" data-cat-name="${i}" value="${escAttr(cat.name)}" placeholder="${t('widget.dir.category_name_placeholder')}" data-fil-i18n-placeholder="${binding('widget.dir.category_name_placeholder', undefined)}" style="flex:1;min-width:140px;font-weight:600">
+            <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${renderHTML(entryCount)} ${renderHTML(entriesLabel)}</span>
+            <button type="button" class="btn-icon" data-cat-up="${i}" ${i === 0 ? 'disabled' : ''} title="${t('widget.dir.move_up')}" data-fil-i18n-title="${binding('widget.dir.move_up', undefined)}" style="padding:4px 6px">&#8593;</button>
+            <button type="button" class="btn-icon" data-cat-down="${i}" ${i === dirState.categories.length - 1 ? 'disabled' : ''} title="${t('widget.dir.move_down')}" data-fil-i18n-title="${binding('widget.dir.move_down', undefined)}" style="padding:4px 6px">&#8595;</button>
+            <button type="button" class="btn-icon" data-cat-delete="${i}" title="${t('widget.dir.delete_category')}" data-fil-i18n-title="${binding('widget.dir.delete_category', undefined)}" style="padding:4px 6px;color:#ff6b6b">&#215;</button>
           </div>
-          ${cat._expanded ? `
+          ${renderHTML(cat._expanded ? `
             <div style="padding:10px 0 4px 4px;margin-top:8px;border-top:1px solid var(--border)">
-              ${entryRows || `<div style="font-size:12px;color:var(--text-muted);padding:4px 0 8px">${t('widget.dir.no_entries')}</div>`}
-              <button type="button" class="btn btn-secondary btn-sm" data-add-entry="${i}" style="margin-top:4px">${t('widget.dir.add_entry')}</button>
+              ${renderHTML(entryRows || `<div style="font-size:12px;color:var(--text-muted);padding:4px 0 8px">${renderHTML(t('widget.dir.no_entries'))}</div>`)}
+              <button type="button" class="btn btn-secondary btn-sm" data-add-entry="${i}" style="margin-top:4px">${renderHTML(t('widget.dir.add_entry'))}</button>
             </div>
-          ` : ''}
+          ` : '')}
         </div>
       `;
     }).join('');
@@ -1309,14 +1316,14 @@ export async function render(container) {
     const hasExisting = dirState.categories.length > 0;
     overlay.innerHTML = `
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;width:100%;max-width:660px;max-height:90vh;display:flex;flex-direction:column;gap:12px">
-        <h3 style="font-size:16px;font-weight:600">${t('widget.dir.import_title')}</h3>
-        <div style="font-size:12px;color:var(--text-muted)">${t('widget.dir.import_desc')}</div>
+        <h3 style="font-size:16px;font-weight:600">${renderHTML(t('widget.dir.import_title'))}</h3>
+        <div style="font-size:12px;color:var(--text-muted)">${renderHTML(t('widget.dir.import_desc'))}</div>
         <textarea id="diText" class="input" style="flex:1;min-height:220px;font-family:monospace;font-size:12px;white-space:pre;overflow:auto" placeholder="${escAttr(t('widget.dir.import_placeholder'))}"></textarea>
         <div id="diError" style="display:none;font-size:12px;color:#ff6b6b;white-space:pre-wrap"></div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="diReplace" ${hasExisting ? 'checked' : ''}> ${t('widget.dir.import_replace')}</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="diReplace" ${hasExisting ? 'checked' : ''}> ${renderHTML(t('widget.dir.import_replace'))}</label>
         <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button type="button" class="btn btn-secondary" id="diCancel">${t('common.cancel')}</button>
-          <button type="button" class="btn btn-primary" id="diGo">${t('widget.dir.import_populate')}</button>
+          <button type="button" class="btn btn-secondary" id="diCancel">${renderHTML(t('common.cancel'))}</button>
+          <button type="button" class="btn btn-primary" id="diGo">${renderHTML(t('widget.dir.import_populate'))}</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -1329,7 +1336,7 @@ export async function render(container) {
       const errBox = overlay.querySelector('#diError');
       let result;
       try { result = parseDirectoryImport(ta.value); }
-      catch (e) { errBox.textContent = e.message || t('widget.dir.import_err_norows'); errBox.style.display = 'block'; return; }
+      catch (e) { bindMessage(errBox, (e.uiMessage || e.message) || t('widget.dir.import_err_norows')); errBox.style.display = 'block'; return; }
       applyDirImport(result, overlay.querySelector('#diReplace').checked);
       cleanup();
     };
@@ -1368,14 +1375,14 @@ export async function render(container) {
       box.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input)">
           <img ${dirState.logo_url && dirState.logo_url.startsWith('/api/') ? `data-auth-src="${escAttr(dirState.logo_url)}"` : `src="${escAttr(dirState.logo_url)}"`} style="max-height:50px;max-width:120px;object-fit:contain;background:#0003;border-radius:3px" onerror="this.style.opacity='0.3'">
-          <div style="flex:1;min-width:0;font-size:11px;color:var(--text-muted);word-break:break-all;overflow:hidden;text-overflow:ellipsis">${escAttr(dirState.logo_url)}</div>
-          <button type="button" class="btn btn-secondary btn-sm" id="wLogoChange">${t('widget.dir.change')}</button>
-          <button type="button" class="btn-icon" id="wLogoClear" title="${t('widget.dir.remove_logo')}" style="color:#ff6b6b;padding:4px 8px">&#215;</button>
+          <div style="flex:1;min-width:0;font-size:11px;color:var(--text-muted);word-break:break-all;overflow:hidden;text-overflow:ellipsis">${renderHTML(escAttr(dirState.logo_url))}</div>
+          <button type="button" class="btn btn-secondary btn-sm" id="wLogoChange">${renderHTML(t('widget.dir.change'))}</button>
+          <button type="button" class="btn-icon" id="wLogoClear" title="${t('widget.dir.remove_logo')}" data-fil-i18n-title="${binding('widget.dir.remove_logo', undefined)}" style="color:#ff6b6b;padding:4px 8px">&#215;</button>
         </div>`;
       document.getElementById('wLogoChange').onclick = pickLogo;
       document.getElementById('wLogoClear').onclick = () => { dirState.logo_url = ''; renderLogoPicker(); };
     } else {
-      box.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" id="wLogoChoose">${t('widget.dir.choose_logo')}</button>`;
+      box.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" id="wLogoChoose">${renderHTML(t('widget.dir.choose_logo'))}</button>`;
       document.getElementById('wLogoChoose').onclick = pickLogo;
     }
     hydrateAuthImages(box);
@@ -1390,16 +1397,16 @@ export async function render(container) {
     const list = document.getElementById('wBgList');
     if (!list) return;
     if (!dirState.background_images.length) {
-      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0">${t('widget.dir.no_bg_images')}</div>`;
+      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0">${renderHTML(t('widget.dir.no_bg_images'))}</div>`;
       return;
     }
     list.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap">${
-      dirState.background_images.map((u, i) => `
+      renderHTML(dirState.background_images.map((u, i) => `
         <div style="position:relative;width:90px;height:68px;border-radius:4px;overflow:hidden;background:var(--bg-input);border:1px solid var(--border)">
           <img ${u && u.startsWith('/api/') ? `data-auth-src="${escAttr(u)}"` : `src="${escAttr(u)}"`} style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
-          <button type="button" data-bg-remove="${i}" title="${t('widget.dir.remove_bg')}" style="position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,0.75);color:#fff;cursor:pointer;font-size:14px;line-height:1;padding:0">&#215;</button>
+          <button type="button" data-bg-remove="${i}" title="${t('widget.dir.remove_bg')}" data-fil-i18n-title="${binding('widget.dir.remove_bg', undefined)}" style="position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,0.75);color:#fff;cursor:pointer;font-size:14px;line-height:1;padding:0">&#215;</button>
         </div>
-      `).join('')
+      `).join(''))
     }</div>`;
     hydrateAuthImages(list);
     list.querySelectorAll('[data-bg-remove]').forEach(b => b.onclick = () => {
@@ -1424,8 +1431,8 @@ export async function render(container) {
     const opts = [0, 5, 10, 20];
     if (!opts.includes(cur)) opts.push(cur);
     opts.sort((a, b) => a - b);
-    return `<select id="wIdleWarn" class="input" style="background:var(--bg-input)">${opts.map((n) =>
-      `<option value="${n}" ${n === cur ? 'selected' : ''}>${n === 0 ? esc(t('widget.web.idle_warning_off')) : esc(t('widget.web.idle_warning_sec', { n }))}</option>`).join('')}</select>`;
+    return `<select id="wIdleWarn" class="input" style="background:var(--bg-input)">${renderHTML(opts.map((n) =>
+      `<option value="${n}" ${n === cur ? 'selected' : ''}>${renderHTML(n === 0 ? t('widget.web.idle_warning_off') : t('widget.web.idle_warning_sec', { n }))}</option>`).join(''))}</select>`;
   }
 
   function getConfigFromForm(type) {
@@ -1546,7 +1553,7 @@ export async function render(container) {
       document.getElementById('widgetModal').style.display = 'none';
       showToast(saved && saved.pending_review ? t('review.toast.saved_as_draft') : t('widget.toast.saved'), 'success');
       loadWidgets();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   };
 
   document.getElementById('previewWidgetBtn').onclick = async () => {
@@ -1562,7 +1569,7 @@ export async function render(container) {
       if (!res.ok) throw new Error(t('widget.toast.preview_failed'));
       const { id } = await res.json();
       showPreviewModal(id, type);
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   };
 
   async function loadWidgets() {
@@ -1570,7 +1577,7 @@ export async function render(container) {
     loadedWidgets = Array.isArray(widgets) ? widgets : [];
     const grid = document.getElementById('widgetGrid');
     if (!widgets.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>${t('widget.empty_title')}</h3><p>${t('widget.empty_desc')}</p></div>`;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>${renderHTML(t('widget.empty_title'))}</h3><p>${renderHTML(t('widget.empty_desc'))}</p></div>`;
       return;
     }
     grid.innerHTML = widgets.map(w => {
@@ -1583,17 +1590,17 @@ export async function render(container) {
       return `
         <div class="content-item">
           <div class="content-item-preview" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
-            <span style="font-size:36px">${icon}</span>
+            <span style="font-size:36px">${renderHTML(icon)}</span>
           </div>
           <div class="content-item-body">
-            <div class="content-item-name">${escAttr(w.name)}</div>
-            <div class="content-item-size">${escAttr(typeLabel)}</div>
+            <div class="content-item-name">${renderHTML(escAttr(w.name))}</div>
+            <div class="content-item-size">${renderHTML(escAttr(typeLabel))}</div>
           </div>
           <div class="content-item-actions">
-            <button class="btn btn-secondary btn-sm" data-edit-widget="${escAttr(w.id)}">${t('common.edit')}</button>
+            <button class="btn btn-secondary btn-sm" data-edit-widget="${escAttr(w.id)}">${renderHTML(t('common.edit'))}</button>
             <button class="btn btn-secondary btn-sm btn-icon-only" data-duplicate-widget="${escAttr(w.id)}" title="${escAttr(t('widget.duplicate_hint'))}" aria-label="${escAttr(t('widget.duplicate'))}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-            <button class="btn btn-secondary btn-sm btn-icon-only" data-history-widget="${escAttr(w.id)}" title="${t('history.button')}" aria-label="${t('history.button')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></button>
-            <button class="btn btn-danger btn-sm btn-icon-only" data-delete-widget="${escAttr(w.id)}" title="${t('common.delete')}" aria-label="${t('common.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+            <button class="btn btn-secondary btn-sm btn-icon-only" data-history-widget="${escAttr(w.id)}" title="${t('history.button')}" data-fil-i18n-title="${binding('history.button', undefined)}" aria-label="${t('history.button')}" data-fil-i18n-aria-label="${binding('history.button', undefined)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></button>
+            <button class="btn btn-danger btn-sm btn-icon-only" data-delete-widget="${escAttr(w.id)}" title="${t('common.delete')}" data-fil-i18n-title="${binding('common.delete', undefined)}" aria-label="${t('common.delete')}" data-fil-i18n-aria-label="${binding('common.delete', undefined)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>
           <div data-approval-widget="${escAttr(w.id)}" style="padding:0 12px 10px"></div>
         </div>
@@ -1630,7 +1637,7 @@ export async function render(container) {
           const edit = document.querySelector(`#widgetGrid [data-edit-widget="${CSS.escape(copy.id)}"]`);
           if (edit) { edit.scrollIntoView({ block: 'center' }); edit.click(); }
         } catch (err) {
-          showToast(err.message, 'error');
+          showToast(err.uiMessage || err.message, 'error');
           dupBtn.disabled = false;
         }
         return;
@@ -1689,7 +1696,7 @@ export async function render(container) {
           await API(`/widgets/${deleteBtn.dataset.deleteWidget}`, { method: 'DELETE' });
           showToast(t('widget.toast.deleted'), 'success');
           loadWidgets();
-        } catch (err) { showToast(err.message, 'error'); }
+        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       }
     };
   }

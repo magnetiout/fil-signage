@@ -1,3 +1,5 @@
+import { renderHTML, uiText } from '../lib/i18n-bindings.js';
+
 // "What do I do next?" — answered from what the account ACTUALLY contains.
 //
 // There was already an onboarding wizard, but it is a one-time modal gated on a localStorage
@@ -13,7 +15,7 @@
 // The steps are the shortest true path to a screen showing something: get a screen connected,
 // get media in, arrange it, put it on the screen.
 
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { api } from '../api.js';
 
 // Pure: given what the account holds, which steps are done and which is next. Separated from the
@@ -137,16 +139,16 @@ export function render(host, state, { onAction, ctaFor } = {}) {
     <div style="border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg-secondary);padding:16px;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
         <div>
-          <div style="font-weight:600;font-size:15px">${t('gs.title')}</div>
-          <div style="color:var(--text-muted);font-size:12px;margin-top:2px">${t('gs.progress').replace('{done}', doneCount).replace('{total}', steps.length)}</div>
+          <div style="font-weight:600;font-size:15px">${renderHTML(t('gs.title'))}</div>
+          <div style="color:var(--text-muted);font-size:12px;margin-top:2px">${renderHTML(t('gs.progress', {done: doneCount, total: steps.length}))}</div>
         </div>
-        <button class="btn btn-sm" id="gsDismiss" style="color:var(--text-muted)">${t('gs.dismiss')}</button>
+        <button class="btn btn-sm" id="gsDismiss" style="color:var(--text-muted)">${renderHTML(t('gs.dismiss'))}</button>
       </div>
       <div style="height:4px;background:var(--bg-primary);border-radius:2px;overflow:hidden;margin-bottom:14px">
         <div style="height:100%;width:${(doneCount / steps.length) * 100}%;background:var(--accent,#3B82F6);transition:width .3s"></div>
       </div>
       <div style="display:grid;gap:8px">
-        ${steps.map((s, i) => {
+        ${renderHTML(steps.map((s, i) => {
           const isNext = i === nextIndex;
           return `
           <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:8px;
@@ -154,15 +156,15 @@ export function render(host, state, { onAction, ctaFor } = {}) {
             <div style="flex:0 0 20px;height:20px;border-radius:50%;margin-top:1px;display:flex;align-items:center;justify-content:center;
               font-size:11px;font-weight:700;
               ${s.done ? 'background:#22c55e;color:#fff' : isNext ? 'background:var(--accent,#3B82F6);color:#fff' : 'background:var(--bg-primary);color:var(--text-muted);border:1px solid var(--border)'}">
-              ${s.done ? '&#10003;' : i + 1}
+              ${renderHTML(s.done ? '&#10003;' : i + 1)}
             </div>
             <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:${isNext ? '600' : '500'};${s.done ? 'color:var(--text-muted);text-decoration:line-through' : ''}">${s.title}</div>
-              ${!s.done ? `<div style="color:var(--text-muted);font-size:12px;margin-top:2px">${s.desc}</div>` : ''}
+              <div style="font-size:13px;font-weight:${isNext ? '600' : '500'};${s.done ? 'color:var(--text-muted);text-decoration:line-through' : ''}">${uiText(s.title)}</div>
+              ${renderHTML(!s.done ? `<div style="color:var(--text-muted);font-size:12px;margin-top:2px">${renderHTML(s.desc)}</div>` : '')}
             </div>
-            ${!s.done && isNext ? `<button class="btn btn-primary btn-sm" data-gs-step="${s.key}" style="flex:0 0 auto">${(ctaFor && ctaFor[s.key]) || s.cta}</button>` : ''}
+            ${renderHTML(!s.done && isNext ? `<button class="btn btn-primary btn-sm" data-gs-step="${s.key}" style="flex:0 0 auto">${renderHTML((ctaFor && ctaFor[s.key]) || s.cta)}</button>` : '')}
           </div>`;
-        }).join('')}
+        }).join(''))}
       </div>
     </div>`;
 

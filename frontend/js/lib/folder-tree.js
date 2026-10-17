@@ -1,3 +1,4 @@
+import { getLocale } from '../i18n.js';
 /*
  * Content folders as a TREE — the pure half of the playlist picker's folder navigation.
  *
@@ -31,7 +32,7 @@ export function buildFolderTree(folders) {
     children.get(parent).push(f);
   }
   for (const list of children.values()) {
-    list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
+    list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), getLocale(), { sensitivity: 'base' }));
   }
   return { byId, children };
 }

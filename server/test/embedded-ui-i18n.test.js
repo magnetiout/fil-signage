@@ -51,7 +51,7 @@ test('the dashboard card shows the sensor badge for embedded panels only', () =>
   const src = read('views/dashboard.js');
   const at = src.indexOf('data-card-field="sensors"');
   assert.ok(at > 0, 'the badge exists');
-  const guard = src.slice(src.lastIndexOf('${(', at), at);
+  const guard = src.slice(src.lastIndexOf('${renderHTML((', at), at);
   assert.match(guard, /isEmbeddedCard\(device\)/, 'gated on the device being an embedded panel');
 });
 

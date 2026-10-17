@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 Private AI (docs/private-ai.md): the "Local / private" provider setup inside the AI settings
  * dialog, the organization's "only allow private AI" switch, and the badge every AI feature shows
@@ -11,7 +13,7 @@
  * Every server value reaches the page through esc() or .value/.textContent.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
 
@@ -28,7 +30,7 @@ export function getPrivateAiStatus(force = false) {
 /** "Private: data stays on your network", or nothing. */
 export function privateBadge(st) {
   if (!st || !st.private) return '';
-  return `<span class="private-ai-badge" title="${esc(t('private_ai.badge_tip'))}"><span aria-hidden="true">&#128274;</span> ${esc(t('private_ai.badge'))}</span>`;
+  return `<span class="private-ai-badge" title="${esc(t('private_ai.badge_tip'))}" data-fil-i18n-title="${binding('private_ai.badge_tip', undefined)}"><span aria-hidden="true">&#128274;</span> ${uiText(t('private_ai.badge'))}</span>`;
 }
 
 /** Fill every [data-private-ai-badge] under `root` once the status is known. */
@@ -52,36 +54,36 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
   host.innerHTML = `
     <div class="private-ai-setup">
       <div class="form-group">
-        <label>${esc(t('private_ai.where'))}</label>
-        <div class="private-ai-modes" role="radiogroup" aria-label="${esc(t('private_ai.where'))}">
+        <label>${uiText(t('private_ai.where'))}</label>
+        <div class="private-ai-modes" role="radiogroup" aria-label="${esc(t('private_ai.where'))}" data-fil-i18n-aria-label="${binding('private_ai.where', undefined)}">
           <label><input type="radio" name="aiMode" value="custom" ${mode === 'custom' ? 'checked' : ''} ${st.only_private ? 'disabled' : ''}>
-            <span><strong>${esc(t('private_ai.mode_custom'))}</strong><small>${esc(t('private_ai.mode_custom_desc'))}</small></span></label>
+            <span><strong>${uiText(t('private_ai.mode_custom'))}</strong><small>${uiText(t('private_ai.mode_custom_desc'))}</small></span></label>
           <label><input type="radio" name="aiMode" value="local" ${mode === 'local' ? 'checked' : ''}>
-            <span><strong>${esc(t('private_ai.mode_local'))}</strong><small>${esc(t('private_ai.mode_local_desc'))}</small></span></label>
+            <span><strong>${uiText(t('private_ai.mode_local'))}</strong><small>${uiText(t('private_ai.mode_local_desc'))}</small></span></label>
         </div>
-        ${st.only_private ? `<p class="private-ai-note">${esc(t('private_ai.policy_on_note'))}</p>` : ''}
+        ${renderHTML(st.only_private ? `<p class="private-ai-note">${uiText(t('private_ai.policy_on_note'))}</p>` : '')}
       </div>
       <div data-local hidden>
-        <div data-badge>${privateBadge(st)}</div>
-        <div class="form-group"><label for="paiBase">${esc(t('private_ai.base_url'))}</label>
+        <div data-badge>${renderHTML(privateBadge(st))}</div>
+        <div class="form-group"><label for="paiBase">${uiText(t('private_ai.base_url'))}</label>
           <input id="paiBase" class="input" style="width:100%" value="${esc(st.base_url || '')}" placeholder="http://ollama.lan:11434/v1" autocomplete="off" spellcheck="false">
-          <small class="private-ai-hint">${esc(t('private_ai.base_url_hint'))}</small></div>
-        <div class="form-group"><label for="paiKey">${esc(t('private_ai.api_key'))}</label>
+          <small class="private-ai-hint">${uiText(t('private_ai.base_url_hint'))}</small></div>
+        <div class="form-group"><label for="paiKey">${uiText(t('private_ai.api_key'))}</label>
           <input id="paiKey" class="input" type="password" autocomplete="off" style="width:100%" placeholder="${esc(st.has_key ? t('designer.ai.key_set') : t('private_ai.api_key_ph'))}"></div>
-        <button type="button" class="btn btn-secondary btn-sm" data-test>${esc(t('private_ai.test'))}</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-test>${uiText(t('private_ai.test'))}</button>
         <div class="private-ai-result" data-result role="status"></div>
-        <div class="form-group"><label for="paiModel">${esc(t('private_ai.text_model'))}</label>
-          <select id="paiModel" class="input" style="width:100%">${st.model && st.kind === 'local' ? `<option value="${esc(st.model)}" selected>${esc(st.model)}</option>` : `<option value="">${esc(t('private_ai.test_first'))}</option>`}</select></div>
-        <div class="form-group"><label for="paiImage">${esc(t('private_ai.image_model'))}</label>
+        <div class="form-group"><label for="paiModel">${uiText(t('private_ai.text_model'))}</label>
+          <select id="paiModel" class="input" style="width:100%">${renderHTML(st.model && st.kind === 'local' ? `<option value="${esc(st.model)}" selected>${uiText(st.model)}</option>` : `<option value="">${uiText(t('private_ai.test_first'))}</option>`)}</select></div>
+        <div class="form-group"><label for="paiImage">${uiText(t('private_ai.image_model'))}</label>
           <select id="paiImage" class="input" style="width:100%">
-            <option value="">${esc(t('private_ai.image_none'))}</option>
-            ${st.image_model ? `<option value="${esc(st.image_model)}" selected>${esc(st.image_model)}</option>` : ''}
+            <option value="">${uiText(t('private_ai.image_none'))}</option>
+            ${renderHTML(st.image_model ? `<option value="${esc(st.image_model)}" selected>${uiText(st.image_model)}</option>` : '')}
           </select>
-          <small class="private-ai-hint">${esc(t('private_ai.image_hint'))}</small></div>
+          <small class="private-ai-hint">${uiText(t('private_ai.image_hint'))}</small></div>
       </div>
-      ${st.can_set_policy ? `
+      ${renderHTML(st.can_set_policy ? `
         <label class="private-ai-policy"><input type="checkbox" data-policy ${st.only_private ? 'checked' : ''}>
-          <span><strong>${esc(t('private_ai.policy'))}</strong><small>${esc(t('private_ai.policy_desc'))}</small></span></label>` : ''}
+          <span><strong>${uiText(t('private_ai.policy'))}</strong><small>${uiText(t('private_ai.policy_desc'))}</small></span></label>` : '')}
       <hr class="private-ai-sep" data-sep>
     </div>`;
 
@@ -103,7 +105,7 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
       getPrivateAiStatus(true);
     } catch (err) {
       e.target.checked = !on;
-      showToast((err && err.message) || t('private_ai.save_failed'), 'error');
+      showToast((err && (err.uiMessage || err.message)) || t('private_ai.save_failed'), 'error');
     }
   });
 
@@ -111,45 +113,45 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
     const sel = host.querySelector('#paiModel');
     const cur = sel.value || st.model;
     const text = (r.text_models && r.text_models.length ? r.text_models : r.models) || [];
-    sel.innerHTML = text.map((m) => `<option value="${esc(m)}" ${m === cur ? 'selected' : ''}>${esc(m)}</option>`).join('');
+    sel.innerHTML = text.map((m) => `<option value="${esc(m)}" ${m === cur ? 'selected' : ''}>${uiText(m)}</option>`).join('');
     const img = host.querySelector('#paiImage');
     const curImg = img.value || st.image_model || '';
-    img.innerHTML = `<option value="">${esc(t('private_ai.image_none'))}</option>`
-      + (r.image_models || []).map((m) => `<option value="${esc(m)}" ${m === curImg ? 'selected' : ''}>${esc(m)}</option>`).join('');
+    img.innerHTML = `<option value="">${uiText(t('private_ai.image_none'))}</option>`
+      + (r.image_models || []).map((m) => `<option value="${esc(m)}" ${m === curImg ? 'selected' : ''}>${uiText(m)}</option>`).join('');
   }
 
   /** What to tell the admin when the address is private and not allowed yet. */
   function notAllowedHtml(r) {
     const h = r.host || '';
     return `<div class="private-ai-allow">
-      <p><strong>${esc(t('private_ai.not_allowed_title', { host: h }))}</strong></p>
-      <p>${esc(t('private_ai.not_allowed_body'))}</p>
-      ${r.can_allow ? `<button type="button" class="btn btn-primary btn-sm" data-allow="${esc(h)}">${esc(t('private_ai.allow_btn', { host: h }))}</button>
-        <p class="private-ai-hint">${esc(t('private_ai.allow_scope'))}</p>`
-        : `<p>${esc(t('private_ai.ask_admin'))}</p>`}
-      <p class="private-ai-hint">${esc(t('private_ai.env_hint'))} <code>${esc((r.how_to_allow && r.how_to_allow.env) || '')}</code></p>
+      <p><strong>${uiText(t('private_ai.not_allowed_title', { host: h }))}</strong></p>
+      <p>${uiText(t('private_ai.not_allowed_body'))}</p>
+      ${renderHTML(r.can_allow ? `<button type="button" class="btn btn-primary btn-sm" data-allow="${esc(h)}">${uiText(t('private_ai.allow_btn', { host: h }))}</button>
+        <p class="private-ai-hint">${uiText(t('private_ai.allow_scope'))}</p>`
+        : `<p>${uiText(t('private_ai.ask_admin'))}</p>`)}
+      <p class="private-ai-hint">${renderHTML(t('private_ai.env_hint'))} <code>${uiText((r.how_to_allow && r.how_to_allow.env) || '')}</code></p>
     </div>`;
   }
 
   async function runTest() {
     const base_url = host.querySelector('#paiBase').value.trim();
-    if (!base_url) { result.textContent = t('private_ai.need_url'); return; }
+    if (!base_url) { bindText(result, 'private_ai.need_url', undefined); return; }
     const btn = host.querySelector('[data-test]');
     btn.disabled = true;
     result.className = 'private-ai-result';
-    result.textContent = t('private_ai.testing');
+    bindText(result, 'private_ai.testing', undefined);
     try {
       const r = await api.privateAiTest(base_url, host.querySelector('#paiKey').value || undefined);
       lastTest = r;
       if (!r.allowed) { result.innerHTML = notAllowedHtml(r); wireAllow(); return; }
-      if (!r.policy_ok) { result.classList.add('is-error'); result.textContent = t('private_ai.policy_blocks'); return; }
+      if (!r.policy_ok) { result.classList.add('is-error'); bindText(result, 'private_ai.policy_blocks', undefined); return; }
       fillModels(r);
       result.classList.add('is-ok');
       result.innerHTML = `${esc(tn('private_ai.models_found', (r.models || []).length))}
-        ${r.private ? privateBadge({ private: true }) : `<span class="private-ai-public">${esc(t('private_ai.public_address'))}</span>`}`;
+        ${r.private ? privateBadge({ private: true }) : `<span class="private-ai-public">${uiText(t('private_ai.public_address'))}</span>`}`;
     } catch (err) {
       result.classList.add('is-error');
-      result.textContent = (err && err.message) || t('private_ai.test_failed');
+      bindMessage(result, (err && (err.uiMessage || err.message)) || t('private_ai.test_failed'));
     } finally { btn.disabled = false; }
   }
   function wireAllow() {
@@ -162,7 +164,7 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
         await runTest();
       } catch (err) {
         b.disabled = false;
-        showToast((err && err.message) || t('private_ai.save_failed'), 'error');
+        showToast((err && (err.uiMessage || err.message)) || t('private_ai.save_failed'), 'error');
       }
     });
   }
@@ -174,7 +176,7 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
     async save() {
       const base_url = host.querySelector('#paiBase').value.trim();
       const model = host.querySelector('#paiModel').value;
-      if (!base_url || !model) { result.className = 'private-ai-result is-error'; result.textContent = t('private_ai.need_model'); return false; }
+      if (!base_url || !model) { result.className = 'private-ai-result is-error'; bindText(result, 'private_ai.need_model', undefined); return false; }
       const body = { base_url, model, image_model: host.querySelector('#paiImage').value };
       const key = host.querySelector('#paiKey').value;
       if (key) body.api_key = key;
@@ -186,7 +188,7 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
       } catch (err) {
         result.className = 'private-ai-result is-error';
         if (err && err.code === 'not_allowed' && err.body) { result.innerHTML = notAllowedHtml({ ...err.body, can_allow: lastTest && lastTest.can_allow }); wireAllow(); }
-        else result.textContent = (err && err.message) || t('private_ai.save_failed');
+        else bindMessage(result, (err && (err.uiMessage || err.message)) || t('private_ai.save_failed'));
         return false;
       }
     },
@@ -196,9 +198,9 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
 /** The explanation shown in place of an AI feature when no provider is set up. */
 export function notConfiguredHtml(st) {
   return `<div class="private-ai-off">
-    <p class="simple-lead">${esc(t('private_ai.off_title'))}</p>
-    <p class="simple-muted">${esc(t(st && st.can_configure ? 'private_ai.off_admin' : 'private_ai.off_member'))}</p>
-    ${st && st.can_configure ? `<button type="button" class="btn btn-primary" data-open-ai-settings>${esc(t('private_ai.open_settings'))}</button>` : ''}
+    <p class="simple-lead">${uiText(t('private_ai.off_title'))}</p>
+    <p class="simple-muted">${uiText(t(st && st.can_configure ? 'private_ai.off_admin' : 'private_ai.off_member'))}</p>
+    ${renderHTML(st && st.can_configure ? `<button type="button" class="btn btn-primary" data-open-ai-settings>${uiText(t('private_ai.open_settings'))}</button>` : '')}
   </div>`;
 }
 

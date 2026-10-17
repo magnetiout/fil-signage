@@ -1,3 +1,4 @@
+const { requestLocale, turkishFilenameSql, localizedNamePage } = require('../lib/admin-locale');
 const express = require('express');
 const router = express.Router();
 // Abuse backstop (lib/backstop-limiter.js): already counted app-wide; here so this router is never unguarded.
@@ -97,6 +98,7 @@ router.get('/', (req, res) => {
   // "searching for a logo on page 1 shouldn't miss logos in another folder". When q is
   // absent we keep the folder-scoped browse behaviour (a folder shows its DIRECT items only).
   const q = (req.query.q || '').trim();
+  const displayLocale = requestLocale(req);
   if (!q && folderId !== undefined) {
     if (folderId === 'root' || folderId === '') {
       sql += ' AND c.folder_id IS NULL';
@@ -112,9 +114,11 @@ router.get('/', (req, res) => {
       sql += " AND c.tags LIKE ? ESCAPE '\\'";
       params.push('%"' + tagQ.replace(/[\\%_]/g, (m) => '\\' + m) + '"%');
     } else {
-      sql += " AND (c.filename LIKE ? ESCAPE '\\' OR c.tags LIKE ? ESCAPE '\\' OR c.meta LIKE ? ESCAPE '\\')";
+      const nameColumn = displayLocale === 'tr-TR' ? turkishFilenameSql() : 'c.filename';
+      sql += ` AND (${nameColumn} LIKE ? ESCAPE '\\' OR c.tags LIKE ? ESCAPE '\\' OR c.meta LIKE ? ESCAPE '\\')`;
       const like = '%' + esc + '%';
-      params.push(like, like, like);
+      const nameLike = '%' + (displayLocale === 'tr-TR' ? q.toLocaleLowerCase('tr-TR').replace(/[\\%_]/g, m => '\\' + m) : esc) + '%';
+      params.push(nameLike, like, like);
     }
   }
   // #214: type filter. youtube (video/youtube) and web (any other remote_url) are split
@@ -159,7 +163,9 @@ router.get('/', (req, res) => {
   const order = ' ORDER BY ' + (SORTS[req.query.sort] || SORTS.date_desc) + ', c.id ASC';
   const limit = Math.min(parseInt(req.query.limit) || 100, 500);
   const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-  const content = db.prepare('SELECT c.*' + sql + order + ' LIMIT ? OFFSET ?').all(...params, limit, offset);
+  const content = displayLocale === 'tr-TR' && ['name','name_desc'].includes(req.query.sort)
+    ? localizedNamePage(db, sql, params, displayLocale, req.query.sort === 'name_desc', limit, offset)
+    : db.prepare('SELECT c.*' + sql + order + ' LIMIT ? OFFSET ?').all(...params, limit, offset);
   for (const c of content) {
     c.tags = parseTags(c.tags);
     c.meta = parseMeta(c.meta);

@@ -1,3 +1,4 @@
+import serverMessageKeys from './lib/api-message-keys.js';
 const API_BASE = '/api';
 
 // The admin's own IANA zone, sent when pairing so a display still on its OS image's default zone
@@ -24,9 +25,20 @@ export function browserTimezone() {
 let translate = null;
 export function setErrorTranslator(fn) { translate = typeof fn === 'function' ? fn : null; }
 
+export function localizeServerError(message, status = 400) {
+  if (!translate) return message || 'Request failed';
+  const unsupported=typeof message==='string' && /^Unsupported file type \(([^\r\n]{1,255})\) — only image, video and audio files are accepted\. Nothing in this upload was added\.$/.exec(message);
+  if(unsupported)return translate('api.upload.unsupported_file',{name:unsupported[1]});
+  const key = serverMessageKeys[message];
+  if (key) { const value = translate(key); return value === key ? (message || 'Request failed') : value; }
+  const generic = status === 401 ? 'api.session_expired' : status === 403 ? 'api.permission_denied' : status === 413 ? 'api.file_too_large' : status === 429 ? 'api.too_many_requests' : 'common.request_failed';
+  const value = translate(generic);
+  return value === generic ? (message || 'Request failed') : value;
+}
+
 export function requestError(status, body) {
   const b = body && typeof body === 'object' ? body : {};
-  let msg = b.error || 'Request failed';
+  let msg = localizeServerError(b.error, status);
   const code = typeof b.code === 'string' ? b.code : null;
   if (code && translate && /^(CORPORATE_|FILL_)/.test(code)) {
     const t = translate;
@@ -43,7 +55,7 @@ export function requestError(status, body) {
       if (needed.every((k) => vars[k])) msg = t(key, vars);
     }
   }
-  const err = Object.assign(new Error(msg), { status, code, body: b });
+  const err = Object.assign(new Error(msg), { status, code, body: b, uiMessage: msg });
   /*
    * 3.0: a plan limit is a moment to explain, not just an error. The upgrade prompt
    * (components/plan-nudges.js) listens for this and calls preventDefault() when it takes over —
@@ -215,8 +227,8 @@ function remoteRoute(url, method) {
 export function assertLocalCallAllowed(url, method) {
   const routed = remoteRoute(url, method);
   if (!routed) return;
-  throw new Error(routed.refuse
-    || 'That is not available while you are viewing a linked server. Switch back to your own.');
+  throw requestError(403,{error:routed.refuse
+    || 'That is not available while you are viewing a linked server. Switch back to your own.'});
 }
 
 /*
@@ -237,7 +249,7 @@ async function meshWrite(routed, options) {
   const body = options.body ? JSON.parse(options.body) : undefined;
   const send = (opId) => fetch(`${API_BASE}/mesh/write/${encodeURIComponent(routed.nodeId)}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    headers: { 'Accept-Language': (() => { try { return localStorage.getItem('rd_lang') === 'en' ? 'en-US' : 'tr-TR'; } catch { return 'tr-TR'; } })(), 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ path: routed.path, method: routed.method, body, ...(opId ? { opId } : {}) }),
   });
 
@@ -256,7 +268,7 @@ async function meshWrite(routed, options) {
   }
 
   if (!res.ok) {
-    const err = new Error(payload.error || 'That server did not accept the change.');
+    const err = requestError(res.status,payload);
     err.status = res.status;
     err.opId = payload.opId;
     // Surfaced so a caller can say "may have applied" rather than "failed", which are different
@@ -272,16 +284,16 @@ function ackQuery(opts) { return opts && opts.acknowledge_impact ? '?acknowledge
 
 async function request(url, options = {}) {
   const routed = remoteRoute(url, options.method);
-  if (routed && routed.refuse) throw new Error(routed.refuse);
+  if (routed && routed.refuse) throw requestError(403,{error:routed.refuse});
   if (routed && routed.empty) return [];
   if (routed && routed.write) return meshWrite(routed, options);
   if (routed) {
     const r = await fetch(API_BASE + routed.url, {
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Accept-Language': (() => { try { return localStorage.getItem('rd_lang') === 'en' ? 'en-US' : 'tr-TR'; } catch { return 'tr-TR'; } })(), 'Content-Type': 'application/json', ...getAuthHeaders() },
     });
     if (!r.ok) {
       const err = await r.json().catch(() => ({}));
-      throw new Error(err.error || 'That server did not answer');
+      throw requestError(r.status,err);
     }
     const body = await r.json();
     /*
@@ -293,7 +305,7 @@ async function request(url, options = {}) {
   }
 
   const res = await fetch(API_BASE + url, {
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...options.headers },
+    headers: { 'Accept-Language': (() => { try { return localStorage.getItem('rd_lang') === 'en' ? 'en-US' : 'tr-TR'; } catch { return 'tr-TR'; } })(), 'Content-Type': 'application/json', ...getAuthHeaders(), ...options.headers },
     ...options,
   });
   if (res.status === 401) {
@@ -421,7 +433,7 @@ export const api = {
    */
   postForm: async (path, formData) => {
     const routed = remoteRoute(path, 'POST');
-    if (routed && routed.refuse) throw new Error(routed.refuse);
+    if (routed && routed.refuse) throw requestError(403,{error:routed.refuse});
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
@@ -431,7 +443,7 @@ export const api = {
     const text = await res.text();
     let body = null;
     try { body = text ? JSON.parse(text) : null; } catch (e) { body = null; }
-    if (!res.ok) throw new Error((body && body.error) || `Upload failed (${res.status})`);
+    if (!res.ok) throw requestError(res.status,body);
     return body;
   },
 
@@ -628,7 +640,7 @@ export const api = {
      * Any other helper that reaches for XHR or bare fetch inherits the same duty.
      */
     const routed = remoteRoute('/content', 'POST');
-    if (routed && routed.refuse) throw new Error(routed.refuse);
+    if (routed && routed.refuse) throw requestError(403,{error:routed.refuse});
 
     const wasBatch = (file instanceof FileList || Array.isArray(file));
     const files = wasBatch ? Array.from(file) : [file];
@@ -682,7 +694,7 @@ export const api = {
          */
         if (xhr.status >= 200 && xhr.status < 300) {
           try { return resolve(JSON.parse(xhr.responseText)); }
-          catch (e) { return reject(new Error('Upload succeeded but the response could not be read')); }
+          catch (e) { return reject(Object.assign(new Error('Upload succeeded but the response could not be read'),{uiMessage:translate ? translate('api.upload.response_unreadable') : 'Upload succeeded but the response could not be read'})); }
         }
         let body = {};
         try { body = JSON.parse(xhr.responseText) || {}; } catch (e) { body = {}; }
@@ -691,7 +703,7 @@ export const api = {
         // the upgrade prompt like any other plan limit (3.0).
         reject(requestError(xhr.status, { ...body, error: msg }));
       };
-      xhr.onerror = () => reject(new Error('Upload failed'));
+      xhr.onerror = () => reject(requestError(0,{error:'Upload failed'}));
       xhr.send(formData);
     });
 
@@ -705,7 +717,7 @@ export const api = {
         // they already have, or assumes none of them arrived.
         if (out.length) {
           throw Object.assign(new Error(`${err.message} (${out.length} of ${files.length} file${files.length === 1 ? '' : 's'} were uploaded before this failed)`),
-            { status: err.status, code: err.code, planPromptShown: err.planPromptShown });
+            { status: err.status, code: err.code, planPromptShown: err.planPromptShown, uiMessage:translate ? translate('api.upload.partial',{error:err.uiMessage||localizeServerError(err.message,err.status),done:out.length,total:files.length}) : err.message });
         }
         throw err;
       }
@@ -1145,7 +1157,6 @@ export async function downloadSlotReportCsv(problemsOnly) {
   return r.blob();
 }
 
-
 /** 3.0 energy: an authenticated download (CSV / appendix text) from /api/energy/<path>, as a blob. */
 export async function downloadEnergyFile(pathAndQuery) {
   const r = await fetch(`${API_BASE}/energy/${pathAndQuery}`, { headers: getAuthHeaders() });
@@ -1158,7 +1169,7 @@ export async function downloadEnergyFile(pathAndQuery) {
 // bearer header, which an <img src> or <iframe src> cannot carry.
 export async function fetchRevisionRender(type, id, rev) {
   const r = await fetch(`${API_BASE}/revisions/${type}/${id}/${rev}/render`, { headers: getAuthHeaders() });
-  if (!r.ok) throw new Error('Preview unavailable');
+  if (!r.ok) throw Object.assign(new Error('Preview unavailable'),{uiMessage:translate ? translate('api.preview_unavailable') : 'Preview unavailable'});
   return r.text();
 }
 export async function fetchRevisionFileUrl(type, id, rev, thumb = false) {

@@ -39,7 +39,8 @@ test('a revoked login drops the live connection to the sign-in page', { skip: SK
   await page.reload({ waitUntil: 'domcontentloaded' });   // same-document hash change: boot again with the token
   const connected = () => page.evaluate(() => {
     const el = document.getElementById('connectionStatus');
-    return !!el && /connected/i.test(el.textContent) && !/disconnected/i.test(el.textContent);
+    // Connection state is independent of the administrator's selected language.
+    return !!el && !!el.querySelector('.status-dot.online');
   });
   const ok = await waitFor(connected, 20000);
   assert.ok(ok, 'the dashboard connects first');

@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage, attributeBinding, bindText } from '../lib/i18n-bindings.js';
+
 /*
  * "BI dashboards" (server/routes/bi-connections.js, docs/bi-dashboards.md): the organization's
  * Grafana, Power BI and Tableau connections. Org owners and admins only.
@@ -9,7 +11,7 @@
  */
 import { api } from '../api.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 
 const BASE = '/bi-connections';
@@ -61,11 +63,11 @@ export async function mountBiConnections(host) {
   try { data = await api.get(BASE); } catch (_) { host.style.display = 'none'; return; }
   if (!data.can_manage) { host.style.display = 'none'; return; }
   host.style.display = '';
-  host.innerHTML = `<h3>${esc(t('bi.title'))}</h3>
-    <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${esc(t('bi.blurb'))}</p>
+  host.innerHTML = `<h3>${uiText(t('bi.title'))}</h3>
+    <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${uiText(t('bi.blurb'))}</p>
     <div data-bi="list"></div>
     <details data-bi="add" style="margin-top:12px">
-      <summary style="cursor:pointer;font-size:13px">${esc(t('bi.add'))}</summary>
+      <summary style="cursor:pointer;font-size:13px">${uiText(t('bi.add'))}</summary>
       <div data-bi="addform" style="margin-top:12px;max-width:560px"></div>
     </details>`;
   const list = host.querySelector('[data-bi="list"]');
@@ -74,25 +76,25 @@ export async function mountBiConnections(host) {
   renderForm(addForm, null, 'grafana');
 
   async function reload() {
-    try { data = await api.get(BASE); } catch (err) { showToast(err.message, 'error'); return; }
+    try { data = await api.get(BASE); } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
     render();
   }
 
   function render() {
     const rows = data.connections || [];
-    if (!rows.length) { list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${esc(t('bi.none'))}</p>`; return; }
+    if (!rows.length) { list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText(t('bi.none'))}</p>`; return; }
     list.innerHTML = rows.map((c) => `
       <div data-bi-row="${esc(c.id)}" style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
           <div style="min-width:0">
-            <strong>${esc(c.name)}</strong>
-            <span style="font-size:12px;color:var(--text-muted)"> · ${esc(KINDS[c.kind] ? KINDS[c.kind].label() : c.kind)}</span>
-            <div style="font-size:12px;color:var(--text-muted);word-break:break-all">${esc(c.config.base_url || c.config.server_url || c.config.tenant_id || '')}${c.allow_private ? ` · ${esc(t('bi.private_on'))}` : ''}</div>
+            <strong>${uiText(c.name)}</strong>
+            <span style="font-size:12px;color:var(--text-muted)"> · ${uiText(KINDS[c.kind] ? KINDS[c.kind].label() : c.kind)}</span>
+            <div style="font-size:12px;color:var(--text-muted);word-break:break-all">${uiText(c.config.base_url || c.config.server_url || c.config.tenant_id || '')}${renderHTML(c.allow_private ? ` · ${esc(t('bi.private_on'))}` : '')}</div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn btn-secondary btn-sm" data-bi-test="${esc(c.id)}">${esc(t('bi.test'))}</button>
-            <button class="btn btn-secondary btn-sm" data-bi-edit="${esc(c.id)}">${esc(t('bi.edit'))}</button>
-            <button class="btn btn-danger btn-sm" data-bi-del="${esc(c.id)}">${esc(t('bi.delete'))}</button>
+            <button class="btn btn-secondary btn-sm" data-bi-test="${esc(c.id)}">${uiText(t('bi.test'))}</button>
+            <button class="btn btn-secondary btn-sm" data-bi-edit="${esc(c.id)}">${uiText(t('bi.edit'))}</button>
+            <button class="btn btn-danger btn-sm" data-bi-del="${esc(c.id)}">${uiText(t('bi.delete'))}</button>
           </div>
         </div>
         <div data-bi-out="${esc(c.id)}" style="display:none;margin-top:8px;font-size:12px"></div>
@@ -102,11 +104,11 @@ export async function mountBiConnections(host) {
     list.querySelectorAll('[data-bi-test]').forEach((b) => b.addEventListener('click', async () => {
       const out = list.querySelector(`[data-bi-out="${b.dataset.biTest}"]`);
       out.style.display = '';
-      out.textContent = t('bi.testing');
+      bindText(out, 'bi.testing', undefined);
       try {
         const r = await api.post(`${BASE}/${b.dataset.biTest}/test`, {});
-        out.innerHTML = (r.checks || []).map((c) => `<div>${c.ok ? '✅' : (c.warn ? '⚠️' : '❌')} ${esc(CHECK_LABELS[c.name] ? CHECK_LABELS[c.name]() : c.name)} — <span style="color:var(--text-muted)">${esc(c.detail || '')}</span></div>`).join('');
-      } catch (err) { out.textContent = err.message; }
+        out.innerHTML = (r.checks || []).map((c) => `<div>${renderHTML(c.ok ? '✅' : (c.warn ? '⚠️' : '❌'))} ${uiText(CHECK_LABELS[c.name] ? CHECK_LABELS[c.name]() : c.name)} — <span style="color:var(--text-muted)">${uiText(c.detail || '')}</span></div>`).join('');
+      } catch (err) { bindMessage(out, (err.uiMessage || err.message)); }
     }));
     list.querySelectorAll('[data-bi-edit]').forEach((b) => b.addEventListener('click', () => {
       const box = list.querySelector(`[data-bi-editbox="${b.dataset.biEdit}"]`);
@@ -120,7 +122,7 @@ export async function mountBiConnections(host) {
       if (!confirm(t('bi.confirm_delete'))) return;
       try { await api.delete(`${BASE}/${b.dataset.biDel}`); }
       catch (err) {
-        if (err.status !== 409 || !confirm(`${err.message}\n\n${t('bi.confirm_delete_in_use')}`)) { if (err.status !== 409) showToast(err.message, 'error'); return; }
+        if (err.status !== 409 || !confirm(`${err.message}\n\n${t('bi.confirm_delete_in_use')}`)) { if (err.status !== 409) showToast(err.uiMessage || err.message, 'error'); return; }
         try { await api.delete(`${BASE}/${b.dataset.biDel}?force=1`); } catch (e2) { showToast(e2.message, 'error'); return; }
       }
       showToast(t('bi.removed'), 'success');
@@ -132,16 +134,16 @@ export async function mountBiConnections(host) {
     const spec = KINDS[kind];
     const cfg = (row && row.config) || {};
     box.innerHTML = `<div style="display:grid;gap:10px">
-      ${row ? '' : `<div class="form-group"><label>${esc(t('bi.f_kind'))}</label>
-        <select class="input" data-f="kind">${Object.keys(KINDS).map((k) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${esc(KINDS[k].label())}</option>`).join('')}</select></div>`}
-      <div style="font-size:12px;color:var(--text-muted)">${esc(spec.hint())}</div>
-      <div class="form-group"><label>${esc(t('bi.f_name'))}</label><input class="input" data-f="name" value="${esc(row ? row.name : '')}"></div>
-      ${spec.fields.map((f) => `<div class="form-group"><label>${esc(f.label())}</label><input class="input" data-f="${f.k}" value="${esc(cfg[f.k] || '')}" placeholder="${esc(f.ph)}"></div>`).join('')}
-      <div class="form-group"><label>${esc(spec.secret())}</label>
+      ${renderHTML(row ? '' : `<div class="form-group"><label>${uiText(t('bi.f_kind'))}</label>
+        <select class="input" data-f="kind">${renderHTML(Object.keys(KINDS).map((k) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${uiText(KINDS[k].label())}</option>`).join(''))}</select></div>`)}
+      <div style="font-size:12px;color:var(--text-muted)">${uiText(spec.hint())}</div>
+      <div class="form-group"><label>${uiText(t('bi.f_name'))}</label><input class="input" data-f="name" value="${esc(row ? row.name : '')}"></div>
+      ${renderHTML(spec.fields.map((f) => `<div class="form-group"><label>${uiText(f.label())}</label><input class="input" data-f="${f.k}" value="${esc(cfg[f.k] || '')}" placeholder="${esc(f.ph)}"${attributeBinding("placeholder", f.ph)}></div>`).join(''))}
+      <div class="form-group"><label>${uiText(spec.secret())}</label>
         <input type="password" class="input" data-f="secret" autocomplete="new-password" placeholder="${esc(row && row.has_secret ? t('bi.secret_kept') : '')}"></div>
-      ${kind !== 'powerbi' && data.can_allow_private ? `<label style="display:flex;gap:6px;align-items:center;font-size:12px">
-        <input type="checkbox" data-f="allow_private" ${row && row.allow_private ? 'checked' : ''}> ${esc(t('bi.f_allow_private'))}</label>` : ''}
-      <div><button class="btn btn-primary btn-sm" data-f="save">${esc(row ? t('bi.save') : t('bi.create'))}</button></div>
+      ${renderHTML(kind !== 'powerbi' && data.can_allow_private ? `<label style="display:flex;gap:6px;align-items:center;font-size:12px">
+        <input type="checkbox" data-f="allow_private" ${row && row.allow_private ? 'checked' : ''}> ${uiText(t('bi.f_allow_private'))}</label>` : '')}
+      <div><button class="btn btn-primary btn-sm" data-f="save">${uiText(row ? t('bi.save') : t('bi.create'))}</button></div>
     </div>`;
     const kindSel = box.querySelector('[data-f="kind"]');
     if (kindSel) kindSel.addEventListener('change', () => renderForm(box, null, kindSel.value));
@@ -156,7 +158,7 @@ export async function mountBiConnections(host) {
       if (ap) body.allow_private = ap.checked;
       try {
         if (row) await api.put(`${BASE}/${row.id}`, body); else await api.post(BASE, body);
-      } catch (err) { showToast(err.message, 'error'); return; }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
       showToast(t('bi.saved'), 'success');
       if (!row) { host.querySelector('[data-bi="add"]').open = false; renderForm(addForm, null, 'grafana'); }
       reload();

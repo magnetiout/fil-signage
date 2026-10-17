@@ -78,13 +78,13 @@ test('the NOC module polls only while it is the active, visible view: one setInt
   assert.match(mv, /rev\(l\) !== rev\(p\) \|\| depth\(l\) !== depth\(p\)/);
   assert.doesNotMatch(mv, /last_sync_at|cache_stored|relays/, 'not on a heartbeat or a byte counter');
   // Copy lag is captioned as such and never drawn as a number on a dead link.
-  assert.match(src, /copy lag \$\{l\.state === 'down' \|\| l\.lag_s == null \? '\?'/);
+  assert.match(src, /value1: l\.state === 'down' \|\| l\.lag_s == null \? '\?'/);
   // The chip is attention, the drawer is the board: no CPU/memory/disk on a chip, the edge caption
   // is hidden until hover or selection, and this server's host strip renders null as a dash, never 0.
   const chip = src.slice(src.indexOf('const nodeBox ='), src.indexOf('const edgeLine ='));
   assert.doesNotMatch(chip, /cpu|rss|mem_pct|disk/i, 'no host figures on the chip');
   assert.match(chip, /<title>/, 'role and id live in the hover title');
-  assert.match(chip, /'no screens'/);
+  assert.match(chip, /t\("ui\.noc\.no_screens_/ );
   assert.match(src, /\.noc-edge \.noc-cap \{ display: none;/, 'captions hidden by default');
   assert.match(src, /\.noc-edge:hover \.noc-cap, \.noc-edge\.noc-sel \.noc-cap \{ display: block; \}/, 'shown on hover and on the selected node\'s links');
   assert.match(src, /const fmtPct = \(v\) => \(v == null \? '—'/, 'null is a dash');

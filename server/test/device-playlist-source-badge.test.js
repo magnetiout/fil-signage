@@ -1,4 +1,5 @@
 'use strict';
+const {runInViewContext}=require('./helpers/admin-render');
 
 /*
  * "Why is this screen showing that?"
@@ -39,7 +40,7 @@ function badge(device) {
     t: (k, vars) => (vars ? `${k}:${JSON.stringify(vars)}` : k),
     String, Object, JSON,
   };
-  vm.runInNewContext(SRC.slice(i, end) + '; __out = playlistSourceBadge(__device);',
+  runInViewContext(SRC.slice(i, end) + '; __out = playlistSourceBadge(__device);',
     Object.assign(sandbox, { __device: device, __out: null }));
   return sandbox.__out;
 }

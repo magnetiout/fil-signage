@@ -10,20 +10,22 @@
 //        unexpected error"), so videos never loaded on pages this SW controls
 //        (e.g. the web player, since this SW's scope is '/').
 // Changing this string is what makes the browser detect a new SW + run activate,
-// which deletes every cache key != CACHE below.
-const CACHE = 'rd-admin-v4';
+// which deletes only older admin cache buckets; player/media caches are independent.
+const CACHE = 'rd-admin-fil-i18n-v1';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll([
     '/', '/index.html', '/css/variables.css', '/css/reset.css', '/css/main.css', '/css/library.css',
     '/js/app.js', '/js/api.js', '/js/socket.js', '/js/i18n.js',
-    '/js/components/toast.js'
+    '/js/components/toast.js', '/js/i18n/en.js', '/js/i18n/tr.js',
+    '/js/lib/i18n-bindings.js', '/js/lib/admin-locale.js', '/js/components/admin-language.js'
   ])));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+  // Admin updates must not remove offline media or the player's independent cache.
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('rd-admin-') && k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 
@@ -53,6 +55,6 @@ self.addEventListener('fetch', e => {
         }
         return resp;
       })
-      .catch(() => caches.match(req))
+      .catch(() => caches.open(CACHE).then(cache => cache.match(req)))
   );
 });

@@ -1,3 +1,5 @@
+import { renderHTML, bindMessage, binding } from '../lib/i18n-bindings.js';
+
 // "What changed?" — answered once, when the answer is new.
 //
 // Until now an upgrade was invisible from inside the product. The admin page could tell you a
@@ -14,7 +16,7 @@
 // signing in at 8am to find out why a screen is black must be able to get past it without reading
 // it, which is exactly what a release-notes dialog in the way of the product does not allow.
 
-import { t } from '../i18n.js';
+import { message as t, hasMessage } from '../i18n.js';
 
 const SEEN_KEY = 'rd_whatsnew_seen';
 
@@ -66,10 +68,11 @@ export async function fetchNotes() {
  * the DOM as text rather than markup. A release note has no reason to carry HTML, and an escaping
  * habit that has exceptions is not a habit.
  */
-function li(text) {
+function li(text, version, index) {
   const el = document.createElement('li');
   el.style.cssText = 'margin-bottom:6px;line-height:1.5';
-  el.textContent = text;
+  const key='release.v'+String(version).replaceAll('.','_')+'.note_'+index;
+  bindMessage(el, hasMessage(key) ? t(key) : text);
   return el;
 }
 
@@ -86,18 +89,18 @@ export function render(host, data) {
   host.innerHTML = `
     <div style="border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg-secondary);padding:16px;margin-bottom:16px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
-        <div style="font-weight:600;font-size:15px">${t('whatsnew.title', { version: data.version })}</div>
-        <button class="btn btn-sm" id="wnDismiss" aria-label="${t('whatsnew.dismiss')}"
+        <div style="font-weight:600;font-size:15px">${renderHTML(t('whatsnew.title', { version: data.version }))}</div>
+        <button class="btn btn-sm" id="wnDismiss" aria-label="${t('whatsnew.dismiss')}" data-fil-i18n-aria-label="${binding('whatsnew.dismiss', undefined)}"
           style="color:var(--text-muted);flex:0 0 auto">&#10005;</button>
       </div>
       <ul id="wnList" style="color:var(--text-secondary);font-size:13px;padding-left:20px;margin:0"></ul>
       <div style="margin-top:12px">
-        <a href="#/settings" id="wnFull" style="color:var(--accent);font-size:12px">${t('whatsnew.full_notes')} &rarr;</a>
+        <a href="#/settings" id="wnFull" style="color:var(--accent);font-size:12px">${renderHTML(t('whatsnew.full_notes'))} →</a>
       </div>
     </div>`;
 
   const list = host.querySelector('#wnList');
-  for (const note of data.current.notes) list.appendChild(li(note));
+  data.current.notes.forEach((note,index)=>list.appendChild(li(note,data.current.version||data.version,index)));
 
   const putAway = () => { markSeen(data.version); host.innerHTML = ''; host.style.display = 'none'; };
   host.querySelector('#wnDismiss')?.addEventListener('click', putAway);
@@ -115,7 +118,7 @@ export function render(host, data) {
 export function renderHistory(host, data) {
   if (!host || !data || !Array.isArray(data.history) || data.history.length === 0) return false;
 
-  host.innerHTML = `<div style="margin-top:16px"><div style="font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:8px">${t('whatsnew.history_title')}</div><div id="wnHistoryBody"></div></div>`;
+  host.innerHTML = `<div style="margin-top:16px"><div style="font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:8px">${renderHTML(t('whatsnew.history_title'))}</div><div id="wnHistoryBody"></div></div>`;
   const body = host.querySelector('#wnHistoryBody');
 
   data.history.forEach((rel, i) => {
@@ -126,14 +129,14 @@ export function renderHistory(host, data) {
     head.style.cssText = 'font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px';
     // The running build is marked, because "which of these am I on?" is the first question the
     // list raises and the version number alone above it is easy to miss.
-    head.textContent = rel.version === data.version
+    bindMessage(head, rel.version === data.version
       ? t('whatsnew.version_current', { version: rel.version, date: rel.date || '' })
-      : t('whatsnew.version_line', { version: rel.version, date: rel.date || '' });
+      : t('whatsnew.version_line', { version: rel.version, date: rel.date || '' }));
     block.appendChild(head);
 
     const ul = document.createElement('ul');
     ul.style.cssText = 'color:var(--text-muted);font-size:12px;padding-left:18px;margin:0';
-    for (const note of rel.notes) ul.appendChild(li(note));
+    rel.notes.forEach((note,index)=>ul.appendChild(li(note,rel.version,index)));
     block.appendChild(ul);
 
     body.appendChild(block);

@@ -1,9 +1,15 @@
+import { renderHTML, uiText, translatedAttribute, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { subscribe, displayValue, getLanguage, setLanguage, getAdminLanguages as getAvailableLanguages, message as t } from '../i18n.js';
+
+import { localizeServerError } from '../api.js';
+
 import { api } from '../api.js';
 import { SPONSOR_URL } from '../components/plan-nudges.js';
 import { mountCanvaSettings } from '../components/canva-settings.js';
 import * as whatsNew from '../components/whats-new.js';
 import { showToast } from '../components/toast.js';
-import { getLanguage, setLanguage, getAvailableLanguages, t } from '../i18n.js';
+
 import { esc, isPlatformAdmin, inManagerApp } from '../utils.js';
 import { passkeysSupported, suggestedPasskeyName } from '../lib/passkeys.js';
 import { addPasskey, unavailableMessage } from '../components/passkey-setup.js';
@@ -43,39 +49,39 @@ export async function render(container) {
   container.innerHTML = `
     <div class="page-header">
       <div>
-        <h1>${t('settings.title')} <span class="help-tip" data-tip="${t('settings.help_tip')}">?</span></h1>
-        <div class="subtitle">${t('settings.subtitle')}</div>
+        <h1>${renderHTML(t('settings.title'))} <span class="help-tip" ${translatedAttribute("data-tip", 'settings.help_tip')}>?</span></h1>
+        <div class="subtitle">${renderHTML(t('settings.subtitle'))}</div>
       </div>
     </div>
 
     <div class="settings-section">
-      <h3>${t('settings.account')}</h3>
+      <h3>${renderHTML(t('settings.account'))}</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-        <div class="form-group"><label>${t('auth.email')}</label><input type="email" class="input" value="${esc(user.email || '')}" disabled></div>
-        <div class="form-group"><label>${t('auth.name')}</label><input type="text" id="acctName" class="input" value="${esc(user.name || '')}"></div>
+        <div class="form-group"><label>${renderHTML(t('auth.email'))}</label><input type="email" class="input" value="${esc(user.email || '')}" disabled></div>
+        <div class="form-group"><label>${renderHTML(t('auth.name'))}</label><input type="text" id="acctName" class="input" value="${esc(user.name || '')}"></div>
       </div>
       <div class="form-group" style="margin-top:12px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
           <input type="checkbox" id="acctEmailAlerts" ${user.email_alerts ? 'checked' : ''}>
-          <span>${t('settings.email_alerts')}</span>
+          <span>${renderHTML(t('settings.email_alerts'))}</span>
         </label>
       </div>
-      <button class="btn btn-secondary btn-sm" id="saveAcctBtn">${t('settings.save_profile')}</button>
+      <button class="btn btn-secondary btn-sm" id="saveAcctBtn">${renderHTML(t('settings.save_profile'))}</button>
 
-      ${user.auth_provider === 'local' ? `
+      ${renderHTML(user.auth_provider === 'local' ? `
       <div style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
-        <h4 style="font-size:14px;margin-bottom:8px">${t('settings.change_password')}</h4>
-        <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${t('settings.password_min_8')}</p>
+        <h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('settings.change_password'))}</h4>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(t('settings.password_min_8'))}</p>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
-          <div class="form-group"><label>${t('settings.current_password')}</label><input type="password" id="acctCurrentPw" class="input" autocomplete="current-password"></div>
-          <div class="form-group"><label>${t('settings.new_password')}</label><input type="password" id="acctNewPw" class="input" autocomplete="new-password"></div>
-          <div class="form-group"><label>${t('settings.confirm_new_password')}</label><input type="password" id="acctConfirmPw" class="input" autocomplete="new-password"></div>
+          <div class="form-group"><label>${uiText(t('settings.current_password'))}</label><input type="password" id="acctCurrentPw" class="input" autocomplete="current-password"></div>
+          <div class="form-group"><label>${renderHTML(t('settings.new_password'))}</label><input type="password" id="acctNewPw" class="input" autocomplete="new-password"></div>
+          <div class="form-group"><label>${renderHTML(t('settings.confirm_new_password'))}</label><input type="password" id="acctConfirmPw" class="input" autocomplete="new-password"></div>
         </div>
-        <button class="btn btn-primary btn-sm" id="changePwBtn">${t('settings.change_password')}</button>
+        <button class="btn btn-primary btn-sm" id="changePwBtn">${renderHTML(t('settings.change_password'))}</button>
       </div>
       ` : `
-      <p style="color:var(--text-muted);font-size:12px;margin-top:16px">${t('settings.sso_note', { provider: esc(user.auth_provider || 'SSO') })}</p>
-      `}
+      <p style="color:var(--text-muted);font-size:12px;margin-top:16px">${renderHTML(t('settings.sso_note', { provider: esc(user.auth_provider || 'SSO') }))}</p>
+      `)}
 
       <!--
         Sign-in method (#258). An account has exactly ONE credential: a password, or one
@@ -83,27 +89,27 @@ export async function render(container) {
         same step, so the account is never briefly left with no way in. Populated by loadSsoLink().
       -->
       <div id="ssoLinkBlock" style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
-        <h4 style="font-size:14px;margin-bottom:8px">${t('settings.signin_method')}</h4>
+        <h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('settings.signin_method'))}</h4>
         <p style="color:var(--text-muted);font-size:12px">…</p>
       </div>
 
       <!-- Two-factor authentication (#100). Populated by load2FA() from /auth/totp/status. -->
       <div id="twoFactorBlock" style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
-        <h4 style="font-size:14px;margin-bottom:8px">${t('settings.2fa_title')}</h4>
+        <h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('settings.2fa_title'))}</h4>
         <p style="color:var(--text-muted);font-size:12px">…</p>
       </div>
 
       <!-- 3.0: passkeys. Populated by loadPasskeys() from /auth/passkeys. -->
       <div id="passkeyBlock" style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
-        <h4 style="font-size:14px;margin-bottom:8px">${t('passkey.title')}</h4>
+        <h4 style="font-size:14px;margin-bottom:8px">${uiText(t('passkey.title'))}</h4>
         <p style="color:var(--text-muted);font-size:12px">…</p>
       </div>
 
       <!-- 3.0: every session carries the account's token_version; bumping it ends the others. -->
       <div style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
-        <h4 style="font-size:14px;margin-bottom:8px">${t('settings.sessions_title')}</h4>
-        <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${t('settings.sessions_desc')}</p>
-        <button class="btn btn-secondary btn-sm" id="revokeOtherSessionsBtn">${t('settings.sessions_revoke')}</button>
+        <h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('settings.sessions_title'))}</h4>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(t('settings.sessions_desc'))}</p>
+        <button class="btn btn-secondary btn-sm" id="revokeOtherSessionsBtn">${renderHTML(t('settings.sessions_revoke'))}</button>
       </div>
     </div>
 
@@ -118,16 +124,16 @@ export async function render(container) {
     <!-- 3.0 The workspace brand kit Make a sign uses (components/brand-kit-editor.js). Every member
          sees it; a view-only member sees it read-only, and the server refuses their writes. -->
     <div class="settings-section" id="brandKitCard">
-      <h3>${esc(t('signs.brand.title'))}</h3>
-      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">${esc(t('signs.brand.intro'))} <a href="#/signs">${esc(t('signs.task'))} &rarr;</a></p>
+      <h3>${uiText(t('signs.brand.title'))}</h3>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">${renderHTML(t('signs.brand.intro'))} <a href="#/signs">${uiText(t('signs.task'))} →</a></p>
       <div id="brandKitHost" class="bk-settings"></div>
     </div>
 
     <!-- 3.0 switch to ScreenTinker (views/migrate.js). The page itself says so to a view-only member. -->
     <div class="settings-section" id="migrateCard">
-      <h3>${esc(t('migrate.title'))}</h3>
-      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">${esc(t('migrate.subtitle'))}</p>
-      <a class="btn btn-secondary btn-sm" href="#/migrate">${esc(t('migrate.simple.offer_link'))}</a>
+      <h3>${uiText(t('migrate.title'))}</h3>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">${uiText(t('migrate.subtitle'))}</p>
+      <a class="btn btn-secondary btn-sm" href="#/migrate">${uiText(t('migrate.simple.offer_link'))}</a>
     </div>
 
     <!-- Where media is stored (org owners/admins). Mounted only for them; the server enforces it. -->
@@ -140,44 +146,44 @@ export async function render(container) {
     <div class="settings-section" id="roomsCard" style="display:none"></div>
 
     <div class="settings-section" id="ssoCard" style="display:none">
-      <h3>${t('sso.title')}</h3>
-      <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${t('sso.blurb')}</p>
+      <h3>${renderHTML(t('sso.title'))}</h3>
+      <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${renderHTML(t('sso.blurb'))}</p>
       <div id="ssoList"></div>
       <details id="ssoAddDetails" style="margin-top:12px">
-        <summary style="cursor:pointer;font-size:13px">${t('sso.add')}</summary>
+        <summary style="cursor:pointer;font-size:13px">${renderHTML(t('sso.add'))}</summary>
         <div style="margin-top:12px;display:grid;gap:10px;max-width:560px">
-          <div class="form-group"><label>${t('sso.f_protocol')}</label>
+          <div class="form-group"><label>${renderHTML(t('sso.f_protocol'))}</label>
             <select id="ssoKind" class="input">
-              <option value="oidc">${t('sso.protocol_oidc')}</option>
-              <option value="saml">${t('sso.protocol_saml')}</option>
+              <option value="oidc">${renderHTML(t('sso.protocol_oidc'))}</option>
+              <option value="saml">${renderHTML(t('sso.protocol_saml'))}</option>
             </select></div>
-          <div class="form-group"><label>${t('sso.f_name')}</label>
-            <input type="text" id="ssoName" class="input" placeholder="Acme SSO"></div>
+          <div class="form-group"><label>${uiText(t('sso.f_name'))}</label>
+            <input type="text" id="ssoName" class="input" ${translatedAttribute("placeholder", "ui.settings.placeholder_acme_sso_34f666")}></div>
           <div id="ssoSamlFields" style="display:none;gap:10px">
-            <div class="form-group"><label>${t('sso.f_saml_metadata')}</label>
+            <div class="form-group"><label>${uiText(t('sso.f_saml_metadata'))}</label>
               <textarea id="ssoSamlMetadata" class="input" rows="4" spellcheck="false" style="font-family:monospace;font-size:11px"></textarea>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('sso.f_saml_metadata_hint')}</div></div>
-            <div class="form-group"><label>${t('sso.f_saml_entity_id')}</label>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('sso.f_saml_metadata_hint'))}</div></div>
+            <div class="form-group"><label>${uiText(t('sso.f_saml_entity_id'))}</label>
               <input type="text" id="ssoSamlEntityId" class="input" placeholder="https://sts.windows.net/…/"></div>
-            <div class="form-group"><label>${t('sso.f_saml_sso_url')}</label>
+            <div class="form-group"><label>${uiText(t('sso.f_saml_sso_url'))}</label>
               <input type="url" id="ssoSamlSsoUrl" class="input" placeholder="https://login.example.com/saml2"></div>
-            <div class="form-group"><label>${t('sso.f_saml_cert')}</label>
-              <textarea id="ssoSamlCert" class="input" rows="3" spellcheck="false" style="font-family:monospace;font-size:11px" placeholder="-----BEGIN CERTIFICATE-----"></textarea></div>
+            <div class="form-group"><label>${uiText(t('sso.f_saml_cert'))}</label>
+              <textarea id="ssoSamlCert" class="input" rows="3" spellcheck="false" style="font-family:monospace;font-size:11px" ${translatedAttribute("placeholder", "ui.settings.placeholder_begin_certificate_ddddb6")}></textarea></div>
           </div>
           <div id="ssoOidcFields" style="display:grid;gap:10px">
-          <div class="form-group"><label>${t('sso.f_issuer')}</label>
+          <div class="form-group"><label>${uiText(t('sso.f_issuer'))}</label>
             <input type="url" id="ssoIssuer" class="input" placeholder="https://login.example.com">
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('sso.f_issuer_hint')}</div></div>
-          <div class="form-group"><label>${t('sso.f_client_id')}</label>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('sso.f_issuer_hint'))}</div></div>
+          <div class="form-group"><label>${uiText(t('sso.f_client_id'))}</label>
             <input type="text" id="ssoClientId" class="input"></div>
-          <div class="form-group"><label>${t('sso.f_client_secret')}</label>
+          <div class="form-group"><label>${uiText(t('sso.f_client_secret'))}</label>
             <input type="password" id="ssoClientSecret" class="input" autocomplete="new-password">
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('sso.f_client_secret_hint')}</div></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('sso.f_client_secret_hint'))}</div></div>
           </div>
-          <div class="form-group"><label>${t('sso.f_domains')}</label>
-            <input type="text" id="ssoDomains" class="input" placeholder="acme.com, acme.co.uk">
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('sso.f_domains_hint')}</div></div>
-          <div><button class="btn btn-primary btn-sm" id="ssoCreateBtn">${t('sso.create')}</button></div>
+          <div class="form-group"><label>${uiText(t('sso.f_domains'))}</label>
+            <input type="text" id="ssoDomains" class="input" ${translatedAttribute("placeholder", "ui.settings.placeholder_acme_com_acme_co_uk_b5b641")}>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('sso.f_domains_hint'))}</div></div>
+          <div><button class="btn btn-primary btn-sm" id="ssoCreateBtn">${renderHTML(t('sso.create'))}</button></div>
         </div>
       </details>
     </div>
@@ -186,113 +192,113 @@ export async function render(container) {
     <div class="settings-section" id="scimCard" style="display:none"></div>
 
     <div class="settings-section">
-      <h3>${t('apitoken.title')}</h3>
-      <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${t('apitoken.desc')}</p>
-      <p style="font-size:13px;margin-bottom:16px"><a href="/docs" target="_blank" rel="noopener" style="color:var(--accent)">${t('apitoken.docs_link')}</a></p>
+      <h3>${renderHTML(t('apitoken.title'))}</h3>
+      <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${renderHTML(t('apitoken.desc'))}</p>
+      <p style="font-size:13px;margin-bottom:16px"><a href="/docs" target="_blank" rel="noopener" style="color:var(--accent)">${renderHTML(t('apitoken.docs_link'))}</a></p>
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
         <div class="form-group" style="margin-bottom:0;flex:1;min-width:180px">
-          <label>${t('apitoken.col_name')}</label>
-          <input type="text" id="tokName" class="input" placeholder="${esc(t('apitoken.name_placeholder'))}">
+          <label>${renderHTML(t('apitoken.col_name'))}</label>
+          <input type="text" id="tokName" class="input" placeholder="${esc(t('apitoken.name_placeholder'))}" data-fil-i18n-placeholder="${binding('apitoken.name_placeholder', undefined)}">
         </div>
         <div class="form-group" style="margin-bottom:0;min-width:200px">
-          <label>${t('apitoken.col_scope')}</label>
+          <label>${renderHTML(t('apitoken.col_scope'))}</label>
           <select id="tokScope" class="input" style="background:var(--bg-input)">
-            <option value="read">${esc(t('apitoken.scope_read'))}</option>
-            <option value="write">${esc(t('apitoken.scope_write'))}</option>
-            <option value="full">${esc(t('apitoken.scope_full'))}</option>
-            <option value="agency">${esc(t('apitoken.scope_agency'))}</option>
+            <option value="read">${uiText(t('apitoken.scope_read'))}</option>
+            <option value="write">${uiText(t('apitoken.scope_write'))}</option>
+            <option value="full">${uiText(t('apitoken.scope_full'))}</option>
+            <option value="agency">${uiText(t('apitoken.scope_agency'))}</option>
           </select>
         </div>
-        <button class="btn btn-primary btn-sm" id="createTokenBtn">${t('apitoken.create')}</button>
+        <button class="btn btn-primary btn-sm" id="createTokenBtn">${renderHTML(t('apitoken.create'))}</button>
       </div>
       <div id="agencyPlaylistPicker" style="display:none;margin-bottom:16px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-secondary)">
-        <label style="display:block;font-weight:500;margin-bottom:4px">${t('apitoken.agency_playlists_label')}</label>
-        <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${t('apitoken.agency_playlists_hint')}</p>
+        <label style="display:block;font-weight:500;margin-bottom:4px">${renderHTML(t('apitoken.agency_playlists_label'))}</label>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${renderHTML(t('apitoken.agency_playlists_hint'))}</p>
         <div id="agencyPlaylistList" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:auto"></div>
         <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:500">
-          <input type="checkbox" id="tokAutoPublish"> ${t('apitoken.auto_publish_label')}
+          <input type="checkbox" id="tokAutoPublish"> ${renderHTML(t('apitoken.auto_publish_label'))}
         </label>
-        <p style="color:var(--text-muted);font-size:12px;margin:4px 0 0">${t('apitoken.auto_publish_hint')}</p>
-        <label style="display:block;font-weight:500;margin-top:12px;margin-bottom:4px">${t('apitoken.agency_folder_label')}</label>
-        <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${t('apitoken.agency_folder_hint')}</p>
-        <select id="tokUploadFolder" class="input" style="width:100%"><option value="">${t('apitoken.agency_folder_auto')}</option></select>
+        <p style="color:var(--text-muted);font-size:12px;margin:4px 0 0">${renderHTML(t('apitoken.auto_publish_hint'))}</p>
+        <label style="display:block;font-weight:500;margin-top:12px;margin-bottom:4px">${renderHTML(t('apitoken.agency_folder_label'))}</label>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${renderHTML(t('apitoken.agency_folder_hint'))}</p>
+        <select id="tokUploadFolder" class="input" style="width:100%"><option value="">${renderHTML(t('apitoken.agency_folder_auto'))}</option></select>
       </div>
       <div id="tokenSecretBox" style="display:none"></div>
-      <div id="tokenList"><p style="color:var(--text-muted);font-size:13px">${t('settings.loading_users')}</p></div>
+      <div id="tokenList"><p style="color:var(--text-muted);font-size:13px">${renderHTML(t('settings.loading_users'))}</p></div>
       <div id="tokenEditPanel" style="display:none"></div>
     </div>
 
-    ${canManageOrgSecurity ? `
+    ${renderHTML(canManageOrgSecurity ? `
     <div class="settings-section">
-      <h3>Security</h3>
+      <h3>${renderHTML(t("ui.settings.security"))}</h3>
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
         <div style="min-width:260px;flex:1">
-          <div style="font-weight:600">Widget sandbox isolation</div>
+          <div style="font-weight:600">${renderHTML(t("ui.settings.widget_sandbox_isolation"))}</div>
           <div style="font-size:12px;color:var(--text-muted);margin-top:4px">
-            Keep widget code in a null-origin sandbox. Turning this off allows widget code to run with same-origin access.
+            ${renderHTML(t("ui.settings.keep_widget_code_in_a_null_origin"))}
           </div>
         </div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap">
           <input type="checkbox" id="widgetSandboxIsolationToggle" ${widgetIsolationDisabled ? '' : 'checked'}>
-          <span>${widgetIsolationDisabled ? 'Isolation disabled' : 'Isolation enabled'}</span>
+          <span>${renderHTML(widgetIsolationDisabled ? t("ui.labels.isolation_disabled_f4abbd") : t("ui.labels.isolation_enabled_c6adb3"))}</span>
         </label>
       </div>
     </div>
-    ` : ''}
+    ` : '')}
 
-    ${isAdmin ? `
+    ${renderHTML(isAdmin ? `
     <div class="settings-section">
-      <h3>${t('settings.license')}</h3>
-      <div id="licenseSection"><p style="color:var(--text-muted);font-size:13px">${t('settings.license_mit')}</p></div>
+      <h3>${renderHTML(t('settings.license'))}</h3>
+      <div id="licenseSection"><p style="color:var(--text-muted);font-size:13px">${renderHTML(t('settings.license_mit'))}</p></div>
     </div>
 
-    ${isSuperAdmin ? `
+    ${renderHTML(isSuperAdmin ? `
     <div class="settings-section" id="telemetrySection">
-      <h3>Install statistics</h3>
-      <div id="telemetryBody"><p style="color:var(--text-muted);font-size:13px">Loading…</p></div>
+      <h3>${renderHTML(t("ui.settings.install_statistics"))}</h3>
+      <div id="telemetryBody"><p style="color:var(--text-muted);font-size:13px">${renderHTML(t("ui.settings.loading"))}</p></div>
     </div>
-    ` : ''}
+    ` : '')}
 
     <div class="settings-section" id="supportAccessSection">
-      <h3>${t('support.title')}</h3>
-      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${t('support.desc')}</p>
+      <h3>${renderHTML(t('support.title'))}</h3>
+      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(t('support.desc'))}</p>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-        <button class="btn btn-primary btn-sm" id="supportRequestBtn">${t('support.request_btn')}</button>
-        <span style="font-size:12px;color:var(--text-muted)">${t('support.request_hint')}</span>
+        <button class="btn btn-primary btn-sm" id="supportRequestBtn">${renderHTML(t('support.request_btn'))}</button>
+        <span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('support.request_hint'))}</span>
       </div>
       <div id="supportRequestResult" style="display:none;margin-bottom:16px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-secondary)">
-        <p style="font-size:12px;color:var(--text-muted);margin:0 0 6px">${t('support.request_code_label')}</p>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 6px">${renderHTML(t('support.request_code_label'))}</p>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <code id="supportRequestCodeOut" style="font-size:20px;letter-spacing:2px;user-select:all"></code>
-          <button class="btn btn-secondary btn-sm" id="supportRequestCopyBtn">${t('support.copy')}</button>
+          <button class="btn btn-secondary btn-sm" id="supportRequestCopyBtn">${renderHTML(t('support.copy'))}</button>
         </div>
         <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0" id="supportRequestExpiry"></p>
       </div>
-      <div id="supportStatus"><p style="color:var(--text-muted);font-size:13px">${t('settings.loading_users')}</p></div>
+      <div id="supportStatus"><p style="color:var(--text-muted);font-size:13px">${renderHTML(t('settings.loading_users'))}</p></div>
       <div id="supportIssuer" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-        <h4 style="margin:0 0 4px">${t('support.issue_title')}</h4>
-        <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${t('support.issue_desc')}</p>
+        <h4 style="margin:0 0 4px">${renderHTML(t('support.issue_title'))}</h4>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(t('support.issue_desc'))}</p>
         <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
           <div class="form-group" style="margin-bottom:0;min-width:220px">
-            <label>${t('support.issue_code')}</label>
+            <label>${renderHTML(t('support.issue_code'))}</label>
             <input type="text" id="supportRequestCode" class="input" placeholder="XXXX-XXXX-XXXX-XXXX" style="font-family:monospace;text-transform:uppercase">
           </div>
           <div class="form-group" style="margin-bottom:0;flex:1;min-width:160px">
-            <label>${t('support.issue_org')}</label>
-            <input type="text" id="supportOrg" class="input" placeholder="${esc(t('support.issue_org_placeholder'))}">
+            <label>${renderHTML(t('support.issue_org'))}</label>
+            <input type="text" id="supportOrg" class="input" placeholder="${esc(t('support.issue_org_placeholder'))}" data-fil-i18n-placeholder="${binding('support.issue_org_placeholder', undefined)}">
           </div>
           <div class="form-group" style="margin-bottom:0;width:90px">
-            <label>${t('support.issue_hours')}</label>
+            <label>${renderHTML(t('support.issue_hours'))}</label>
             <input type="number" id="supportHours" class="input" value="4" min="1" max="72">
           </div>
           <div class="form-group" style="margin-bottom:0;flex:2;min-width:180px">
-            <label>${t('support.issue_reason')}</label>
-            <input type="text" id="supportReason" class="input" placeholder="${esc(t('support.issue_reason_placeholder'))}">
+            <label>${renderHTML(t('support.issue_reason'))}</label>
+            <input type="text" id="supportReason" class="input" placeholder="${esc(t('support.issue_reason_placeholder'))}" data-fil-i18n-placeholder="${binding('support.issue_reason_placeholder', undefined)}">
           </div>
-          <button class="btn btn-primary btn-sm" id="generateSupportBtn">${t('support.issue_btn')}</button>
+          <button class="btn btn-primary btn-sm" id="generateSupportBtn">${renderHTML(t('support.issue_btn'))}</button>
         </div>
         <div id="supportTokenResult" style="display:none">
-          <p style="font-size:12px;color:var(--text-muted);margin:0 0 6px">${t('support.issue_result')}</p>
+          <p style="font-size:12px;color:var(--text-muted);margin:0 0 6px">${renderHTML(t('support.issue_result'))}</p>
           <textarea id="supportTokenOutput" class="input" readonly rows="3" style="width:100%;font-family:monospace;font-size:11px" onclick="this.select()"></textarea>
         </div>
       </div>
@@ -302,126 +308,126 @@ export async function render(container) {
          two copies of the same table (and of its escaping bugs). Instance-wide user management now
          lives only in the Platform area; Settings is about you and your organization. -->
     <div class="settings-section">
-      <h3>${t('settings.platform_moved_title')}</h3>
-      <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px">${t('settings.platform_moved_desc')}</p>
-      <a class="btn btn-secondary btn-sm" href="#/platform/users">${t('settings.platform_moved_users')} &rarr;</a>
-      <a class="btn btn-secondary btn-sm" href="#/platform/overview" style="margin-left:6px">${t('settings.platform_moved_overview')} &rarr;</a>
+      <h3>${renderHTML(t('settings.platform_moved_title'))}</h3>
+      <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px">${renderHTML(t('settings.platform_moved_desc'))}</p>
+      <a class="btn btn-secondary btn-sm" href="#/platform/users">${renderHTML(t('settings.platform_moved_users'))} →</a>
+      <a class="btn btn-secondary btn-sm" href="#/platform/overview" style="margin-left:6px">${renderHTML(t('settings.platform_moved_overview'))} →</a>
     </div>
 
     <div class="settings-section" id="whiteLabelSection">
-      <h3>${t('settings.white_label')}</h3>
+      <h3>${renderHTML(t('settings.white_label'))}</h3>
       <div id="whiteLabelForm">
-        <p style="color:var(--text-muted);font-size:12px;margin-bottom:16px">${t('settings.white_label_desc')}</p>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:16px">${renderHTML(t('settings.white_label_desc'))}</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="form-group"><label>${t('settings.brand_name')}</label><input type="text" id="wlBrandName" class="input" placeholder="ScreenTinker"></div>
-          <div class="form-group"><label>${t('settings.logo_url')}</label><input type="text" id="wlLogoUrl" class="input" placeholder="https://..."></div>
-          <div class="form-group"><label>${t('settings.primary_color')}</label><input type="color" id="wlPrimaryColor" class="input" value="#3B82F6"></div>
-          <div class="form-group"><label>${t('settings.bg_color')}</label><input type="color" id="wlBgColor" class="input" value="#111827"></div>
-          <div class="form-group"><label>${t('settings.custom_domain')}</label><input type="text" id="wlDomain" class="input" placeholder="signage.yourcompany.com"></div>
-          <div class="form-group"><label>${t('settings.favicon_url')}</label><input type="text" id="wlFavicon" class="input" placeholder="https://..."></div>
+          <div class="form-group"><label>${renderHTML(t('settings.brand_name'))}</label><input type="text" id="wlBrandName" class="input" placeholder="ScreenTinker"></div>
+          <div class="form-group"><label>${renderHTML(t('settings.logo_url'))}</label><input type="text" id="wlLogoUrl" class="input" placeholder="https://..."></div>
+          <div class="form-group"><label>${renderHTML(t('settings.primary_color'))}</label><input type="color" id="wlPrimaryColor" class="input" value="#3B82F6"></div>
+          <div class="form-group"><label>${renderHTML(t('settings.bg_color'))}</label><input type="color" id="wlBgColor" class="input" value="#111827"></div>
+          <div class="form-group"><label>${renderHTML(t('settings.custom_domain'))}</label><input type="text" id="wlDomain" class="input" ${translatedAttribute("placeholder", "ui.settings.placeholder_signage_yourcompany_com_f4c01a")}></div>
+          <div class="form-group"><label>${renderHTML(t('settings.favicon_url'))}</label><input type="text" id="wlFavicon" class="input" placeholder="https://..."></div>
         </div>
-        <div class="form-group"><label>${t('settings.custom_css')}</label><textarea id="wlCustomCss" class="input" rows="3" style="font-family:monospace;font-size:12px" placeholder=":root { --accent: #ff6600; }"></textarea></div>
-        <div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="wlHideBranding"> ${t('settings.hide_branding')}</label></div>
-        <button class="btn btn-primary btn-sm" id="saveWhiteLabelBtn">${t('settings.save_branding')}</button>
-        <button class="btn btn-secondary btn-sm" id="previewWhiteLabelBtn" style="margin-left:8px">${t('settings.preview')}</button>
+        <div class="form-group"><label>${renderHTML(t('settings.custom_css'))}</label><textarea id="wlCustomCss" class="input" rows="3" style="font-family:monospace;font-size:12px" ${translatedAttribute("placeholder", "ui.settings.placeholder_root_accent_ff6600_6fba69")}></textarea></div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="wlHideBranding"> ${renderHTML(t('settings.hide_branding'))}</label></div>
+        <button class="btn btn-primary btn-sm" id="saveWhiteLabelBtn">${renderHTML(t('settings.save_branding'))}</button>
+        <button class="btn btn-secondary btn-sm" id="previewWhiteLabelBtn" style="margin-left:8px">${renderHTML(t('settings.preview'))}</button>
       </div>
     </div>
-    ` : ''}
+    ` : '')}
 
     <div class="settings-section">
-      <h3>${t('settings.server_info')}</h3>
+      <h3>${renderHTML(t('settings.server_info'))}</h3>
       <div class="info-grid">
         <div class="info-card">
-          <div class="info-card-label">${t('settings.server_url')}</div>
-          <div class="info-card-value small">${serverUrl}</div>
-          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('settings.server_url_hint')}</p>
+          <div class="info-card-label">${renderHTML(t('settings.server_url'))}</div>
+          <div class="info-card-value small">${renderHTML(serverUrl)}</div>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('settings.server_url_hint'))}</p>
         </div>
         <div class="info-card">
-          <div class="info-card-label">${t('settings.api_endpoint')}</div>
-          <div class="info-card-value small">${serverUrl}/api</div>
+          <div class="info-card-label">${renderHTML(t('settings.api_endpoint'))}</div>
+          <div class="info-card-value small">${renderHTML(t("ui.settings.api_f44025", {value71: serverUrl}))}</div>
         </div>
       </div>
     </div>
 
     <div class="settings-section">
-      <h3>${t('settings.setup_guide')}</h3>
+      <h3>${renderHTML(t('settings.setup_guide'))}</h3>
       <div style="color:var(--text-secondary);font-size:13px;line-height:1.8">
         <ol style="padding-left:20px;list-style:decimal">
-          <li>${t('settings.setup_step_1')}</li>
-          <li>${t('settings.setup_step_2_prefix')} <code style="background:var(--bg-input);padding:2px 6px;border-radius:4px">${serverUrl}</code></li>
-          <li>${t('settings.setup_step_3')}</li>
-          <li>${t('settings.setup_step_4')}</li>
-          <li>${t('settings.setup_step_5')}</li>
-          <li>${t('settings.setup_step_6')}</li>
+          <li>${renderHTML(t('settings.setup_step_1'))}</li>
+          <li>${renderHTML(t('settings.setup_step_2_prefix'))} <code style="background:var(--bg-input);padding:2px 6px;border-radius:4px">${renderHTML(serverUrl)}</code></li>
+          <li>${renderHTML(t('settings.setup_step_3'))}</li>
+          <li>${renderHTML(t('settings.setup_step_4'))}</li>
+          <li>${renderHTML(t('settings.setup_step_5'))}</li>
+          <li>${renderHTML(t('settings.setup_step_6'))}</li>
         </ol>
       </div>
     </div>
 
     <div class="settings-section">
-      <h3>${t('settings.your_data')}</h3>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${t('settings.your_data_desc')}</p>
+      <h3>${renderHTML(t('settings.your_data'))}</h3>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${renderHTML(t('settings.your_data_desc'))}</p>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-secondary btn-sm" id="exportDataBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          ${t('settings.export_my_data')}
+          ${renderHTML(t('settings.export_my_data'))}
         </button>
         <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);cursor:pointer">
-          <input type="checkbox" id="exportIncludeFiles"> ${t('settings.include_media_zip')}
+          <input type="checkbox" id="exportIncludeFiles"> ${renderHTML(t('settings.include_media_zip'))}
         </label>
         <button class="btn btn-secondary btn-sm" id="importDataBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
-          ${t('settings.import_data')}
+          ${renderHTML(t('settings.import_data'))}
         </button>
         <input type="file" id="importFileInput" accept=".json,.zip" style="display:none">
       </div>
       <div id="importStatus" style="display:none;margin-top:12px;padding:12px;border-radius:var(--radius);font-size:13px"></div>
       <!-- 3.0 "Your data, provably": where data lives, what leaves, complete exports (views/privacy.js). -->
       <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <a class="btn btn-secondary btn-sm" href="#/privacy" id="privacyLink">${t('trust.settings_link')}</a>
-        <span style="font-size:12px;color:var(--text-muted)">${t('trust.settings_link_desc')}</span>
+        <a class="btn btn-secondary btn-sm" href="#/privacy" id="privacyLink">${renderHTML(t('trust.settings_link'))}</a>
+        <span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('trust.settings_link_desc'))}</span>
       </div>
     </div>
 
     <!-- Self-service account deletion (components/delete-account.js). The public /delete-account page
          links here as #/settings?section=delete-account. -->
     <div class="settings-section" id="deleteAccountCard">
-      <h3>${esc(t('account_delete.title'))}</h3>
+      <h3>${uiText(t('account_delete.title'))}</h3>
       <div id="deleteAccountBody"></div>
     </div>
 
     <!-- Hosted AI credits (org-scoped). Hidden entirely when the server has no platform image
          provider configured, so a self-hosted install sees nothing new. -->
     <div class="settings-section" id="aiCreditsSection" style="display:none">
-      <h3>AI credits</h3>
-      <div id="aiCreditsBody"><p style="color:var(--text-muted);font-size:13px">Loading…</p></div>
+      <h3>${renderHTML(t("ui.settings.ai_credits"))}</h3>
+      <div id="aiCreditsBody"><p style="color:var(--text-muted);font-size:13px">${renderHTML(t("ui.settings.loading"))}</p></div>
     </div>
 
     <div class="settings-section">
-      <h3>${t('settings.language')}</h3>
+      <h3>${renderHTML(t('settings.language'))}</h3>
       <select id="langSelect" class="input" style="width:200px;background:var(--bg-input)">
-        ${getAvailableLanguages().map(l => `<option value="${l.code}" ${l.code === getLanguage() ? 'selected' : ''}>${l.name}</option>`).join('')}
+        ${renderHTML(getAvailableLanguages().map(l => `<option value="${l.code}" ${l.code === getLanguage() ? 'selected' : ''}>${uiText(l.name)}</option>`).join(''))}
       </select>
     </div>
 
     <div class="settings-section">
-      <h3>${t('settings.about')}</h3>
+      <h3>${renderHTML(t('settings.about'))}</h3>
       <div style="color:var(--text-secondary);font-size:13px">
-        <p><strong>${esc(window.__ST_BRAND_NAME || 'ScreenTinker')}</strong>${appVersion ? ` v${esc(appVersion)}` : ''}</p>
-        <p style="margin-top:4px">${t('settings.about_tagline')}</p>
-        ${user.self_hosted ? `<p style="margin-top:8px"><a href="${SPONSOR_URL}" target="_blank" rel="noopener" style="color:var(--accent)">&#9829; ${t('sponsor.about_link')}</a></p>` : ''}
+        <p><strong>${uiText(window.__ST_BRAND_NAME || 'ScreenTinker')}</strong>${renderHTML(appVersion ? ` v${esc(appVersion)}` : '')}</p>
+        <p style="margin-top:4px">${renderHTML(t('settings.about_tagline'))}</p>
+        ${renderHTML(user.self_hosted ? `<p style="margin-top:8px"><a href="${SPONSOR_URL}" target="_blank" rel="noopener" style="color:var(--accent)">♥ ${renderHTML(t('sponsor.about_link'))}</a></p>` : '')}
         <!-- The permanent home for the release notes the dashboard panel links to. Populated
              after render because it is a fetch, and About must not wait on one. -->
         <div id="whatsNewHistory"></div>
         <p style="margin-top:12px">
-          <a href="/legal/terms.html" target="_blank" style="color:var(--accent);font-size:12px">${t('auth.terms')}</a>
+          <a href="/legal/terms.html" target="_blank" style="color:var(--accent);font-size:12px">${renderHTML(t('auth.terms'))}</a>
           &nbsp;&middot;&nbsp;
-          <a href="/legal/privacy.html" target="_blank" style="color:var(--accent);font-size:12px">${t('auth.privacy')}</a>
+          <a href="/legal/privacy.html" target="_blank" style="color:var(--accent);font-size:12px">${renderHTML(t('auth.privacy'))}</a>
           &nbsp;&middot;&nbsp;
-          <a href="/legal/third-party.html" target="_blank" style="color:var(--accent);font-size:12px">${t('settings.third_party_licenses')}</a>
+          <a href="/legal/third-party.html" target="_blank" style="color:var(--accent);font-size:12px">${renderHTML(t('settings.third_party_licenses'))}</a>
         </p>
       </div>
     </div>
@@ -453,26 +459,26 @@ export async function render(container) {
     section.style.display = '';
     const q = new URLSearchParams((location.hash.split('?')[1]) || '');
     const banner = q.get('credits') === 'success'
-      ? '<p style="color:var(--success, #22c55e);font-size:13px">Payment received — credits appear as soon as Stripe confirms it (usually seconds). Refresh if they have not.</p>'
-      : q.get('credits') === 'cancelled' ? '<p style="color:var(--text-muted);font-size:13px">Purchase cancelled — nothing was charged.</p>' : '';
-    const rows = (use.usage || []).map((u) => `<tr><td>${esc(formatRow({ ...u, credits: u.credits, charge_usd: u.credits / 100 }).split(' · ').slice(0, 2).join(' · '))}</td><td>${esc(String(u.images))}</td><td>${esc(String(u.credits))}</td><td>${esc(usd(u.credits / 100))}</td></tr>`).join('');
+      ? `<p style="color:var(--success, #22c55e);font-size:13px">${renderHTML(t('ui.settings.credits_paid'))}</p>`
+      : q.get('credits') === 'cancelled' ? `<p style="color:var(--text-muted);font-size:13px">${renderHTML(t('ui.settings.credits_cancelled'))}</p>` : '';
+    const rows = (use.usage || []).map((u) => `<tr><td>${uiText(formatRow({ ...u, credits: u.credits, charge_usd: u.credits / 100 }).split(' · ').slice(0, 2).join(' · '))}</td><td>${uiText(String(u.images))}</td><td>${uiText(String(u.credits))}</td><td>${uiText(usd(u.credits / 100))}</td></tr>`).join('');
     const buy = st.can_buy
       ? (st.checkout_available
-        ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${st.packs.map((p) => `<button class="btn btn-secondary btn-sm" data-pack="${esc(p.id)}">Buy ${esc(p.credits.toLocaleString())} credits · ${esc(usd(p.usd))}</button>`).join('')}</div>`
-        : '<p style="font-size:12px;color:var(--text-muted);margin-top:12px">Online purchase is not set up on this server — contact your administrator to add credits.</p>')
-      : '<p style="font-size:12px;color:var(--text-muted);margin-top:12px">An organization admin can buy more credits.</p>';
-    body.innerHTML = `${banner}
-      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">ScreenTinker-hosted image generation. You choose the model for every image and pay 2× that model's provider cost (1 credit = $0.01). Each month includes credits worth 10% of your screen bill; included credits expire at month end, purchased credits never do. Your own AI endpoint never uses credits.</p>
+        ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${renderHTML(st.packs.map((p) => `<button class="btn btn-secondary btn-sm" data-pack="${esc(p.id)}">${renderHTML(t("ui.settings.buy_credits_839673", {value1: displayValue(p.credits, "toLocaleString", undefined), value2: usd(p.usd)}))}</button>`).join(''))}</div>`
+        : `<p style="font-size:12px;color:var(--text-muted);margin-top:12px">${renderHTML(t('ui.settings.credits_no_checkout'))}</p>`)
+      : `<p style="font-size:12px;color:var(--text-muted);margin-top:12px">${renderHTML(t('ui.settings.credits_admin'))}</p>`;
+    body.innerHTML = `${renderHTML(banner)}
+      <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${renderHTML(t("ui.settings.screentinker_hosted_image_generation_you_choose_the_de80dc"))}</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px">
-        <div><div style="font-size:11px;color:var(--text-muted)">Balance</div><div style="font-size:20px;font-weight:600">${esc(String(st.balance))}</div></div>
-        <div><div style="font-size:11px;color:var(--text-muted)">Included remaining (${esc(st.period)})</div><div style="font-size:20px;font-weight:600">${esc(String(st.included_remaining))} <span style="font-size:12px;font-weight:400;color:var(--text-muted)">of ${esc(String(st.included_this_month))}</span></div></div>
-        <div><div style="font-size:11px;color:var(--text-muted)">Purchased remaining</div><div style="font-size:20px;font-weight:600">${esc(String(st.purchased_remaining))}</div></div>
+        <div><div style="font-size:11px;color:var(--text-muted)">${renderHTML(t("ui.settings.balance"))}</div><div style="font-size:20px;font-weight:600">${uiText(String(st.balance))}</div></div>
+        <div><div style="font-size:11px;color:var(--text-muted)">${renderHTML(t("ui.settings.included_remaining_f9a7d8", {value3: st.period}))}</div><div style="font-size:20px;font-weight:600">${uiText(String(st.included_remaining))} <span style="font-size:12px;font-weight:400;color:var(--text-muted)">${renderHTML(t("ui.settings.of_55a03b", {value5: String(st.included_this_month)}))}</span></div></div>
+        <div><div style="font-size:11px;color:var(--text-muted)">${renderHTML(t("ui.settings.purchased_remaining"))}</div><div style="font-size:20px;font-weight:600">${uiText(String(st.purchased_remaining))}</div></div>
       </div>
-      <p style="font-weight:500;margin:12px 0 6px">This month's usage</p>
-      ${rows ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>Model</th><th>Images</th><th>Credits</th><th>Cost</th></tr></thead><tbody>${rows}</tbody></table></div>`
-        : '<p style="color:var(--text-muted);font-size:13px">No hosted images generated yet this month.</p>'}
-      ${buy}
-      ${st.rate_card ? `<p style="font-size:11px;margin-top:12px;color:${st.rate_card.stale ? 'var(--danger, #e05252)' : 'var(--text-muted)'}">Platform admin: rate card last verified ${esc(st.rate_card.verified_at)} (${esc(String(st.rate_card.age_days))} days ago)${st.rate_card.stale ? ' — re-check provider prices and update config/ai-rate-card.js' : ''}.</p>` : ''}`;
+      <p style="font-weight:500;margin:12px 0 6px">${renderHTML(t("ui.settings.this_month_s_usage"))}</p>
+      ${renderHTML(rows ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>${renderHTML(t("ui.settings.model"))}</th><th>${renderHTML(t("ui.settings.images"))}</th><th>${renderHTML(t("ui.settings.credits"))}</th><th>${renderHTML(t("ui.settings.cost"))}</th></tr></thead><tbody>${renderHTML(rows)}</tbody></table></div>`
+        : `<p style="color:var(--text-muted);font-size:13px">${renderHTML(t("ui.settings.no_hosted_images_generated_yet_this_month_a90dc7"))}</p>`)}
+      ${renderHTML(buy)}
+      ${renderHTML(st.rate_card ? `<p style="font-size:11px;margin-top:12px;color:${st.rate_card.stale ? 'var(--danger, #e05252)' : 'var(--text-muted)'}">${renderHTML(t("ui.settings.platform_admin_rate_card_last_verified_days_03c7b9", {value1: st.rate_card.verified_at, value2: String(st.rate_card.age_days), value3: st.rate_card.stale ? t('ui.settings.rate_card_recheck') : ''}))}</p>` : '')}`;
     body.querySelectorAll('[data-pack]').forEach((b) => b.addEventListener('click', () => buyPack(b.dataset.pack)));
   }
 
@@ -483,40 +489,40 @@ export async function render(container) {
   async function loadSupportAccess() {
     const box = document.getElementById('supportStatus');
     if (!box) return;
-    const fmt = (s) => (s ? new Date(s * 1000).toLocaleString() : '—');
+    const fmt = (s) => (s ? displayValue(new Date(s * 1000), "toLocaleString", undefined) : '—');
     let st;
-    try { st = await api.get('/auth/support/status'); } catch (err) { box.innerHTML = `<p style="color:var(--danger);font-size:13px">${esc(err.message)}</p>`; return; }
+    try { st = await api.get('/auth/support/status'); } catch (err) { box.innerHTML = `<p style="color:var(--danger);font-size:13px">${uiText((err.uiMessage || err.message))}</p>`; return; }
 
     const grants = st.grants.map((g) => `
       <tr>
-        <td>${esc(g.org || '')}${g.issued_by ? `<div style="font-size:11px;color:var(--text-muted)">${esc(g.issued_by)}</div>` : ''}</td>
-        <td style="font-size:12px">${esc(g.reason || '')}</td>
-        <td style="font-size:12px">${g.first_used_at ? fmt(g.first_used_at) : `<span style="color:var(--text-muted)">${t('support.not_yet_used')}</span>`}${g.source_ip ? `<div style="font-size:11px;color:var(--text-muted)">${esc(g.source_ip)}</div>` : ''}</td>
-        <td style="font-size:12px">${fmt(g.expires_at)}</td>
-        <td><button class="btn btn-danger btn-sm" data-revoke="${esc(g.jti)}">${t('support.revoke')}</button></td>
+        <td>${uiText(g.org || '')}${renderHTML(g.issued_by ? `<div style="font-size:11px;color:var(--text-muted)">${uiText(g.issued_by)}</div>` : '')}</td>
+        <td style="font-size:12px">${uiText(g.reason || '')}</td>
+        <td style="font-size:12px">${renderHTML(g.first_used_at ? fmt(g.first_used_at) : `<span style="color:var(--text-muted)">${renderHTML(t('support.not_yet_used'))}</span>`)}${renderHTML(g.source_ip ? `<div style="font-size:11px;color:var(--text-muted)">${uiText(g.source_ip)}</div>` : '')}</td>
+        <td style="font-size:12px">${renderHTML(fmt(g.expires_at))}</td>
+        <td><button class="btn btn-danger btn-sm" data-revoke="${esc(g.jti)}">${renderHTML(t('support.revoke'))}</button></td>
       </tr>`).join('');
     const requests = st.requests.map((r) => `
       <tr>
-        <td><code>${esc(r.code)}</code></td>
-        <td style="font-size:12px">${esc(r.requested_by || '')}${r.note ? `<div style="font-size:11px;color:var(--text-muted)">${esc(r.note)}</div>` : ''}</td>
-        <td style="font-size:12px">${fmt(r.expires_at)}</td>
-        <td><button class="btn btn-secondary btn-sm" data-cancel="${esc(r.code)}">${t('support.cancel_request')}</button></td>
+        <td><code>${uiText(r.code)}</code></td>
+        <td style="font-size:12px">${uiText(r.requested_by || '')}${renderHTML(r.note ? `<div style="font-size:11px;color:var(--text-muted)">${uiText(r.note)}</div>` : '')}</td>
+        <td style="font-size:12px">${renderHTML(fmt(r.expires_at))}</td>
+        <td><button class="btn btn-secondary btn-sm" data-cancel="${esc(r.code)}">${renderHTML(t('support.cancel_request'))}</button></td>
       </tr>`).join('');
 
     box.innerHTML = `
-      <p style="font-weight:500;margin:12px 0 6px">${t('support.sessions_title')}</p>
-      ${st.grants.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>${t('support.col_org')}</th><th>${t('support.col_reason')}</th><th>${t('support.col_first_used')}</th><th>${t('support.col_expires')}</th><th></th></tr></thead><tbody>${grants}</tbody></table></div>`
-        : `<p style="color:var(--text-muted);font-size:13px">${t('support.no_sessions')}</p>`}
-      ${st.requests.length ? `<p style="font-weight:500;margin:16px 0 6px">${t('support.requests_title')}</p>
-        <div class="table-wrap"><table class="corp-table"><thead><tr><th>${t('support.col_code')}</th><th>${t('support.col_requested_by')}</th><th>${t('support.col_expires')}</th><th></th></tr></thead><tbody>${requests}</tbody></table></div>` : ''}`;
+      <p style="font-weight:500;margin:12px 0 6px">${renderHTML(t('support.sessions_title'))}</p>
+      ${renderHTML(st.grants.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>${renderHTML(t('support.col_org'))}</th><th>${renderHTML(t('support.col_reason'))}</th><th>${renderHTML(t('support.col_first_used'))}</th><th>${renderHTML(t('support.col_expires'))}</th><th></th></tr></thead><tbody>${renderHTML(grants)}</tbody></table></div>`
+        : `<p style="color:var(--text-muted);font-size:13px">${renderHTML(t('support.no_sessions'))}</p>`)}
+      ${renderHTML(st.requests.length ? `<p style="font-weight:500;margin:16px 0 6px">${renderHTML(t('support.requests_title'))}</p>
+        <div class="table-wrap"><table class="corp-table"><thead><tr><th>${renderHTML(t('support.col_code'))}</th><th>${renderHTML(t('support.col_requested_by'))}</th><th>${renderHTML(t('support.col_expires'))}</th><th></th></tr></thead><tbody>${renderHTML(requests)}</tbody></table></div>` : '')}`;
 
     box.querySelectorAll('[data-revoke]').forEach((b) => b.addEventListener('click', async () => {
       try { await api.delete(`/auth/support/grant/${encodeURIComponent(b.dataset.revoke)}`); showToast(t('support.toast_revoked'), 'success'); loadSupportAccess(); }
-      catch (err) { showToast(err.message, 'error'); }
+      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     }));
     box.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', async () => {
       try { await api.delete(`/auth/support/request/${encodeURIComponent(b.dataset.cancel)}`); loadSupportAccess(); }
-      catch (err) { showToast(err.message, 'error'); }
+      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     }));
 
     const issuer = document.getElementById('supportIssuer');
@@ -528,11 +534,11 @@ export async function render(container) {
   document.getElementById('supportRequestBtn')?.addEventListener('click', async () => {
     try {
       const r = await api.post('/auth/support/request', {});
-      document.getElementById('supportRequestCodeOut').textContent = r.code;
-      document.getElementById('supportRequestExpiry').textContent = t('support.request_expires', { hours: r.ttl_hours });
+      bindMessage(document.getElementById('supportRequestCodeOut'), r.code);
+      bindText(document.getElementById('supportRequestExpiry'), 'support.request_expires', { hours: r.ttl_hours });
       document.getElementById('supportRequestResult').style.display = 'block';
       loadSupportAccess();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   });
   document.getElementById('supportRequestCopyBtn')?.addEventListener('click', async () => {
     const code = document.getElementById('supportRequestCodeOut').textContent;
@@ -551,7 +557,7 @@ export async function render(container) {
       document.getElementById('supportTokenOutput').value = data.token;
       document.getElementById('supportTokenResult').style.display = 'block';
       showToast(t('settings.toast.support_token_generated', { hours }), 'success');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   });
 
   // Export data handler
@@ -580,19 +586,19 @@ export async function render(container) {
     statusEl.style.background = 'var(--bg-secondary)';
     statusEl.style.border = '1px solid var(--border)';
     statusEl.style.color = 'var(--text-secondary)';
-    statusEl.textContent = t('settings.import.reading_file');
+    bindText(statusEl, 'settings.import.reading_file', undefined);
     try {
       let data;
       if (isZip) {
         // For ZIP, show basic info and skip preview parsing
         data = { format: 'screentinker-export-v1', _isZip: true };
-        statusEl.innerHTML = `${t('settings.import.zip_detected', { name: esc(file.name), size: (file.size / 1048576).toFixed(1) })}<br><br><button class="btn btn-primary btn-sm" id="confirmImportBtn">${t('settings.import.confirm')}</button> <button class="btn btn-secondary btn-sm" id="cancelImportBtn">${t('common.cancel')}</button>`;
+        statusEl.innerHTML = `${renderHTML(t('settings.import.zip_detected', { name: esc(file.name), size: displayValue(file.size / 1048576,'toLocaleString',{minimumFractionDigits:1,maximumFractionDigits:1}) }))}<br><br><button class="btn btn-primary btn-sm" id="confirmImportBtn">${renderHTML(t('settings.import.confirm'))}</button> <button class="btn btn-secondary btn-sm" id="cancelImportBtn">${renderHTML(t('common.cancel'))}</button>`;
       } else {
         const text = await file.text();
         data = JSON.parse(text);
         if (!data.format || !data.format.startsWith('screentinker-export')) {
           statusEl.style.color = 'var(--danger)';
-          statusEl.textContent = t('settings.import.invalid_file');
+          bindText(statusEl, 'settings.import.invalid_file', undefined);
           return;
         }
         const summary = [
@@ -604,7 +610,7 @@ export async function render(container) {
           data.video_walls?.length ? t('settings.import.summary_walls', { n: data.video_walls.length }) : null,
           data.kiosk_pages?.length ? t('settings.import.summary_kiosk', { n: data.kiosk_pages.length }) : null,
         ].filter(Boolean).join(', ');
-        statusEl.innerHTML = `${t('settings.import.found_summary', { summary: esc(summary) || t('settings.import.empty_export'), email: esc(data.user?.email) || t('common.unknown'), date: esc(data.exported_at?.split('T')[0]) || t('common.unknown') })}<br><br><button class="btn btn-primary btn-sm" id="confirmImportBtn">${t('settings.import.confirm')}</button> <button class="btn btn-secondary btn-sm" id="cancelImportBtn">${t('common.cancel')}</button>`;
+        statusEl.innerHTML = `${renderHTML(t('settings.import.found_summary', { summary: esc(summary) || t('settings.import.empty_export'), email: esc(data.user?.email) || t('common.unknown'), date: esc(data.exported_at?.split('T')[0]) || t('common.unknown') }))}<br><br><button class="btn btn-primary btn-sm" id="confirmImportBtn">${renderHTML(t('settings.import.confirm'))}</button> <button class="btn btn-secondary btn-sm" id="cancelImportBtn">${renderHTML(t('common.cancel'))}</button>`;
       }
       document.getElementById('cancelImportBtn').onclick = () => { statusEl.style.display = 'none'; e.target.value = ''; };
       document.getElementById('confirmImportBtn').onclick = async () => {
@@ -633,26 +639,26 @@ export async function render(container) {
             statusEl.style.color = 'var(--success)';
             let html = t('settings.import.complete', { imported });
             if (result.device_pairings?.length) {
-              html += `<br><br><strong>${t('settings.import.pairing_codes_title')}</strong><br><table style="margin-top:8px;font-size:12px;border-collapse:collapse">` +
-                result.device_pairings.map(d => `<tr><td style="padding:4px 12px 4px 0">${esc(d.name)}</td><td style="font-family:monospace;font-weight:700;font-size:14px;letter-spacing:2px">${d.pairing_code}</td></tr>`).join('') +
-                `</table><br>${t('settings.import.pairing_codes_hint')}`;
+              html += `<br><br><strong>${renderHTML(t('settings.import.pairing_codes_title'))}</strong><br><table style="margin-top:8px;font-size:12px;border-collapse:collapse">` +
+                result.device_pairings.map(d => `<tr><td style="padding:4px 12px 4px 0">${uiText(d.name)}</td><td style="font-family:monospace;font-weight:700;font-size:14px;letter-spacing:2px">${renderHTML(d.pairing_code)}</td></tr>`).join('') +
+                `</table><br>${renderHTML(t('settings.import.pairing_codes_hint'))}`;
             }
-            html += `<br><br>${(result.notes || []).map(n => '&bull; ' + n).join('<br>')}`;
+            html += `<br><br>${renderHTML((result.notes || []).map(n => '&bull; ' + n).join('<br>'))}`;
             statusEl.innerHTML = html;
             showToast(t('settings.toast.import_success'), 'success');
           } else {
             statusEl.style.color = 'var(--danger)';
-            statusEl.textContent = result.error || t('settings.import.failed');
+            bindMessage(statusEl, result.error || t('settings.import.failed'));
           }
         } catch (err) {
           statusEl.style.color = 'var(--danger)';
-          statusEl.textContent = t('settings.import.failed_with_error', { error: err.message });
+          bindText(statusEl, 'settings.import.failed_with_error', { error: err.message });
         }
         e.target.value = '';
       };
     } catch (err) {
       statusEl.style.color = 'var(--danger)';
-      statusEl.textContent = t('settings.import.read_failed', { error: err.message });
+      bindText(statusEl, 'settings.import.read_failed', { error: err.message });
     }
   });
 
@@ -665,7 +671,7 @@ export async function render(container) {
   // API Tokens — available to every user (manages their own, workspace-scoped).
   const fmtTokenDate = (ts) => {
     if (!ts) return '';
-    try { return new Date(ts * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); }
+    try { return displayValue(new Date(ts * 1000), "toLocaleDateString", { month: 'short', day: 'numeric', year: 'numeric' }); }
     catch { return String(ts); }
   };
   const scopeLabel = (s) => ({
@@ -680,7 +686,7 @@ export async function render(container) {
     if (!el) return;
     const tokens = await api.getTokens().catch(() => []);
     if (!tokens.length) {
-      el.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${t('apitoken.none')}</p>`;
+      el.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${renderHTML(t('apitoken.none'))}</p>`;
       return;
     }
     el.innerHTML = `
@@ -688,32 +694,32 @@ export async function render(container) {
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px">
         <thead>
           <tr style="border-bottom:1px solid var(--border);text-align:left">
-            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${t('apitoken.col_token')}</th>
-            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${t('apitoken.col_name')}</th>
-            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${t('apitoken.col_scope')}</th>
-            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${t('apitoken.col_created')}</th>
-            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${t('apitoken.col_last_used')}</th>
+            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${renderHTML(t('apitoken.col_token'))}</th>
+            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${renderHTML(t('apitoken.col_name'))}</th>
+            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${renderHTML(t('apitoken.col_scope'))}</th>
+            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${renderHTML(t('apitoken.col_created'))}</th>
+            <th style="padding:8px 12px;color:var(--text-muted);font-weight:500">${renderHTML(t('apitoken.col_last_used'))}</th>
             <th style="padding:8px 12px;color:var(--text-muted);font-weight:500"></th>
           </tr>
         </thead>
         <tbody>
-          ${tokens.map(tok => `
+          ${renderHTML(tokens.map(tok => `
             <tr style="border-bottom:1px solid var(--border)${tok.revoked_at ? ';opacity:0.55' : ''}">
-              <td style="padding:10px 12px;font-family:monospace">${esc(tok.prefix)}&hellip;</td>
-              <td style="padding:10px 12px">${esc(tok.name || '')}</td>
-              <td style="padding:10px 12px">${esc(scopeLabel(tok.scope))}${
-                tok.scope === 'agency' && Array.isArray(tok.targets)
-                  ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t('apitoken.targets_label')} ${tok.targets.length ? tok.targets.map(p => esc(p.name)).join(', ') : '—'}${tok.auto_publish ? ' · ' + esc(t('apitoken.auto_publish_on')) : ''}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t('apitoken.folder_label')} ${tok.upload_folder ? esc(tok.upload_folder) : esc(t('apitoken.folder_root'))}</div>`
-                  : ''}</td>
-              <td style="padding:10px 12px">${esc(fmtTokenDate(tok.created_at))}</td>
-              <td style="padding:10px 12px">${tok.last_used_at ? esc(fmtTokenDate(tok.last_used_at)) : t('apitoken.never')}</td>
+              <td style="padding:10px 12px;font-family:monospace">${uiText(tok.prefix)}…</td>
+              <td style="padding:10px 12px">${uiText(tok.name || '')}</td>
+              <td style="padding:10px 12px">${uiText(scopeLabel(tok.scope))}${
+                renderHTML(tok.scope === 'agency' && Array.isArray(tok.targets)
+                  ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${renderHTML(t('apitoken.targets_label'))} ${renderHTML(tok.targets.length ? tok.targets.map(p => esc(p.name)).join(', ') : '—')}${renderHTML(tok.auto_publish ? ' · ' + t('apitoken.auto_publish_on') : '')}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${renderHTML(t('apitoken.folder_label'))} ${renderHTML(tok.upload_folder ? esc(tok.upload_folder) : t('apitoken.folder_root'))}</div>`
+                  : '')}</td>
+              <td style="padding:10px 12px">${uiText(fmtTokenDate(tok.created_at))}</td>
+              <td style="padding:10px 12px">${renderHTML(tok.last_used_at ? esc(fmtTokenDate(tok.last_used_at)) : t('apitoken.never'))}</td>
               <td style="padding:10px 12px;white-space:nowrap;text-align:right">
-                ${tok.revoked_at
-                  ? `<span style="color:var(--text-muted);font-size:12px">${t('apitoken.revoked')}</span>`
-                  : `${tok.scope === 'agency' ? `<button class="btn btn-secondary btn-sm edit-targets-btn" data-id="${esc(String(tok.id))}" data-targets="${esc((tok.targets || []).map(p => p.id).join(','))}">${t('apitoken.edit_targets')}</button> <button class="btn btn-secondary btn-sm edit-folder-btn" data-id="${esc(String(tok.id))}" data-folder="${esc(String(tok.upload_folder_id || ''))}">${t('apitoken.edit_folder')}</button> ` : ''}<button class="btn btn-secondary btn-sm revoke-token-btn" data-id="${esc(String(tok.id))}">${t('apitoken.revoke')}</button>`}
+                ${renderHTML(tok.revoked_at
+                  ? `<span style="color:var(--text-muted);font-size:12px">${renderHTML(t('apitoken.revoked'))}</span>`
+                  : `${renderHTML(tok.scope === 'agency' ? `<button class="btn btn-secondary btn-sm edit-targets-btn" data-id="${esc(String(tok.id))}" data-targets="${esc((tok.targets || []).map(p => p.id).join(','))}">${renderHTML(t('apitoken.edit_targets'))}</button> <button class="btn btn-secondary btn-sm edit-folder-btn" data-id="${esc(String(tok.id))}" data-folder="${esc(String(tok.upload_folder_id || ''))}">${renderHTML(t('apitoken.edit_folder'))}</button> ` : '')}<button class="btn btn-secondary btn-sm revoke-token-btn" data-id="${esc(String(tok.id))}">${renderHTML(t('apitoken.revoke'))}</button>`)}
               </td>
             </tr>
-          `).join('')}
+          `).join(''))}
         </tbody>
       </table>
       </div>
@@ -727,7 +733,7 @@ export async function render(container) {
           showToast(t('apitoken.revoked_toast'), 'success');
           loadTokens();
         } catch (err) {
-          showToast(err.message, 'error');
+          showToast(err.uiMessage || err.message, 'error');
         }
       });
     });
@@ -741,16 +747,16 @@ export async function render(container) {
       panel.style.display = 'block';
       panel.innerHTML = `
         <div style="border:1px solid var(--accent);border-radius:var(--radius);padding:16px;margin-top:12px">
-          <h4 style="font-size:14px;margin-bottom:8px">${t('apitoken.edit_targets')}</h4>
+          <h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('apitoken.edit_targets'))}</h4>
           <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:auto;margin-bottom:12px">
-            ${pls.length
+            ${renderHTML(pls.length
               ? pls.map(p => p.zoned
-                  ? `<label style="display:flex;gap:8px;align-items:center;font-size:13px;opacity:.5"><input type="checkbox" disabled> ${esc(p.name)} <span style="font-size:11px;color:var(--text-muted)">— ${esc(t('apitoken.zoned_playlist_reason'))}</span></label>`
-                  : `<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" class="edit-pl" value="${esc(String(p.id))}"${current.has(String(p.id)) ? ' checked' : ''}> ${esc(p.name)}</label>`).join('')
-              : `<p style="color:var(--text-muted);font-size:12px">${t('apitoken.agency_no_playlists')}</p>`}
+                  ? `<label style="display:flex;gap:8px;align-items:center;font-size:13px;opacity:.5"><input type="checkbox" disabled> ${uiText(p.name)} <span style="font-size:11px;color:var(--text-muted)">— ${uiText(t('apitoken.zoned_playlist_reason'))}</span></label>`
+                  : `<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" class="edit-pl" value="${esc(String(p.id))}"${current.has(String(p.id)) ? ' checked' : ''}> ${uiText(p.name)}</label>`).join('')
+              : `<p style="color:var(--text-muted);font-size:12px">${renderHTML(t('apitoken.agency_no_playlists'))}</p>`)}
           </div>
-          <button class="btn btn-primary btn-sm" id="saveTargetsBtn">${t('common.save')}</button>
-          <button class="btn btn-secondary btn-sm" id="cancelTargetsBtn">${t('common.cancel')}</button>
+          <button class="btn btn-primary btn-sm" id="saveTargetsBtn">${renderHTML(t('common.save'))}</button>
+          <button class="btn btn-secondary btn-sm" id="cancelTargetsBtn">${renderHTML(t('common.cancel'))}</button>
         </div>`;
       document.getElementById('saveTargetsBtn').onclick = async () => {
         const ids = [...panel.querySelectorAll('.edit-pl:checked')].map(c => c.value);
@@ -760,7 +766,7 @@ export async function render(container) {
           showToast(t('apitoken.targets_updated'), 'success');
           panel.style.display = 'none';
           loadTokens();
-        } catch (err) { showToast(err.message, 'error'); }
+        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       };
       document.getElementById('cancelTargetsBtn').onclick = () => { panel.style.display = 'none'; };
     }));
@@ -774,14 +780,14 @@ export async function render(container) {
       panel.style.display = 'block';
       panel.innerHTML = `
         <div style="border:1px solid var(--accent);border-radius:var(--radius);padding:16px;margin-top:12px">
-          <h4 style="font-size:14px;margin-bottom:8px">${t('apitoken.edit_folder')}</h4>
-          <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${t('apitoken.agency_folder_hint')}</p>
+          <h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('apitoken.edit_folder'))}</h4>
+          <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${renderHTML(t('apitoken.agency_folder_hint'))}</p>
           <select id="rebindFolder" class="input" style="width:100%;margin-bottom:12px">
-            <option value="">${t('apitoken.folder_root')}</option>
-            ${folders.map(f => `<option value="${esc(String(f.id))}"${String(f.id) === current ? ' selected' : ''}>${esc(f.name)}</option>`).join('')}
+            <option value="">${renderHTML(t('apitoken.folder_root'))}</option>
+            ${renderHTML(folders.map(f => `<option value="${esc(String(f.id))}"${String(f.id) === current ? ' selected' : ''}>${uiText(f.name)}</option>`).join(''))}
           </select>
-          <button class="btn btn-primary btn-sm" id="saveFolderBtn">${t('common.save')}</button>
-          <button class="btn btn-secondary btn-sm" id="cancelFolderBtn">${t('common.cancel')}</button>
+          <button class="btn btn-primary btn-sm" id="saveFolderBtn">${renderHTML(t('common.save'))}</button>
+          <button class="btn btn-secondary btn-sm" id="cancelFolderBtn">${renderHTML(t('common.cancel'))}</button>
         </div>`;
       document.getElementById('saveFolderBtn').onclick = async () => {
         try {
@@ -789,7 +795,7 @@ export async function render(container) {
           showToast(t('apitoken.folder_updated'), 'success');
           panel.style.display = 'none';
           loadTokens();
-        } catch (err) { showToast(err.message, 'error'); }
+        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       };
       document.getElementById('cancelFolderBtn').onclick = () => { panel.style.display = 'none'; };
     }));
@@ -819,57 +825,48 @@ export async function render(container) {
     if (!box) return;
     let info;
     try { info = await api.adminGetTelemetry(); }
-    catch { box.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Unavailable.</p>`; return; }
+    catch { box.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${renderHTML(t("ui.settings.unavailable"))}</p>`; return; }
 
     const on = info.state === 'on';
     const sent = info.last_report
-      ? `Last sent ${new Date(info.last_report.at * 1000).toLocaleString()}.`
-      : 'Nothing has been sent yet.';
+      ? t("ui.settings.last_sent_value0_111bee", {value0: displayValue(new Date(info.last_report.at * 1000), "toLocaleString", undefined)})
+      : t('ui.settings.telemetry_unsent');
 
     // A blocked outbound connection is the normal failure on a self-hosted box, and it is
     // otherwise invisible — the operator just sees nothing arriving. Name the failure and the
     // host, so the fix is "allow this in the firewall" rather than "guess".
     const failed = on && info.last_error;
     const why = failed
-      ? ({ network: 'the connection was refused or the address did not resolve',
-           timeout: 'the connection timed out' }[info.last_error.reason]
-         || `the server replied ${esc(info.last_error.reason)}`)
+      ? ({ network: t('ui.settings.telemetry_network'),
+           timeout: t('ui.settings.telemetry_timeout') }[info.last_error.reason]
+         || t("ui.settings.the_server_replied_value0_d62ffb", {value0: info.last_error.reason}))
       : '';
 
     box.innerHTML = `
       <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">
-        ScreenTinker can't see how widely it's deployed, because most installs are private by
-        design. Sharing lets us say how many screens are running — nothing more.
+        ${renderHTML(t("ui.settings.screentinker_can_t_see_how_widely_it"))}
       </p>
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <input type="checkbox" id="telemetryToggle" ${on ? 'checked' : ''}>
-        Share install statistics
+        ${renderHTML(t("ui.settings.share_install_statistics_49922e"))}
       </label>
       <p style="color:var(--text-muted);font-size:12px;margin-bottom:6px">
-        Everything that would be sent, in full:
+        ${renderHTML(t("ui.settings.everything_that_would_be_sent_in_full"))}
       </p>
-      <pre style="background:var(--bg-input,rgba(0,0,0,.2));padding:10px;border-radius:var(--radius);font-size:12px;overflow-x:auto;margin-bottom:8px">${esc(JSON.stringify(info.payload, null, 2))}</pre>
+      <pre style="background:var(--bg-input,rgba(0,0,0,.2));padding:10px;border-radius:var(--radius);font-size:12px;overflow-x:auto;margin-bottom:8px">${uiText(JSON.stringify(info.payload, null, 2))}</pre>
       <p style="color:var(--text-muted);font-size:12px;margin-bottom:${info.extra_endpoint ? '4' : '8'}px">
-        ${on ? 'Sent once a day to' : 'When enabled, sent once a day to'}
-        <code style="font-size:11px">${esc(info.endpoint || '')}</code>. If this server's outbound
-        traffic is filtered, that address has to be allowed or the reports never arrive.
+        ${renderHTML(t('ui.settings.telemetry_destination',{timing:t(on?'ui.settings.telemetry_on':'ui.settings.telemetry_off'),endpoint:info.endpoint||''}))}
       </p>
-      ${info.extra_endpoint ? `
+      ${renderHTML(info.extra_endpoint ? `
       <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">
-        A second copy also goes to your own collector at
-        <code style="font-size:11px">${esc(info.extra_endpoint)}</code>, configured on this server
-        with <code style="font-size:11px">TELEMETRY_EXTRA_ENDPOINT</code>. That is in addition to
-        the above, not instead of it — turn the switch off if you want your own statistics without
-        sharing.
-      </p>` : ''}
-      ${failed ? `
+        ${renderHTML(t('ui.settings.telemetry_extra',{endpoint:info.extra_endpoint}))}
+      </p>` : '')}
+      ${renderHTML(failed ? `
       <p style="font-size:12px;color:var(--danger);margin-bottom:8px">
-        The last attempt (${esc(new Date(info.last_error.at * 1000).toLocaleString())}) did not get
-        through — ${why}. Check that outbound HTTPS to that address is permitted.
-      </p>` : ''}
+        ${renderHTML(t("ui.settings.the_last_attempt_did_not_get_through_7858b7", {value0: displayValue(new Date(info.last_error.at * 1000), "toLocaleString", undefined), value1: why}))}
+      </p>` : '')}
       <p style="color:var(--text-muted);font-size:12px">
-        No names, addresses, content, or user details. The ID is random and identifies the install
-        only so repeat reports aren't counted twice. ${esc(sent)}
+        ${renderHTML(t("ui.settings.no_names_addresses_content_or_user_details_b2558a", {value9: sent}))}
       </p>
     `;
 
@@ -879,13 +876,13 @@ export async function render(container) {
         // Turning it on sends immediately, so a blocked firewall is reported here and now rather
         // than failing quietly tonight — say so plainly instead of a cheerful success toast.
         const r = await api.adminSetTelemetry(enabled);
-        if (!enabled) showToast('Install statistics off', 'success');
-        else if (r.first_report && r.first_report.sent) showToast('Shared — thank you', 'success');
-        else showToast('Saved, but the first report did not get through — see below', 'error');
+        if (!enabled) showToast(t("ui.settings.install_statistics_off"), 'success');
+        else if (r.first_report && r.first_report.sent) showToast(t("ui.settings.shared_thank_you"), 'success');
+        else showToast(t("ui.settings.saved_but_the_first_report_did_not"), 'error');
         loadTelemetry();
       } catch {
         e.target.checked = !enabled;
-        showToast('Could not save that setting', 'error');
+        showToast(t("ui.settings.could_not_save_that_setting"), 'error');
       }
     });
   }
@@ -893,13 +890,13 @@ export async function render(container) {
   async function loadSsoLink() {
     const block = document.getElementById('ssoLinkBlock');
     if (!block) return;
-    const head = `<h4 style="font-size:14px;margin-bottom:8px">${t('settings.signin_method')}</h4>`;
+    const head = `<h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('settings.signin_method'))}</h4>`;
     const muted = 'color:var(--text-muted);font-size:12px';
     const paint = (inner) => { block.innerHTML = head + inner; };
 
     let me;
     try { me = await api.getMe(); }
-    catch (e) { paint(`<p style="${muted}">${esc(e.message)}</p>`); return; }
+    catch (e) { paint(`<p style="${muted}">${uiText((e.uiMessage || e.message))}</p>`); return; }
 
     // The page may have been left while this was loading: draw nothing into a detached card.
     if (!document.contains(block)) return;
@@ -914,16 +911,16 @@ export async function render(container) {
     if (me.auth_provider && me.auth_provider !== 'local') {
       const name = providers.find((p) => p.slug === me.auth_provider)?.name || me.auth_provider;
       paint(`
-        <p style="${muted};margin-bottom:12px">${t('settings.signin_linked', { provider: esc(name) })}</p>
+        <p style="${muted};margin-bottom:12px">${renderHTML(t('settings.signin_linked', { provider: esc(name) }))}</p>
         <div id="unlinkForm" style="display:none;margin-bottom:12px">
-          <p style="${muted};margin-bottom:8px">${t('settings.signin_unlink_desc')}</p>
+          <p style="${muted};margin-bottom:8px">${renderHTML(t('settings.signin_unlink_desc'))}</p>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
-            <div class="form-group"><label>${t('settings.new_password')}</label><input type="password" id="unlinkPw" class="input" autocomplete="new-password"></div>
-            <div class="form-group"><label>${t('settings.confirm_new_password')}</label><input type="password" id="unlinkPw2" class="input" autocomplete="new-password"></div>
+            <div class="form-group"><label>${renderHTML(t('settings.new_password'))}</label><input type="password" id="unlinkPw" class="input" autocomplete="new-password"></div>
+            <div class="form-group"><label>${renderHTML(t('settings.confirm_new_password'))}</label><input type="password" id="unlinkPw2" class="input" autocomplete="new-password"></div>
           </div>
-          <button class="btn btn-primary btn-sm" id="unlinkConfirmBtn">${t('settings.signin_unlink_confirm')}</button>
+          <button class="btn btn-primary btn-sm" id="unlinkConfirmBtn">${renderHTML(t('settings.signin_unlink_confirm'))}</button>
         </div>
-        <button class="btn btn-secondary btn-sm" id="unlinkBtn">${t('settings.signin_unlink', { provider: esc(name) })}</button>
+        <button class="btn btn-secondary btn-sm" id="unlinkBtn">${renderHTML(t('settings.signin_unlink', { provider: esc(name) }))}</button>
       `);
       document.getElementById('unlinkBtn').onclick = () => {
         document.getElementById('unlinkForm').style.display = '';
@@ -938,19 +935,19 @@ export async function render(container) {
           await api.ssoUnlink(pw);
           showToast(t('settings.signin_unlinked_toast'), 'success');
           loadSsoLink();
-        } catch (e) { showToast(e.message, 'error'); }
+        } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
       };
       return;
     }
 
     if (!providers.length) {
-      paint(`<p style="${muted}">${t('settings.signin_password_only')}</p>`);
+      paint(`<p style="${muted}">${renderHTML(t('settings.signin_password_only'))}</p>`);
       return;
     }
     paint(`
-      <p style="${muted};margin-bottom:12px">${t('settings.signin_password_now')}</p>
+      <p style="${muted};margin-bottom:12px">${renderHTML(t('settings.signin_password_now'))}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${providers.map((p) => `<button class="btn btn-secondary btn-sm" data-link-slug="${esc(p.slug)}">${t('settings.signin_link', { provider: esc(p.name) })}</button>`).join('')}
+        ${renderHTML(providers.map((p) => `<button class="btn btn-secondary btn-sm" data-link-slug="${esc(p.slug)}">${renderHTML(t('settings.signin_link', { provider: esc(p.name) }))}</button>`).join(''))}
       </div>
     `);
     block.querySelectorAll('[data-link-slug]').forEach((btn) => {
@@ -967,7 +964,7 @@ export async function render(container) {
         try {
           const { url } = await api.ssoLinkStart(slug);
           window.location.href = url;
-        } catch (e) { showToast(e.message, 'error'); }
+        } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
       };
     });
   }
@@ -975,20 +972,20 @@ export async function render(container) {
   async function load2FA() {
     const block = document.getElementById('twoFactorBlock');
     if (!block) return;
-    const head = `<h4 style="font-size:14px;margin-bottom:8px">${t('settings.2fa_title')}</h4>`;
+    const head = `<h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('settings.2fa_title'))}</h4>`;
     const muted = 'color:var(--text-muted);font-size:12px';
     const paint = (inner) => { block.innerHTML = head + inner; };
 
     let status;
     try { status = await api.totpStatus(); }
-    catch (e) { paint(`<p style="${muted}">${esc(e.message)}</p>`); return; }
+    catch (e) { paint(`<p style="${muted}">${uiText((e.uiMessage || e.message))}</p>`); return; }
 
     // The page may have been left while this was loading: draw nothing into a detached card.
     if (!document.contains(block)) return;
 
     if (!status.eligible) {
       const provider = (JSON.parse(localStorage.getItem('user') || '{}').auth_provider) || 'SSO';
-      paint(`<p style="${muted}">${t('settings.2fa_sso_note', { provider: esc(provider) })}</p>`);
+      paint(`<p style="${muted}">${renderHTML(t('settings.2fa_sso_note', { provider: esc(provider) }))}</p>`);
       return;
     }
     if (status.enabled) return showEnabled(status.recovery_codes_remaining);
@@ -996,30 +993,30 @@ export async function render(container) {
 
     function showDisabled() {
       paint(`
-        <p style="${muted};margin-bottom:12px">${t('settings.2fa_desc')}
-          <span style="color:var(--text-secondary);margin-left:6px">${t('settings.2fa_status_off')}</span></p>
-        <button class="btn btn-primary btn-sm" id="enable2faBtn">${t('settings.2fa_enable')}</button>`);
+        <p style="${muted};margin-bottom:12px">${renderHTML(t('settings.2fa_desc'))}
+          <span style="color:var(--text-secondary);margin-left:6px">${renderHTML(t('settings.2fa_status_off'))}</span></p>
+        <button class="btn btn-primary btn-sm" id="enable2faBtn">${renderHTML(t('settings.2fa_enable'))}</button>`);
       document.getElementById('enable2faBtn').addEventListener('click', startEnroll);
     }
 
     async function startEnroll() {
       let data;
-      try { data = await api.totpSetup(); } catch (e) { showToast(e.message, 'error'); return; }
+      try { data = await api.totpSetup(); } catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
       const qr = data.qr_data_url
-        ? `<img src="${data.qr_data_url}" alt="TOTP QR" width="200" height="200" style="border-radius:8px;background:#fff;padding:6px">`
-        : `<p style="${muted}">${t('settings.2fa_setup_manual')}</p>`;
+        ? `<img src="${data.qr_data_url}" ${translatedAttribute("alt", "ui.settings.alt_totp_qr_eb4412")} width="200" height="200" style="border-radius:8px;background:#fff;padding:6px">`
+        : `<p style="${muted}">${renderHTML(t('settings.2fa_setup_manual'))}</p>`;
       paint(`
-        <p style="${muted};margin-bottom:10px">${t('settings.2fa_setup_scan')}</p>
+        <p style="${muted};margin-bottom:10px">${renderHTML(t('settings.2fa_setup_scan'))}</p>
         <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
-          <div>${qr}</div>
+          <div>${renderHTML(qr)}</div>
           <div style="flex:1;min-width:220px">
-            <p style="${muted}">${t('settings.2fa_setup_manual')}</p>
-            <code style="display:block;word-break:break-all;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:8px;margin:6px 0 14px;font-family:monospace;font-size:13px">${esc(data.secret)}</code>
-            <label style="${muted}">${t('settings.2fa_setup_confirm')}</label>
-            <input type="text" id="enroll2faCode" class="input" inputmode="numeric" autocomplete="one-time-code" placeholder="${t('settings.2fa_code_placeholder')}" maxlength="6" style="letter-spacing:4px;text-align:center;font-family:monospace;margin:6px 0">
+            <p style="${muted}">${renderHTML(t('settings.2fa_setup_manual'))}</p>
+            <code style="display:block;word-break:break-all;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:8px;margin:6px 0 14px;font-family:monospace;font-size:13px">${uiText(data.secret)}</code>
+            <label style="${muted}">${renderHTML(t('settings.2fa_setup_confirm'))}</label>
+            <input type="text" id="enroll2faCode" class="input" inputmode="numeric" autocomplete="one-time-code" placeholder="${t('settings.2fa_code_placeholder')}" data-fil-i18n-placeholder="${binding('settings.2fa_code_placeholder', undefined)}" maxlength="6" style="letter-spacing:4px;text-align:center;font-family:monospace;margin:6px 0">
             <div style="display:flex;gap:8px;margin-top:6px">
-              <button class="btn btn-primary btn-sm" id="enroll2faVerify">${t('settings.2fa_verify_enable')}</button>
-              <button class="btn btn-secondary btn-sm" id="enroll2faCancel">${t('settings.2fa_cancel')}</button>
+              <button class="btn btn-primary btn-sm" id="enroll2faVerify">${renderHTML(t('settings.2fa_verify_enable'))}</button>
+              <button class="btn btn-secondary btn-sm" id="enroll2faCancel">${uiText(t('settings.2fa_cancel'))}</button>
             </div>
           </div>
         </div>`);
@@ -1032,7 +1029,7 @@ export async function render(container) {
           const r = await api.totpEnable(code);
           showToast(t('settings.2fa_enabled_toast'), 'success');
           showRecoveryCodes(r.recovery_codes);
-        } catch (e) { showToast(e.message, 'error'); codeEl.select(); }
+        } catch (e) { showToast(e.uiMessage || e.message, 'error'); codeEl.select(); }
       };
       document.getElementById('enroll2faVerify').addEventListener('click', doEnable);
       codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') doEnable(); });
@@ -1040,16 +1037,16 @@ export async function render(container) {
     }
 
     function showRecoveryCodes(codes) {
-      const list = codes.map((c) => `<div>${esc(c)}</div>`).join('');
+      const list = codes.map((c) => `<div>${uiText(c)}</div>`).join('');
       const text = codes.join('\n');
       paint(`
-        <p style="font-weight:600;margin-bottom:4px">${t('settings.2fa_recovery_title')}</p>
-        <p style="${muted};margin-bottom:12px">${t('settings.2fa_recovery_warning')}</p>
-        <div style="font-family:monospace;font-size:14px;letter-spacing:1px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px 24px">${list}</div>
+        <p style="font-weight:600;margin-bottom:4px">${renderHTML(t('settings.2fa_recovery_title'))}</p>
+        <p style="${muted};margin-bottom:12px">${renderHTML(t('settings.2fa_recovery_warning'))}</p>
+        <div style="font-family:monospace;font-size:14px;letter-spacing:1px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px 24px">${renderHTML(list)}</div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" id="copyRecovery">${t('settings.2fa_recovery_copy')}</button>
-          <button class="btn btn-secondary btn-sm" id="dlRecovery">${t('settings.2fa_recovery_download')}</button>
-          <button class="btn btn-primary btn-sm" id="doneRecovery">${t('settings.2fa_recovery_done')}</button>
+          <button class="btn btn-secondary btn-sm" id="copyRecovery">${renderHTML(t('settings.2fa_recovery_copy'))}</button>
+          <button class="btn btn-secondary btn-sm" id="dlRecovery">${renderHTML(t('settings.2fa_recovery_download'))}</button>
+          <button class="btn btn-primary btn-sm" id="doneRecovery">${renderHTML(t('settings.2fa_recovery_done'))}</button>
         </div>`);
       document.getElementById('copyRecovery').addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(text); showToast(t('settings.2fa_recovery_copy'), 'success'); } catch { /* field is selectable */ }
@@ -1068,11 +1065,11 @@ export async function render(container) {
     function showEnabled(remaining) {
       paint(`
         <p style="margin-bottom:12px">
-          <span style="color:var(--success);font-weight:600">✓ ${t('settings.2fa_status_on')}</span>
-          <span style="${muted};margin-left:10px">${t('settings.2fa_recovery_remaining', { n: remaining })}</span></p>
+          <span style="color:var(--success);font-weight:600">✓ ${renderHTML(t('settings.2fa_status_on'))}</span>
+          <span style="${muted};margin-left:10px">${renderHTML(t('settings.2fa_recovery_remaining', { n: remaining }))}</span></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" id="regen2faBtn">${t('settings.2fa_recovery_regenerate')}</button>
-          <button class="btn btn-danger btn-sm" id="disable2faBtn">${t('settings.2fa_disable')}</button>
+          <button class="btn btn-secondary btn-sm" id="regen2faBtn">${renderHTML(t('settings.2fa_recovery_regenerate'))}</button>
+          <button class="btn btn-danger btn-sm" id="disable2faBtn">${renderHTML(t('settings.2fa_disable'))}</button>
         </div>
         <div id="twoFactorAction" style="margin-top:12px"></div>`);
       document.getElementById('disable2faBtn').addEventListener('click', () => promptCode({
@@ -1088,18 +1085,18 @@ export async function render(container) {
     function promptCode({ prompt, confirm, danger, run }) {
       const box = document.getElementById('twoFactorAction');
       box.innerHTML = `
-        <p style="${muted};margin-bottom:6px">${prompt}</p>
+        <p style="${muted};margin-bottom:6px">${renderHTML(prompt)}</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input type="text" id="twoFactorActionCode" class="input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="${t('settings.2fa_code_placeholder')}" maxlength="40" style="max-width:170px;letter-spacing:3px;text-align:center;font-family:monospace">
-          <button class="btn btn-sm ${danger ? 'btn-danger' : 'btn-primary'}" id="twoFactorActionConfirm">${confirm}</button>
-          <button class="btn btn-secondary btn-sm" id="twoFactorActionCancel">${t('settings.2fa_cancel')}</button>
+          <input type="text" id="twoFactorActionCode" class="input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="${t('settings.2fa_code_placeholder')}" data-fil-i18n-placeholder="${binding('settings.2fa_code_placeholder', undefined)}" maxlength="40" style="max-width:170px;letter-spacing:3px;text-align:center;font-family:monospace">
+          <button class="btn btn-sm ${danger ? 'btn-danger' : 'btn-primary'}" id="twoFactorActionConfirm">${renderHTML(confirm)}</button>
+          <button class="btn btn-secondary btn-sm" id="twoFactorActionCancel">${uiText(t('settings.2fa_cancel'))}</button>
         </div>`;
       const codeEl = document.getElementById('twoFactorActionCode');
       codeEl.focus();
       const go = async () => {
         const code = codeEl.value.trim();
         if (!code) { showToast(t('settings.2fa_code_required'), 'error'); return; }
-        try { await run(code); } catch (e) { showToast(e.message, 'error'); codeEl.select(); }
+        try { await run(code); } catch (e) { showToast(e.uiMessage || e.message, 'error'); codeEl.select(); }
       };
       document.getElementById('twoFactorActionConfirm').addEventListener('click', go);
       codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
@@ -1114,11 +1111,11 @@ export async function render(container) {
     const block = document.getElementById('passkeyBlock');
     if (!block) return;
     const muted = 'color:var(--text-muted);font-size:12px';
-    const paint = (inner) => { block.innerHTML = `<h4 style="font-size:14px;margin-bottom:8px">${esc(t('passkey.title'))}</h4>${inner}`; };
+    const paint = (inner) => { block.innerHTML = `<h4 style="font-size:14px;margin-bottom:8px">${uiText(t('passkey.title'))}</h4>${renderHTML(inner)}`; };
 
     let st;
     try { st = await api.passkeysList(); }
-    catch (e) { paint(`<p style="${muted}">${esc(e.message)}</p>`); return; }
+    catch (e) { paint(`<p style="${muted}">${uiText((e.uiMessage || e.message))}</p>`); return; }
 
     // The page may have been left while this was loading: draw nothing into a detached card.
     if (!document.contains(block)) return;
@@ -1126,23 +1123,23 @@ export async function render(container) {
     if (!st.available) {
       // Never silently bound to whatever address this page happens to be on: say why it is off,
       // and to the people who can fix it, how.
-      paint(`<p style="${muted}">${esc(unavailableMessage(st.reason, isSuperAdmin))}</p>`);
+      paint(`<p style="${muted}">${uiText(unavailableMessage(st.reason, isSuperAdmin))}</p>`);
       return;
     }
     if (!st.eligible && !st.passkeys.length) {
-      paint(`<p style="${muted}">${esc(t(user.auth_provider === 'local' ? 'passkey.sso_only_note' : 'passkey.sso_account_note'))}</p>`);
+      paint(`<p style="${muted}">${uiText(t(user.auth_provider === 'local' ? 'passkey.sso_only_note' : 'passkey.sso_account_note'))}</p>`);
       return;
     }
 
-    const fmt = (ts) => (ts ? new Date(ts * 1000).toLocaleDateString() : '');
+    const fmt = (ts) => (ts ? displayValue(new Date(ts * 1000), "toLocaleDateString", undefined) : '');
     const rows = st.passkeys.map((p) => `
       <div class="passkey-row" data-id="${esc(p.id)}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--border)">
         <div style="flex:1;min-width:180px">
-          <div style="font-weight:500">${esc(p.name)}${p.backed_up ? ` <span style="${muted};margin-left:6px">${esc(t('passkey.synced'))}</span>` : ''}</div>
-          <div style="${muted}">${esc(t('passkey.added_on', { date: fmt(p.created_at) }))} · ${esc(p.last_used_at ? t('passkey.last_used', { date: fmt(p.last_used_at) }) : t('passkey.never_used'))}</div>
+          <div style="font-weight:500">${uiText(p.name)}${renderHTML(p.backed_up ? ` <span style="${muted};margin-left:6px">${uiText(t('passkey.synced'))}</span>` : '')}</div>
+          <div style="${muted}">${uiText(t('passkey.added_on', { date: fmt(p.created_at) }))} · ${uiText(p.last_used_at ? t('passkey.last_used', { date: fmt(p.last_used_at) }) : t('passkey.never_used'))}</div>
         </div>
-        <button class="btn btn-secondary btn-sm" data-pk-rename>${esc(t('passkey.rename'))}</button>
-        <button class="btn btn-danger btn-sm" data-pk-remove>${esc(t('passkey.remove'))}</button>
+        <button class="btn btn-secondary btn-sm" data-pk-rename>${uiText(t('passkey.rename'))}</button>
+        <button class="btn btn-danger btn-sm" data-pk-remove>${uiText(t('passkey.remove'))}</button>
       </div>`).join('');
 
     // Why adding is not offered on this page, if it is not.
@@ -1154,24 +1151,24 @@ export async function render(container) {
     else if (st.passkeys.length >= st.max) addNote = t('passkey.limit', { n: st.max });
 
     paint(`
-      <p style="${muted};margin-bottom:10px">${esc(t('passkey.desc'))}</p>
-      ${rows || `<p style="${muted};margin-bottom:10px">${esc(t('passkey.none'))}</p>`}
-      ${addNote ? `<p style="${muted};margin-top:10px">${esc(addNote)}</p>` : `
+      <p style="${muted};margin-bottom:10px">${uiText(t('passkey.desc'))}</p>
+      ${renderHTML(rows || `<p style="${muted};margin-bottom:10px">${uiText(t('passkey.none'))}</p>`)}
+      ${renderHTML(addNote ? `<p style="${muted};margin-top:10px">${uiText(addNote)}</p>` : `
       <div style="margin-top:12px">
-        <button class="btn btn-primary btn-sm" id="passkeyAddBtn">${esc(t('passkey.add'))}</button>
+        <button class="btn btn-primary btn-sm" id="passkeyAddBtn">${uiText(t('passkey.add'))}</button>
         <div id="passkeyAddForm" style="display:none;margin-top:10px">
-          <p style="${muted};margin-bottom:8px">${esc(t(st.totp_enabled ? 'passkey.reauth_prompt_totp' : 'passkey.reauth_prompt'))}</p>
+          <p style="${muted};margin-bottom:8px">${uiText(t(st.totp_enabled ? 'passkey.reauth_prompt_totp' : 'passkey.reauth_prompt'))}</p>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
-            <div class="form-group"><label>${esc(t('passkey.name_label'))}</label><input type="text" id="passkeyName" class="input" maxlength="64" value="${esc(suggestedPasskeyName())}"></div>
-            <div class="form-group"><label>${esc(t('settings.current_password'))}</label><input type="password" id="passkeyPassword" class="input" autocomplete="current-password"></div>
-            ${st.totp_enabled ? `<div class="form-group"><label>${esc(t('auth.mfa_code_label'))}</label><input type="text" id="passkeyCode" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="${esc(t('settings.2fa_code_placeholder'))}"></div>` : ''}
+            <div class="form-group"><label>${uiText(t('passkey.name_label'))}</label><input type="text" id="passkeyName" class="input" maxlength="64" value="${esc(suggestedPasskeyName())}"></div>
+            <div class="form-group"><label>${uiText(t('settings.current_password'))}</label><input type="password" id="passkeyPassword" class="input" autocomplete="current-password"></div>
+            ${renderHTML(st.totp_enabled ? `<div class="form-group"><label>${uiText(t('auth.mfa_code_label'))}</label><input type="text" id="passkeyCode" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="${esc(t('settings.2fa_code_placeholder'))}" data-fil-i18n-placeholder="${binding('settings.2fa_code_placeholder', undefined)}"></div>` : '')}
           </div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-primary btn-sm" id="passkeyCreateBtn">${esc(t('passkey.create'))}</button>
-            <button class="btn btn-secondary btn-sm" id="passkeyCancelBtn">${esc(t('settings.2fa_cancel'))}</button>
+            <button class="btn btn-primary btn-sm" id="passkeyCreateBtn">${uiText(t('passkey.create'))}</button>
+            <button class="btn btn-secondary btn-sm" id="passkeyCancelBtn">${uiText(t('settings.2fa_cancel'))}</button>
           </div>
         </div>
-      </div>`}`);
+      </div>`)}`);
 
     const form = document.getElementById('passkeyAddForm');
     document.getElementById('passkeyAddBtn')?.addEventListener('click', (e) => {
@@ -1194,7 +1191,7 @@ export async function render(container) {
         showToast(t('passkey.added_toast'), 'success');
         loadPasskeys();
       } catch (err) {
-        if (!err.cancelled) showToast(err.message, 'error');
+        if (!err.cancelled) showToast(err.uiMessage || err.message, 'error');
         btn.disabled = false;
       }
     });
@@ -1206,7 +1203,7 @@ export async function render(container) {
         const name = window.prompt(t('passkey.rename_prompt'), current);
         if (name == null || !name.trim()) return;
         try { await api.passkeyRename(id, name.trim()); loadPasskeys(); }
-        catch (err) { showToast(err.message, 'error'); }
+        catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       });
       row.querySelector('[data-pk-remove]').addEventListener('click', async () => {
         if (!window.confirm(t('passkey.remove_confirm', { name: current }))) return;
@@ -1214,7 +1211,7 @@ export async function render(container) {
           await api.passkeyDelete(id);
           showToast(t('passkey.removed_toast'), 'success');
           loadPasskeys();
-        } catch (err) { showToast(err.message, 'error'); }
+        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       });
     });
   }
@@ -1226,7 +1223,7 @@ export async function render(container) {
   document.getElementById('revokeOtherSessionsBtn')?.addEventListener('click', async (e) => {
     e.target.disabled = true;
     try { await api.revokeOtherSessions(); showToast(t('settings.sessions_revoked'), 'success'); }
-    catch (err) { showToast(err.message, 'error'); }
+    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     finally { e.target.disabled = false; }
   });
 
@@ -1268,13 +1265,13 @@ export async function render(container) {
       const pls = await api.getPlaylists().catch(() => []);
       list.innerHTML = pls.length
         ? pls.map(p => p.zoned
-            ? `<label style="display:flex;gap:8px;align-items:center;font-size:13px;opacity:.5"><input type="checkbox" disabled> ${esc(p.name)} <span style="font-size:11px;color:var(--text-muted)">— ${esc(t('apitoken.zoned_playlist_reason'))}</span></label>`
-            : `<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" class="agency-pl" value="${esc(String(p.id))}"> ${esc(p.name)}</label>`).join('')
-        : `<p style="color:var(--text-muted);font-size:12px">${t('apitoken.agency_no_playlists')}</p>`;
+            ? `<label style="display:flex;gap:8px;align-items:center;font-size:13px;opacity:.5"><input type="checkbox" disabled> ${uiText(p.name)} <span style="font-size:11px;color:var(--text-muted)">— ${uiText(t('apitoken.zoned_playlist_reason'))}</span></label>`
+            : `<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" class="agency-pl" value="${esc(String(p.id))}"> ${uiText(p.name)}</label>`).join('')
+        : `<p style="color:var(--text-muted);font-size:12px">${renderHTML(t('apitoken.agency_no_playlists'))}</p>`;
       // #158: offer existing folders to bind, or leave on the auto-create default.
       const folders = await api.getFolders().catch(() => []);
       const fsel = document.getElementById('tokUploadFolder');
-      if (fsel && folders.length) fsel.insertAdjacentHTML('beforeend', folders.map(f => `<option value="${esc(String(f.id))}">${esc(f.name)}</option>`).join(''));
+      if (fsel && folders.length) fsel.insertAdjacentHTML('beforeend', folders.map(f => `<option value="${esc(String(f.id))}">${uiText(f.name)}</option>`).join(''));
     }
   });
 
@@ -1299,12 +1296,12 @@ export async function render(container) {
       if (!res.ok) throw new Error('load failed');
       providers = (await res.json()).providers || [];
     } catch {
-      listEl.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${esc(t('sso.load_failed'))}</p>`;
+      listEl.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText(t('sso.load_failed'))}</p>`;
       return;
     }
 
     if (!providers.length) {
-      listEl.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${esc(t('sso.none'))}</p>`;
+      listEl.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText(t('sso.none'))}</p>`;
       return;
     }
 
@@ -1323,109 +1320,109 @@ export async function render(container) {
       <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
           <div>
-            <strong>${esc(p.name)}</strong>
-            ${p.enabled ? '' : `<span style="font-size:11px;color:var(--text-muted)"> — ${esc(t('sso.disabled'))}</span>`}
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${esc(p.kind === 'saml' ? `${t('sso.protocol_saml')} · ${p.idp_entity_id}` : p.issuer)}</div>
-            ${p.kind === 'saml' && p.cert ? `<div style="font-size:12px;color:var(--text-muted)">${esc(t('sso.saml_cert_label'))}: ${esc(p.cert.subject)} — ${esc(t('sso.saml_cert_expires'))} ${esc(p.cert.valid_to)}</div>` : ''}
-            <div style="font-size:12px;color:var(--text-muted)">${esc(t('sso.domains_label'))}: ${esc(p.email_domains || '—')}</div>
-            ${((p.domains || []).some((d) => !d.verified) || (p.domains || []).length === 0)
-              ? `<div style="font-size:12px;color:var(--warning,#b45309);margin-top:2px">⚠️ ${esc(t('sso.unverified_warning'))}</div>`
-              : ''}
+            <strong>${uiText(p.name)}</strong>
+            ${renderHTML(p.enabled ? '' : `<span style="font-size:11px;color:var(--text-muted)"> — ${uiText(t('sso.disabled'))}</span>`)}
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${uiText(p.kind === 'saml' ? `${t('sso.protocol_saml')} · ${p.idp_entity_id}` : p.issuer)}</div>
+            ${renderHTML(p.kind === 'saml' && p.cert ? `<div style="font-size:12px;color:var(--text-muted)">${uiText(t('sso.saml_cert_label'))}: ${uiText(p.cert.subject)} — ${uiText(t('sso.saml_cert_expires'))} ${uiText(p.cert.valid_to)}</div>` : '')}
+            <div style="font-size:12px;color:var(--text-muted)">${uiText(t('sso.domains_label'))}: ${uiText(p.email_domains || '—')}</div>
+            ${renderHTML(((p.domains || []).some((d) => !d.verified) || (p.domains || []).length === 0)
+              ? `<div style="font-size:12px;color:var(--warning,#b45309);margin-top:2px">⚠️ ${uiText(t('sso.unverified_warning'))}</div>`
+              : '')}
           </div>
           <!-- wrap, do not shrink-to-clip: at 375px this row ran to x=417 on a 375px viewport and
                the page does not scroll horizontally, so "Remove" was simply unreachable. -->
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-secondary btn-sm" data-sso-test="${esc(p.id)}">${esc(t('sso.test'))}</button>
-            <button class="btn btn-secondary btn-sm" data-sso-edit="${esc(p.id)}">${esc(t('sso.edit'))}</button>
+            <button class="btn btn-secondary btn-sm" data-sso-test="${esc(p.id)}">${uiText(t('sso.test'))}</button>
+            <button class="btn btn-secondary btn-sm" data-sso-edit="${esc(p.id)}">${uiText(t('sso.edit'))}</button>
             <button class="btn btn-secondary btn-sm" data-sso-toggle="${esc(p.id)}" data-enabled="${p.enabled ? '1' : '0'}">
-              ${esc(p.enabled ? t('sso.disable') : t('sso.enable'))}
+              ${uiText(p.enabled ? t('sso.disable') : t('sso.enable'))}
             </button>
-            <button class="btn btn-danger btn-sm" data-sso-delete="${esc(p.id)}">${esc(t('sso.delete'))}</button>
+            <button class="btn btn-danger btn-sm" data-sso-delete="${esc(p.id)}">${uiText(t('sso.delete'))}</button>
           </div>
         </div>
         <!-- The admin has to paste this into their identity provider, and it must match character
              for character, so it is shown rather than described. -->
-        ${p.kind === 'saml' ? `
+        ${renderHTML(p.kind === 'saml' ? `
         <div style="margin-top:8px;font-size:12px">
-          <div style="font-weight:600;margin-bottom:4px">${esc(t('sso.saml_sp_heading'))}</div>
-          ${[['sso.saml_sp_entity_id', p.sp_entity_id], ['sso.saml_acs_url', p.acs_url], ['sso.saml_metadata_url', p.metadata_url]].map(([k, v]) => `
-          <div style="color:var(--text-muted);margin-top:4px">${esc(t(k))}</div>
-          <code style="display:block;word-break:break-all;padding:6px;background:var(--bg-secondary);border-radius:4px">${esc(v)}</code>`).join('')}
-          <div style="color:var(--text-muted);margin-top:6px">${esc(t('sso.saml_nameid_hint'))}</div>
+          <div style="font-weight:600;margin-bottom:4px">${uiText(t('sso.saml_sp_heading'))}</div>
+          ${renderHTML([['sso.saml_sp_entity_id', p.sp_entity_id], ['sso.saml_acs_url', p.acs_url], ['sso.saml_metadata_url', p.metadata_url]].map(([k, v]) => `
+          <div style="color:var(--text-muted);margin-top:4px">${uiText(t(k))}</div>
+          <code style="display:block;word-break:break-all;padding:6px;background:var(--bg-secondary);border-radius:4px">${uiText(v)}</code>`).join(''))}
+          <div style="color:var(--text-muted);margin-top:6px">${uiText(t('sso.saml_nameid_hint'))}</div>
         </div>` : `
         <div style="margin-top:8px;font-size:12px">
-          <div style="color:var(--text-muted)">${esc(t('sso.callback_label'))}</div>
-          <code style="display:block;word-break:break-all;padding:6px;background:var(--bg-secondary);border-radius:4px">${esc(origin + p.callback_url)}</code>
-        </div>`}
+          <div style="color:var(--text-muted)">${uiText(t('sso.callback_label'))}</div>
+          <code style="display:block;word-break:break-all;padding:6px;background:var(--bg-secondary);border-radius:4px">${uiText(origin + p.callback_url)}</code>
+        </div>`)}
 
         <!-- Editing is per provider, because an organization may have several (one per domain, or
              one per identity provider after a merger) and they are configured independently. -->
         <!-- Domain proof. A claimed domain routes NOBODY until DNS confirms the organization
              controls it, so the state of each one is shown plainly rather than left to be inferred
              from a login that silently does not work. -->
-        ${(p.domains || []).length ? `
+        ${renderHTML((p.domains || []).length ? `
         <div style="margin-top:10px;font-size:12px">
-          <div style="color:var(--text-muted);margin-bottom:4px">${esc(t('sso.domains_heading'))}</div>
-          ${p.domains.map((d, di) => `
+          <div style="color:var(--text-muted);margin-bottom:4px">${uiText(t('sso.domains_heading'))}</div>
+          ${renderHTML(p.domains.map((d, di) => `
             <div style="border:1px solid var(--border);border-radius:4px;padding:8px;margin-bottom:6px">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                <div><strong>${esc(d.domain)}</strong>
-                  ${d.verified
-                    ? `<span style="color:var(--success,#15803d)"> — ${esc(t('sso.domain_verified'))}</span>`
-                    : `<span style="color:var(--warning,#b45309)"> — ${esc(t('sso.domain_pending'))}</span>`}
+                <div><strong>${uiText(d.domain)}</strong>
+                  ${renderHTML(d.verified
+                    ? `<span style="color:var(--success,#15803d)"> — ${uiText(t('sso.domain_verified'))}</span>`
+                    : `<span style="color:var(--warning,#b45309)"> — ${uiText(t('sso.domain_pending'))}</span>`)}
                 </div>
-                ${d.verified ? '' : `<button class="btn btn-secondary btn-sm" data-sso-verify="${esc(p.id)}" data-domain="${esc(d.domain)}" data-di="${di}">${esc(t('sso.verify_now'))}</button>`}
+                ${renderHTML(d.verified ? '' : `<button class="btn btn-secondary btn-sm" data-sso-verify="${esc(p.id)}" data-domain="${esc(d.domain)}" data-di="${di}">${uiText(t('sso.verify_now'))}</button>`)}
               </div>
-              ${d.verified ? '' : `
-                <div style="margin-top:6px;color:var(--text-muted)">${esc(t('sso.dns_instructions'))}</div>
-                <code style="display:block;word-break:break-all;padding:6px;background:var(--bg-secondary);border-radius:4px;margin-top:4px">${esc(d.record_name)}  TXT  ${esc(d.txt_value)}</code>
-`}
+              ${renderHTML(d.verified ? '' : `
+                <div style="margin-top:6px;color:var(--text-muted)">${uiText(t('sso.dns_instructions'))}</div>
+                <code style="display:block;word-break:break-all;padding:6px;background:var(--bg-secondary);border-radius:4px;margin-top:4px">${uiText(d.record_name)}  TXT  ${uiText(d.txt_value)}</code>
+`)}
               <!-- ONE place for the outcome. The last failure is persisted server-side and was
                    rendered here, while the click handler wrote the live result into a second
                    element below it — so retrying showed the identical sentence twice, in two
                    different colours. The handler replaces this element's text instead. -->
-              <div id="ssoVerify-${esc(p.id)}-${di}" style="margin-top:4px;color:var(--danger,#b91c1c)">${d.verified ? '' : esc(d.last_error || '')}</div>
-            </div>`).join('')}
-        </div>` : ''}
+              <div id="ssoVerify-${esc(p.id)}-${di}" style="margin-top:4px;color:var(--danger,#b91c1c)">${renderHTML(d.verified ? '' : esc(d.last_error || ''))}</div>
+            </div>`).join(''))}
+        </div>` : '')}
 
         <div id="ssoTest-${esc(p.id)}" style="display:none;margin-top:8px;font-size:12px"></div>
         <div id="ssoEdit-${esc(p.id)}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:none">
           <div style="display:grid;gap:10px;max-width:560px">
-            <div class="form-group"><label>${esc(t('sso.f_name'))}</label>
+            <div class="form-group"><label>${uiText(t('sso.f_name'))}</label>
               <input type="text" class="input" data-f="name" value="${esc(p.name)}"></div>
-            ${p.kind === 'saml' ? `
-            <div class="form-group"><label>${esc(t('sso.f_saml_metadata'))}</label>
+            ${renderHTML(p.kind === 'saml' ? `
+            <div class="form-group"><label>${uiText(t('sso.f_saml_metadata'))}</label>
               <textarea class="input" data-f="metadata_xml" rows="3" spellcheck="false" style="font-family:monospace;font-size:11px"></textarea>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${esc(t('sso.f_saml_metadata_edit_hint'))}</div></div>
-            <div class="form-group"><label>${esc(t('sso.f_saml_entity_id'))}</label>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${uiText(t('sso.f_saml_metadata_edit_hint'))}</div></div>
+            <div class="form-group"><label>${uiText(t('sso.f_saml_entity_id'))}</label>
               <input type="text" class="input" data-f="idp_entity_id" value="${esc(p.idp_entity_id)}"></div>
-            <div class="form-group"><label>${esc(t('sso.f_saml_sso_url'))}</label>
+            <div class="form-group"><label>${uiText(t('sso.f_saml_sso_url'))}</label>
               <input type="url" class="input" data-f="sso_url" value="${esc(p.sso_url || '')}"></div>
-            <div class="form-group"><label>${esc(t('sso.f_saml_cert'))}</label>
-              <textarea class="input" data-f="cert" rows="3" spellcheck="false" style="font-family:monospace;font-size:11px" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${esc(t('sso.f_saml_cert_edit_hint'))}</div></div>
+            <div class="form-group"><label>${uiText(t('sso.f_saml_cert'))}</label>
+              <textarea class="input" data-f="cert" rows="3" spellcheck="false" style="font-family:monospace;font-size:11px" ${translatedAttribute("placeholder", "ui.settings.placeholder_begin_certificate_ddddb6")}></textarea>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${uiText(t('sso.f_saml_cert_edit_hint'))}</div></div>
             ` : `
-            <div class="form-group"><label>${esc(t('sso.f_issuer'))}</label>
+            <div class="form-group"><label>${uiText(t('sso.f_issuer'))}</label>
               <input type="url" class="input" data-f="issuer" value="${esc(p.issuer)}"></div>
-            <div class="form-group"><label>${esc(t('sso.f_client_id'))}</label>
+            <div class="form-group"><label>${uiText(t('sso.f_client_id'))}</label>
               <input type="text" class="input" data-f="client_id" value="${esc(p.client_id)}"></div>
-            <div class="form-group"><label>${esc(t('sso.f_client_secret'))}</label>
+            <div class="form-group"><label>${uiText(t('sso.f_client_secret'))}</label>
               <input type="password" class="input" data-f="client_secret" autocomplete="new-password"
                      placeholder="${esc(p.has_client_secret ? t('sso.secret_set') : t('sso.secret_none'))}">
               <!-- A secret can never be shown back: the API does not return it. Blank therefore means
                    "leave it alone" rather than "clear it", which is what stops a save from silently
                    wiping a working configuration. Clearing is a separate, explicit choice. -->
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${esc(t('sso.secret_edit_hint'))}</div>
-              ${p.has_client_secret ? `
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${uiText(t('sso.secret_edit_hint'))}</div>
+              ${renderHTML(p.has_client_secret ? `
               <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:6px">
-                <input type="checkbox" data-f="clear_secret"> ${esc(t('sso.secret_clear'))}
-              </label>` : ''}
-            </div>`}
-            <div class="form-group"><label>${esc(t('sso.f_domains'))}</label>
+                <input type="checkbox" data-f="clear_secret"> ${uiText(t('sso.secret_clear'))}
+              </label>` : '')}
+            </div>`)}
+            <div class="form-group"><label>${uiText(t('sso.f_domains'))}</label>
               <input type="text" class="input" data-f="email_domains" value="${esc(p.email_domains)}"></div>
             <div style="display:flex;gap:6px">
-              <button class="btn btn-primary btn-sm" data-sso-save="${esc(p.id)}" data-kind="${esc(p.kind || 'oidc')}">${esc(t('sso.save'))}</button>
-              <button class="btn btn-secondary btn-sm" data-sso-cancel="${esc(p.id)}">${esc(t('sso.cancel'))}</button>
+              <button class="btn btn-primary btn-sm" data-sso-save="${esc(p.id)}" data-kind="${esc(p.kind || 'oidc')}">${uiText(t('sso.save'))}</button>
+              <button class="btn btn-secondary btn-sm" data-sso-cancel="${esc(p.id)}">${uiText(t('sso.cancel'))}</button>
             </div>
           </div>
         </div>
@@ -1446,21 +1443,21 @@ export async function render(container) {
       const box = document.createElement('div');
       box.style.cssText = 'border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:4px';
       box.innerHTML = `
-        <div style="font-weight:600;margin-bottom:4px">${esc(t('sso.only_heading'))}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${esc(t('sso.only_help'))}</div>
-        ${onlyState.sso_only ? `
-          <div style="font-size:13px;margin-bottom:8px">✅ ${esc(t('sso.only_on'))}</div>
-          ${pend
-            ? `<div style="font-size:12px;color:var(--warning,#b45309)">⏳ ${esc(t('sso.only_pending'))}</div>
-               <button class="btn btn-secondary btn-sm" id="ssoOnlyCancel" data-req="${esc(pend.id)}" style="margin-top:6px">${esc(t('sso.only_cancel'))}</button>`
-            : `<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${esc(t('sso.only_remove_help'))}</div>
-               <button class="btn btn-secondary btn-sm" id="ssoOnlyRequest">${esc(t('sso.only_request'))}</button>`}
+        <div style="font-weight:600;margin-bottom:4px">${uiText(t('sso.only_heading'))}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${uiText(t('sso.only_help'))}</div>
+        ${renderHTML(onlyState.sso_only ? `
+          <div style="font-size:13px;margin-bottom:8px">✅ ${uiText(t('sso.only_on'))}</div>
+          ${renderHTML(pend
+            ? `<div style="font-size:12px;color:var(--warning,#b45309)">⏳ ${uiText(t('sso.only_pending'))}</div>
+               <button class="btn btn-secondary btn-sm" id="ssoOnlyCancel" data-req="${esc(pend.id)}" style="margin-top:6px">${uiText(t('sso.only_cancel'))}</button>`
+            : `<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${uiText(t('sso.only_remove_help'))}</div>
+               <button class="btn btn-secondary btn-sm" id="ssoOnlyRequest">${uiText(t('sso.only_request'))}</button>`)}
         ` : `
-          <div style="font-size:13px;margin-bottom:8px">${esc(t('sso.only_off'))}</div>
-          ${onlyState.verified_domains
-            ? `<button class="btn btn-secondary btn-sm" id="ssoOnlyEnable">${esc(t('sso.only_enable'))}</button>`
-            : `<div style="font-size:12px;color:var(--warning,#b45309)">⚠️ ${esc(t('sso.only_needs_domain'))}</div>`}
-        `}`;
+          <div style="font-size:13px;margin-bottom:8px">${uiText(t('sso.only_off'))}</div>
+          ${renderHTML(onlyState.verified_domains
+            ? `<button class="btn btn-secondary btn-sm" id="ssoOnlyEnable">${uiText(t('sso.only_enable'))}</button>`
+            : `<div style="font-size:12px;color:var(--warning,#b45309)">⚠️ ${uiText(t('sso.only_needs_domain'))}</div>`)}
+        `)}`;
       listEl.appendChild(box);
 
       const post = async (url, body, method = 'POST') => {
@@ -1470,7 +1467,7 @@ export async function render(container) {
           body: body ? JSON.stringify(body) : undefined,
         });
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) { showToast(j.error || t('sso.only_failed'), 'error'); return null; }
+        if (!r.ok) { showToast(localizeServerError(j.error) || t('sso.only_failed'), 'error'); return null; }
         return j;
       };
 
@@ -1517,7 +1514,7 @@ export async function render(container) {
         // `a-b-test`, and getElementById would put one domain's answer in the other's box.
         const out = document.getElementById(`ssoVerify-${id}-${btn.dataset.di}`);
         btn.disabled = true;
-        if (out) { out.style.color = 'var(--text-muted)'; out.textContent = t('sso.verifying'); }
+        if (out) { out.style.color = 'var(--text-muted)'; bindText(out, 'sso.verifying', undefined); }
         try {
           const res = await fetch(`/api/organizations/${orgId}/sso/${id}/domains/${encodeURIComponent(domain)}/verify`, {
             method: 'POST',
@@ -1532,13 +1529,13 @@ export async function render(container) {
           // An expired claim has already been reissued server-side, so the records on screen are
           // stale — reload rather than leaving the admin publishing a value that no longer matches.
           if (body.expired) {
-            showToast(body.error || t('sso.verify_failed'), 'error');
+            showToast(localizeServerError(body.error) || t('sso.verify_failed'), 'error');
             await loadSso();
             return;
           }
-          if (out) { out.style.color = 'var(--danger,#b91c1c)'; out.textContent = body.error || t('sso.verify_failed'); }
+          if (out) { out.style.color = 'var(--danger,#b91c1c)'; bindMessage(out, body.error || t('sso.verify_failed')); }
         } catch {
-          if (out) { out.style.color = 'var(--danger,#b91c1c)'; out.textContent = t('sso.verify_failed'); }
+          if (out) { out.style.color = 'var(--danger,#b91c1c)'; bindText(out, 'sso.verify_failed', undefined); }
         } finally {
           btn.disabled = false;
         }
@@ -1550,14 +1547,14 @@ export async function render(container) {
         const out = document.getElementById(`ssoTest-${id}`);
         if (!out) return;
         out.style.display = '';
-        out.textContent = t('sso.testing');
+        bindText(out, 'sso.testing', undefined);
         try {
           const res = await fetch(`/api/organizations/${orgId}/sso/${id}/test`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           });
           const data = await res.json();
-          if (!res.ok) { out.textContent = data.error || t('sso.test_failed'); return; }
+          if (!res.ok) { bindMessage(out, data.error || t('sso.test_failed')); return; }
           /*
            * Literal keys, never a key built by concatenating a check name. Doing that defeats the
            * check in server/test/i18n-keys-exist.js that every key an operator can see is
@@ -1572,7 +1569,7 @@ export async function render(container) {
             sso_url: t('sso.check_sso_url'),
           };
           const rows = (data.checks || []).map((c) => `
-            <div>${c.ok ? '✅' : '❌'} ${esc(CHECK_LABELS[c.name] || c.name)} — <span style="color:var(--text-muted)">${esc(c.detail || '')}</span></div>`).join('');
+            <div>${renderHTML(c.ok ? '✅' : '❌')} ${uiText(CHECK_LABELS[c.name] || c.name)} — <span style="color:var(--text-muted)">${uiText(c.detail || '')}</span></div>`).join('');
           /*
            * The caveat is shown on SUCCESS, not tucked away. Discovery and keys prove the provider
            * exists and that we could verify a token it signs — they say nothing about whether the
@@ -1580,10 +1577,10 @@ export async function render(container) {
            * implied "SSO works" would send an admin away from the one thing still to check.
            */
           out.innerHTML = rows + (data.ok
-            ? `<div style="margin-top:6px;color:var(--text-muted)">${esc(data.acs_url ? t('sso.saml_test_caveat') : t('sso.test_caveat'))}</div>`
+            ? `<div style="margin-top:6px;color:var(--text-muted)">${uiText(data.acs_url ? t('sso.saml_test_caveat') : t('sso.test_caveat'))}</div>`
             : '');
         } catch {
-          out.textContent = t('sso.test_failed');
+          bindText(out, 'sso.test_failed', undefined);
         }
       });
     });
@@ -1659,7 +1656,7 @@ export async function render(container) {
       const data = await res.json().catch(() => ({}));
       // The server's message is the useful one here — a bad issuer or a domain already claimed by
       // another organization both say exactly what went wrong, and a generic failure would not.
-      if (!res.ok) { showToast(data.error || t('sso.save_failed'), 'error'); return false; }
+      if (!res.ok) { showToast(localizeServerError(data.error) || t('sso.save_failed'), 'error'); return false; }
       // "Saved" for a DELETE read as though nothing had been destroyed.
       showToast(t(method === 'DELETE' ? 'sso.removed' : 'sso.saved'), 'success');
       await loadSso();
@@ -1729,7 +1726,6 @@ export async function render(container) {
   // SCIM provisioning belongs to the organization; the server answers 404 to anyone but its admins.
   if (canManageOrgSecurity && orgId) mountScimSettings(document.getElementById('scimCard'), orgId);
 
-
   document.getElementById('createTokenBtn')?.addEventListener('click', async () => {
     const name = document.getElementById('tokName').value.trim();
     const scope = document.getElementById('tokScope').value;
@@ -1756,20 +1752,20 @@ export async function render(container) {
       const inviteText = t('apitoken.invite_text', { url: portalUrl, key: r.token });
       box.innerHTML = `
         <div style="background:var(--bg-secondary);border:1px solid var(--accent);border-radius:var(--radius);padding:16px;margin-bottom:16px">
-          <h4 style="font-size:14px;margin-bottom:8px">${t('apitoken.secret_title')}</h4>
-          <p style="color:var(--danger);font-size:12px;margin-bottom:12px"><strong>${t('apitoken.secret_warning')}</strong></p>
+          <h4 style="font-size:14px;margin-bottom:8px">${renderHTML(t('apitoken.secret_title'))}</h4>
+          <p style="color:var(--danger);font-size:12px;margin-bottom:12px"><strong>${renderHTML(t('apitoken.secret_warning'))}</strong></p>
           <div style="display:flex;gap:8px;align-items:center">
             <input type="text" class="input" readonly value="${esc(r.token)}" style="font-family:monospace;flex:1" onclick="this.select()">
-            <button class="btn btn-secondary btn-sm" id="copyTokenBtn">${t('apitoken.copy')}</button>
+            <button class="btn btn-secondary btn-sm" id="copyTokenBtn">${renderHTML(t('apitoken.copy'))}</button>
           </div>
-          ${scope === 'agency' ? `
+          ${renderHTML(scope === 'agency' ? `
           <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
-            <label style="font-size:12px;color:var(--text-muted)">${t('apitoken.portal_url_label')}</label>
+            <label style="font-size:12px;color:var(--text-muted)">${renderHTML(t('apitoken.portal_url_label'))}</label>
             <input type="text" class="input" readonly value="${esc(portalUrl)}" style="width:100%;margin-top:4px" onclick="this.select()">
-            <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px">${t('apitoken.invite_label')}</label>
-            <textarea class="input" readonly rows="2" style="width:100%;margin-top:4px;font-size:13px;font-family:inherit" onclick="this.select()">${esc(inviteText)}</textarea>
-            <button class="btn btn-secondary btn-sm" id="copyInviteBtn" style="margin-top:8px">${t('apitoken.copy_invite')}</button>
-          </div>` : ''}
+            <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px">${renderHTML(t('apitoken.invite_label'))}</label>
+            <textarea class="input" readonly rows="2" style="width:100%;margin-top:4px;font-size:13px;font-family:inherit" onclick="this.select()">${uiText(inviteText)}</textarea>
+            <button class="btn btn-secondary btn-sm" id="copyInviteBtn" style="margin-top:8px">${renderHTML(t('apitoken.copy_invite'))}</button>
+          </div>` : '')}
         </div>
       `;
       document.getElementById('copyTokenBtn')?.addEventListener('click', async () => {
@@ -1788,7 +1784,7 @@ export async function render(container) {
       showToast(t('apitoken.created_toast'), 'success');
       loadTokens();
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     } finally {
       btn.disabled = false;
     }
@@ -1806,7 +1802,7 @@ export async function render(container) {
       localStorage.setItem('user', JSON.stringify({ ...stored, ...updated }));
       showToast(t('settings.toast.profile_saved'), 'success');
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     } finally {
       btn.disabled = false;
     }
@@ -1828,7 +1824,7 @@ export async function render(container) {
       document.getElementById('acctConfirmPw').value = '';
       showToast(t('settings.toast.password_changed'), 'success');
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     } finally {
       btn.disabled = false;
     }
@@ -1840,7 +1836,7 @@ export async function render(container) {
     const workspaceId = user.current_workspace_id;
     if (!workspaceId) {
       checkbox.checked = !shouldEnableIsolation;
-      showToast('No active workspace', 'error');
+      showToast(t("ui.settings.no_active_workspace"), 'error');
       return;
     }
 
@@ -1857,10 +1853,10 @@ export async function render(container) {
         });
         const nextUser = { ...user, current_organization: { ...(user.current_organization || {}), widget_sandbox_isolation_disabled: 1 } };
         localStorage.setItem('user', JSON.stringify(nextUser));
-        showToast('Widget sandbox isolation disabled', 'success');
+        showToast(t("ui.settings.widget_sandbox_isolation_disabled"), 'success');
       } catch (err) {
         checkbox.checked = true;
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
       return;
     }
@@ -1869,62 +1865,34 @@ export async function render(container) {
       await api.updateWorkspaceSecuritySettings(workspaceId, { widgetSandboxIsolationDisabled: false });
       const nextUser = { ...user, current_organization: { ...(user.current_organization || {}), widget_sandbox_isolation_disabled: 0 } };
       localStorage.setItem('user', JSON.stringify(nextUser));
-      showToast('Widget sandbox isolation enabled', 'success');
+      showToast(t("ui.settings.widget_sandbox_isolation_enabled"), 'success');
     } catch (err) {
       checkbox.checked = false;
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
   });
 }
 
 function openWidgetSandboxDisableConfirmModal(confirmationPhrase) {
+  const visiblePhrase = t('ui.settings.sandbox_confirmation_phrase');
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.style.display = 'flex';
     overlay.innerHTML = `
       <div class="modal" style="width:min(760px,96vw)">
-        <div class="modal-header"><h3>Disable widget sandbox isolation for this organization</h3></div>
+        <div class="modal-header"><h3>${renderHTML(t("ui.settings.disable_widget_sandbox_isolation_for_this_organization"))}</h3></div>
         <div class="modal-body" style="white-space:pre-wrap;line-height:1.45">
-Widget HTML currently runs in a null-origin sandbox. That means widget code
-cannot read your session, your cookies, or anything else stored by
-ScreenTinker in this browser.
-
-Turning this off re-enables allow-same-origin. Widget HTML will then run with
-the same privileges as ScreenTinker itself. Any script in any widget in this
-organization will be able to:
-
-  - Read the device token of every display that shows the widget, and act as
-    that display against the ScreenTinker API
-  - Read the session token of any logged-in user who opens a display in their
-    own browser
-  - Call the ScreenTinker API as that user, including admin actions
-  - Read and modify content on every other display in this organization
-  - Silently exfiltrate all of the above to any server it likes
-
-The widget editor's Preview is NOT affected: it renders inside the dashboard,
-where your session lives, so it stays isolated whatever this setting says. A
-widget may therefore behave differently in Preview than on a display.
-
-Because allow-scripts is also required for widgets to function, a widget can
-remove its own sandbox entirely once same-origin is granted. There is no
-partial protection left after this point.
-
-Only enable this if every widget source in this organization is code you
-wrote, or code from a party you would trust with your admin password. A single
-compromised third-party embed, CDN, or ad tag is enough.
-
-This setting applies to ALL widgets in this organization and cannot be scoped
-per display.
+${renderHTML(t('ui.settings.sandbox_disable_warning'))}
           <div class="form-group" style="margin-top:16px">
-            <label for="widgetSandboxConfirmInput">Type the phrase below to confirm:</label>
-            <div style="margin:6px 0 8px;font-weight:600">${esc(confirmationPhrase)}</div>
+            <label for="widgetSandboxConfirmInput">${renderHTML(t("ui.settings.type_the_phrase_below_to_confirm"))}</label>
+            <div style="margin:6px 0 8px;font-weight:600">${renderHTML(visiblePhrase)}</div>
             <input id="widgetSandboxConfirmInput" type="text" class="input" autocomplete="off">
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" id="widgetSandboxConfirmCancel">Cancel</button>
-          <button class="btn btn-danger" id="widgetSandboxConfirmSubmit" disabled>Disable isolation</button>
+          <button class="btn btn-secondary" id="widgetSandboxConfirmCancel">${renderHTML(t("ui.settings.cancel"))}</button>
+          <button class="btn btn-danger" id="widgetSandboxConfirmSubmit" disabled>${renderHTML(t("ui.settings.disable_isolation"))}</button>
         </div>
       </div>
     `;
@@ -1933,15 +1901,17 @@ per display.
     const input = overlay.querySelector('#widgetSandboxConfirmInput');
     const submit = overlay.querySelector('#widgetSandboxConfirmSubmit');
     const close = (ok) => {
+      unsubscribe();
       overlay.remove();
       resolve(ok);
     };
     const updateEnabled = () => {
-      submit.disabled = input.value.trim() !== confirmationPhrase;
+      submit.disabled = input.value.trim() !== String(visiblePhrase);
     };
+    const unsubscribe = subscribe(updateEnabled);
     input.addEventListener('input', updateEnabled);
     overlay.querySelector('#widgetSandboxConfirmCancel').addEventListener('click', () => close(false));
-    submit.addEventListener('click', () => close(true));
+    submit.addEventListener('click', () => { if (input.value.trim() === String(visiblePhrase)) close(true); });
     overlay.addEventListener('click', (ev) => { if (ev.target === overlay) close(false); });
   });
 }
@@ -1956,10 +1926,10 @@ async function loadWhiteLabel() {
   const section = document.getElementById('whiteLabelSection');
   if (section && user.plan_id !== 'enterprise' && !isPlatformAdmin(user)) {
     section.innerHTML = `
-      <h3>${t('settings.white_label')}</h3>
+      <h3>${renderHTML(t('settings.white_label'))}</h3>
       <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center">
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:8px">${t('settings.white_label_enterprise_only')}</p>
-        <a href="#/billing" class="btn btn-secondary btn-sm" style="text-decoration:none">${t('settings.view_plans')}</a>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:8px">${renderHTML(t('settings.white_label_enterprise_only'))}</p>
+        <a href="#/billing" class="btn btn-secondary btn-sm" style="text-decoration:none">${renderHTML(t('settings.view_plans'))}</a>
       </div>
     `;
     return;
@@ -1990,7 +1960,7 @@ async function loadWhiteLabel() {
   if (!canSetDomainAndCss) {
     for (const id of ['wlDomain', 'wlCustomCss']) {
       const f = document.getElementById(id);
-      if (f) { f.readOnly = true; f.title = t('settings.platform_admin_only'); }
+      if (f) { f.readOnly = true; bindAttribute(f, "title", t('settings.platform_admin_only')); }
     }
   }
 
@@ -2017,12 +1987,12 @@ async function loadWhiteLabel() {
       // still said "Branding saved" while nothing at all had been written.
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || t('settings.toast.branding_save_failed'));
+        throw new Error(localizeServerError(err.error) || t('settings.toast.branding_save_failed'));
       }
       await resetBranding();
       showToast(t('settings.toast.branding_saved'), 'success');
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
   });
 

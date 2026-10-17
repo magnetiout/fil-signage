@@ -1,4 +1,6 @@
-import { t } from '../i18n.js';
+import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { message as t } from '../i18n.js';
 
 // Reusable destructive-confirmation modal (#36). The primary (danger) button stays
 // disabled until the user types `expected` exactly — guards irreversible deletes
@@ -12,24 +14,24 @@ export function openTypeToConfirmModal(opts = {}) {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
-        <h3>${esc(title || '')}</h3>
-        <button class="btn-icon" type="button" data-ttc-close aria-label="${t('common.close')}">
+        <h3>${uiText(title || '')}</h3>
+        <button class="btn-icon" type="button" data-ttc-close aria-label="${t('common.close')}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
       <div class="modal-body">
-        <div style="font-size:13px;line-height:1.5;margin-bottom:12px">${body}</div>
+        <div style="font-size:13px;line-height:1.5;margin-bottom:12px">${renderHTML(body)}</div>
         <div class="form-group">
-          <label for="ttcInput">${t('confirm_delete.type_label', { name: esc(expected) })}</label>
+          <label for="ttcInput">${renderHTML(t('confirm_delete.type_label', { name: esc(expected) }))}</label>
           <input id="ttcInput" type="text" class="input" autocomplete="off" style="width:100%">
         </div>
         <div id="ttcError" style="display:none;color:var(--danger);font-size:13px;margin-top:8px"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" type="button" data-ttc-close>${t('common.cancel')}</button>
-        <button class="btn btn-danger" type="button" id="ttcConfirm" disabled>${esc(confirmLabel || t('common.delete'))}</button>
+        <button class="btn btn-secondary" type="button" data-ttc-close>${renderHTML(t('common.cancel'))}</button>
+        <button class="btn btn-danger" type="button" id="ttcConfirm" disabled>${uiText(confirmLabel || t('common.delete'))}</button>
       </div>
     </div>
   `;
@@ -55,14 +57,14 @@ export function openTypeToConfirmModal(opts = {}) {
     if (!matches()) return;
     errorEl.style.display = 'none';
     confirmBtn.disabled = true;
-    confirmBtn.textContent = t('common.deleting');
+    bindText(confirmBtn, 'common.deleting', undefined);
     try {
       await onConfirm?.();
       close();
     } catch (err) {
       confirmBtn.disabled = false;
-      confirmBtn.textContent = confirmLabel || t('common.delete');
-      errorEl.textContent = err?.message || t('confirm_delete.failed');
+      bindMessage(confirmBtn, confirmLabel || t('common.delete'));
+      bindMessage(errorEl, (err.uiMessage || err?.message) || t('confirm_delete.failed'));
       errorEl.style.display = 'block';
     }
   }

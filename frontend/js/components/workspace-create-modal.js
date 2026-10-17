@@ -1,4 +1,6 @@
-import { t } from '../i18n.js';
+import { renderHTML, translatedAttribute, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { message as t } from '../i18n.js';
 import { api } from '../api.js';
 
 /*
@@ -20,29 +22,29 @@ export function openWorkspaceCreateModal() {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
-        <h3>${t('switcher.create_title')}</h3>
-        <button class="btn-icon" type="button" data-create-close aria-label="${t('common.close')}">
+        <h3>${renderHTML(t('switcher.create_title'))}</h3>
+        <button class="btn-icon" type="button" data-create-close aria-label="${t('common.close')}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
       <div class="modal-body">
-        <div style="color:var(--text-muted);font-size:13px;margin-bottom:12px">${t('switcher.create_hint')}</div>
+        <div style="color:var(--text-muted);font-size:13px;margin-bottom:12px">${renderHTML(t('switcher.create_hint'))}</div>
         <div class="form-group">
-          <label for="createWsName">${t('switcher.create_name_label')}</label>
-          <input id="createWsName" type="text" class="input" maxlength="80" placeholder="${t('switcher.create_name_placeholder')}" style="width:100%">
+          <label for="createWsName">${renderHTML(t('switcher.create_name_label'))}</label>
+          <input id="createWsName" type="text" class="input" maxlength="80" placeholder="${t('switcher.create_name_placeholder')}" data-fil-i18n-placeholder="${binding('switcher.create_name_placeholder', undefined)}" style="width:100%">
         </div>
         <div class="form-group">
-          <label for="createWsSlug">${t('switcher.create_slug_label')}</label>
-          <input id="createWsSlug" type="text" class="input" maxlength="60" placeholder="e.g. retail-floor" style="width:100%">
-          <div style="color:var(--text-muted);font-size:11px;margin-top:4px">${t('switcher.create_slug_hint')}</div>
+          <label for="createWsSlug">${renderHTML(t('switcher.create_slug_label'))}</label>
+          <input id="createWsSlug" type="text" class="input" maxlength="60" ${translatedAttribute("placeholder", "ui.workspace_create_modal.placeholder_e_g_retail_floor_3148cc")} style="width:100%">
+          <div style="color:var(--text-muted);font-size:11px;margin-top:4px">${renderHTML(t('switcher.create_slug_hint'))}</div>
         </div>
         <div id="createWsError" style="display:none;color:var(--danger);font-size:13px;margin-top:8px"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" type="button" data-create-close>${t('common.cancel')}</button>
-        <button class="btn btn-primary" type="button" id="createWsSave">${t('switcher.create_submit')}</button>
+        <button class="btn btn-secondary" type="button" data-create-close>${renderHTML(t('common.cancel'))}</button>
+        <button class="btn btn-primary" type="button" id="createWsSave">${renderHTML(t('switcher.create_submit'))}</button>
       </div>
     </div>
   `;
@@ -81,7 +83,7 @@ export function openWorkspaceCreateModal() {
     const slug = slugInput.value.trim();
     if (!name) { showError(t('switcher.create_name_required')); busy = false; return; }
     saveBtn.disabled = true;
-    saveBtn.textContent = t('switcher.create_working');
+    bindText(saveBtn, 'switcher.create_working', undefined);
     try {
       const ws = await api.createWorkspace({ name, slug: slug || undefined });
       /*
@@ -120,14 +122,14 @@ export function openWorkspaceCreateModal() {
     } catch (err) {
       busy = false;
       saveBtn.disabled = false;
-      saveBtn.textContent = t('switcher.create_submit');
+      bindText(saveBtn, 'switcher.create_submit', undefined);
       // The server's own words — it distinguishes a duplicate slug from a bad one from the per-org
       // cap, and each needs a different action from the person reading it.
       showError(err.message || t('switcher.create_failed'));
     }
   }
   function showError(msg) {
-    errorEl.textContent = msg;
+    bindMessage(errorEl, msg);
     errorEl.style.display = 'block';
   }
 

@@ -1,3 +1,13 @@
+import builtins from './builtin-template-messages.js';
+import en from '../i18n/en.js';
+import tr from '../i18n/tr.js';
+import {message,getLanguage} from '../i18n.js';
+// Match an owned package and field, not arbitrary text. Customized metadata remains untouched.
+function builtin(tpl) { const b=builtins[tpl?.id];return b && tpl.author===b.author && tpl.version===b.version ? b : null; }
+function label(field,value,lang) {
+ if(!field || field.en!==value || !['tr','en'].includes(lang))return value;
+ return lang===getLanguage()?message(field.key):(lang==='tr'?tr:en)[field.key]||value;
+}
 /*
  * Template translations in the dashboard — the pure half of views/templates.js.
  *
@@ -26,12 +36,12 @@ const strOr = (v, dflt) => (typeof v === 'string' && v !== '' ? v : dflt);
 
 export function localName(tpl, lang) {
   const tr = translationFor(tpl, lang);
-  return strOr(tr && tr.name, tpl ? tpl.name : '');
+  const b=builtin(tpl);return b?label(b.name,tpl.name,lang):strOr(tr && tr.name, tpl ? tpl.name : '');
 }
 
 export function localDescription(tpl, lang) {
   const tr = translationFor(tpl, lang);
-  return strOr(tr && tr.description, tpl ? (tpl.description || '') : '');
+  const b=builtin(tpl);return b?label(b.description,tpl.description||'',lang):strOr(tr && tr.description, tpl ? (tpl.description || '') : '');
 }
 
 /**
@@ -44,6 +54,8 @@ export function localParams(tpl, lang) {
   const tp = tr && tr.params && typeof tr.params === 'object' ? tr.params : {};
   return params.map((p) => {
     const t = Object.prototype.hasOwnProperty.call(tp, p.name) && tp[p.name] && typeof tp[p.name] === 'object' ? tp[p.name] : null;
+    const b=builtin(tpl)?.params[p.name];
+    if(b) return {...p,label:label(b.label,p.label,lang),help:label(b.help,p.help,lang),...(Array.isArray(p.options)?{options:p.options.map(o=>({...o,label:label(b.options[o.value],o.label,lang)}))}:{})};
     if (!t) return p;
     const out = { ...p, label: strOr(t.label, p.label), help: strOr(t.help, p.help) };
     if (Array.isArray(p.options) && t.options && typeof t.options === 'object') {

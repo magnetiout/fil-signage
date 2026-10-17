@@ -1,3 +1,5 @@
+import { uiText } from '../lib/i18n-bindings.js';
+
 /*
  * ⚠️ Messages are ESCAPED. This builds innerHTML, and callers pass server error strings straight
  * in — including ones that reflect user input verbatim, such as the OIDC issuer in
@@ -22,7 +24,7 @@ export function showToast(message, type = 'info', duration = 4000) {
         type === 'error' ? '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>' :
         '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'}
     </svg>
-    <span>${esc(message)}</span>
+    <span>${uiText(message)}</span>
   `;
   container.appendChild(toast);
   setTimeout(() => {

@@ -1,3 +1,7 @@
+import { uiText, renderHTML, bindMessage, bindAttribute, attributeBinding, binding, bindText } from '../../lib/i18n-bindings.js';
+
+import { getLocale, message as t } from '../../i18n.js';
+
 // The Content Library's "Add content" modal.
 //
 // One upload zone and one tile per source the server already supports. Choosing a tile opens that
@@ -20,7 +24,7 @@
 import { api } from '../../api.js';
 import { plansVisible } from '../plan-nudges.js';
 import { esc } from '../../utils.js';
-import { t } from '../../i18n.js';
+
 import { showToast } from '../toast.js';
 import { openDialog, confirmDialog } from './dialog.js';
 import { mountStockPicker, stockStatus } from '../stock-picker.js';
@@ -92,17 +96,17 @@ function autoTypeLabel(detected) {
 function urlPreviewHtml(f) {
   const u = parseUrl(f.url);
   if (!u) return '';
-  if (u.protocol === 'http:') return `<p class="lib-field-help">${esc(t('library.add.preview_https_only'))}</p>`;
+  if (u.protocol === 'http:') return `<p class="lib-field-help">${uiText(t('library.add.preview_https_only'))}</p>`;
   const mime = f.mime || detectMediaType(f.url);
   if (u.protocol !== 'https:' || !mime) return '';
   const src = esc(u.toString());
-  const media = mime.startsWith('image/') ? `<img src="${src}" alt="${esc(t('library.add.preview_alt'))}" referrerpolicy="no-referrer">`
+  const media = mime.startsWith('image/') ? `<img src="${src}" alt="${esc(t('library.add.preview_alt'))}" data-fil-i18n-alt="${binding('library.add.preview_alt', undefined)}" referrerpolicy="no-referrer">`
     : mime.startsWith('video/') ? `<video src="${src}" controls muted preload="metadata"></video>`
       : `<audio src="${src}" controls preload="none"></audio>`;
-  return `<figure class="lib-form-preview"><figcaption class="lib-visually-hidden">${esc(t('library.add.preview'))}</figcaption>${media}</figure>`;
+  return `<figure class="lib-form-preview"><figcaption class="lib-visually-hidden">${uiText(t('library.add.preview'))}</figcaption>${renderHTML(media)}</figure>`;
 }
 function youtubePreviewHtml(id) {
-  return id ? `<figure class="lib-form-preview"><img src="https://img.youtube.com/vi/${esc(id)}/hqdefault.jpg" alt="${esc(t('library.add.youtube_thumb_alt'))}" referrerpolicy="no-referrer"></figure>` : '';
+  return id ? `<figure class="lib-form-preview"><img src="https://img.youtube.com/vi/${esc(id)}/hqdefault.jpg" alt="${esc(t('library.add.youtube_thumb_alt'))}" data-fil-i18n-alt="${binding('library.add.youtube_thumb_alt', undefined)}" referrerpolicy="no-referrer"></figure>` : '';
 }
 
 /**
@@ -207,29 +211,29 @@ export function openAddContent(opts) {
   function destFooter() {
     return `
       <div class="lib-add-dest">
-        <span class="lib-add-dest-icon">${ICONS.folder}</span>
-        <span>${esc(t('library.add.destination'))} <strong>${esc(state.dest.label)}</strong></span>
-        <button type="button" class="lib-link-btn" data-act="change-dest">${esc(t('library.add.change'))}</button>
+        <span class="lib-add-dest-icon">${renderHTML(ICONS.folder)}</span>
+        <span>${renderHTML(t('library.add.destination'))} <strong>${uiText(state.dest.label)}</strong></span>
+        <button type="button" class="lib-link-btn" data-act="change-dest">${uiText(t('library.add.change'))}</button>
       </div>`;
   }
 
   function formHead(title) {
-    return `<button type="button" class="lib-back-btn" data-act="back">${ICONS.back}<span>${esc(t('library.add.back'))}</span></button>
-      <h3 class="lib-form-title" id="libFormTitle">${esc(title)}</h3>`;
+    return `<button type="button" class="lib-back-btn" data-act="back">${renderHTML(ICONS.back)}<span>${uiText(t('library.add.back'))}</span></button>
+      <h3 class="lib-form-title" id="libFormTitle">${uiText(title)}</h3>`;
   }
   function field(id, label, value, { type = 'text', placeholder = '', help = '', required = false, autocomplete = 'off', inputmode = '' } = {}) {
     return `<div class="lib-field">
-      <label for="${id}">${esc(label)}${required ? ` <span class="lib-req">${esc(t('library.add.required'))}</span>` : ''}</label>
-      <input id="${id}" class="input" type="${type}" value="${esc(value || '')}" placeholder="${esc(placeholder)}" autocomplete="${autocomplete}" ${inputmode ? `inputmode="${inputmode}"` : ''} ${required ? 'aria-required="true"' : ''} aria-describedby="${id}-help ${id}-err">
-      <div class="lib-field-help" id="${id}-help">${help}</div>
+      <label for="${id}">${uiText(label)}${renderHTML(required ? ` <span class="lib-req">${uiText(t('library.add.required'))}</span>` : '')}</label>
+      <input id="${id}" class="input" type="${type}" value="${esc(value || '')}" placeholder="${esc(placeholder)}"${attributeBinding("placeholder", placeholder)} autocomplete="${autocomplete}" ${inputmode ? `inputmode="${inputmode}"` : ''} ${required ? 'aria-required="true"' : ''} aria-describedby="${id}-help ${id}-err">
+      <div class="lib-field-help" id="${id}-help">${renderHTML(help)}</div>
       <div class="lib-field-err" id="${id}-err" role="alert"></div>
     </div>`;
   }
   function submitRow(label, id = '') {
     return `<div class="lib-dialog-actions">
       <span class="lib-form-error" role="alert" data-form-error></span>
-      <button type="button" class="btn btn-secondary" data-act="back">${esc(t('library.add.back'))}</button>
-      <button type="submit" class="btn btn-primary" data-submit${id ? ` id="${id}"` : ''}>${esc(label)}</button>
+      <button type="button" class="btn btn-secondary" data-act="back">${uiText(t('library.add.back'))}</button>
+      <button type="submit" class="btn btn-primary" data-submit${id ? ` id="${id}"` : ''}>${uiText(label)}</button>
     </div>`;
   }
 
@@ -238,25 +242,25 @@ export function openAddContent(opts) {
     if (state.view === 'home') {
       dlg.setTitle(t('library.add.title'));
       b.innerHTML = `
-        <p class="lib-add-lede">${esc(t('library.add.lede'))}</p>
+        <p class="lib-add-lede">${uiText(t('library.add.lede'))}</p>
         <div class="lib-dropzone" data-dropzone>
-          ${ICONS.upload}
-          <div class="lib-dropzone-title">${esc(t('library.add.upload_title'))}</div>
-          <div>${esc(t('library.add.upload_drop'))} <button type="button" class="lib-link-btn" data-act="browse">${esc(t('library.add.browse'))}</button></div>
-          <div class="lib-dropzone-hint">${esc(t('library.add.upload_types'))}</div>
-          <div class="lib-dropzone-hint">${esc(t('library.add.upload_pdf_note'))}</div>
+          ${renderHTML(ICONS.upload)}
+          <div class="lib-dropzone-title">${uiText(t('library.add.upload_title'))}</div>
+          <div>${uiText(t('library.add.upload_drop'))} <button type="button" class="lib-link-btn" data-act="browse">${uiText(t('library.add.browse'))}</button></div>
+          <div class="lib-dropzone-hint">${uiText(t('library.add.upload_types'))}</div>
+          <div class="lib-dropzone-hint">${uiText(t('library.add.upload_pdf_note'))}</div>
           <input type="file" id="libAddFileInput" multiple accept="${UPLOAD_ACCEPT}" hidden>
         </div>
-        <h3 class="lib-section-label">${esc(t('library.add.connect_source'))}</h3>
-        <ul class="lib-tiles">${sources().map((s) => `
+        <h3 class="lib-section-label">${uiText(t('library.add.connect_source'))}</h3>
+        <ul class="lib-tiles">${renderHTML(sources().map((s) => `
           <li><button type="button" class="lib-tile" data-source="${s.key}">
-            <span class="lib-tile-icon">${s.icon}</span>
-            <span class="lib-tile-text"><span class="lib-tile-title">${esc(s.title)}${s.locked ? ` <span class="plan-pill" title="${esc(t('upgrade.locked_tip', { plan: s.locked }))}">${esc(t('upgrade.locked_pill', { plan: s.locked }))}</span>` : ''}</span><span class="lib-tile-desc">${esc(s.desc)}</span></span>
-            <span class="lib-tile-chev">${ICONS.chevron}</span>
-          </button></li>`).join('')}
+            <span class="lib-tile-icon">${renderHTML(s.icon)}</span>
+            <span class="lib-tile-text"><span class="lib-tile-title">${uiText(s.title)}${renderHTML(s.locked ? ` <span class="plan-pill" title="${esc(t('upgrade.locked_tip', { plan: s.locked }))}" data-fil-i18n-title="${binding('upgrade.locked_tip', { plan: s.locked })}">${uiText(t('upgrade.locked_pill', { plan: s.locked }))}</span>` : '')}</span><span class="lib-tile-desc">${uiText(s.desc)}</span></span>
+            <span class="lib-tile-chev">${renderHTML(ICONS.chevron)}</span>
+          </button></li>`).join(''))}
         </ul>
-        <p class="lib-add-note">${esc(t('library.add.hold_note'))}</p>
-        ${destFooter()}`;
+        <p class="lib-add-note">${uiText(t('library.add.hold_note'))}</p>
+        ${renderHTML(destFooter())}`;
       wireHome();
       return;
     }
@@ -311,7 +315,7 @@ export function openAddContent(opts) {
   function setErr(id, msg) {
     const el = dlg.body.querySelector(`#${id}-err`);
     const input = dlg.body.querySelector(`#${id}`);
-    if (el) el.textContent = msg || '';
+    if (el) bindMessage(el, msg || '');
     if (input) input.setAttribute('aria-invalid', msg ? 'true' : 'false');
     if (msg && input) input.focus();
     return !msg;
@@ -319,12 +323,12 @@ export function openAddContent(opts) {
   async function submitting(form, fn) {
     const btn = form.querySelector('[data-submit]');
     const errEl = form.querySelector('[data-form-error]');
-    errEl.textContent = '';
+    bindMessage(errEl, '');
     state.submitting = true;
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
     try { await fn(); }
-    catch (err) { errEl.textContent = err.message || t('library.add.failed'); }
+    catch (err) { bindMessage(errEl, (err.uiMessage || err.message) || t('library.add.failed')); }
     finally { state.submitting = false; if (document.contains(btn)) { btn.disabled = false; btn.removeAttribute('aria-busy'); } }
   }
   function done(item, key, message) {
@@ -339,33 +343,33 @@ export function openAddContent(opts) {
     const f = state.forms.url;
     const detected = detectMediaType(f.url);
     dlg.body.innerHTML = `
-      ${formHead(t('library.add.src_url'))}
+      ${renderHTML(formHead(t('library.add.src_url')))}
       <form novalidate aria-labelledby="libFormTitle">
-        ${field('libUrl', t('library.add.url_label'), f.url, { type: 'url', placeholder: 'https://example.com/video.mp4', required: true, inputmode: 'url', help: esc(t('library.add.url_help')) })}
-        ${field('libUrlName', t('library.add.name_label'), f.name, { help: esc(t('library.add.name_from_link')) })}
+        ${renderHTML(field('libUrl', t('library.add.url_label'), f.url, { type: 'url', placeholder: 'https://example.com/video.mp4', required: true, inputmode: 'url', help: t('library.add.url_help') }))}
+        ${renderHTML(field('libUrlName', t('library.add.name_label'), f.name, { help: t('library.add.name_from_link') }))}
         <details class="lib-advanced" ${f._advanced || (f.url && !detected) ? 'open' : ''}>
-          <summary>${esc(t('library.add.advanced'))}</summary>
+          <summary>${uiText(t('library.add.advanced'))}</summary>
           <div class="lib-field">
-            <label for="libUrlType">${esc(t('library.add.media_type'))}</label>
+            <label for="libUrlType">${uiText(t('library.add.media_type'))}</label>
             <select id="libUrlType" class="input" aria-describedby="libUrlType-help libUrlType-err">
-              <option value="" data-auto>${esc(autoTypeLabel(detected))}</option>
-              ${MEDIA_TYPES.map(([v, k]) => `<option value="${v}" ${f.mime === v ? 'selected' : ''}>${esc(t(k))}</option>`).join('')}
+              <option value="" data-auto>${uiText(autoTypeLabel(detected))}</option>
+              ${renderHTML(MEDIA_TYPES.map(([v, k]) => `<option value="${v}" ${f.mime === v ? 'selected' : ''}>${uiText(t(k))}</option>`).join(''))}
             </select>
-            <div class="lib-field-help" id="libUrlType-help">${esc(t('library.add.type_help'))}</div>
+            <div class="lib-field-help" id="libUrlType-help">${uiText(t('library.add.type_help'))}</div>
             <div class="lib-field-err" id="libUrlType-err" role="alert"></div>
           </div>
         </details>
         <div class="lib-suggest" data-suggest></div>
-        <div data-preview>${urlPreviewHtml(f)}</div>
-        ${destFooter()}
-        ${submitRow(t('library.add.url_submit'))}
+        <div data-preview>${renderHTML(urlPreviewHtml(f))}</div>
+        ${renderHTML(destFooter())}
+        ${renderHTML(submitRow(t('library.add.url_submit')))}
       </form>`;
     const b = dlg.body;
     const urlIn = b.querySelector('#libUrl'), nameIn = b.querySelector('#libUrlName'), typeIn = b.querySelector('#libUrlType');
     const suggest = () => {
       const box = b.querySelector('[data-suggest]');
       const other = youtubeId(urlIn.value) ? 'youtube' : liveKind(urlIn.value) ? 'stream' : null;
-      box.innerHTML = other ? `${esc(t(other === 'youtube' ? 'library.add.looks_youtube' : 'library.add.looks_stream'))} <button type="button" class="lib-link-btn" data-switch="${other}">${esc(t(other === 'youtube' ? 'library.add.use_youtube' : 'library.add.use_stream'))}</button>` : '';
+      box.innerHTML = other ? `${uiText(t(other === 'youtube' ? 'library.add.looks_youtube' : 'library.add.looks_stream'))} <button type="button" class="lib-link-btn" data-switch="${other}">${uiText(t(other === 'youtube' ? 'library.add.use_youtube' : 'library.add.use_stream'))}</button>` : '';
       const sw = box.querySelector('[data-switch]');
       if (sw) sw.addEventListener('click', () => { state.forms[sw.dataset.switch].url = urlIn.value; f.url = ''; go(sw.dataset.switch); });
     };
@@ -376,7 +380,7 @@ export function openAddContent(opts) {
       const uu = parseUrl(urlIn.value);
       if (uu && !f.name) { f.name = lastSegment(uu); nameIn.value = f.name; }
       const det = detectMediaType(urlIn.value);
-      typeIn.querySelector('[data-auto]').textContent = autoTypeLabel(det);
+      bindMessage(typeIn.querySelector('[data-auto]'), autoTypeLabel(det));
       if (urlIn.value && !det && !f.mime) b.querySelector('details').open = true;
       b.querySelector('[data-preview]').innerHTML = urlPreviewHtml(f);
     };
@@ -402,13 +406,13 @@ export function openAddContent(opts) {
     const f = state.forms.youtube;
     const id = youtubeId(f.url);
     dlg.body.innerHTML = `
-      ${formHead(t('library.add.src_youtube'))}
+      ${renderHTML(formHead(t('library.add.src_youtube')))}
       <form novalidate aria-labelledby="libFormTitle">
-        ${field('libYt', t('library.add.youtube_label'), f.url, { type: 'url', placeholder: 'https://www.youtube.com/watch?v=…', required: true, inputmode: 'url', help: esc(t('library.add.youtube_help')) })}
-        ${field('libYtName', t('library.add.name_label'), f.name, { help: esc(t('library.add.youtube_name_help')) })}
-        <div data-preview>${youtubePreviewHtml(id)}</div>
-        ${destFooter()}
-        ${submitRow(t('library.add.youtube_submit'))}
+        ${renderHTML(field('libYt', t('library.add.youtube_label'), f.url, { type: 'url', placeholder: 'https://www.youtube.com/watch?v=…', required: true, inputmode: 'url', help: t('library.add.youtube_help') }))}
+        ${renderHTML(field('libYtName', t('library.add.name_label'), f.name, { help: t('library.add.youtube_name_help') }))}
+        <div data-preview>${renderHTML(youtubePreviewHtml(id))}</div>
+        ${renderHTML(destFooter())}
+        ${renderHTML(submitRow(t('library.add.youtube_submit')))}
       </form>`;
     const b = dlg.body;
     const urlIn = b.querySelector('#libYt'), nameIn = b.querySelector('#libYtName');
@@ -429,27 +433,27 @@ export function openAddContent(opts) {
     const f = state.forms.doc;
     const KIND = { slides: 'library.add.doc_kind_slides', doc: 'library.add.doc_kind_doc', sheet: 'library.add.doc_kind_sheet' };
     dlg.body.innerHTML = `
-      ${formHead(t('library.add.src_doc'))}
+      ${renderHTML(formHead(t('library.add.src_doc')))}
       <fieldset class="lib-choice">
-        <legend class="lib-visually-hidden">${esc(t('library.add.doc_choice'))}</legend>
+        <legend class="lib-visually-hidden">${uiText(t('library.add.doc_choice'))}</legend>
         <label class="lib-choice-opt"><input type="radio" name="libDocMode" value="doc" ${f.mode === 'doc' ? 'checked' : ''}>
-          <span><strong>${esc(t('library.add.doc_one'))}</strong><span class="lib-field-help">${esc(t('library.add.doc_one_desc'))}</span></span></label>
+          <span><strong>${uiText(t('library.add.doc_one'))}</strong><span class="lib-field-help">${uiText(t('library.add.doc_one_desc'))}</span></span></label>
         <label class="lib-choice-opt"><input type="radio" name="libDocMode" value="folder" ${f.mode === 'folder' ? 'checked' : ''}>
-          <span><strong>${esc(t('library.add.doc_folder'))}</strong><span class="lib-field-help">${esc(t('library.add.doc_folder_desc'))}</span></span></label>
+          <span><strong>${uiText(t('library.add.doc_folder'))}</strong><span class="lib-field-help">${uiText(t('library.add.doc_folder_desc'))}</span></span></label>
       </fieldset>
-      ${f.mode === 'folder' ? `
-        <p class="lib-field-help">${esc(t('library.add.doc_folder_more'))}</p>
+      ${renderHTML(f.mode === 'folder' ? `
+        <p class="lib-field-help">${uiText(t('library.add.doc_folder_more'))}</p>
         <div class="lib-dialog-actions">
-          <button type="button" class="btn btn-secondary" data-act="back">${esc(t('library.add.back'))}</button>
-          <button type="button" class="btn btn-primary" data-act="open-folders">${esc(t('library.add.doc_folder_open'))}</button>
+          <button type="button" class="btn btn-secondary" data-act="back">${uiText(t('library.add.back'))}</button>
+          <button type="button" class="btn btn-primary" data-act="open-folders">${uiText(t('library.add.doc_folder_open'))}</button>
         </div>` : `
       <form novalidate aria-labelledby="libFormTitle">
-        ${field('libDoc', t('library.add.doc_label'), f.url, { type: 'url', placeholder: 'https://docs.google.com/presentation/d/…', required: true, inputmode: 'url', help: esc(t('library.add.doc_help')) })}
-        <div class="lib-field-help" data-recognised>${f._kind ? esc(t('library.add.doc_recognised', { what: `${f._provider === 'google' ? 'Google' : 'Microsoft'} · ${t(KIND[f._kind] || 'library.add.doc_kind_doc')}` })) : ''}</div>
-        ${field('libDocName', t('library.add.name_label'), f.name, { required: true, help: esc(t('library.add.doc_name_help')) })}
-        <p class="lib-add-note">${esc(t('library.add.doc_widget_note'))}</p>
-        ${submitRow(t('library.add.doc_submit'))}
-      </form>`}`;
+        ${renderHTML(field('libDoc', t('library.add.doc_label'), f.url, { type: 'url', placeholder: 'https://docs.google.com/presentation/d/…', required: true, inputmode: 'url', help: t('library.add.doc_help') }))}
+        <div class="lib-field-help" data-recognised>${renderHTML(f._kind ? t('library.add.doc_recognised', { what: `${f._provider === 'google' ? 'Google' : 'Microsoft'} · ${t(KIND[f._kind] || 'library.add.doc_kind_doc')}` }) : '')}</div>
+        ${renderHTML(field('libDocName', t('library.add.name_label'), f.name, { required: true, help: t('library.add.doc_name_help') }))}
+        <p class="lib-add-note">${uiText(t('library.add.doc_widget_note'))}</p>
+        ${renderHTML(submitRow(t('library.add.doc_submit')))}
+      </form>`)}`;
     const b = dlg.body;
     b.querySelectorAll('input[name="libDocMode"]').forEach((r) => r.addEventListener('change', () => { f.mode = r.value; render(); b.querySelector(`input[name="libDocMode"][value="${f.mode}"]`)?.focus(); }));
     if (f.mode === 'folder') {
@@ -466,11 +470,11 @@ export function openAddContent(opts) {
       try {
         const cfg = await api.post('/widgets/cloud-doc/check', { url: urlIn.value.trim() });
         f._kind = cfg.kind; f._provider = cfg.provider;
-        b.querySelector('[data-recognised]').textContent = t('library.add.doc_recognised', { what: `${cfg.provider === 'google' ? 'Google' : 'Microsoft'} · ${t(KIND[cfg.kind] || 'library.add.doc_kind_doc')}` });
+        bindText(b.querySelector('[data-recognised]'), 'library.add.doc_recognised', { what: `${cfg.provider === 'google' ? 'Google' : 'Microsoft'} · ${t(KIND[cfg.kind] || 'library.add.doc_kind_doc')}` });
         setErr('libDoc', '');
         return cfg;
       } catch (err) {
-        b.querySelector('[data-recognised]').textContent = '';
+        bindMessage(b.querySelector('[data-recognised]'), '');
         setErr('libDoc', err.message);
         return null;
       }
@@ -496,13 +500,13 @@ export function openAddContent(opts) {
   function renderStream() {
     const f = state.forms.stream;
     dlg.body.innerHTML = `
-      ${formHead(t('library.add.src_stream'))}
+      ${renderHTML(formHead(t('library.add.src_stream')))}
       <form novalidate aria-labelledby="libFormTitle">
-        ${field('libStream', t('library.add.stream_label'), f.url, { placeholder: 'https://…/live.m3u8  ·  rtsp://camera.local/stream', required: true, inputmode: 'url', help: esc(t('content.hls_desc')) })}
-        ${field('libStreamName', t('library.add.name_label'), f.name, { help: esc(t('library.add.name_from_link')) })}
-        <p class="lib-field-help">${esc(t('library.add.stream_no_preview'))}</p>
-        ${destFooter()}
-        ${submitRow(t('library.add.stream_submit'))}
+        ${renderHTML(field('libStream', t('library.add.stream_label'), f.url, { placeholder: 'https://…/live.m3u8  ·  rtsp://camera.local/stream', required: true, inputmode: 'url', help: t('content.hls_desc') }))}
+        ${renderHTML(field('libStreamName', t('library.add.name_label'), f.name, { help: t('library.add.name_from_link') }))}
+        <p class="lib-field-help">${uiText(t('library.add.stream_no_preview'))}</p>
+        ${renderHTML(destFooter())}
+        ${renderHTML(submitRow(t('library.add.stream_submit')))}
       </form>`;
     const b = dlg.body;
     const urlIn = b.querySelector('#libStream'), nameIn = b.querySelector('#libStreamName');
@@ -522,23 +526,23 @@ export function openAddContent(opts) {
   function renderHdmi() {
     const f = state.forms.hdmi;
     dlg.body.innerHTML = `
-      ${formHead(t('library.add.src_hdmi'))}
+      ${renderHTML(formHead(t('library.add.src_hdmi')))}
       <form novalidate aria-labelledby="libFormTitle">
-        <p class="lib-requirement"><strong>${esc(t('library.add.hdmi_requires'))}</strong> ${esc(t('content.hdmi_in_desc'))}</p>
+        <p class="lib-requirement"><strong>${uiText(t('library.add.hdmi_requires'))}</strong> ${renderHTML(t('content.hdmi_in_desc'))}</p>
         <div class="lib-field">
-          <label for="hdmiInPort">${esc(t('library.add.hdmi_port'))}</label>
+          <label for="hdmiInPort">${uiText(t('library.add.hdmi_port'))}</label>
           <select id="hdmiInPort" class="input">
-            <option value="" ${!f.port ? 'selected' : ''}>${esc(t('content.hdmi_in_first'))}</option>
-            ${[1, 2, 3, 4].map((n) => `<option value="${n}" ${String(f.port) === String(n) ? 'selected' : ''}>HDMI ${n}</option>`).join('')}
+            <option value="" ${!f.port ? 'selected' : ''}>${uiText(t('content.hdmi_in_first'))}</option>
+            ${renderHTML([1, 2, 3, 4].map((n) => `<option value="${n}" ${String(f.port) === String(n) ? 'selected' : ''}>${renderHTML(t("ui.add_content.hdmi_52d78a", {value2: n}))}</option>`).join(''))}
           </select>
         </div>
-        ${field('hdmiInName', t('library.add.name_label'), f.name, { placeholder: f.port ? 'HDMI ' + f.port : t('library.add.hdmi_default_name') })}
-        ${destFooter()}
-        ${submitRow(t('content.hdmi_in_add_btn'), 'addHdmiInBtn')}
+        ${renderHTML(field('hdmiInName', t('library.add.name_label'), f.name, { placeholder: f.port ? 'HDMI ' + f.port : t('library.add.hdmi_default_name') }))}
+        ${renderHTML(destFooter())}
+        ${renderHTML(submitRow(t('content.hdmi_in_add_btn'), 'addHdmiInBtn'))}
       </form>`;
     const b = dlg.body;
     const portIn = b.querySelector('#hdmiInPort'), nameIn = b.querySelector('#hdmiInName');
-    portIn.addEventListener('change', () => { f.port = portIn.value; nameIn.placeholder = f.port ? 'HDMI ' + f.port : t('library.add.hdmi_default_name'); });
+    portIn.addEventListener('change', () => { f.port = portIn.value; bindAttribute(nameIn, "placeholder", f.port ? 'HDMI ' + f.port : t('library.add.hdmi_default_name')); });
     nameIn.addEventListener('input', () => { f.name = nameIn.value; });
     wireForm((form) => submitting(form, async () => {
       const port = f.port;
@@ -552,21 +556,21 @@ export function openAddContent(opts) {
   function renderCanva() {
     const c = state.canva || {};
     let action = '';
-    if (c.connected) action = `<button type="button" class="btn btn-secondary lib-danger-text" data-act="canva-disconnect">${esc(t('canva.disconnect'))}</button><button type="button" class="btn btn-primary" data-act="canva-pick">${esc(t('canva.add'))}</button>`;
-    else if (c.configured) action = `<button type="button" class="btn btn-primary" data-act="canva-connect">${esc(t('canva.connect'))}</button>`;
-    else if (c.can_manage) action = `<a class="btn btn-primary" href="#/settings" data-act="canva-settings">${esc(t('canva.open_settings'))}</a>`;
+    if (c.connected) action = `<button type="button" class="btn btn-secondary lib-danger-text" data-act="canva-disconnect">${uiText(t('canva.disconnect'))}</button><button type="button" class="btn btn-primary" data-act="canva-pick">${uiText(t('canva.add'))}</button>`;
+    else if (c.configured) action = `<button type="button" class="btn btn-primary" data-act="canva-connect">${uiText(t('canva.connect'))}</button>`;
+    else if (c.can_manage) action = `<a class="btn btn-primary" href="#/settings" data-act="canva-settings">${uiText(t('canva.open_settings'))}</a>`;
     const text = c.connected ? t('canva.connected_as', { name: c.display_name || t('canva.your_account') })
       : c.configured ? t('canva.connect_desc')
         : (c.config_error || (c.can_manage ? t('canva.not_set_up_admin') : t('canva.not_set_up')));
     dlg.body.innerHTML = `
-      ${formHead(t('library.add.src_canva'))}
-      <p>${esc(text)}</p>
-      ${c.connected ? `<p class="lib-field-help">${esc(t('library.add.canva_dest_note', { folder: state.dest.label }))}</p>` : ''}
-      ${c.connected ? destFooter() : ''}
+      ${renderHTML(formHead(t('library.add.src_canva')))}
+      <p>${uiText(text)}</p>
+      ${renderHTML(c.connected ? `<p class="lib-field-help">${uiText(t('library.add.canva_dest_note', { folder: state.dest.label }))}</p>` : '')}
+      ${renderHTML(c.connected ? destFooter() : '')}
       <div class="lib-dialog-actions">
         <span class="lib-form-error" role="alert" data-form-error></span>
-        <button type="button" class="btn btn-secondary" data-act="back">${esc(t('library.add.back'))}</button>
-        ${action}
+        <button type="button" class="btn btn-secondary" data-act="back">${uiText(t('library.add.back'))}</button>
+        ${renderHTML(action)}
       </div>`;
     const b = dlg.body;
     b.querySelector('[data-act="back"]').addEventListener('click', () => go('home'));
@@ -583,23 +587,23 @@ export function openAddContent(opts) {
         showToast(t('canva.disconnected'), 'success');
         state.canva = await api.get('/canva/status').catch(() => ({ ...c, connected: false }));
         render();
-      } catch (err) { b.querySelector('[data-form-error]').textContent = err.message; e.target.disabled = false; }
+      } catch (err) { bindMessage(b.querySelector('[data-form-error]'), (err.uiMessage || err.message)); e.target.disabled = false; }
     });
     b.querySelector('[data-act="canva-connect"]')?.addEventListener('click', async (e) => {
       e.target.disabled = true;
       try {
         const r = await api.post('/canva/connect', {});
         window.location.href = r.url;
-      } catch (err) { b.querySelector('[data-form-error]').textContent = err.message; e.target.disabled = false; }
+      } catch (err) { bindMessage(b.querySelector('[data-form-error]'), (err.uiMessage || err.message)); e.target.disabled = false; }
     });
   }
 
   /* ---------------- Free stock ---------------- */
   function renderStock() {
     dlg.body.innerHTML = `
-      ${formHead(t('library.add.src_stock'))}
+      ${renderHTML(formHead(t('library.add.src_stock')))}
       <div data-stock-host></div>
-      ${destFooter()}`;
+      ${renderHTML(destFooter())}`;
     const b = dlg.body;
     b.querySelector('[data-act="back"]').addEventListener('click', () => go('home'));
     b.querySelector('[data-act="change-dest"]').addEventListener('click', () => { state.returnTo = 'stock'; go('dest'); });
@@ -621,16 +625,16 @@ export function openAddContent(opts) {
     dlg.setTitle(t('library.add.dest_title'));
     const opts2 = [{ id: '', label: opts.rootLabel, depth: 0 }, ...treeOrder(opts.folders).map((f) => ({ id: f.id, label: f.name, path: opts.folderPath(f), depth: f.depth + 1 }))];
     dlg.body.innerHTML = `
-      <button type="button" class="lib-back-btn" data-act="dest-back">${ICONS.back}<span>${esc(t('library.add.back'))}</span></button>
+      <button type="button" class="lib-back-btn" data-act="dest-back">${renderHTML(ICONS.back)}<span>${uiText(t('library.add.back'))}</span></button>
       <fieldset class="lib-dest-list">
-        <legend class="lib-visually-hidden">${esc(t('library.add.dest_title'))}</legend>
-        ${opts2.map((o) => `<label class="lib-dest-opt" style="padding-left:${12 + o.depth * 18}px">
+        <legend class="lib-visually-hidden">${uiText(t('library.add.dest_title'))}</legend>
+        ${renderHTML(opts2.map((o) => `<label class="lib-dest-opt" style="padding-left:${12 + o.depth * 18}px">
           <input type="radio" name="libDest" value="${esc(o.id)}" ${(state.dest.folderId || '') === o.id ? 'checked' : ''}>
-          ${ICONS.folder}<span>${esc(o.label)}</span></label>`).join('')}
+          ${renderHTML(ICONS.folder)}<span>${uiText(o.label)}</span></label>`).join(''))}
       </fieldset>
       <div class="lib-dialog-actions">
-        <button type="button" class="btn btn-secondary" data-act="dest-back">${esc(t('library.add.back'))}</button>
-        <button type="button" class="btn btn-primary" data-act="dest-ok">${esc(t('library.add.dest_use'))}</button>
+        <button type="button" class="btn btn-secondary" data-act="dest-back">${uiText(t('library.add.back'))}</button>
+        <button type="button" class="btn btn-primary" data-act="dest-ok">${uiText(t('library.add.dest_use'))}</button>
       </div>`;
     const b = dlg.body;
     b.querySelectorAll('[data-act="dest-back"]').forEach((el) => el.addEventListener('click', () => { dlg.setTitle(t('library.add.title')); go(back); }));
@@ -656,7 +660,7 @@ export function treeOrder(folders) {
     if (!kids.has(p)) kids.set(p, []);
     kids.get(p).push(f);
   }
-  for (const list of kids.values()) list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  for (const list of kids.values()) list.sort((a, b) => a.name.localeCompare(b.name, getLocale(), { sensitivity: 'base' }));
   const out = [];
   const ids = new Set(folders.map((f) => f.id));
   const walk = (pid, depth) => { for (const f of kids.get(pid) || []) { out.push({ ...f, depth }); walk(f.id, depth + 1); } };

@@ -1,3 +1,8 @@
+import { renderHTML, uiText, bindMessage, attributeBinding, binding, bindText } from '../../lib/i18n-bindings.js';
+
+import { localizeServerError } from '../../api.js';
+import { getLocale, message as t } from '../../i18n.js';
+
 // The Content Library's "Content details" inspector.
 //
 // Beside the results on a wide screen (non-modal: the list stays usable), a drawer over them on a
@@ -12,7 +17,7 @@
 
 import { api, assertLocalCallAllowed } from '../../api.js';
 import { esc, hydrateAuthImages } from '../../utils.js';
-import { t } from '../../i18n.js';
+
 import { showToast } from '../toast.js';
 import { confirmDialog, focusables } from './dialog.js';
 import { openMenu } from './menu.js';
@@ -53,28 +58,28 @@ export function createInspector(host, opts) {
 
   function previewHtml(c) {
     const ty = typeOf(c).key;
-    const explain = (key) => `<div class="lib-insp-noprev">${typeIcon(ty, 40)}<p>${esc(t(key))}</p></div>`;
+    const explain = (key) => `<div class="lib-insp-noprev">${renderHTML(typeIcon(ty, 40))}<p>${uiText(t(key))}</p></div>`;
     if (ty === 'hold') return explain('library.inspector.noprev_hold');
     if (ty === 'hdmi') return explain('library.inspector.noprev_hdmi');
     if (ty === 'live') return explain('library.inspector.noprev_live');
-    if (ty === 'bundle') return `<div class="lib-insp-noprev">${typeIcon('bundle', 40)}<p>${esc(t('library.inspector.bundle_prev'))}</p><button type="button" class="btn btn-secondary btn-sm" data-act="bundle-preview">${esc(t('library.inspector.bundle_open'))}</button></div>`;
+    if (ty === 'bundle') return `<div class="lib-insp-noprev">${renderHTML(typeIcon('bundle', 40))}<p>${uiText(t('library.inspector.bundle_prev'))}</p><button type="button" class="btn btn-secondary btn-sm" data-act="bundle-preview">${uiText(t('library.inspector.bundle_open'))}</button></div>`;
     if (ty === 'youtube') {
-      return `<div class="lib-insp-yt">${c.thumbnail_path ? `<img src="${esc(c.thumbnail_path)}" alt="" referrerpolicy="no-referrer">` : ''}
-        <button type="button" class="btn btn-secondary btn-sm" data-act="yt-play">${esc(t('library.inspector.yt_play'))}</button></div>`;
+      return `<div class="lib-insp-yt">${renderHTML(c.thumbnail_path ? `<img src="${esc(c.thumbnail_path)}" alt="" referrerpolicy="no-referrer">` : '')}
+        <button type="button" class="btn btn-secondary btn-sm" data-act="yt-play">${uiText(t('library.inspector.yt_play'))}</button></div>`;
     }
     const src = c.remote_url || (c.filepath ? `/uploads/content/${c.filepath}` : '');
     if (c.remote_url && !/^https:/i.test(c.remote_url)) return explain('library.inspector.noprev_http');
     if (ty === 'video') return `<video src="${esc(src)}" controls muted preload="metadata" playsinline></video>`;
-    if (ty === 'audio') return `<div class="lib-insp-audio">${typeIcon('audio', 40)}<audio src="${esc(src)}" controls preload="none"></audio></div>`;
-    if (c.remote_url) return `<img src="${esc(c.remote_url)}" alt="${esc(c.filename)}" referrerpolicy="no-referrer">`;
-    return `<img data-auth-src="/api/content/${esc(c.id)}/file" alt="${esc(c.filename)}">`;
+    if (ty === 'audio') return `<div class="lib-insp-audio">${renderHTML(typeIcon('audio', 40))}<audio src="${esc(src)}" controls preload="none"></audio></div>`;
+    if (c.remote_url) return `<img src="${esc(c.remote_url)}" alt="${esc(c.filename)}"${attributeBinding("alt", c.filename)} referrerpolicy="no-referrer">`;
+    return `<img data-auth-src="/api/content/${esc(c.id)}/file" alt="${esc(c.filename)}"${attributeBinding("alt", c.filename)}>`;
   }
 
   function folderOptions(sel) {
     const all = opts.folders();
-    return `<option value="">${esc(opts.rootLabel)}</option>${all.map((f) => ({ f, p: opts.folderPath(f) }))
-      .sort((a, b) => a.p.localeCompare(b.p, undefined, { sensitivity: 'base' }))
-      .map(({ f, p }) => `<option value="${esc(f.id)}" ${sel === f.id ? 'selected' : ''}>${esc(p)}</option>`).join('')}`;
+    return `<option value="">${uiText(opts.rootLabel)}</option>${renderHTML(all.map((f) => ({ f, p: opts.folderPath(f) }))
+      .sort((a, b) => a.p.localeCompare(b.p, getLocale(), { sensitivity: 'base' }))
+      .map(({ f, p }) => `<option value="${esc(f.id)}" ${sel === f.id ? 'selected' : ''}>${uiText(p)}</option>`).join(''))}`;
   }
 
   function render() {
@@ -98,51 +103,51 @@ export function createInspector(host, opts) {
     host.hidden = false;
     host.innerHTML = `
       <div class="lib-insp-head">
-        <h2 class="lib-insp-title" id="libInspTitle">${esc(t('library.inspector.title'))}</h2>
-        <button type="button" class="lib-icon-btn" data-act="close" aria-label="${esc(t('library.inspector.close'))}">
+        <h2 class="lib-insp-title" id="libInspTitle">${uiText(t('library.inspector.title'))}</h2>
+        <button type="button" class="lib-icon-btn" data-act="close" aria-label="${esc(t('library.inspector.close'))}" data-fil-i18n-aria-label="${binding('library.inspector.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="lib-insp-scroll">
-        <div class="lib-insp-preview">${previewHtml(c)}</div>
-        <div class="lib-insp-name" title="${esc(c.filename)}">${esc(c.filename)}</div>
-        <div class="lib-status"><span class="lib-dot is-${st.tone}" aria-hidden="true"></span>${esc(st.label)}</div>
-        ${c.has_draft ? `<p class="lib-field-help">${esc(t('library.inspector.review_note'))}</p>` : ''}
-        ${c.sync_problem ? `<p class="lib-field-help">${esc(t('library.inspector.attention_note'))}</p>` : ''}
+        <div class="lib-insp-preview">${renderHTML(previewHtml(c))}</div>
+        <div class="lib-insp-name" title="${esc(c.filename)}"${attributeBinding("title", c.filename)}>${uiText(c.filename)}</div>
+        <div class="lib-status"><span class="lib-dot is-${st.tone}" aria-hidden="true"></span>${uiText(st.label)}</div>
+        ${renderHTML(c.has_draft ? `<p class="lib-field-help">${uiText(t('library.inspector.review_note'))}</p>` : '')}
+        ${renderHTML(c.sync_problem ? `<p class="lib-field-help">${uiText(t('library.inspector.attention_note'))}</p>` : '')}
         <form class="lib-insp-form" data-form novalidate>
           <div class="lib-field">
-            <label for="libInspName">${esc(t('library.inspector.name'))}</label>
+            <label for="libInspName">${uiText(t('library.inspector.name'))}</label>
             <input id="libInspName" class="input" value="${esc(draft.filename)}" ${writable ? '' : 'readonly'} maxlength="255">
           </div>
           <div class="lib-field">
-            <label for="libInspFolder">${esc(t('library.inspector.folder'))}</label>
-            <select id="libInspFolder" class="input" ${writable ? '' : 'disabled'}>${folderOptions(draft.folder_id || '')}</select>
+            <label for="libInspFolder">${uiText(t('library.inspector.folder'))}</label>
+            <select id="libInspFolder" class="input" ${writable ? '' : 'disabled'}>${renderHTML(folderOptions(draft.folder_id || ''))}</select>
           </div>
           <div class="lib-field">
-            <span class="lib-label" id="libInspTagsLabel">${esc(t('library.inspector.tags'))}</span>
-            <ul class="lib-chips" aria-labelledby="libInspTagsLabel">${draft.tags.map((tg) => `<li class="lib-chip">#${esc(tg)}${writable ? `<button type="button" class="lib-chip-x" data-remove-tag="${esc(tg)}" aria-label="${esc(t('library.inspector.remove_tag', { tag: tg }))}">×</button>` : ''}</li>`).join('') || `<li class="lib-chip-empty">${esc(t('library.inspector.no_tags'))}</li>`}</ul>
-            ${writable ? `<div class="lib-tag-add">
-              <label for="libInspTagNew" class="lib-visually-hidden">${esc(t('library.inspector.add_tag'))}</label>
-              <input id="libInspTagNew" class="input" placeholder="${esc(t('library.inspector.add_tag_ph'))}" autocomplete="off">
-              <button type="button" class="btn btn-secondary btn-sm" data-act="add-tag">${esc(t('library.inspector.add_tag'))}</button>
-            </div>` : ''}
+            <span class="lib-label" id="libInspTagsLabel">${uiText(t('library.inspector.tags'))}</span>
+            <ul class="lib-chips" aria-labelledby="libInspTagsLabel">${renderHTML(draft.tags.map((tg) => `<li class="lib-chip">#${uiText(tg)}${renderHTML(writable ? `<button type="button" class="lib-chip-x" data-remove-tag="${esc(tg)}" aria-label="${esc(t('library.inspector.remove_tag', { tag: tg }))}" data-fil-i18n-aria-label="${binding('library.inspector.remove_tag', { tag: tg })}">×</button>` : '')}</li>`).join('') || `<li class="lib-chip-empty">${uiText(t('library.inspector.no_tags'))}</li>`)}</ul>
+            ${renderHTML(writable ? `<div class="lib-tag-add">
+              <label for="libInspTagNew" class="lib-visually-hidden">${uiText(t('library.inspector.add_tag'))}</label>
+              <input id="libInspTagNew" class="input" placeholder="${esc(t('library.inspector.add_tag_ph'))}" data-fil-i18n-placeholder="${binding('library.inspector.add_tag_ph', undefined)}" autocomplete="off">
+              <button type="button" class="btn btn-secondary btn-sm" data-act="add-tag">${uiText(t('library.inspector.add_tag'))}</button>
+            </div>` : '')}
           </div>
-          ${writable ? `<div class="lib-insp-save" data-save-row>
-            <span class="lib-field-help" data-dirty-note aria-live="polite">${isDirty() ? esc(t('library.inspector.unsaved')) : ''}</span>
-            <button type="button" class="btn btn-secondary btn-sm" data-act="revert" ${isDirty() ? '' : 'disabled'}>${esc(t('common.cancel'))}</button>
-            <button type="submit" class="btn btn-primary btn-sm" data-act="save" ${isDirty() ? '' : 'disabled'}>${esc(t('common.save'))}</button>
-          </div>` : `<p class="lib-field-help">${esc(t('library.inspector.read_only'))}</p>`}
+          ${renderHTML(writable ? `<div class="lib-insp-save" data-save-row>
+            <span class="lib-field-help" data-dirty-note aria-live="polite">${renderHTML(isDirty() ? t('library.inspector.unsaved') : '')}</span>
+            <button type="button" class="btn btn-secondary btn-sm" data-act="revert" ${isDirty() ? '' : 'disabled'}>${uiText(t('common.cancel'))}</button>
+            <button type="submit" class="btn btn-primary btn-sm" data-act="save" ${isDirty() ? '' : 'disabled'}>${uiText(t('common.save'))}</button>
+          </div>` : `<p class="lib-field-help">${uiText(t('library.inspector.read_only'))}</p>`)}
         </form>
-        <dl class="lib-insp-facts">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+        <dl class="lib-insp-facts">${renderHTML(rows.map(([k, v]) => `<div><dt>${uiText(k)}</dt><dd>${uiText(v)}</dd></div>`).join(''))}</dl>
         <section class="lib-insp-usage" aria-labelledby="libInspUsageTitle">
-          <h3 id="libInspUsageTitle" class="lib-insp-sub">${esc(t('library.inspector.used_in'))}</h3>
-          <div data-usage aria-live="polite">${esc(t('common.loading'))}</div>
+          <h3 id="libInspUsageTitle" class="lib-insp-sub">${uiText(t('library.inspector.used_in'))}</h3>
+          <div data-usage aria-live="polite">${uiText(t('common.loading'))}</div>
         </section>
       </div>
       <div class="lib-insp-foot">
-        ${writable && isStoredFile(c) ? `<button type="button" class="btn btn-secondary" data-act="replace">${esc(t('library.inspector.replace'))}</button>
-          <input type="file" id="libInspReplaceInput" hidden accept="${c.mime_type === BUNDLE_MIME ? '.zip,.wgt' : 'video/*,image/*,audio/*'}">` : ''}
-        <button type="button" class="lib-icon-btn lib-insp-more" data-act="more" aria-haspopup="menu" aria-expanded="false" aria-label="${esc(t('library.actions_for', { name: c.filename }))}">
+        ${renderHTML(writable && isStoredFile(c) ? `<button type="button" class="btn btn-secondary" data-act="replace">${uiText(t('library.inspector.replace'))}</button>
+          <input type="file" id="libInspReplaceInput" hidden accept="${c.mime_type === BUNDLE_MIME ? '.zip,.wgt' : 'video/*,image/*,audio/*'}">` : '')}
+        <button type="button" class="lib-icon-btn lib-insp-more" data-act="more" aria-haspopup="menu" aria-expanded="false" aria-label="${esc(t('library.actions_for', { name: c.filename }))}" data-fil-i18n-aria-label="${binding('library.actions_for', { name: c.filename })}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
         </button>
       </div>`;
@@ -157,7 +162,7 @@ export function createInspector(host, opts) {
     const d = isDirty();
     row.querySelector('[data-act="save"]').disabled = !d;
     row.querySelector('[data-act="revert"]').disabled = !d;
-    row.querySelector('[data-dirty-note]').textContent = d ? t('library.inspector.unsaved') : '';
+    bindMessage(row.querySelector('[data-dirty-note]'), d ? t('library.inspector.unsaved') : '');
   }
 
   function wire() {
@@ -189,7 +194,7 @@ export function createInspector(host, opts) {
       const box = e.currentTarget.closest('.lib-insp-yt');
       let src = item.remote_url;
       try { const u = new URL(item.remote_url); u.searchParams.set('mute', '1'); u.searchParams.set('autoplay', '1'); u.searchParams.delete('enablejsapi'); u.searchParams.delete('origin'); src = u.toString(); } catch (_) { /* keep */ }
-      box.innerHTML = `<iframe referrerpolicy="strict-origin-when-cross-origin" src="${esc(src)}" title="${esc(item.filename)}" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
+      box.innerHTML = `<iframe referrerpolicy="strict-origin-when-cross-origin" src="${esc(src)}" title="${esc(item.filename)}"${attributeBinding("title", item.filename)} allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
     });
     const rep = host.querySelector('[data-act="replace"]');
     if (rep) {
@@ -212,19 +217,19 @@ export function createInspector(host, opts) {
     const box = () => host.querySelector('[data-usage]');
     let u;
     try { u = await api.getContentUsage(c.id); } catch (err) {
-      if (my === usageReq && box()) box().textContent = t('library.inspector.usage_failed');
+      if (my === usageReq && box()) bindText(box(), 'library.inspector.usage_failed', undefined);
       return;
     }
     if (my !== usageReq || !box() || !item || item.id !== c.id) return;
-    host.querySelector('#libInspUsageTitle').textContent = u.playlists.length
+    bindMessage(host.querySelector('#libInspUsageTitle'), u.playlists.length
       ? t(u.playlists.length === 1 ? 'library.inspector.used_in_one' : 'library.inspector.used_in_other', { count: u.playlists.length })
-      : t('library.inspector.used_in');
+      : t('library.inspector.used_in'));
     const other = Object.entries(u.elsewhere || {}).filter(([, n]) => n > 0)
       .map(([k, n]) => t(`library.inspector.elsewhere_${k}`, { count: n }));
     box().innerHTML = `
-      ${u.playlists.length ? `<ul class="lib-insp-links">${u.playlists.map((p) => `<li><a href="#/playlists/${encodeURIComponent(p.id)}">${esc(p.name)}</a>${p.smart ? ` <span class="lib-muted">(${esc(t('library.inspector.smart'))})</span>` : ''}</li>`).join('')}</ul>` : ''}
-      ${other.length ? `<p class="lib-field-help">${esc(t('library.inspector.also_used', { list: other.join(', ') }))}</p>` : ''}
-      ${!u.in_use ? `<p class="lib-field-help">${esc(t('library.inspector.not_used'))}</p>` : ''}`;
+      ${u.playlists.length ? `<ul class="lib-insp-links">${renderHTML(u.playlists.map((p) => `<li><a href="#/playlists/${encodeURIComponent(p.id)}">${uiText(p.name)}</a>${renderHTML(p.smart ? ` <span class="lib-muted">(${uiText(t('library.inspector.smart'))})</span>` : '')}</li>`).join(''))}</ul>` : ''}
+      ${other.length ? `<p class="lib-field-help">${uiText(t('library.inspector.also_used', { list: other.join(', ') }))}</p>` : ''}
+      ${!u.in_use ? `<p class="lib-field-help">${uiText(t('library.inspector.not_used'))}</p>` : ''}`;
   }
 
   async function save() {
@@ -249,7 +254,7 @@ export function createInspector(host, opts) {
       showToast(t('content.toast.updated'), 'success');
       opts.onSaved(item);
     } catch (err) {
-      showToast(err.message || t('content.error_update_failed'), 'error');
+      showToast(err.uiMessage || err.message || t('content.error_update_failed'), 'error');
       syncSaveRow();
     }
   }
@@ -262,7 +267,7 @@ export function createInspector(host, opts) {
     });
     if (!ok) return;
     const btn = host.querySelector('[data-act="replace"]');
-    if (btn) { btn.disabled = true; btn.textContent = t('library.inspector.replacing'); }
+    if (btn) { btn.disabled = true; bindText(btn, 'library.inspector.replacing', undefined); }
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -274,12 +279,12 @@ export function createInspector(host, opts) {
       });
       const body = await r.json().catch(() => ({}));
       // ⚠️ Read the response: a refused type is not a success (see the edit dialog's replace).
-      if (!r.ok) throw new Error(body.error || t('content.error_update_failed'));
+      if (!r.ok) throw new Error(localizeServerError(body.error) || t('content.error_update_failed'));
       showToast(body.pending_review ? t('review.toast.saved_as_draft') : t('library.inspector.replaced'), 'success');
       opts.onReplaced(item);
     } catch (err) {
-      showToast(err.message, 'error');
-      if (btn && document.contains(btn)) { btn.disabled = false; btn.textContent = t('library.inspector.replace'); }
+      showToast(err.uiMessage || err.message, 'error');
+      if (btn && document.contains(btn)) { btn.disabled = false; bindText(btn, 'library.inspector.replace', undefined); }
     }
   }
 

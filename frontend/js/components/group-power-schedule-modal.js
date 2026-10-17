@@ -1,4 +1,6 @@
-import { t, tn } from '../i18n.js';
+import { uiText, bindMessage, binding } from '../lib/i18n-bindings.js';
+
+import { message as t, messageCount as tn } from '../i18n.js';
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
@@ -24,8 +26,8 @@ export function openGroupPowerScheduleModal(group, devices = []) {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
-        <h3>${esc(t('power.section_title'))} — ${esc(group.name)}</h3>
-        <button class="btn-icon" type="button" data-power-close aria-label="${esc(t('common.close'))}">
+        <h3>${uiText(t('power.section_title'))} — ${uiText(group.name)}</h3>
+        <button class="btn-icon" type="button" data-power-close aria-label="${esc(t('common.close'))}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -65,14 +67,10 @@ export function openGroupPowerScheduleModal(group, devices = []) {
   function notes(facts) {
     const out = [];
     if (facts.unsupported > 0) {
-      out.push(`<div class="power-warning">${esc(
-        t('power.group_unsupported_members').replace('{n}', String(facts.unsupported)).replace('{total}', String(facts.total))
-      )}</div>`);
+      out.push(`<div class="power-warning">${uiText(t('power.group_unsupported_members', {n: String(facts.unsupported), total: String(facts.total)}))}</div>`);
     }
     if (facts.overridden > 0) {
-      out.push(`<div class="power-hint">${esc(
-        t('power.group_overridden_members').replace('{n}', String(facts.overridden))
-      )}</div>`);
+      out.push(`<div class="power-hint">${uiText(t('power.group_overridden_members', {n: String(facts.overridden)}))}</div>`);
     }
     return out.join('');
   }
@@ -86,7 +84,7 @@ export function openGroupPowerScheduleModal(group, devices = []) {
         + renderPowerScheduleEditor(current || { windows: [], enabled: true }, { supported: true });
       bind(facts);
     } catch (err) {
-      host.textContent = err.message;
+      bindMessage(host, (err.uiMessage || err.message));
     }
   }
 
@@ -129,7 +127,7 @@ export function openGroupPowerScheduleModal(group, devices = []) {
         if (r && r.mandated_members) showToast(tn('corp.skipped.power', r.mandated_members), 'info');
         close();
       } catch (err) {
-        showToast(`${t('power.save_failed')}: ${err.message}`, 'error');
+        showToast(`${t('power.save_failed')}: ${(err.uiMessage || err.message)}`, 'error');
       }
     });
 
@@ -140,7 +138,7 @@ export function openGroupPowerScheduleModal(group, devices = []) {
         showToast(t('power.saved'), 'success');
         close();
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
     });
   }

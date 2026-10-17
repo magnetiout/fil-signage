@@ -237,7 +237,7 @@ test('the Web player tab is on every original display; a key is minted only when
   // display that is not itself a mirror. The KEY is still never minted automatically: without one
   // the tab offers "Create a web player link" (editors+), which is the deliberate action.
   const view = fs.readFileSync(path.join(__dirname, '..', '..', 'frontend', 'js', 'views', 'device-detail.js'), 'utf8');
-  assert.match(view, /\$\{!device\.mirror_of \? `<div class="tab" data-tab="webplayer"/,
+  assert.match(view, /\$\{(?:renderHTML\()?!device\.mirror_of \? `<div class="tab" data-tab="webplayer"/,
     'the tab is gated on "not a mirror"');
   assert.match(view, /if \(!device\.enrol_key\) \{[\s\S]{0,200}enrolCreateBtn/, 'no key: offer to create one, never mint on render');
   assert.ok(!/isWebPlayer/.test(view), 'the old platform-based gate should be gone, not left dangling');

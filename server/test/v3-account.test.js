@@ -128,3 +128,17 @@ test('self-hosted sponsor ask: fresh install waits 3 days; an upgraded install i
   try { assert.equal((await call('GET', '/me', { token: tok })).body.sponsor_prompt, false, 'ST_HIDE_SPONSOR wins'); }
   finally { config.hideSponsor = false; }
 });
+
+test('admin language preference is per-account, survives sessions, rejects invalid values and never changes credentials',async()=>{
+ const first=makeUser(),second=makeUser();const a=generateToken(first,null),b=generateToken(second,null);
+ const hash=db.prepare('SELECT password_hash FROM users WHERE id=?').get(first.id).password_hash;
+ assert.equal((await call('GET','/me',{token:a})).body.ui_language,null);
+ await call('PUT','/me',{token:a,body:{ui_language:'en',id:second.id}});
+ assert.equal((await call('GET','/me',{token:a})).body.ui_language,'en');
+ assert.equal((await call('GET','/me',{token:b})).body.ui_language,null,'another account was not modified');
+ await call('PUT','/me',{token:b,body:{ui_language:'tr'}});
+ assert.equal((await call('GET','/me',{token:b})).body.ui_language,'tr');
+ await call('PUT','/me',{token:a,body:{ui_language:'<script>'}});
+ assert.equal((await call('GET','/me',{token:generateToken(first,null)})).body.ui_language,'en','a new session reads the same saved preference');
+ assert.equal(db.prepare('SELECT password_hash FROM users WHERE id=?').get(first.id).password_hash,hash);
+});

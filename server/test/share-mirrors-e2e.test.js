@@ -115,6 +115,8 @@ const codeOn = (page) => page.evaluate(() => {
 before(async () => {
   if (SKIP) return;
   srv = await startServer('share-mirrors');
+  // This suite checks the original English player/status copy; TR defaults have separate acceptance.
+  await srv.api('PUT','/auth/me',{ui_language:'en'});
   browser = await launch([
     '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream',
     '--auto-select-desktop-capture-source=Entire screen',

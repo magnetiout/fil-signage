@@ -1,3 +1,5 @@
+import { uiText, renderHTML, attributeBinding } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 accessibility checker, the dashboard half that several views share
  * (server: lib/a11y, routes/accessibility.js, docs/accessibility.md):
@@ -11,7 +13,7 @@
  * numbers). Values from the server reach the DOM through esc() only.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { isSimpleMode } from './ui-mode.js';
 
@@ -83,11 +85,11 @@ export function a11yIssueHtml(i, actions = '') {
   const swatch = i.values && i.values.suggested && /^#[0-9A-Fa-f]{6}$/.test(i.values.suggested)
     ? `<span class="a11y-swatch" style="background:${esc(i.values.suggested)}" aria-hidden="true"></span>` : '';
   return `<li class="a11y-issue a11y-issue-${esc(i.severity)}">
-    <span class="a11y-sev a11y-sev-${esc(i.severity)}">${esc(t(SEVERITY_LABEL[i.severity] || 'a11y.sev.note'))}</span>
-    <span class="a11y-issue-body"><span>${esc(a11yWhy(i))}</span>
-      ${where ? `<small class="a11y-where">${esc(where)}</small>` : ''}
-      ${how ? `<small class="a11y-how">${swatch}${esc(how)}</small>` : ''}
-      ${actions}</span></li>`;
+    <span class="a11y-sev a11y-sev-${esc(i.severity)}">${uiText(t(SEVERITY_LABEL[i.severity] || 'a11y.sev.note'))}</span>
+    <span class="a11y-issue-body"><span>${uiText(a11yWhy(i))}</span>
+      ${renderHTML(where ? `<small class="a11y-where">${uiText(where)}</small>` : '')}
+      ${renderHTML(how ? `<small class="a11y-how">${renderHTML(swatch)}${uiText(how)}</small>` : '')}
+      ${renderHTML(actions)}</span></li>`;
 }
 
 /* ---------------------------------------------------------------- before publishing */
@@ -96,7 +98,7 @@ function modal(inner) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.style.display = 'flex';
-  overlay.innerHTML = `<div class="modal a11y-modal" role="dialog" aria-modal="true" aria-labelledby="a11yGateTitle" style="max-width:560px;width:95vw">${inner}</div>`;
+  overlay.innerHTML = `<div class="modal a11y-modal" role="dialog" aria-modal="true" aria-labelledby="a11yGateTitle" style="max-width:560px;width:95vw">${renderHTML(inner)}</div>`;
   document.body.appendChild(overlay);
   return overlay;
 }
@@ -120,16 +122,16 @@ export async function confirmAccessibility(type, id) {
   const more = (r.errors + r.warnings) - items.length;
   return new Promise((resolve) => {
     const overlay = modal(`
-      <div class="modal-header"><h3 id="a11yGateTitle">${esc(t(blocked ? 'a11y.gate.blocked_title' : 'a11y.gate.title'))}</h3></div>
+      <div class="modal-header"><h3 id="a11yGateTitle">${uiText(t(blocked ? 'a11y.gate.blocked_title' : 'a11y.gate.title'))}</h3></div>
       <div class="modal-body">
-        <p>${esc(blocked === 'accessibility_pending' ? t('a11y.gate.pending') : blocked ? t('a11y.gate.blocked') : t('a11y.gate.lead', { errors: r.errors, warnings: r.warnings }))}</p>
-        <ul class="a11y-issues">${items.map(({ s, i }) => a11yIssueHtml({ ...i, text: i.text || s.name })).join('')}</ul>
-        ${more > 0 ? `<p class="corp-help" style="font-size:12px">${esc(tn('a11y.gate.more', more))}</p>` : ''}
-        <p class="corp-help" style="font-size:12px"><a href="#/accessibility" data-a11y-report>${esc(t('a11y.gate.open_report'))}</a></p>
+        <p>${uiText(blocked === 'accessibility_pending' ? t('a11y.gate.pending') : blocked ? t('a11y.gate.blocked') : t('a11y.gate.lead', { errors: r.errors, warnings: r.warnings }))}</p>
+        <ul class="a11y-issues">${renderHTML(items.map(({ s, i }) => a11yIssueHtml({ ...i, text: i.text || s.name })).join(''))}</ul>
+        ${renderHTML(more > 0 ? `<p class="corp-help" style="font-size:12px">${uiText(tn('a11y.gate.more', more))}</p>` : '')}
+        <p class="corp-help" style="font-size:12px"><a href="#/accessibility" data-a11y-report>${uiText(t('a11y.gate.open_report'))}</a></p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-a11y-cancel>${esc(t(blocked ? 'common.close' : 'a11y.gate.fix_first'))}</button>
-        ${blocked ? '' : `<button type="button" class="btn btn-primary" data-a11y-go>${esc(t('a11y.gate.publish_anyway'))}</button>`}
+        <button type="button" class="btn btn-secondary" data-a11y-cancel>${uiText(t(blocked ? 'common.close' : 'a11y.gate.fix_first'))}</button>
+        ${renderHTML(blocked ? '' : `<button type="button" class="btn btn-primary" data-a11y-go>${uiText(t('a11y.gate.publish_anyway'))}</button>`)}
       </div>`);
     const done = (v) => { overlay.remove(); resolve(v); };
     overlay.querySelector('[data-a11y-cancel]').addEventListener('click', () => done(false));
@@ -246,7 +248,7 @@ export function a11yBadgeHtml(entry) {
   if (!entry || !(entry.errors || entry.warnings)) return '';
   const bad = entry.errors > 0;
   const label = bad ? tn('a11y.badge.errors', entry.errors) : tn('a11y.badge.warnings', entry.warnings);
-  return `<a class="a11y-badge ${bad ? 'a11y-badge-error' : 'a11y-badge-warning'}" href="#/accessibility" title="${esc(label)}">${esc(t(bad ? 'a11y.badge.short_error' : 'a11y.badge.short_warning'))}</a>`;
+  return `<a class="a11y-badge ${bad ? 'a11y-badge-error' : 'a11y-badge-warning'}" href="#/accessibility" title="${esc(label)}"${attributeBinding("title", label)}>${uiText(t(bad ? 'a11y.badge.short_error' : 'a11y.badge.short_warning'))}</a>`;
 }
 
 const TARGETS = [

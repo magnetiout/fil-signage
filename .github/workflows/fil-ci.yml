@@ -27,6 +27,7 @@ jobs:
           cache: npm
           cache-dependency-path: server/package-lock.json
       - run: npm ci --no-fund
+      - run: npm run check:admin
       - run: npm test
       - run: npm audit --omit=dev
   android:

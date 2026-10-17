@@ -1,7 +1,11 @@
+import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { displayValue, displayList, messageCount as tn, message as t } from '../i18n.js';
+
 import { api } from '../api.js';
 import { esc } from '../utils.js';
 import { showToast } from '../components/toast.js';
-import { t } from '../i18n.js';
+
 import { renderApprovalBar } from '../components/approval-actions.js';
 import { mountHostedPicker } from '../components/ai-hosted-picker.js';
 import { confirmAccessibility } from '../components/accessibility.js';
@@ -25,10 +29,10 @@ import {
  */
 
 const ANIMS = {
-  none: 'None', fade: 'Fade', slideL: 'Slide in ←', slideR: 'Slide in →',
-  slideU: 'Rise', slideD: 'Drop', zoom: 'Zoom', wipe: 'Wipe',
+  none: t("ui.labels.none_6eef66"), fade: t("ui.labels.fade_5298d0"), slideL: t("ui.labels.slide_in_308453"), slideR: t("ui.labels.slide_in_af0818"),
+  slideU: t("ui.labels.rise_563339"), slideD: t("ui.labels.drop_0a088b"), zoom: t("ui.labels.zoom_9b3cbe"), wipe: t("ui.labels.wipe_a0e027"),
 };
-const EASES = { 'ease-out': 'Ease out', soft: 'Soft', linear: 'Linear', 'ease-in': 'Ease in' };
+const EASES = { 'ease-out': t("ui.labels.ease_out_51fd14"), soft: t("ui.labels.soft_968c00"), linear: t("ui.labels.linear_af502f"), 'ease-in': t("ui.labels.ease_in_8e86a6") };
 /*
  * ⚠️ FETCHED, NOT DUPLICATED. The bundled families live in server/lib/slide-fonts.js next to the
  * files themselves, and the editor asks for the list. A hardcoded copy here would drift the moment
@@ -38,17 +42,17 @@ const EASES = { 'ease-out': 'Ease out', soft: 'Soft', linear: 'Linear', 'ease-in
 let FONT_CATALOGUE = [];
 let DATA_SOURCES_LIST = [];
 const KINDS = {
-  head: { icon: 'H', label: 'Headline', size: 7, weight: 700 },
-  body: { icon: 'T', label: 'Text', size: 3, weight: 400 },
-  stat: { icon: '#', label: 'Big number', size: 14, weight: 700 },
-  image: { icon: '▣', label: 'Photo', size: 0, weight: 400 },
-  rule: { icon: '▬', label: 'Rule', size: 0, weight: 400 },
-  box: { icon: '◻', label: 'Panel', size: 0, weight: 400 },
-  clock: { icon: '◷', label: 'Clock', size: 9, weight: 700 },
-  date: { icon: '▤', label: 'Date', size: 4, weight: 400 },
-  countdown: { icon: '◔', label: 'Countdown', size: 9, weight: 700 },
-  qr: { icon: '▦', label: 'QR code', size: 0, weight: 400 },
-  lettering: { icon: '✒', label: 'Lettering', size: 0, weight: 400 },
+  head: { icon: 'H', label: t("ui.labels.headline_442250"), size: 7, weight: 700 },
+  body: { icon: 'T', label: t("ui.slides.text_c3328c"), size: 3, weight: 400 },
+  stat: { icon: '#', label: t("ui.labels.big_number_1a719c"), size: 14, weight: 700 },
+  image: { icon: '▣', label: t("ui.slides.photo_d01d90"), size: 0, weight: 400 },
+  rule: { icon: '▬', label: t("ui.labels.rule_78e179"), size: 0, weight: 400 },
+  box: { icon: '◻', label: t("ui.labels.panel_2f4bd7"), size: 0, weight: 400 },
+  clock: { icon: '◷', label: t("ui.labels.clock_04f6b3"), size: 9, weight: 700 },
+  date: { icon: '▤', label: t("ui.labels.date_eb9a4b"), size: 4, weight: 400 },
+  countdown: { icon: '◔', label: t("ui.labels.countdown_b307e1"), size: 9, weight: 700 },
+  qr: { icon: '▦', label: t("ui.labels.qr_code_abba02"), size: 0, weight: 400 },
+  lettering: { icon: '✒', label: t("ui.labels.lettering_859fef"), size: 0, weight: 400 },
 };
 
 /*
@@ -68,10 +72,10 @@ const GLYPH_KINDS = ['head', 'body', 'stat', 'clock', 'date', 'countdown'];
 const LIVE_KINDS = ['clock', 'date', 'countdown'];
 
 /* The allowlists the server validates against; an option not in these is silently dropped there. */
-const CLOCK_FORMATS = [['24', '13:45'], ['24s', '13:45:09'], ['12', '1:45 PM'], ['12s', '1:45:09 PM']];
-const DATE_FORMATS = [['long', 'Monday, 5 January 2026'], ['weekday', 'Monday, 5 January'],
-  ['short', '5 Jan 2026'], ['numeric', '05/01/2026']];
-const QR_LEVELS = [['L', 'L — smallest'], ['M', 'M — normal'], ['Q', 'Q — tolerant'], ['H', 'H — most tolerant']];
+const CLOCK_FORMATS = [['24', '13:45'], ['24s', '13:45:09'], ['12', t("ui.slides.1_45_pm_f152e0")], ['12s', t("ui.slides.1_45_09_pm_b422d3")]];
+const DATE_FORMATS = [['long', t("ui.slides.monday_5_january_2026_ba57e2")], ['weekday', t("ui.slides.monday_5_january_e1b566")],
+  ['short', t("ui.slides.5_jan_2026_88ca43")], ['numeric', '05/01/2026']];
+const QR_LEVELS = [['L', t("ui.slides.l_smallest_ef6b6a")], ['M', t("ui.slides.m_normal_c92160")], ['Q', t("ui.slides.q_tolerant_a21744")], ['H', t("ui.slides.h_most_tolerant_a76fac")]];
 
 const state = {
   decks: [], deck: null, si: 0, ei: 0, tab: 'content',
@@ -153,7 +157,7 @@ function ensureEditorStyles() {
   if (document.getElementById('stSlideEditor')) return;
   const st = document.createElement('style');
   st.id = 'stSlideEditor';
-  st.textContent = `
+  bindMessage(st, `
     .sl-group { border-top:1px solid var(--border); margin-top:4px; padding-top:9px; }
     .sl-group:first-child { border-top:0; margin-top:0; padding-top:0; }
     .sl-legend { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
@@ -207,7 +211,7 @@ function ensureEditorStyles() {
     .sl-ctx button:hover:not(:disabled), .sl-ctx button:focus-visible { background:var(--bg-card-hover, rgba(127,127,127,.12)); }
     .sl-ctx button:disabled { opacity:.4; cursor:default; }
     .sl-ctx kbd { font:inherit; font-size:11px; color:var(--text-muted); }
-    .sl-ctx hr { border:0; border-top:1px solid var(--border); margin:4px 2px; }`;
+    .sl-ctx hr { border:0; border-top:1px solid var(--border); margin:4px 2px; }`);
   document.head.appendChild(st);
 }
 
@@ -215,14 +219,14 @@ function ensureFontFaces() {
   if (document.getElementById('stSlideFonts') || !FONT_CATALOGUE.length) return;
   const st = document.createElement('style');
   st.id = 'stSlideFonts';
-  st.textContent = FONT_CATALOGUE.flatMap((f) => (f.file
+  bindMessage(st, FONT_CATALOGUE.flatMap((f) => (f.file
     // Bundled: two script subsets, one variable file each.
     ? ['', '-ext'].map((sfx) =>
         `@font-face{font-family:'${f.css}';font-style:normal;font-weight:${f.weights[0]} ${f.weights[1]};`
         + `font-display:swap;src:url(/fonts/${f.file}${sfx}.woff2) format('woff2')}`)
     // Uploaded: one file, one weight, no unicode-range — see slide-fonts.customFace for why.
     : [`@font-face{font-family:'${f.css}';font-style:normal;font-weight:normal;`
-       + `font-display:swap;src:url(/fonts/u/${encodeURIComponent(f.filepath || '')})}`])).join('');
+       + `font-display:swap;src:url(/fonts/u/${encodeURIComponent(f.filepath || '')})}`])).join(''));
   document.head.appendChild(st);
 }
 
@@ -409,45 +413,45 @@ async function openNewDeckModal(container) {
   overlay.innerHTML = `
     <div class="modal" style="background:var(--bg-card,#1e293b);border-radius:12px;border:1px solid var(--border,#334155);width:100%;max-width:540px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)">
       <div class="modal-header" style="padding:18px 24px;border-bottom:1px solid var(--border,#334155);display:flex;justify-content:space-between;align-items:center">
-        <h2 style="margin:0;font-size:18px;font-weight:600;color:var(--text-primary,#f8fafc)">${esc(t('slides.template_modal_title'))}</h2>
+        <h2 style="margin:0;font-size:18px;font-weight:600;color:var(--text-primary,#f8fafc)">${uiText(t('slides.template_modal_title'))}</h2>
         <button id="closeNewDeckModal" style="background:none;border:none;color:var(--text-muted,#94a3b8);font-size:20px;cursor:pointer">&times;</button>
       </div>
       <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:16px">
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">${esc(t('slides.deck_name_label'))}</label>
-          <input type="text" id="deckNameInput" class="input" style="width:100%" placeholder="${esc(t('slides.deck_name_placeholder'))}" value="New Slide Deck">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">${uiText(t('slides.deck_name_label'))}</label>
+          <input type="text" id="deckNameInput" class="input" style="width:100%" placeholder="${esc(t('slides.deck_name_placeholder'))}" data-fil-i18n-placeholder="${binding('slides.deck_name_placeholder', undefined)}" value="New Slide Deck">
         </div>
-        <p style="margin:0;font-size:13px;color:var(--text-muted)">${esc(t('signs.slides_modal_hint'))} <a href="#/signs?from=slides" data-sign-link>${esc(t('signs.new_from_template'))} &rarr;</a></p>
+        <p style="margin:0;font-size:13px;color:var(--text-muted)">${renderHTML(t('signs.slides_modal_hint'))} <a href="#/signs?from=slides" data-sign-link>${uiText(t('signs.new_from_template'))} →</a></p>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">${esc(t('slides.choose_template'))}</label>
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">${uiText(t('slides.choose_template'))}</label>
           <div style="display:flex;flex-direction:column;gap:8px">
             <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:var(--bg-input)">
               <input type="radio" name="deckTpl" value="blank" checked style="margin-top:3px">
               <div>
-                <strong style="display:block;font-size:13px">${esc(t('slides.tpl_blank_title'))}</strong>
-                <span style="font-size:11px;color:var(--text-muted)">${esc(t('slides.tpl_blank_desc'))}</span>
+                <strong style="display:block;font-size:13px">${uiText(t('slides.tpl_blank_title'))}</strong>
+                <span style="font-size:11px;color:var(--text-muted)">${uiText(t('slides.tpl_blank_desc'))}</span>
               </div>
             </label>
             <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:var(--bg-input)">
               <input type="radio" name="deckTpl" value="room" style="margin-top:3px">
               <div>
-                <strong style="display:block;font-size:13px">${esc(t('slides.tpl_room_title'))}</strong>
-                <span style="font-size:11px;color:var(--text-muted)">${esc(t('slides.tpl_room_desc'))}</span>
+                <strong style="display:block;font-size:13px">${uiText(t('slides.tpl_room_title'))}</strong>
+                <span style="font-size:11px;color:var(--text-muted)">${uiText(t('slides.tpl_room_desc'))}</span>
               </div>
             </label>
             <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:var(--bg-input)">
               <input type="radio" name="deckTpl" value="waste" style="margin-top:3px">
               <div>
-                <strong style="display:block;font-size:13px">${esc(t('slides.tpl_waste_title'))}</strong>
-                <span style="font-size:11px;color:var(--text-muted)">${esc(t('slides.tpl_waste_desc'))}</span>
+                <strong style="display:block;font-size:13px">${uiText(t('slides.tpl_waste_title'))}</strong>
+                <span style="font-size:11px;color:var(--text-muted)">${uiText(t('slides.tpl_waste_desc'))}</span>
               </div>
             </label>
           </div>
         </div>
       </div>
       <div class="modal-footer" style="padding:16px 24px;border-top:1px solid var(--border,#334155);display:flex;justify-content:flex-end;gap:10px">
-        <button type="button" id="cancelNewDeckBtn" class="btn btn-secondary">${esc(t('common.cancel'))}</button>
-        <button type="button" id="submitNewDeckBtn" class="btn btn-primary">${esc(t('slides.create_deck_btn'))}</button>
+        <button type="button" id="cancelNewDeckBtn" class="btn btn-secondary">${uiText(t('common.cancel'))}</button>
+        <button type="button" id="submitNewDeckBtn" class="btn btn-primary">${uiText(t('slides.create_deck_btn'))}</button>
       </div>
     </div>
   `;
@@ -483,7 +487,7 @@ async function openNewDeckModal(container) {
       close();
       await openDeck(container, d.id);
     } catch (e) {
-      showToast(e.message || 'Could not create the deck', 'error');
+      showToast(e.uiMessage || e.message || t("ui.slides.could_not_create_the_deck_d25884"), 'error');
     }
   };
 }
@@ -500,16 +504,16 @@ let renderSeq = 0;
 export async function render(container) {
   const seq = ++renderSeq;
   const stale = () => seq !== renderSeq || !container.querySelector('#deckArea');
-  container.innerHTML = `<div class="page-header"><div><h1>Slides</h1>
-    <div class="subtitle">Build a deck of slides and publish it as a playlist.</div></div>
+  container.innerHTML = `<div class="page-header"><div><h1>${renderHTML(t("ui.slides.slides"))}</h1>
+    <div class="subtitle">${renderHTML(t("ui.slides.build_a_deck_of_slides_and_publish"))}</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <!-- 3.0 Make a sign: the built-in sign templates, which come back here as an ordinary deck. -->
-      <a class="btn btn-secondary" href="#/signs?from=slides">${esc(t('signs.new_from_template'))}</a>
+      <a class="btn btn-secondary" href="#/signs?from=slides">${uiText(t('signs.new_from_template'))}</a>
       <!-- 3.0 Private AI: a starter set from one sentence, and translations of any deck. -->
-      <a class="btn btn-secondary" href="#/ai-setup">${esc(t('ai_setup.short'))}</a>
-      <a class="btn btn-secondary" href="#/translate">${esc(t('translate.title'))}</a>
-      <button class="btn btn-primary" id="newDeck">+ New deck</button></div></div>
-    <div id="deckArea"><p style="color:var(--text-muted)">Loading…</p></div>`;
+      <a class="btn btn-secondary" href="#/ai-setup">${uiText(t('ai_setup.short'))}</a>
+      <a class="btn btn-secondary" href="#/translate">${uiText(t('translate.title'))}</a>
+      <button class="btn btn-primary" id="newDeck">${renderHTML(t("ui.slides.new_deck"))}</button></div></div>
+    <div id="deckArea"><p style="color:var(--text-muted)">${renderHTML(t("ui.slides.loading"))}</p></div>`;
 
   container.querySelector('#newDeck').addEventListener('click', () => openNewDeckModal(container));
 
@@ -524,7 +528,7 @@ export async function render(container) {
   } catch (e) {
     if (stale()) return;
     container.querySelector('#deckArea').innerHTML =
-      `<p style="color:var(--danger)">Could not load decks: ${esc(e.message || '')}</p>`;
+      `<p style="color:var(--danger)">${renderHTML(t("ui.slides.could_not_load_decks_4766c5", {value0: (e.uiMessage || e.message) || ''}))}</p>`;
     return;
   }
   if (stale()) return;
@@ -540,23 +544,21 @@ function renderList(container) {
   if (!host) return;
   if (!state.decks.length) {
     host.innerHTML = `<div class="settings-section" style="text-align:center;padding:38px 20px">
-      <p style="margin:0 0 6px;font-weight:600">No decks yet</p>
-      <p style="margin:0;color:var(--text-muted);font-size:13px">A deck is a set of slides that
-        publishes as a playlist — headline, photo, big number, each with its own entrance.</p></div>`;
+      <p style="margin:0 0 6px;font-weight:600">${renderHTML(t("ui.slides.no_decks_yet"))}</p>
+      <p style="margin:0;color:var(--text-muted);font-size:13px">${renderHTML(t("ui.slides.a_deck_is_a_set_of_slides"))}</p></div>`;
     return;
   }
   host.innerHTML = `<div class="settings-section" style="padding:0">
-    ${state.decks.map((d) => `
+    ${renderHTML(state.decks.map((d) => `
       <div data-deck-row="${esc(d.id)}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border)">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600" data-deck-name>${esc(d.name)}</div>
+          <div style="font-weight:600" data-deck-name>${uiText(d.name)}</div>
           <div style="font-size:12px;color:var(--text-muted)">
-            ${d.slide_count} slide${d.slide_count === 1 ? '' : 's'} · ${(d.total_sec || 0)}s total
-            ${d.playlist_id ? '· published' : '· not published yet'}</div>
+            ${renderHTML(tn('ui.slides.deck_summary', d.slide_count,{seconds:d.total_sec||0,status:t(d.playlist_id?'ui.slides.published':'ui.slides.not_published')}))}</div>
         </div>
-        <button class="btn btn-secondary btn-sm" data-open="${esc(d.id)}">Edit</button>
-        <button class="btn btn-secondary btn-sm" data-del="${esc(d.id)}">Delete</button>
-      </div>`).join('')}
+        <button class="btn btn-secondary btn-sm" data-open="${esc(d.id)}">${renderHTML(t("ui.slides.edit_464c4f"))}</button>
+        <button class="btn btn-secondary btn-sm" data-del="${esc(d.id)}">${renderHTML(t("ui.slides.delete_e2d0a5"))}</button>
+      </div>`).join(''))}
   </div>`;
   host.querySelectorAll('[data-open]').forEach((b) =>
     b.addEventListener('click', () => openDeck(container, b.dataset.open)));
@@ -565,14 +567,14 @@ function renderList(container) {
     // ⚠️ Spelled out, because the honest answer is surprising: deleting the document does NOT take
     // the published slides off the screens showing them.
     const msg = d && d.playlist_id
-      ? `Delete "${d.name}"?\n\nThe playlist it published stays where it is — screens showing it keep playing.`
+      ? t("ui.slides.delete_value0_the_playlist_it_published_stays_where_it_is_screens_cacce6", {value0: d.name})
       : `Delete "${d && d.name}"?`;
     if (!confirm(msg)) return;                        // eslint-disable-line no-alert
     try {
       await api.delete(`/slide-decks/${b.dataset.del}`);
       state.decks = state.decks.filter((x) => x.id !== b.dataset.del);
       renderList(container);
-    } catch (e) { showToast(e.message || 'Could not delete', 'error'); }
+    } catch (e) { showToast(e.uiMessage || e.message || t("ui.slides.could_not_delete_c2cddf"), 'error'); }
   }));
 }
 
@@ -591,7 +593,7 @@ async function openDeck(container, id) {
     if (repaired) state.dirty = true;
     undoHistory.reset(snapshot());
     renderEditor(container);
-  } catch (e) { showToast(e.message || 'Could not open the deck', 'error'); }
+  } catch (e) { showToast(e.uiMessage || e.message || t("ui.slides.could_not_open_the_deck_bb710d"), 'error'); }
 }
 
 function renderEditor(container) {
@@ -607,20 +609,20 @@ function renderEditor(container) {
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
       <div>
         <div style="display:flex;align-items:center;gap:6px">
-          <input type="text" id="deckNameHeaderInput" class="input" style="font-size:22px;font-weight:700;padding:2px 8px;border:1px solid transparent;background:transparent;color:var(--text-primary);border-radius:6px;max-width:380px" value="${esc(d.name)}" title="${esc(t('slides.deck_name_label'))}">
+          <input type="text" id="deckNameHeaderInput" class="input" style="font-size:22px;font-weight:700;padding:2px 8px;border:1px solid transparent;background:transparent;color:var(--text-primary);border-radius:6px;max-width:380px" value="${esc(d.name)}" title="${esc(t('slides.deck_name_label'))}" data-fil-i18n-title="${binding('slides.deck_name_label', undefined)}">
           <span style="font-size:14px;color:var(--text-muted);cursor:pointer" onclick="const i=document.getElementById('deckNameHeaderInput');i.focus();i.select()">✏️</span>
         </div>
         <div class="subtitle" id="deckStatus"></div>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" id="backBtn">← ${esc(t('slides.all_decks'))}</button>
-        <button class="btn btn-secondary" id="saveBtn">${esc(t('common.save'))}</button>
+        <button class="btn btn-secondary" id="backBtn">← ${uiText(t('slides.all_decks'))}</button>
+        <button class="btn btn-secondary" id="saveBtn">${uiText(t('common.save'))}</button>
         <!--
           Preview opens the real player in preview mode against this deck's playlist, so what plays
           is the payload a screen would get — same renderer, same transitions, same audio.
         -->
-        <button class="btn btn-secondary" id="previewBtn">▶ ${esc(t('common.preview'))}</button>
-        <button class="btn btn-primary" id="pubBtn">${esc(t('common.publish'))}</button>
+        <button class="btn btn-secondary" id="previewBtn">▶ ${uiText(t('common.preview'))}</button>
+        <button class="btn btn-primary" id="pubBtn">${uiText(t('common.publish'))}</button>
       </div>
     </div>
     <div id="warnBox"></div>
@@ -642,12 +644,12 @@ function renderEditor(container) {
     <div class="settings-section" style="padding:10px 12px;margin-bottom:12px">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input id="aiPrompt" class="input" style="flex:1;min-width:220px;margin:0"
-               placeholder="${esc(t('slides.ai.placeholder'))}" maxlength="500">
-        <button class="btn btn-secondary btn-sm" id="aiGenBtn">${esc(t('slides.ai.generate'))}</button>
-        <button class="btn btn-secondary btn-sm" id="aiBgBtn" title="Generate a background image from the same prompt">Generate background</button>
+               placeholder="${esc(t('slides.ai.placeholder'))}" data-fil-i18n-placeholder="${binding('slides.ai.placeholder', undefined)}" maxlength="500">
+        <button class="btn btn-secondary btn-sm" id="aiGenBtn">${uiText(t('slides.ai.generate'))}</button>
+        <button class="btn btn-secondary btn-sm" id="aiBgBtn" ${translatedAttribute("title", "ui.slides.title_generate_a_background_image_from_the_same_cd9913")}>${renderHTML(t("ui.slides.generate_background"))}</button>
         <button class="btn btn-secondary btn-sm" id="aiLayerBtn"
-          title="Generate a background plus separate cut-out objects, each with its own entrance. Uses several image generations.">Generate layers</button>
-        <button class="btn-icon" id="aiCfgBtn" title="${esc(t('slides.ai.settings'))}" aria-label="${esc(t('slides.ai.settings'))}" style="padding:4px 8px">
+          ${translatedAttribute("title", "ui.slides.title_generate_a_background_plus_separate_cut_out_75b8d4")}>${renderHTML(t("ui.slides.generate_layers"))}</button>
+        <button class="btn-icon" id="aiCfgBtn" title="${esc(t('slides.ai.settings'))}" data-fil-i18n-title="${binding('slides.ai.settings', undefined)}" aria-label="${esc(t('slides.ai.settings'))}" data-fil-i18n-aria-label="${binding('slides.ai.settings', undefined)}" style="padding:4px 8px">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -666,7 +668,7 @@ function renderEditor(container) {
         <!-- aspect-ratio here is only the pre-load default: it is re-set from the deck on every
              paint, because this markup is built before the deck has arrived -->
         <div style="display:flex;gap:9px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" id="playBtn">▶ Play entrance</button>
+          <button class="btn btn-secondary btn-sm" id="playBtn">${renderHTML(t("ui.slides.play_entrance"))}</button>
           <!--
             The canvas shape. Editor-only: the renderer fills whatever container a screen gives it,
             so this changes what you DESIGN against, not what ships. A portrait screen laid out on a
@@ -679,34 +681,34 @@ function renderEditor(container) {
             restart in the middle.
           -->
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
-            Music
+            ${renderHTML(t("ui.slides.music_6eb00b"))}
             <select id="deckMusic" class="input" style="margin:0;padding:3px 6px;font-size:12px;max-width:170px">
-              <option value="">— none —</option>
+              <option value="">${renderHTML(t("ui.slides.none"))}</option>
             </select>
           </label>
           <label id="deckMusicVolWrap" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
-            Level
+            ${renderHTML(t("ui.slides.level_170930"))}
             <input type="range" id="deckMusicVol" min="0" max="1" step="0.05" style="width:80px">
           </label>
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
-            Shape
+            ${renderHTML(t("ui.slides.shape_e0e492"))}
             <select id="aspectSel" class="input" style="margin:0;padding:3px 6px;font-size:12px">
-              ${ASPECT_CHOICES.map(([v, label]) => `<option value="${esc(v)}">${esc(label)}</option>`).join('')}
+              ${renderHTML(ASPECT_CHOICES.map(([v, label]) => `<option value="${esc(v)}">${uiText(label)}</option>`).join(''))}
             </select>
           </label>
           <span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="settleLabel"></span>
         </div>
         <!-- 3.0: arrange, align and undo for the canvas selection (PowerPoint's Arrange group). -->
-        <div id="arrangeBar" class="sl-arrange" role="toolbar" aria-label="${esc(t('slides.edit.toolbar'))}">${arrangeBarHtml()}</div>
-        <div id="stage" aria-label="${esc(t('slides.edit.canvas'))}" style="position:relative;aspect-ratio:16/9;border-radius:4px;overflow:hidden;container-type:size"></div>
+        <div id="arrangeBar" class="sl-arrange" role="toolbar" aria-label="${esc(t('slides.edit.toolbar'))}" data-fil-i18n-aria-label="${binding('slides.edit.toolbar', undefined)}">${renderHTML(arrangeBarHtml())}</div>
+        <div id="stage" aria-label="${esc(t('slides.edit.canvas'))}" data-fil-i18n-aria-label="${binding('slides.edit.canvas', undefined)}" style="position:relative;aspect-ratio:16/9;border-radius:4px;overflow:hidden;container-type:size"></div>
 
       </div>
       <div class="settings-section" style="padding:0">
         <div style="display:flex;border-bottom:1px solid var(--border)" id="tabs">
-          ${['content', 'style', 'motion', 'slide'].map((tab) => `
+          ${renderHTML(['content', 'style', 'motion', 'slide'].map((tab) => `
             <button class="tabBtn" data-tab="${tab}" style="flex:1;padding:8px 2px;border:0;background:none;
               cursor:pointer;font-size:12px;font-weight:600;border-bottom:2px solid transparent">
-              ${esc(tabLabels[tab] || (tab[0].toUpperCase() + tab.slice(1)))}</button>`).join('')}
+              ${uiText(tabLabels[tab] || (tab[0].toUpperCase() + tab.slice(1)))}</button>`).join(''))}
         </div>
         <div id="layers" style="max-height:170px;overflow-y:auto;border-bottom:1px solid var(--border)"></div>
         <div id="props" style="padding:11px 12px 14px;display:grid;gap:9px"></div>
@@ -716,11 +718,11 @@ function renderEditor(container) {
   container.querySelector('#deckNameHeaderInput').addEventListener('input', (e) => {
     state.deck.name = e.target.value.trim() || 'Untitled Deck';
     state.dirty = true;
-    container.querySelector('#deckStatus').textContent = 'Unsaved changes';
+    bindText(container.querySelector('#deckStatus'), "ui.slides.unsaved_changes");
   });
 
   container.querySelector('#backBtn').addEventListener('click', async () => {
-    if (state.dirty && !confirm('Leave without saving? Your changes will be lost.')) return; // eslint-disable-line no-alert
+    if (state.dirty && !confirm(t("ui.slides.leave_without_saving_your_changes_will_be"))) return; // eslint-disable-line no-alert
     state.deck = null;
     // Opened from a #/slides?deck= link: drop the parameter, or render would reopen the same deck.
     if (window.location.hash.startsWith('#/slides?')) history.replaceState(null, '', '#/slides');
@@ -745,10 +747,10 @@ function renderEditor(container) {
   container.querySelector('#previewBtn').addEventListener('click', () => {
     const d = state.deck;
     if (!d || !d.playlist_id) {
-      showToast('Publish the deck first — preview plays the deck\'s playlist, which Publish creates.', 'error');
+      showToast(t("ui.slides.publish_the_deck_first_preview_plays_the"), 'error');
       return;
     }
-    if (state.dirty && !confirm('This deck has unsaved changes. Preview shows the last PUBLISHED version — continue?')) return; // eslint-disable-line no-alert
+    if (state.dirty && !confirm(t("ui.slides.this_deck_has_unsaved_changes_preview_shows"))) return; // eslint-disable-line no-alert
     window.open(`/player?preview=1&playlist=${encodeURIComponent(d.playlist_id)}`, '_blank', 'noopener');
   });
   container.querySelector('#pubBtn').addEventListener('click', () => publish(container));
@@ -803,7 +805,7 @@ function renderEditor(container) {
   }));
   container.querySelector('#tools').innerHTML = Object.entries(KINDS).map(([k, v]) =>
     `<button class="btn btn-secondary" data-add="${k}" title="Add ${v.label}"
-       style="padding:0;aspect-ratio:1;display:grid;place-items:center">${v.icon}</button>`).join('');
+       style="padding:0;aspect-ratio:1;display:grid;place-items:center">${renderHTML(v.icon)}</button>`).join('');
   container.querySelector('#tools').addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-add]'); if (!b) return;
     const s = slide(); if (!s) return;
@@ -1016,9 +1018,9 @@ function liveText(e, now) {
 function paintLive(host, e) {
   // A countdown whose target has passed shows its expiry message, exactly as the renderer does.
   const v = liveText(e, Date.now());
-  host.textContent = (e.kind === 'countdown' && !v)
+  bindMessage(host, (e.kind === 'countdown' && !v)
     ? ((slide() && slide().fields[e.slot]) || '')
-    : v;
+    : v);
 }
 
 /*
@@ -1061,8 +1063,8 @@ function renderStage(container) {
     const cur = (state.deck && state.deck.doc && state.deck.doc.music) || '';
     // Rebuilt rather than patched: the content library is fetched after this markup exists, so the
     // options are empty on the first paint and complete on the next.
-    const opts = ['<option value="">— none —</option>'].concat(
-      audioContent().map((c) => `<option value="${esc(c.id)}"${c.id === cur ? ' selected' : ''}>${esc(c.filename)}</option>`));
+    const opts = [`<option value="">${renderHTML(t('common.none'))}</option>`].concat(
+      audioContent().map((c) => `<option value="${esc(c.id)}"${c.id === cur ? ' selected' : ''}>${uiText(c.filename)}</option>`));
     const next = opts.join('');
     if (musicSel.innerHTML !== next) musicSel.innerHTML = next;
     musicSel.value = cur;
@@ -1124,7 +1126,7 @@ function renderStage(container) {
         ? `<img src="${esc(url)}" alt="" style="width:100%;height:100%;object-fit:${
             e.fit === 'contain' ? 'contain' : 'cover'};display:block">`
         : `<div style="width:100%;height:100%;display:grid;place-items:center;background:rgba(255,255,255,.07);
-             border:1px dashed rgba(255,255,255,.22);color:rgba(255,255,255,.45);font-size:2.2cqw">photo</div>`;
+             border:1px dashed rgba(255,255,255,.22);color:rgba(255,255,255,.45);font-size:2.2cqw">${renderHTML(t("ui.slides.photo"))}</div>`;
     } else if (e.kind === 'lettering') {
       const url = contentUrl(e.content_id);
       d.style.overflow = 'hidden';
@@ -1135,7 +1137,7 @@ function renderStage(container) {
         // No artwork yet: show the words, so the element is placeable before it is generated.
         d.innerHTML = `<div style="width:100%;height:100%;display:grid;place-items:center;
           border:1px dashed rgba(255,255,255,.22);color:rgba(255,255,255,.55);font-size:3cqw;
-          text-align:center;padding:2%">${esc(s.fields[e.slot] || 'Lettering')}</div>`;
+          text-align:center;padding:2%">${uiText(s.fields[e.slot] || t("ui.labels.lettering_859fef"))}</div>`;
       }
     } else if (e.kind === 'qr') {
       d.style.overflow = 'hidden';
@@ -1146,7 +1148,7 @@ function renderStage(container) {
       d.dataset.live = e.kind;
       paintLive(d, e);
     } else if (TEXT_KINDS.includes(e.kind)) {
-      d.textContent = resolveInterpolatedText(s.fields[e.slot] || '');
+      bindMessage(d, resolveInterpolatedText(s.fields[e.slot] || ''));
     }
     stage.appendChild(d);
   });
@@ -1157,10 +1159,9 @@ function renderStage(container) {
   ensureEditorStyles();
   ensureLiveTick();
   const settle = settleOf(s);
-  container.querySelector('#settleLabel').textContent =
-    settle > s.dwell_sec
-      ? `settles at ${settle.toFixed(2)}s — after this slide is replaced at ${s.dwell_sec}s`
-      : `settles at ${settle.toFixed(2)}s of ${s.dwell_sec}s`;
+  bindMessage(container.querySelector('#settleLabel'), settle > s.dwell_sec
+      ? t("ui.slides.settles_at_value0_s_after_this_slide_is_replaced_at_value1_s_f3591e", {value0: displayValue(settle,'toLocaleString',{minimumFractionDigits:2,maximumFractionDigits:2}), value1: s.dwell_sec})
+      : t("ui.slides.settles_at_value0_s_of_value1_s_b89bec", {value0: displayValue(settle,'toLocaleString',{minimumFractionDigits:2,maximumFractionDigits:2}), value1: s.dwell_sec}));
   container.querySelector('#settleLabel').style.color =
     settle > s.dwell_sec ? 'var(--danger)' : 'var(--text-muted)';
 }
@@ -1294,7 +1295,7 @@ function paintOverlay(container, guides = [], marquee = null) {
         const x = d.includes('w') ? r.x : d.includes('e') ? r.x + r.w : r.x + r.w / 2;
         const y = d.includes('n') ? r.y : d.includes('s') ? r.y + r.h : r.y + r.h / 2;
         return `<div class="sl-handle" data-handle="${d}" style="left:${x}%;top:${y}%;cursor:${d}-resize"
-                     aria-label="${esc(t('slides.edit.resize'))}"></div>`;
+                     aria-label="${esc(t('slides.edit.resize'))}" data-fil-i18n-aria-label="${binding('slides.edit.resize', undefined)}"></div>`;
       }).join('');
     } else {
       const b = boundsOf(sel.map((i) => rects[i]));
@@ -1525,7 +1526,7 @@ function onStageDblClick(ev, container) {
   paintSelection(container);
   // The stored words, not the canvas's rendering of them: a `{{…}}` token has to stay editable.
   editingText = { i, node, before: s.fields[e.slot] || '' };
-  node.textContent = editingText.before;
+  bindMessage(node, editingText.before);
   node.contentEditable = 'plaintext-only';
   if (node.contentEditable !== 'plaintext-only') node.contentEditable = 'true';
   node.style.cursor = 'text';
@@ -1687,7 +1688,7 @@ function runAction(container, act) {
 /* ------------------------------------------------------------ toolbar and context menu */
 
 const ICON = (d) => `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-  stroke-width="1.5" stroke-linecap="round" aria-hidden="true">${d}</svg>`;
+  stroke-width="1.5" stroke-linecap="round" aria-hidden="true">${renderHTML(d)}</svg>`;
 const ARRANGE_ICONS = {
   undo: ICON('<path d="M5 3 2 6l3 3"/><path d="M2 6h8a4 4 0 0 1 0 8H7"/>'),
   redo: ICON('<path d="m11 3 3 3-3 3"/><path d="M14 6H6a4 4 0 0 0 0 8h3"/>'),
@@ -1730,7 +1731,7 @@ const SHORTCUTS = {
 function arrangeBarHtml() {
   const L = actionLabels();
   const btn = (act) => `<button type="button" class="sl-tool" data-act="${act}"
-      title="${esc(L[act] + (SHORTCUTS[act] ? ` (${SHORTCUTS[act]})` : ''))}" aria-label="${esc(L[act])}">${ARRANGE_ICONS[act]}</button>`;
+      title="${esc(L[act] + (SHORTCUTS[act] ? ` (${SHORTCUTS[act]})` : ''))}" aria-label="${esc(L[act])}"${attributeBinding("aria-label", L[act])}>${renderHTML(ARRANGE_ICONS[act])}</button>`;
   const sep = '<span class="sl-tool-sep" aria-hidden="true"></span>';
   return [['undo', 'redo'], ['front', 'forward', 'backward', 'back'],
     ['left', 'center', 'right', 'top', 'middle', 'bottom'], ['dist-h', 'dist-v'], ['duplicate', 'delete'], ['snap']]
@@ -1783,7 +1784,7 @@ function onStageContextMenu(ev, container) {
   menu.className = 'sl-ctx';
   menu.setAttribute('role', 'menu');
   menu.innerHTML = groups.map((g) => g.map((act) => `<button type="button" role="menuitem" data-act="${act}"
-      ${actionEnabled(act) ? '' : 'disabled'}><span>${esc(L[act])}</span><kbd>${esc(SHORTCUTS[act] || '')}</kbd></button>`).join(''))
+      ${actionEnabled(act) ? '' : 'disabled'}><span>${uiText(L[act])}</span><kbd>${uiText(SHORTCUTS[act] || '')}</kbd></button>`).join(''))
     .join('<hr>');
   document.body.appendChild(menu);
   const w = menu.offsetWidth; const h = menu.offsetHeight;
@@ -1865,7 +1866,7 @@ function ensureKeyframes() {
   if (document.getElementById('stKeyframes')) return;
   const st = document.createElement('style');
   st.id = 'stKeyframes';
-  st.textContent = `
+  bindMessage(st, `
     #stage.playing > div[data-anim] { animation-name:var(--kf); animation-duration:var(--dur);
       animation-delay:var(--delay); animation-fill-mode:both; animation-timing-function:ease-out; }
     #stage.playing > div[data-anim="fade"]   { --kf:st-fade }
@@ -1881,7 +1882,7 @@ function ensureKeyframes() {
     @keyframes st-slide-u { from{opacity:0;transform:translateY(26%)}  to{opacity:1;transform:none} }
     @keyframes st-slide-d { from{opacity:0;transform:translateY(-26%)} to{opacity:1;transform:none} }
     @keyframes st-zoom    { from{opacity:0;transform:scale(.86)}       to{opacity:1;transform:none} }
-    @keyframes st-wipe    { from{clip-path:inset(0 100% 0 0)}          to{clip-path:inset(0 0 0 0)} }`;
+    @keyframes st-wipe    { from{clip-path:inset(0 100% 0 0)}          to{clip-path:inset(0 0 0 0)} }`);
   document.head.appendChild(st);
 }
 
@@ -1906,22 +1907,19 @@ function renderStrip(container) {
     <button data-slide="${i}" style="flex:0 0 auto;width:124px;padding:0;cursor:pointer;text-align:left;
       border:1px solid ${i === state.si ? 'var(--primary)' : 'var(--border)'};border-radius:4px;overflow:hidden;background:var(--surface)">
       <div style="position:relative;aspect-ratio:${esc(aspectCss())};container-type:size;background:${esc(s.template.background || '#000')}">
-        ${contentUrl(s.template.background_content_id) ? `<div style="position:absolute;inset:0;background-size:cover;background-position:center;background-image:url(${esc(contentUrl(s.template.background_content_id))})"></div>` : ''}
-        ${(s.template.background_dim || 0) > 0 && (contentUrl(s.template.background_content_id) || s.template.background_video_content_id) ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,${s.template.background_dim})"></div>` : ''}
-        ${elementsOf(s).map((e) => `<div style="position:absolute;overflow:hidden;${esc(styleFor(e))}">${
-          // A thumbnail shows what the slide shows: a clock reads as a clock, and a QR is a shape
-          // rather than the raw URL behind it, which at 124px is unreadable noise either way.
-          LIVE_KINDS.includes(e.kind) ? esc(liveText(e, Date.now()) || resolveInterpolatedText(s.fields[e.slot] || ''))
+        ${renderHTML(contentUrl(s.template.background_content_id) ? `<div style="position:absolute;inset:0;background-size:cover;background-position:center;background-image:url(${esc(contentUrl(s.template.background_content_id))})"></div>` : '')}
+        ${renderHTML((s.template.background_dim || 0) > 0 && (contentUrl(s.template.background_content_id) || s.template.background_video_content_id) ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,${s.template.background_dim})"></div>` : '')}
+        ${renderHTML(elementsOf(s).map((e) => `<div style="position:absolute;overflow:hidden;${esc(styleFor(e))}">${renderHTML(LIVE_KINDS.includes(e.kind) ? esc(liveText(e, Date.now()) || resolveInterpolatedText(s.fields[e.slot] || ''))
             : e.kind === 'qr' ? ''
-            : TEXT_KINDS.includes(e.kind) ? esc(resolveInterpolatedText(s.fields[e.slot] || '')) : ''}</div>`).join('')}
+            : TEXT_KINDS.includes(e.kind) ? esc(resolveInterpolatedText(s.fields[e.slot] || '')) : '')}</div>`).join(''))}
       </div>
       <div style="display:flex;gap:6px;padding:4px 6px;border-top:1px solid var(--border)">
-        <span style="flex:1;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
-        <span style="font-size:10px;color:var(--text-muted)">${s.dwell_sec}s</span>
+        <span style="flex:1;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(s.name)}</span>
+        <span style="font-size:10px;color:var(--text-muted)">${renderHTML(s.dwell_sec)}s</span>
       </div>
     </button>`).join('')
     + `<button id="addSlide" style="flex:0 0 auto;width:124px;border:1px dashed var(--border);
-        border-radius:4px;background:none;color:var(--text-muted);cursor:pointer;font-size:12px">+ Add slide</button>`;
+        border-radius:4px;background:none;color:var(--text-muted);cursor:pointer;font-size:12px">${renderHTML(t("ui.slides.add_slide"))}</button>`;
 
   container.querySelectorAll('[data-slide]').forEach((b) => {
     b.addEventListener('click', () => {
@@ -1957,11 +1955,10 @@ function renderLayers(container) {
     <button data-el="${i}" style="display:flex;align-items:center;gap:7px;padding:6px 12px;width:100%;
       text-align:left;border:0;cursor:pointer;border-bottom:1px solid var(--border);
       background:${sel.includes(i) ? 'var(--bg-hover, rgba(127,127,127,.12))' : 'none'}">
-      <span style="width:14px;text-align:center;color:var(--text-muted);font-size:12px">${KINDS[e.kind].icon}</span>
+      <span style="width:14px;text-align:center;color:var(--text-muted);font-size:12px">${renderHTML(KINDS[e.kind].icon)}</span>
       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px">
-        ${esc(TEXT_KINDS.includes(e.kind) ? (s.fields[e.slot] || KINDS[e.kind].label) : KINDS[e.kind].label)}</span>
-      <span style="font-size:10px;color:var(--text-muted);font-variant-numeric:tabular-nums">${
-        !e.motion || e.motion.animation === 'none' ? '—' : `${e.motion.delay.toFixed(2)}+${e.motion.duration.toFixed(2)}`}</span>
+        ${uiText(TEXT_KINDS.includes(e.kind) ? (s.fields[e.slot] || KINDS[e.kind].label) : KINDS[e.kind].label)}</span>
+      <span style="font-size:10px;color:var(--text-muted);font-variant-numeric:tabular-nums">${renderHTML(!e.motion || e.motion.animation === 'none' ? '—' : displayList([displayValue(e.motion.delay,'toLocaleString',{minimumFractionDigits:2,maximumFractionDigits:2}),displayValue(e.motion.duration,'toLocaleString',{minimumFractionDigits:2,maximumFractionDigits:2})],'+'))}</span>
     </button>`).join('');
   // The same element the canvas would pick: one selection, whichever of the two you click in.
   container.querySelectorAll('[data-el]').forEach((b) => b.addEventListener('click', (ev) => {
@@ -1998,7 +1995,7 @@ function localInput(ms) {
 }
 
 const row = (label, inner) =>
-  `<div class="sl-row"><label>${label}</label>${inner}</div>`;
+  `<div class="sl-row"><label>${uiText(label)}</label>${renderHTML(inner)}</div>`;
 
 function renderProps(container) {
   const host = container.querySelector('#props');
@@ -2012,47 +2009,42 @@ function renderProps(container) {
     const bgVid = s.template.background_video_content_id || '';
     const dim = s.template.background_dim == null ? 0 : s.template.background_dim;
     host.innerHTML =
-      `<div class="sl-group"><p class="sl-legend">Slide</p>
-         <div class="sl-row"><label for="sName">Name</label>
+      `<div class="sl-group"><p class="sl-legend">${renderHTML(t("ui.slides.slide"))}</p>
+         <div class="sl-row"><label for="sName">${renderHTML(t("ui.slides.name"))}</label>
            <input class="input" id="sName" value="${esc(s.name)}"></div>
-         <div class="sl-row"><label for="sDwell">Dwell</label>
+         <div class="sl-row"><label for="sDwell">${renderHTML(t("ui.slides.dwell"))}</label>
            <div class="sl-slide"><input type="range" id="sDwell" min="1" max="60" step="1" value="${s.dwell_sec}">
              <input type="number" class="sl-num" id="sDwelln" min="1" max="60" step="1" value="${s.dwell_sec}"></div></div>
        </div>`
-      + `<div class="sl-group"><p class="sl-legend">Voiceover</p>
-           <div class="sl-row"><label for="sVo">Track</label>
-             <select class="input" id="sVo"><option value="">— none —</option>${
-               audioContent().map((c) => `<option value="${esc(c.id)}" ${
-                 c.id === voId ? 'selected' : ''}>${esc(c.filename)}</option>`).join('')}</select></div>
-           ${voId ? `<div class="sl-row"><label for="sVoVol">Volume</label>
+      + `<div class="sl-group"><p class="sl-legend">${renderHTML(t("ui.slides.voiceover"))}</p>
+           <div class="sl-row"><label for="sVo">${renderHTML(t("ui.slides.track"))}</label>
+             <select class="input" id="sVo"><option value="">${renderHTML(t("ui.slides.none"))}</option>${
+               renderHTML(audioContent().map((c) => `<option value="${esc(c.id)}" ${
+                 c.id === voId ? 'selected' : ''}>${uiText(c.filename)}</option>`).join(''))}</select></div>
+           ${renderHTML(voId ? `<div class="sl-row"><label for="sVoVol">${renderHTML(t("ui.slides.volume"))}</label>
              <div class="sl-slide"><input type="range" id="sVoVol" min="0" max="1" step="0.05" value="${voVol}">
                <input type="number" class="sl-num" id="sVoVoln" min="0" max="1" step="0.05" value="${voVol.toFixed(2)}"></div></div>
-             <p class="sl-note">Plays while this slide is up and stops when it changes — so a track
-                longer than the dwell above is cut off. Screens are muted unless the display is set
-                to allow audio.</p>` : ''}
+             <p class="sl-note">${renderHTML(t("ui.slides.plays_while_this_slide_is_up_and"))}</p>` : '')}
          </div>`
-      + `<div class="sl-group"><p class="sl-legend">Background</p>
-           <div class="sl-row"><label for="sBg">Colour</label>
+      + `<div class="sl-group"><p class="sl-legend">${renderHTML(t("ui.slides.background"))}</p>
+           <div class="sl-row"><label for="sBg">${renderHTML(t("ui.slides.colour"))}</label>
              <input type="color" class="sl-colour" id="sBg" value="${esc(s.template.background || '#000000')}"></div>
-           <div class="sl-row"><label for="sBgImg">Photo</label>
-             <select class="input" id="sBgImg"><option value="">— none —</option>${
-               imageContent().map((c) => `<option value="${esc(c.id)}" ${
-                 c.id === bgId ? 'selected' : ''}>${esc(c.filename)}</option>`).join('')}</select></div>
-           <div class="sl-row"><label for="sBgVid">Video</label>
-             <select class="input" id="sBgVid"><option value="">— none —</option>${
-               videoContent().map((c) => `<option value="${esc(c.id)}" ${
-                 c.id === bgVid ? 'selected' : ''}>${esc(c.filename)}</option>`).join('')}</select></div>
-           ${bgVid ? `<p class="sl-note">The photo above becomes the poster — it shows while the
-              video loads, and stays on any panel that cannot decode it. Background video is always
-              silent; the playlist decides which zone has audio.</p>` : ''}
-           ${(bgId || bgVid) ? `<div class="sl-row"><label for="sDim">Dim</label>
+           <div class="sl-row"><label for="sBgImg">${renderHTML(t("ui.slides.photo_2"))}</label>
+             <select class="input" id="sBgImg"><option value="">${renderHTML(t("ui.slides.none"))}</option>${
+               renderHTML(imageContent().map((c) => `<option value="${esc(c.id)}" ${
+                 c.id === bgId ? 'selected' : ''}>${uiText(c.filename)}</option>`).join(''))}</select></div>
+           <div class="sl-row"><label for="sBgVid">${renderHTML(t("ui.slides.video"))}</label>
+             <select class="input" id="sBgVid"><option value="">${renderHTML(t("ui.slides.none"))}</option>${
+               renderHTML(videoContent().map((c) => `<option value="${esc(c.id)}" ${
+                 c.id === bgVid ? 'selected' : ''}>${uiText(c.filename)}</option>`).join(''))}</select></div>
+           ${renderHTML(bgVid ? `<p class="sl-note">${renderHTML(t("ui.slides.the_photo_above_becomes_the_poster_it_94f5f6"))}</p>` : '')}
+           ${renderHTML((bgId || bgVid) ? `<div class="sl-row"><label for="sDim">${renderHTML(t("ui.slides.dim"))}</label>
              <div class="sl-slide"><input type="range" id="sDim" min="0" max="0.9" step="0.05" value="${dim}">
                <input type="number" class="sl-num" id="sDimn" min="0" max="0.9" step="0.05" value="${dim.toFixed(2)}"></div></div>
-             <p class="sl-note">Darkens what is behind the text. A bright picture and white words is
-                unreadable from across a room — this fixes that without editing the image.</p>` : ''}
-           <p class="sl-note">The colour shows while the photo loads, and stays if it never arrives.</p>
+             <p class="sl-note">${renderHTML(t("ui.slides.darkens_what_is_behind_the_text_a"))}</p>` : '')}
+           <p class="sl-note">${renderHTML(t("ui.slides.the_colour_shows_while_the_photo_loads"))}</p>
          </div>`
-      + `<div class="sl-group"><button class="btn btn-secondary btn-sm" id="delSlide">Delete this slide</button></div>`;
+      + `<div class="sl-group"><button class="btn btn-secondary btn-sm" id="delSlide">${renderHTML(t("ui.slides.delete_this_slide"))}</button></div>`;
 
     host.querySelector('#sName').oninput = (e) => { s.name = e.target.value; touchValue(container); };
     host.querySelector('#sBg').oninput = (e) => { s.template.background = e.target.value; touchValue(container); };
@@ -2093,7 +2085,7 @@ function renderProps(container) {
     bindSlidePair('sDwell', (v) => { s.dwell_sec = Math.round(v); }, 0);
     bindSlidePair('sDim', (v) => { s.template.background_dim = v; }, 2);
     host.querySelector('#delSlide').onclick = () => {
-      if (state.deck.doc.slides.length === 1) { showToast('A deck needs at least one slide', 'error'); return; }
+      if (state.deck.doc.slides.length === 1) { showToast(t("ui.slides.a_deck_needs_at_least_one_slide"), 'error'); return; }
       state.deck.doc.slides.splice(state.si, 1);
       state.si = Math.max(0, state.si - 1); state.ei = 0; state.sel = []; touch(container);
     };
@@ -2102,8 +2094,8 @@ function renderProps(container) {
 
   const e = elementsOf(s)[state.ei];
   if (!e) {
-    host.innerHTML = `<p style="font-size:12px;color:var(--text-muted)">${esc(elementsOf(s).length
-      ? t('slides.edit.nothing_selected') : 'Add an element from the toolbar.')}</p>`;
+    host.innerHTML = `<p style="font-size:12px;color:var(--text-muted)">${uiText(elementsOf(s).length
+      ? t('slides.edit.nothing_selected') : t("ui.slides.add_an_element_from_the_toolbar_64e8fa"))}</p>`;
     return;
   }
   const isText = TEXT_KINDS.includes(e.kind);
@@ -2111,85 +2103,76 @@ function renderProps(container) {
   if (state.tab === 'content') {
     host.innerHTML =
       (e.kind === 'qr'
-        ? row('Tracked link', `<select class="input" id="pQrLink"><option value="">Not tracked</option>${(qrLinksCache || []).map((l) =>
-              `<option value="${esc(l.id)}" ${s.fields[e.slot] === qrShortUrl(l) ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select>`)
+        ? row(t("ui.slides.tracked_link_ed0110"), `<select class="input" id="pQrLink"><option value="">${renderHTML(t("ui.slides.not_tracked"))}</option>${renderHTML((qrLinksCache || []).map((l) =>
+              `<option value="${esc(l.id)}" ${s.fields[e.slot] === qrShortUrl(l) ? 'selected' : ''}>${uiText(l.name)}</option>`).join(''))}</select>`)
           + `<p style="font-size:11.5px;color:var(--text-muted);grid-column:1/-1;margin:0">
-               Pick a link from QR codes to count scans. The code then holds its short address, so the
-               link's destination can change later without changing this slide.</p>`
-          + row('Encodes', `<textarea class="input" id="pText" rows="2" style="resize:vertical">${esc(s.fields[e.slot] || '')}</textarea>`)
+               ${renderHTML(t("ui.slides.pick_a_link_from_qr_codes_to"))}</p>`
+          + row(t("ui.slides.encodes_5ea4a7"), `<textarea class="input" id="pText" rows="2" style="resize:vertical">${uiText(s.fields[e.slot] || '')}</textarea>`)
           + `<p style="font-size:11.5px;color:var(--text-muted);grid-column:1/-1;margin:0">
-               A URL, phone number or plain text. The code is drawn on the server, so it works with
-               no network at the panel.</p>`
-          + row('Error correction', `<select class="input" id="pQrEc">${QR_LEVELS.map(([v, lbl]) =>
-              `<option value="${v}" ${(e.qr_ec || 'M') === v ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select>`)
-          + row('Modules', `<input type="color" class="input" id="pQrFg" value="${esc(e.qr_fg || '#000000')}">`)
-          + row('Code background', `<input type="color" class="input" id="pQrBg" value="${esc(e.qr_bg || '#FFFFFF')}">`)
+               ${renderHTML(t("ui.slides.a_url_phone_number_or_plain_text"))}</p>`
+          + row(t("ui.slides.error_correction_e2fc83"), `<select class="input" id="pQrEc">${renderHTML(QR_LEVELS.map(([v, lbl]) =>
+              `<option value="${v}" ${(e.qr_ec || 'M') === v ? 'selected' : ''}>${uiText(lbl)}</option>`).join(''))}</select>`)
+          + row(t("ui.slides.modules_04e946"), `<input type="color" class="input" id="pQrFg" value="${esc(e.qr_fg || '#000000')}">`)
+          + row(t("ui.slides.code_background_0a2a31"), `<input type="color" class="input" id="pQrBg" value="${esc(e.qr_bg || '#FFFFFF')}">`)
           + `<p style="font-size:11.5px;color:var(--text-muted);grid-column:1/-1;margin:0">
-               Keep a light panel behind the code — a camera reads it by contrast, and over a photo
-               it often will not scan at all.</p>`
+               ${renderHTML(t("ui.slides.keep_a_light_panel_behind_the_code"))}</p>`
         : e.kind === 'clock'
-        ? row('Format', `<select class="input" id="pFmt">${CLOCK_FORMATS.map(([v, lbl]) =>
-              `<option value="${v}" ${(e.clock_format || '24') === v ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select>`)
-          + row('Time zone', `<input class="input" id="pTz" placeholder="the panel's own" value="${esc(e.tz || '')}">`)
-          + row('Language', `<input class="input" id="pLoc" placeholder="the panel's own" value="${esc(e.locale || '')}">`)
+        ? row(t("ui.slides.format_041a5d"), `<select class="input" id="pFmt">${renderHTML(CLOCK_FORMATS.map(([v, lbl]) =>
+              `<option value="${v}" ${(e.clock_format || '24') === v ? 'selected' : ''}>${uiText(lbl)}</option>`).join(''))}</select>`)
+          + row(t("ui.slides.time_zone_eea79a"), `<input class="input" id="pTz" ${translatedAttribute("placeholder", "ui.slides.placeholder_the_panel_s_own_dc779f")} value="${esc(e.tz || '')}">`)
+          + row(t("ui.slides.language_89b86a"), `<input class="input" id="pLoc" ${translatedAttribute("placeholder", "ui.slides.placeholder_the_panel_s_own_dc779f")} value="${esc(e.locale || '')}">`)
           + `<p style="font-size:11.5px;color:var(--text-muted);grid-column:1/-1;margin:0">
-               Leave both blank to follow the screen. A zone is an IANA name — Europe/London,
-               America/Chicago — which is how you run a lobby clock for another office.</p>`
+               ${renderHTML(t("ui.slides.leave_both_blank_to_follow_the_screen"))}</p>`
         : e.kind === 'date'
-        ? row('Format', `<select class="input" id="pFmt">${DATE_FORMATS.map(([v, lbl]) =>
-              `<option value="${v}" ${(e.date_format || 'long') === v ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select>`)
-          + row('Time zone', `<input class="input" id="pTz" placeholder="the panel's own" value="${esc(e.tz || '')}">`)
-          + row('Language', `<input class="input" id="pLoc" placeholder="the panel's own" value="${esc(e.locale || '')}">`)
+        ? row(t("ui.slides.format_041a5d"), `<select class="input" id="pFmt">${renderHTML(DATE_FORMATS.map(([v, lbl]) =>
+              `<option value="${v}" ${(e.date_format || 'long') === v ? 'selected' : ''}>${uiText(lbl)}</option>`).join(''))}</select>`)
+          + row(t("ui.slides.time_zone_eea79a"), `<input class="input" id="pTz" ${translatedAttribute("placeholder", "ui.slides.placeholder_the_panel_s_own_dc779f")} value="${esc(e.tz || '')}">`)
+          + row(t("ui.slides.language_89b86a"), `<input class="input" id="pLoc" ${translatedAttribute("placeholder", "ui.slides.placeholder_the_panel_s_own_dc779f")} value="${esc(e.locale || '')}">`)
         : e.kind === 'countdown'
-        ? row('Counts down to', `<input type="datetime-local" class="input" id="pTarget" value="${esc(localInput(e.target))}">`)
-          + row('Language', `<input class="input" id="pLoc" placeholder="${e.locale == null ? 'English (3d 4h 5m)' : "the panel's own"}" value="${esc(e.locale || '')}">`)
-          + row('Then shows', `<textarea class="input" id="pText" rows="2" style="resize:vertical">${esc(s.fields[e.slot] || '')}</textarea>`)
+        ? row(t("ui.slides.counts_down_to_898ec2"), `<input type="datetime-local" class="input" id="pTarget" value="${esc(localInput(e.target))}">`)
+          + row(t("ui.slides.language_89b86a"), `<input class="input" id="pLoc" placeholder="${e.locale == null ? t("ui.slides.english_3d_4h_5m_7b7da0") : t("ui.slides.the_panel_s_own_229c5a")}" value="${esc(e.locale || '')}">`)
+          + row(t("ui.slides.then_shows_38e94d"), `<textarea class="input" id="pText" rows="2" style="resize:vertical">${uiText(s.fields[e.slot] || '')}</textarea>`)
           + `<p style="font-size:11.5px;color:var(--text-muted);grid-column:1/-1;margin:0">
-               The message replaces the counter once the moment passes, so the slide keeps working
-               without anybody editing it that morning.</p>`
+               ${renderHTML(t("ui.slides.the_message_replaces_the_counter_once_the"))}</p>`
         : e.kind === 'lettering'
-        ? row('Words', `<textarea class="input" id="pText" rows="2" style="resize:vertical">${esc(s.fields[e.slot] || '')}</textarea>`)
+        ? row(t("ui.slides.words_d26d55"), `<textarea class="input" id="pText" rows="2" style="resize:vertical">${uiText(s.fields[e.slot] || '')}</textarea>`)
           + `<p style="font-size:11.5px;color:var(--text-muted);grid-column:1/-1;margin:0">
-               These words are the record — they stay editable, are read out to screen readers, and
-               are what a regenerate is asked for. <strong>The picture will not change until you
-               generate it again.</strong> Check the artwork actually spells them.</p>`
+               ${renderHTML(t("ui.slides.these_words_are_the_record_they_stay"))}</p>`
         : isText
-        ? row('Text', `
-            <textarea class="input" id="pText" rows="3" style="resize:vertical">${esc(s.fields[e.slot] || '')}</textarea>
-            ${DATA_SOURCES_LIST && DATA_SOURCES_LIST.length > 0 ? `
+        ? row(t("ui.slides.text_c3328c"), `
+            <textarea class="input" id="pText" rows="3" style="resize:vertical">${uiText(s.fields[e.slot] || '')}</textarea>
+            ${renderHTML(DATA_SOURCES_LIST && DATA_SOURCES_LIST.length > 0 ? `
               <div style="margin-top:6px">
                 <select class="input" id="pDsVarPicker" style="font-size:11px;padding:3px 6px;margin:0;width:100%">
-                  <option value="">⚡ Insert Variable...</option>
-                  ${DATA_SOURCES_LIST.map(ds => `
+                  <option value="">${renderHTML(t("ui.slides.insert_variable"))}</option>
+                  ${renderHTML(DATA_SOURCES_LIST.map(ds => `
                     <optgroup label="${esc(ds.name)} ({{ds:${esc(ds.slug)}}})">
-                      <option value="{{ds:${esc(ds.slug)}.status}}">Status (${esc(ds.slug)}.status)</option>
-                      <option value="{{ds:${esc(ds.slug)}.status_detail}}">Status Detail (${esc(ds.slug)}.status_detail)</option>
-                      <option value="{{ds:${esc(ds.slug)}.current_title}}">Current Event (${esc(ds.slug)}.current_title)</option>
-                      <option value="{{ds:${esc(ds.slug)}.next_title}}">Next Event (${esc(ds.slug)}.next_title)</option>
-                      <option value="{{ds:${esc(ds.slug)}.next_time}}">Next Time (${esc(ds.slug)}.next_time)</option>
-                      <option value="{{ds:${esc(ds.slug)}.agenda_text}}">Agenda Text (${esc(ds.slug)}.agenda_text)</option>
+                      <option value="{{ds:${esc(ds.slug)}.status}}">${renderHTML(t("ui.slides.status_status_51da0b", {value3: ds.slug}))}</option>
+                      <option value="{{ds:${esc(ds.slug)}.status_detail}}">${renderHTML(t("ui.slides.status_detail_status_detail_e5994c", {value5: ds.slug}))}</option>
+                      <option value="{{ds:${esc(ds.slug)}.current_title}}">${renderHTML(t("ui.slides.current_event_current_title_be2183", {value7: ds.slug}))}</option>
+                      <option value="{{ds:${esc(ds.slug)}.next_title}}">${renderHTML(t("ui.slides.next_event_next_title_30d622", {value9: ds.slug}))}</option>
+                      <option value="{{ds:${esc(ds.slug)}.next_time}}">${renderHTML(t("ui.slides.next_time_next_time_e25e21", {value11: ds.slug}))}</option>
+                      <option value="{{ds:${esc(ds.slug)}.agenda_text}}">${renderHTML(t("ui.slides.agenda_text_agenda_text_6b1b3f", {value13: ds.slug}))}</option>
                     </optgroup>
-                  `).join('')}
+                  `).join(''))}
                 </select>
               </div>
-            ` : ''}
+            ` : '')}
           `)
         : e.kind === 'image'
-          ? row('Photo', `<select class="input" id="pImg"><option value="">— none —</option>${
-              imageContent().map((c) => `<option value="${esc(c.id)}" ${
-                c.id === e.content_id ? 'selected' : ''}>${esc(c.filename)}</option>`).join('')}</select>`)
-            + row('Fit', `<select class="input" id="pFit">
-                 <option value="cover" ${(e.fit || 'cover') === 'cover' ? 'selected' : ''}>Fill the box (crop)</option>
-                 <option value="contain" ${e.fit === 'contain' ? 'selected' : ''}>Fit inside (whole image)</option>
+          ? row(t("ui.slides.photo_d01d90"), `<select class="input" id="pImg"><option value="">${renderHTML(t("ui.slides.none"))}</option>${
+              renderHTML(imageContent().map((c) => `<option value="${esc(c.id)}" ${
+                c.id === e.content_id ? 'selected' : ''}>${uiText(c.filename)}</option>`).join(''))}</select>`)
+            + row(t("ui.slides.fit_dab564"), `<select class="input" id="pFit">
+                 <option value="cover" ${(e.fit || 'cover') === 'cover' ? 'selected' : ''}>${renderHTML(t("ui.slides.fill_the_box_crop_55f95f"))}</option>
+                 <option value="contain" ${e.fit === 'contain' ? 'selected' : ''}>${renderHTML(t("ui.slides.fit_inside_whole_image_93e3a6"))}</option>
                </select>`)
             + `<p style="font-size:11.5px;color:var(--text-muted);grid-column:1/-1;margin:0">
-                 Pick from the content library — the slide stores a reference, not a copy.
-                 Use <strong>Fit inside</strong> for a cut-out with transparency — filling the box
-                 crops it, which slices through the object itself.</p>`
-          : `<p style="font-size:12px;color:var(--text-muted)">Decorative — no text.</p>`)
+                 ${renderHTML(t("ui.slides.pick_from_the_content_library_the_slide"))}</p>`
+          : `<p style="font-size:12px;color:var(--text-muted)">${renderHTML(t("ui.slides.decorative_no_text"))}</p>`)
       + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-           <button class="btn btn-secondary btn-sm" id="pFwd">↑ Forward</button>
-           <button class="btn btn-secondary btn-sm" id="pDel">Delete</button></div>`;
+           <button class="btn btn-secondary btn-sm" id="pFwd">${renderHTML(t("ui.slides.forward"))}</button>
+           <button class="btn btn-secondary btn-sm" id="pDel">${renderHTML(t("ui.slides.delete"))}</button></div>`;
     if (host.querySelector('#pText')) {
       host.querySelector('#pText').oninput = (ev) => {
         /*
@@ -2274,7 +2257,7 @@ function renderProps(container) {
 
   if (state.tab === 'style') {
     const st = e.style;
-    const grp = (legend, inner) => `<div class="sl-group"><p class="sl-legend">${legend}</p>${inner}</div>`;
+    const grp = (legend, inner) => `<div class="sl-group"><p class="sl-legend">${renderHTML(legend)}</p>${renderHTML(inner)}</div>`;
     /*
      * ⚠️ A SLIDER *AND* A NUMBER BOX FOR EVERY VALUE. Dragging is for finding a look; typing is for
      * matching one. A 290px panel gives a slider about 120px of travel, so "x = 64%" is roughly the
@@ -2282,50 +2265,48 @@ function renderProps(container) {
      * cannot say so.
      */
     const pair = (label, id, min, max, step, v, unit) => `
-      <div class="sl-row"><label for="${id}">${label}</label>
+      <div class="sl-row"><label for="${id}">${uiText(label)}</label>
         <div class="sl-slide">
           <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}">
           <input type="number" class="sl-num" id="${id}n" min="${min}" max="${max}" step="${step}"
-                 value="${(+v).toFixed(step < 1 ? 2 : 0)}" aria-label="${label}${unit ? ' in ' + unit : ''}">
+                 value="${(+v).toFixed(step < 1 ? 2 : 0)}" aria-label="${uiText(unit ? t('slides.value_unit_label',{label,unit}) : label)}"${attributeBinding('aria-label',unit ? t('slides.value_unit_label',{label,unit}) : label)}>
         </div></div>`;
 
     host.innerHTML =
-      grp('Position &amp; size',
+      grp(t('slides.position_size'),
         pair('X', 'pX', -20, 110, 1, e.box.x, '%')
         + pair('Y', 'pY', -20, 110, 1, e.box.y, '%')
-        + pair('Width', 'pW', 1, 120, 1, e.box.w, '%')
-        + (e.box.h != null ? pair('Height', 'pH', 0.2, 110, 0.2, e.box.h, '%') : ''))
+        + pair(t("ui.slides.width_a58ddf"), 'pW', 1, 120, 1, e.box.w, '%')
+        + (e.box.h != null ? pair(t("ui.slides.height_3f608b"), 'pH', 0.2, 110, 0.2, e.box.h, '%') : ''))
 
-      + (GLYPH_KINDS.includes(e.kind) ? grp('Type',
-          `<div class="sl-row"><label for="pFont">Font</label>
-             <select class="input" id="pFont">${FONT_CATALOGUE.map((f) =>
-               `<option value="${esc(f.id)}" ${f.id === resolveFont(st.font) ? 'selected' : ''}>${
-                 esc(f.label)} — ${esc(f.role)}</option>`).join('')}</select></div>`
-          + `<p class="sl-note">${esc((FONT_CATALOGUE.find((f) => f.id === resolveFont(st.font)) || {}).note || '')}
-               <button class="sl-link" id="pUpFont">Upload a font…</button>
+      + (GLYPH_KINDS.includes(e.kind) ? grp(t("ui.slides.type_3deb74"),
+          `<div class="sl-row"><label for="pFont">${renderHTML(t("ui.slides.font"))}</label>
+             <select class="input" id="pFont">${renderHTML(FONT_CATALOGUE.map((f) =>
+               `<option value="${esc(f.id)}" ${f.id === resolveFont(st.font) ? 'selected' : ''}>${uiText(f.label)} — ${uiText(f.role)}</option>`).join(''))}</select></div>`
+          + `<p class="sl-note">${uiText((FONT_CATALOGUE.find((f) => f.id === resolveFont(st.font)) || {}).note || '')}
+               <button class="sl-link" id="pUpFont">${renderHTML(t("ui.slides.upload_a_font"))}</button>
                <input type="file" id="pFontFile" accept=".woff2,.woff,.ttf,.otf,font/*" hidden>
                <span id="pFontMsg"></span></p>`
-          + pair('Size', 'pSize', 0.5, 30, 0.2, st.size_cqw, '')
+          + pair(t("ui.slides.size_b71523"), 'pSize', 0.5, 30, 0.2, st.size_cqw, '')
           + (isUploadedFont(st.font)
               // ⚠️ Hidden rather than shown-and-ignored: an uploaded face ships at one weight, so
               // offering 400–800 would be a control that silently does nothing.
-              ? '<p class="sl-note">An uploaded font has one weight. Upload the bold separately to use both.</p>'
-              : `<div class="sl-row"><label>Weight</label><div class="sl-seg">${
-                  [400, 600, 700, 800].map((w) =>
-                    `<button data-w="${w}" aria-pressed="${w === st.weight}">${w}</button>`).join('')}</div></div>`)
-          + `<div class="sl-row"><label>Align</label><div class="sl-seg">${
-              ['left', 'center', 'right'].map((a) =>
-                `<button data-a="${a}" aria-pressed="${a === st.align}">${a[0].toUpperCase()}${a.slice(1)}</button>`).join('')}</div></div>`)
+              ? `<p class="sl-note">${renderHTML(t("ui.slides.an_uploaded_font_has_one_weight_upload_1c252c"))}</p>`
+              : `<div class="sl-row"><label>${renderHTML(t("ui.slides.weight"))}</label><div class="sl-seg">${
+                  renderHTML([400, 600, 700, 800].map((w) =>
+                    `<button data-w="${w}" aria-pressed="${w === st.weight}">${renderHTML(w)}</button>`).join(''))}</div></div>`)
+          + `<div class="sl-row"><label>${renderHTML(t("ui.slides.align"))}</label><div class="sl-seg">${
+              renderHTML(['left', 'center', 'right'].map((a) =>
+                `<button data-a="${a}" aria-pressed="${a === st.align}">${uiText(t('slides.align.'+a))}</button>`).join(''))}</div></div>`)
         : '')
 
-      + grp('Appearance',
-        `<div class="sl-row"><label for="pColor">Colour</label>
+      + grp(t("ui.slides.appearance_41def7"),
+        `<div class="sl-row"><label for="pColor">${renderHTML(t("ui.slides.colour"))}</label>
            <input type="color" class="sl-colour" id="pColor" value="${esc(st.color)}"></div>`
-        + ((e.kind === 'image' || e.kind === 'box') ? pair('Corner', 'pRad', 0, 12, 0.2, st.radius_cqw || 0, '') : '')
-        + pair('Opacity', 'pOp', 0.1, 1, 0.05, st.opacity == null ? 1 : st.opacity, ''))
+        + ((e.kind === 'image' || e.kind === 'box') ? pair(t("ui.slides.corner_fb4cc5"), 'pRad', 0, 12, 0.2, st.radius_cqw || 0, '') : '')
+        + pair(t("ui.slides.opacity_f0fa69"), 'pOp', 0.1, 1, 0.05, st.opacity == null ? 1 : st.opacity, ''))
 
-      + `<p class="sl-note" style="margin-top:9px">Sizes are relative to the screen, so a slide looks
-           the same on a 720p panel and a 4K one.</p>`;
+      + `<p class="sl-note" style="margin-top:9px">${renderHTML(t("ui.slides.sizes_are_relative_to_the_screen_so"))}</p>`;
 
     /*
      * ⚠️ touchValue, NEVER touch — and the two inputs update EACH OTHER rather than re-rendering.
@@ -2384,7 +2365,7 @@ function renderProps(container) {
         const f = ev.target.files && ev.target.files[0];
         if (!f) return;
         msg.style.color = 'var(--text-muted)';
-        msg.textContent = ' Uploading…';
+        bindText(msg, "ui.slides.uploading");
         try {
           const fd = new FormData();
           fd.append('font', f);
@@ -2395,8 +2376,7 @@ function renderProps(container) {
            * answer somebody can give later.
            */
           const note = prompt(                               // eslint-disable-line no-alert
-            'Where is this font licensed from?\n\nEvery screen showing a slide in it downloads the '
-            + 'file from this server, so it helps to record what you are allowed to do with it.', '') || '';
+            t('ui.slides.font_licence_prompt'), '') || '';
           fd.append('licence_note', note.slice(0, 300));
           const added = await api.postForm('/fonts', fd);
           FONT_CATALOGUE = FONT_CATALOGUE.concat([added]);
@@ -2407,7 +2387,7 @@ function renderProps(container) {
           showToast(`Added ${added.label}`, 'success');
         } catch (err) {
           msg.style.color = 'var(--danger)';
-          msg.textContent = ` ${err.message || 'Could not upload that font'}`;
+          bindMessage(msg, ` ${(err.uiMessage || err.message) || t("ui.slides.could_not_upload_that_font_9378bd")}`);
         }
       };
     }
@@ -2416,9 +2396,9 @@ function renderProps(container) {
 
   // ---------------------------------------------------------------- motion
   const m = e.motion || { animation: 'none', delay: 0, duration: 0.5, easing: 'ease-out' };
-  const grpM = (legend, inner) => `<div class="sl-group"><p class="sl-legend">${legend}</p>${inner}</div>`;
+  const grpM = (legend, inner) => `<div class="sl-group"><p class="sl-legend">${renderHTML(legend)}</p>${renderHTML(inner)}</div>`;
   const pairM = (label, id, min, max, step, v, dec) => `
-    <div class="sl-row"><label for="${id}">${label}</label>
+    <div class="sl-row"><label for="${id}">${uiText(label)}</label>
       <div class="sl-slide">
         <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}">
         <input type="number" class="sl-num" id="${id}n" min="${min}" max="${max}" step="${step}"
@@ -2428,18 +2408,18 @@ function renderProps(container) {
   const none = m.animation === 'none' || !e.motion;
 
   host.innerHTML =
-    grpM('Entrance',
-      `<div class="sl-row"><label for="mAnim">Effect</label>
-         <select class="input" id="mAnim">${Object.entries(ANIMS).map(([k, v]) =>
-           `<option value="${k}" ${k === m.animation ? 'selected' : ''}>${v}</option>`).join('')}</select></div>`
+    grpM(t("ui.slides.entrance_aa4bbf"),
+      `<div class="sl-row"><label for="mAnim">${renderHTML(t("ui.slides.effect"))}</label>
+         <select class="input" id="mAnim">${renderHTML(Object.entries(ANIMS).map(([k, v]) =>
+           `<option value="${k}" ${k === m.animation ? 'selected' : ''}>${renderHTML(v)}</option>`).join(''))}</select></div>`
       + (none
-        ? '<p class="sl-note">This element is simply there from the first frame.</p>'
-        : pairM('Delay', 'mDelay', 0, 10, 0.05, m.delay, 2)
-          + pairM('Duration', 'mDur', 0.1, 5, 0.05, m.duration, 2)
-          + `<div class="sl-row"><label for="mEase">Easing</label>
-               <select class="input" id="mEase">${Object.entries(EASES).map(([k, v]) =>
-                 `<option value="${k}" ${k === m.easing ? 'selected' : ''}>${v}</option>`).join('')}</select></div>`))
-    + grpM('Timing', `<div id="mTimeline"></div>`);
+        ? `<p class="sl-note">${renderHTML(t("ui.slides.this_element_is_simply_there_from_the_f18d42"))}</p>`
+        : pairM(t("ui.slides.delay_b4c200"), 'mDelay', 0, 10, 0.05, m.delay, 2)
+          + pairM(t("ui.slides.duration_137000"), 'mDur', 0.1, 5, 0.05, m.duration, 2)
+          + `<div class="sl-row"><label for="mEase">${renderHTML(t("ui.slides.easing"))}</label>
+               <select class="input" id="mEase">${renderHTML(Object.entries(EASES).map(([k, v]) =>
+                 `<option value="${k}" ${k === m.easing ? 'selected' : ''}>${renderHTML(v)}</option>`).join(''))}</select></div>`))
+    + grpM(t("ui.slides.timing_098024"), `<div id="mTimeline"></div>`);
 
   renderMiniTimeline(container);
 
@@ -2524,8 +2504,8 @@ function renderMiniTimeline(container) {
               background:var(--bg-hover,rgba(127,127,127,.14));border-radius:2px">
         <div style="position:absolute;top:0;bottom:0;left:${left}%;width:${width}%;
              background:${bg};border-radius:2px;opacity:${anim ? (sel ? 1 : .55) : .35}"></div>
-        ${dwellPct < 99.5 ? `<div style="position:absolute;top:-2px;bottom:-2px;left:${dwellPct}%;
-             width:2px;background:var(--danger)"></div>` : ''}
+        ${renderHTML(dwellPct < 99.5 ? `<div style="position:absolute;top:-2px;bottom:-2px;left:${dwellPct}%;
+             width:2px;background:var(--danger)"></div>` : '')}
       </div>`;
   }).join('');
 
@@ -2533,25 +2513,15 @@ function renderMiniTimeline(container) {
   const mineEnd = mine ? endOf(mine) : 0;
   const overruns = els.filter((x) => endOf(x) > s.dwell_sec + 0.001).length;
 
-  host.innerHTML = rows + `<p class="sl-note" style="margin-top:6px">${
-    mine && mine.motion && mine.motion.animation !== 'none'
-      ? `This element lands at <strong>${mineEnd.toFixed(2)}s</strong>. `
-      : 'This element is present from the start. '}
-    The slide is replaced at <strong>${s.dwell_sec}s</strong>${
-      settle > 0 ? `, everything settled by <strong>${settle.toFixed(2)}s</strong>` : ''}.${
-      overruns ? ` <span style="color:var(--danger)">${overruns} never finish${
-        overruns > 1 ? '' : 'es'} — raise the dwell on the Slide tab.</span>` : ''}</p>`;
+  host.innerHTML = rows + `<p class="sl-note" style="margin-top:6px">${renderHTML(mine && mine.motion && mine.motion.animation !== 'none' ? t('ui.slides.motion_lands',{seconds:mineEnd}) : t('ui.slides.motion_present'))} ${renderHTML(t('ui.slides.motion_replaced',{seconds:s.dwell_sec}))} ${renderHTML(settle>0?t('ui.slides.motion_settled',{seconds:settle}):'')}${renderHTML(overruns ? ` <span style="color:var(--danger)">${renderHTML(tn('ui.slides.motion_overrun',overruns))}</span>` : '')}</p>`;
 }
-
 
 /* ============================================================ status, save, publish */
 
 function renderStatus(container) {
   const d = state.deck;
   const total = d.doc.slides.reduce((a, s) => a + s.dwell_sec, 0);
-  container.querySelector('#deckStatus').textContent =
-    `${d.doc.slides.length} slide${d.doc.slides.length === 1 ? '' : 's'} · ${total}s total`
-    + (state.dirty ? ' · unsaved changes' : '');
+  bindMessage(container.querySelector('#deckStatus'), tn('ui.slides.status',d.doc.slides.length,{seconds:total,dirty:state.dirty?t('ui.slides.unsaved'):''}));
 
   // Warnings are computed locally so they track the edit, and re-checked by the server on save.
   const warn = d.doc.slides
@@ -2559,10 +2529,9 @@ function renderStatus(container) {
     .filter((x) => x.settle > x.s.dwell_sec);
   container.querySelector('#warnBox').innerHTML = warn.length ? `
     <div class="settings-section" style="border-left:3px solid var(--danger);margin-bottom:12px;padding:10px 13px">
-      <strong style="font-size:13px">Some motion never finishes</strong>
+      <strong style="font-size:13px">${renderHTML(t("ui.slides.some_motion_never_finishes_4db87f"))}</strong>
       <ul style="margin:6px 0 0;padding-left:18px;font-size:12.5px;color:var(--text-muted)">
-        ${warn.map((x) => `<li>“${esc(x.s.name)}” settles at ${x.settle.toFixed(2)}s but is replaced at
-           ${x.s.dwell_sec}s — on a screen that reads as text that never arrives.</li>`).join('')}
+        ${renderHTML(warn.map((x) => `<li>${renderHTML(t("ui.slides.settles_at_s_but_is_replaced_at_bb144d", {value0: x.s.name, value1: displayValue(x.settle,'toLocaleString',{minimumFractionDigits:2,maximumFractionDigits:2}), value2: x.s.dwell_sec}))}</li>`).join(''))}
       </ul></div>` : '';
 }
 
@@ -2581,16 +2550,16 @@ async function save(container) {
     if (snapshot() !== sent || gesture) {
       state.deck = { ...fresh, name: d.name, doc: d.doc };
       renderStatus(container);
-      showToast('Saved', 'success');
+      showToast(t("ui.slides.saved"), 'success');
       return;
     }
     state.deck = fresh; state.dirty = false;
     // What the server stored is now the current state, not an edit to undo.
     undoHistory.rebase(snapshot());
     paintAll(container);
-    showToast('Saved', 'success');
+    showToast(t("ui.slides.saved"), 'success');
   } catch (e) {
-    showToast(e.message || 'Could not save', 'error');
+    showToast(e.uiMessage || e.message || t("ui.slides.could_not_save_875138"), 'error');
   } finally { state.saving = false; }
 }
 
@@ -2606,9 +2575,9 @@ async function publish(container) {
     const n = out.published ? out.published.slides : state.deck.doc.slides.length;
     // ⚠️ Says what actually happened, including that it is now a playlist — an operator who does not
     // know that has no idea where to go to put these on a screen.
-    showToast(`Published ${n} slide${n === 1 ? '' : 's'} to a playlist`, 'success');
+    showToast(tn('ui.slides.published_count', n), 'success');
   } catch (e) {
-    showToast(e.message || 'Could not publish', 'error');
+    showToast(e.uiMessage || e.message || t("ui.slides.could_not_publish_8c2c73"), 'error');
   }
 }
 
@@ -2649,12 +2618,12 @@ async function aiGenerateBackground(container) {
   const btn = container.querySelector('#aiBgBtn');
   const prompt = (promptEl.value || '').trim();
   const say = (msg, bad) => {
-    statusEl.textContent = msg;
+    bindMessage(statusEl, msg);
     statusEl.style.color = bad ? 'var(--danger, #e05252)' : 'var(--text-muted)';
   };
-  if (!prompt) { say('Describe the background first.', true); promptEl.focus(); return; }
+  if (!prompt) { say(t("ui.slides.describe_the_background_first_b2e270"), true); promptEl.focus(); return; }
   if (aiBgBusy) return;                    // single-flight: an image costs money per call
-  if (!state.deck.doc.slides.length) { say('Add a slide first.', true); return; }
+  if (!state.deck.doc.slides.length) { say(t("ui.slides.add_a_slide_first_fb9c19"), true); return; }
 
   /*
    * ⚠️ REMEMBER WHICH SLIDE THIS WAS FOR. Generation takes tens of seconds and the operator can
@@ -2667,8 +2636,8 @@ async function aiGenerateBackground(container) {
   aiBgBusy = true;
   btn.disabled = true;
   const label = btn.textContent;
-  btn.textContent = 'Generating…';
-  say('Generating a background — this can take a minute.');
+  bindText(btn, "ui.slides.generating");
+  say(t("ui.slides.generating_a_background_this_can_take_a_minute_c2c8ab"));
   try {
     /*
      * ⚠️ ASK FOR THE DECK'S SHAPE, not a fixed 16:9. A portrait deck given a landscape background
@@ -2683,9 +2652,9 @@ async function aiGenerateBackground(container) {
     } else {
       out = await api.aiGenerateBackground(prompt, aspectPixels());
     }
-    if (!out || !out.content_id) throw new Error('no image came back');
+    if (!out || !out.content_id) throw new Error(t("ui.slides.no_image_came_back_c91d98"));
     const idx = state.deck.doc.slides.indexOf(target);
-    if (idx < 0) { say('That slide is gone — nothing changed.', true); return; }
+    if (idx < 0) { say(t("ui.slides.that_slide_is_gone_nothing_changed_013ecc"), true); return; }
     target.template = target.template || {};
     target.template.background_content_id = out.content_id;
     /*
@@ -2713,13 +2682,13 @@ async function aiGenerateBackground(container) {
      * two symptoms, and the half-committed state made it look like two separate bugs.
      */
     paintAll(container);
-    say(out.credits_spent ? `Background applied — ${out.credits_spent} credits spent, ${out.balance} left.` : 'Background applied.');
+    say(out.credits_spent ? t("ui.slides.background_applied_value0_credits_spent_value1_left_3773e0", {value0: out.credits_spent, value1: out.balance}) : t("ui.slides.background_applied_362867"));
   } catch (e) {
     say(String((e && e.message) || e).slice(0, 200), true);
   } finally {
     aiBgBusy = false;
     btn.disabled = false;
-    btn.textContent = label;
+    bindMessage(btn, label);
   }
 }
 
@@ -2736,12 +2705,12 @@ async function aiGenerateLayered(container) {
   const btn = container.querySelector('#aiLayerBtn');
   const prompt = (promptEl.value || '').trim();
   const say = (msg, bad) => {
-    statusEl.textContent = msg;
+    bindMessage(statusEl, msg);
     statusEl.style.color = bad ? 'var(--danger, #e05252)' : 'var(--text-muted)';
   };
-  if (!prompt) { say('Describe the scene first.', true); promptEl.focus(); return; }
+  if (!prompt) { say(t("ui.slides.describe_the_scene_first_7787de"), true); promptEl.focus(); return; }
   if (aiLayerBusy) return;
-  if (!state.deck.doc.slides.length) { say('Add a slide first.', true); return; }
+  if (!state.deck.doc.slides.length) { say(t("ui.slides.add_a_slide_first_fb9c19"), true); return; }
 
   const OBJECTS = 3;
   /*
@@ -2749,8 +2718,7 @@ async function aiGenerateLayered(container) {
    * four and replaces the whole slide. Both of those are surprises worth one click to avoid.
    */
   if (!window.confirm(
-    `Generate a layered slide?\n\nThis makes ${OBJECTS + 1} images on your image endpoint `
-    + '(one background and one per object) and replaces the current slide.')) return;
+    t('ui.slides.layered_confirm',{n:OBJECTS+1}))) return;
 
   // Same identity trick as the background button: this takes a minute and the operator can move.
   const target = state.deck.doc.slides[state.si];
@@ -2758,13 +2726,13 @@ async function aiGenerateLayered(container) {
   aiLayerBusy = true;
   btn.disabled = true;
   const label = btn.textContent;
-  btn.textContent = 'Generating…';
-  say(`Generating ${OBJECTS + 1} images and cutting the objects out — this takes a few minutes.`);
+  bindText(btn, "ui.slides.generating");
+  say(t("ui.slides.generating_value0_images_and_cutting_the_objects_out_this_takes_a_208501", {value0: OBJECTS + 1}));
   try {
     const out = await api.aiGenerateLayered(prompt, aspectPixels(), OBJECTS);
-    if (!out || !out.template) throw new Error('nothing came back');
+    if (!out || !out.template) throw new Error(t("ui.slides.nothing_came_back_290a8c"));
     const idx = state.deck.doc.slides.indexOf(target);
-    if (idx < 0) { say('That slide is gone — nothing changed.', true); return; }
+    if (idx < 0) { say(t("ui.slides.that_slide_is_gone_nothing_changed_013ecc"), true); return; }
     target.template = out.template;
     target.fields = out.fields || {};
     // The new cut-outs are content created seconds ago, so the cached index cannot resolve them and
@@ -2778,15 +2746,15 @@ async function aiGenerateLayered(container) {
      * two, and the difference must not be something they have to notice for themselves.
      */
     const short = out.generated === out.requested
-      ? `Built ${out.generated} layers.`
-      : `Built ${out.generated} of ${out.requested} layers.`;
+      ? t("ui.slides.built_value0_layers_a2e292", {value0: out.generated})
+      : t("ui.slides.built_value0_of_value1_layers_7f2536", {value0: out.generated, value1: out.requested});
     say(out.notes && out.notes.length ? `${short} ${out.notes[0]}` : short, out.generated < out.requested);
   } catch (e) {
     say(String((e && e.message) || e).slice(0, 200), true);
   } finally {
     aiLayerBusy = false;
     btn.disabled = false;
-    btn.textContent = label;
+    bindMessage(btn, label);
   }
 }
 
@@ -2804,7 +2772,7 @@ async function aiGenerate(container) {
   const btn = container.querySelector('#aiGenBtn');
   const prompt = (promptEl.value || '').trim();
   const say = (msg, bad) => {
-    statusEl.textContent = msg || '';
+    bindMessage(statusEl, msg || '');
     statusEl.style.color = bad ? '#ff6b6b' : 'var(--text-muted)';
   };
   if (!prompt) { say(t('slides.ai.need_prompt'), true); promptEl.focus(); return; }
@@ -2834,7 +2802,7 @@ async function aiGenerate(container) {
 
   aiBusy = true;
   btn.disabled = true;
-  btn.textContent = t('slides.ai.working');
+  bindText(btn, 'slides.ai.working', undefined);
   say('');
   /* The slide is identified by ID, not by object, for the re-check after the await below. */
   const targetId = s.id;
@@ -2889,7 +2857,7 @@ async function aiGenerate(container) {
     aiBusy = false;
     // Read the resting label from i18n rather than from a variable captured mid-flight.
     btn.disabled = false;
-    btn.textContent = t('slides.ai.generate');
+    bindText(btn, 'slides.ai.generate', undefined);
   }
 }
 
@@ -2904,14 +2872,14 @@ async function aiGenerate(container) {
  * right here and wrong on the wall.
  */
 const ASPECT_CHOICES = [
-  ['16:9', 'Landscape 16:9'], ['9:16', 'Portrait 9:16'],
-  ['4:3', 'Landscape 4:3'], ['3:4', 'Portrait 3:4'],
+  ['16:9', t("ui.slides.landscape_16_9_dbee5c")], ['9:16', t("ui.slides.portrait_9_16_ac2ea3")],
+  ['4:3', t("ui.slides.landscape_4_3_89189a")], ['3:4', t("ui.slides.portrait_3_4_37ba29")],
   // Tablet room-signs are commonly 3:2 / 2:3 (e.g. a 800x1200 ThinkSmart panel is exactly 2:3) or
   // 16:10 / 10:16. Without these a 16:9 deck can never fill such a panel — it always letterboxes.
-  ['3:2', 'Landscape 3:2 (tablet)'], ['2:3', 'Portrait 2:3 (tablet)'],
-  ['16:10', 'Landscape 16:10'], ['10:16', 'Portrait 10:16'],
-  ['1:1', 'Square'], ['21:9', 'Ultrawide 21:9'],
-  ['5:3', 'E-Paper 5:3'],
+  ['3:2', t("ui.slides.landscape_3_2_tablet_c7b5a9")], ['2:3', t("ui.slides.portrait_2_3_tablet_f498cb")],
+  ['16:10', t("ui.slides.landscape_16_10_adc102")], ['10:16', t("ui.slides.portrait_10_16_2e28e0")],
+  ['1:1', t("ui.slides.square_82810c")], ['21:9', t("ui.slides.ultrawide_21_9_d72808")],
+  ['5:3', t("ui.slides.e_paper_5_3_f6da61")],
 ];
 
 function deckAspect() {
@@ -2948,7 +2916,7 @@ async function loadFonts() {
       const u = await api.get('/fonts');
       custom = Array.isArray(u && u.fonts) ? u.fonts : [];
     } catch (e2) { custom = []; }
-    FONT_CATALOGUE = bundled.concat(custom);
+    FONT_CATALOGUE = bundled.map(f => ['inter','archivo','oswald','bitter','jetbrains-mono'].includes(f.id) ? {...f,role:t('slides.font.'+f.id+'.role'),note:t('slides.font.'+f.id+'.note')} : f).concat(custom);
     ensureFontFaces();
   } catch (e) {
     // Not fatal: the picker falls back to whatever is stored and the stage uses a generic. A deck

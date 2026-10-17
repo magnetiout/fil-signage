@@ -1,7 +1,12 @@
+import {translatedAttribute} from '../lib/i18n-bindings.js';
+import { renderHTML, uiText } from '../lib/i18n-bindings.js';
+import { displayValue, message as t } from '../i18n.js';
+
+import { localizeServerError } from '../api.js';
+
 import { meshCapability } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
 
 // A refused request must reject, not resolve.
 //
@@ -13,8 +18,8 @@ import { t } from '../i18n.js';
 // the dead catch). The shared client in api.js has always thrown on !res.ok; these local copies did
 // not. Same contract now, including the 401 session-expiry reload.
 const API = (url) => fetch('/api' + url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }}).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error('Session expired'); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `Request failed (${r.status})`); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.activity.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
 });
 
@@ -48,51 +53,51 @@ async function renderAlerts() {
 
   if (!local.length && !remote.length) {
     el.innerHTML = `<div style="padding:12px 0;color:var(--text-muted);font-size:13px">
-      Nothing is open right now${mesh ? ', here or on any connected server' : ''}.</div>`;
+      ${renderHTML(t("ui.activity.nothing_is_open_right_now_d3f1a7", {value0: mesh ? t("ui.activity.here_or_on_any_connected_server_351301") : ''}))}</div>`;
     return;
   }
 
-  const when = (sec) => (sec ? new Date(sec * 1000).toLocaleString() : '');
+  const when = (sec) => (sec ? displayValue(new Date(sec * 1000), "toLocaleString", undefined) : '');
   const row = (label, where, since, remoteRow) => `
     <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:center">
       <div style="width:8px;height:8px;border-radius:50%;background:${remoteRow ? '#f59e0b' : '#ef4444'};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px"><strong>${esc(label)}</strong></div>
-        <div style="font-size:12px;color:var(--text-muted)">${esc(where)}</div>
+        <div style="font-size:13px"><strong>${uiText(label)}</strong></div>
+        <div style="font-size:12px;color:var(--text-muted)">${uiText(where)}</div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);white-space:nowrap">${esc(when(since))}</div>
+      <div style="font-size:11px;color:var(--text-muted);white-space:nowrap">${uiText(when(since))}</div>
     </div>`;
 
   el.innerHTML = `
     ${rollups.map((r) => `
       <div style="border-left:3px solid var(--warning,#f59e0b);padding:10px 12px;margin-bottom:10px;background:var(--bg-card)">
-        <strong>Check this server's connection first</strong>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${esc(r.summary)}</div>
+        <strong>${renderHTML(t("ui.activity.check_this_server_s_connection_first_af97ec"))}</strong>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${uiText(r.summary)}</div>
       </div>`).join('')}
     ${local.map((i) => row(String(i.metric || '').replace(/[_-]/g, ' '),
-                           i.device_id ? `this server · ${i.device_id}` : 'this server',
+                           i.device_id ? t("ui.activity.this_server_value0_911093", {value0: i.device_id}) : t("ui.activity.this_server_086b51"),
                            i.opened_at, false)).join('')}
     ${remote.map((a) => row(String(a.alert_type || '').replace(/[_-]/g, ' '),
                             // ⚠️ Says which server, and whether we can currently SEE that server.
                             // "Last known" on an alert is not pedantry: acting on a stale alert from
                             // an unreachable site is how somebody drives to a screen that is fine.
-                            `${String(a.origin_node_id || '').slice(0, 8)}${a.stale ? ' · last known, that server is not reachable' : ''}`,
+                            `${String(a.origin_node_id || '').slice(0, 8)}${a.stale ? t("ui.activity.last_known_that_server_is_not_reachable_b81952") : ''}`,
                             a.opened_at, true)).join('')}`;
 }
 
 export async function render(container) {
   container.innerHTML = `
     <div class="page-header">
-      <div><h1>${t('activity.title')} <span class="help-tip" data-tip="${t('activity.help_tip')}">?</span></h1><div class="subtitle">${t('activity.subtitle')}</div></div>
+      <div><h1>${renderHTML(t('activity.title'))} <span class="help-tip" ${translatedAttribute("data-tip", 'activity.help_tip')}>?</span></h1><div class="subtitle">${renderHTML(t('activity.subtitle'))}</div></div>
     </div>
     <div class="settings-section" style="margin-bottom:20px">
-      <h3 style="font-size:14px;margin-bottom:4px">Open alerts</h3>
-      <div id="alertsPanel"><div style="color:var(--text-muted);font-size:13px">Loading…</div></div>
+      <h3 style="font-size:14px;margin-bottom:4px">${renderHTML(t("ui.activity.open_alerts"))}</h3>
+      <div id="alertsPanel"><div style="color:var(--text-muted);font-size:13px">${renderHTML(t("ui.activity.loading"))}</div></div>
     </div>
-    <h3 style="font-size:14px;margin-bottom:8px">Recent activity</h3>
-    <div id="activityList"><div class="empty-state"><h3>${t('common.loading')}</h3></div></div>
+    <h3 style="font-size:14px;margin-bottom:8px">${renderHTML(t("ui.activity.recent_activity"))}</h3>
+    <div id="activityList"><div class="empty-state"><h3>${renderHTML(t('common.loading'))}</h3></div></div>
     <div style="text-align:center;margin-top:16px">
-      <button class="btn btn-secondary btn-sm" id="loadMoreBtn" style="display:none">${t('activity.load_more')}</button>
+      <button class="btn btn-secondary btn-sm" id="loadMoreBtn" style="display:none">${renderHTML(t('activity.load_more'))}</button>
     </div>
   `;
 
@@ -107,27 +112,27 @@ export async function render(container) {
       if (!append) list.innerHTML = '';
 
       if (items.length === 0 && offset === 0) {
-        list.innerHTML = `<div class="empty-state"><h3>${t('activity.empty_title')}</h3><p>${t('activity.empty_desc')}</p></div>`;
+        list.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('activity.empty_title'))}</h3><p>${renderHTML(t('activity.empty_desc'))}</p></div>`;
         return;
       }
 
       const html = items.map(item => {
         const time = new Date(item.created_at * 1000);
-        const timeStr = time.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' +
-                        time.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        const timeStr = displayValue(time, "toLocaleDateString", { month: 'short', day: 'numeric' }) + ' ' +
+                        displayValue(time, "toLocaleTimeString", { hour: '2-digit', minute: '2-digit' });
         const icon = getActionIcon(item.action);
 
         return `
           <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);align-items:flex-start">
-            <div style="width:32px;height:32px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">${icon}</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">${renderHTML(icon)}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:13px">
-                <strong>${esc(item.user_name || item.user_email || t('activity.system'))}</strong>
-                <span style="color:var(--text-secondary)"> ${esc(formatAction(item.action))}</span>
+                <strong>${uiText(item.user_name || item.user_email || t('activity.system'))}</strong>
+                <span style="color:var(--text-secondary)"> ${uiText(formatAction(item.action))}</span>
               </div>
-              ${item.details ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">${esc(item.details)}</div>` : ''}
+              ${renderHTML(item.details ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">${uiText(item.details)}</div>` : '')}
             </div>
-            <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;flex-shrink:0">${timeStr}</div>
+            <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;flex-shrink:0">${renderHTML(timeStr)}</div>
           </div>
         `;
       }).join('');
@@ -140,7 +145,7 @@ export async function render(container) {
 
       document.getElementById('loadMoreBtn').style.display = items.length >= limit ? '' : 'none';
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
     }
   }
 

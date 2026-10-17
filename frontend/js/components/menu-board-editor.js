@@ -1,9 +1,11 @@
+import { uiText, renderHTML, translatedAttribute, binding } from '../lib/i18n-bindings.js';
+
 // Menu board editor (widget_type 'menu-board'; server lib/menu-board.js). Mounted inside the widget
 // modal by views/widgets.js: mountMenuEditor() renders into #wMenuEditor, readMenuConfig() returns
 // the config to save. Item ids are kept stable because the sold-out API addresses items by id.
 
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { openContentPicker } from './content-picker.js';
 
 const uid = (p) => p + Math.random().toString(36).slice(2, 9);
@@ -69,54 +71,54 @@ export function readMenuConfig() {
 }
 
 function field(label, inner, hint = '') {
-  return `<div class="form-group" style="flex:1;min-width:150px;margin-bottom:10px"><label>${esc(label)}</label>${inner}${hint ? `<div style="font-size:11px;color:var(--text-muted);margin-top:3px">${esc(hint)}</div>` : ''}</div>`;
+  return `<div class="form-group" style="flex:1;min-width:150px;margin-bottom:10px"><label>${uiText(label)}</label>${renderHTML(inner)}${renderHTML(hint ? `<div style="font-size:11px;color:var(--text-muted);margin-top:3px">${uiText(hint)}</div>` : '')}</div>`;
 }
-const row = (...cells) => `<div style="display:flex;gap:12px;flex-wrap:wrap">${cells.join('')}</div>`;
+const row = (...cells) => `<div style="display:flex;gap:12px;flex-wrap:wrap">${renderHTML(cells.join(''))}</div>`;
 
 function paint(host) {
   const s = state;
   const fromData = !!(s.source && s.source.slug);
   const empty = !fromData && !s.sections.length;
   host.innerHTML = `
-    ${empty ? `<div class="form-group" style="padding:10px;border:1px dashed var(--border);border-radius:6px;background:var(--bg-input)">
-      <div style="font-size:12px;margin-bottom:8px">${esc(t('menu.start_from'))}</div>
-      ${Object.keys(STARTERS).map((k) => `<button type="button" class="btn btn-secondary btn-sm" data-starter="${k}" style="margin:0 6px 6px 0">${esc(t(`menu.starter.${k}`))}</button>`).join('')}
-    </div>` : ''}
-    ${row(field(t('menu.title'), `<input class="input" data-k="title" value="${esc(s.title)}">`),
-          field(t('menu.subtitle'), `<input class="input" data-k="subtitle" value="${esc(s.subtitle)}">`))}
-    ${row(field(t('menu.theme'), `<select class="input" data-k="theme">${['dark', 'light', 'chalkboard', 'bold'].map((th) => `<option value="${th}" ${s.theme === th ? 'selected' : ''}>${esc(t(`menu.theme.${th}`))}</option>`).join('')}</select>`),
+    ${renderHTML(empty ? `<div class="form-group" style="padding:10px;border:1px dashed var(--border);border-radius:6px;background:var(--bg-input)">
+      <div style="font-size:12px;margin-bottom:8px">${uiText(t('menu.start_from'))}</div>
+      ${renderHTML(Object.keys(STARTERS).map((k) => `<button type="button" class="btn btn-secondary btn-sm" data-starter="${k}" style="margin:0 6px 6px 0">${uiText(t(`menu.starter.${k}`))}</button>`).join(''))}
+    </div>` : '')}
+    ${renderHTML(row(field(t('menu.title'), `<input class="input" data-k="title" value="${esc(s.title)}">`),
+          field(t('menu.subtitle'), `<input class="input" data-k="subtitle" value="${esc(s.subtitle)}">`)))}
+    ${renderHTML(row(field(t('menu.theme'), `<select class="input" data-k="theme">${renderHTML(['dark', 'light', 'chalkboard', 'bold'].map((th) => `<option value="${th}" ${s.theme === th ? 'selected' : ''}>${uiText(t(`menu.theme.${th}`))}</option>`).join(''))}</select>`),
           field(t('menu.accent'), `<input type="color" class="input" data-k="accent" value="${esc(s.accent || '#f59e0b')}">`),
-          field(t('menu.columns'), `<select class="input" data-k="columns">${[0, 1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(s.columns) === n ? 'selected' : ''}>${n ? n : esc(t('menu.columns_auto'))}</option>`).join('')}</select>`),
-          field(t('menu.text_size'), `<select class="input" data-k="font_scale">${[0.8, 0.9, 1, 1.15, 1.3, 1.5].map((n) => `<option value="${n}" ${Number(s.font_scale) === n ? 'selected' : ''}>${Math.round(n * 100)}%</option>`).join('')}</select>`))}
-    ${row(field(t('menu.currency'), `<input class="input" data-k="currency" value="${esc(s.currency)}" style="max-width:90px">`),
-          field(t('menu.decimals'), `<select class="input" data-k="decimals">${[0, 1, 2, 3].map((n) => `<option value="${n}" ${Number(s.decimals) === n ? 'selected' : ''}>${n}</option>`).join('')}</select>`),
-          field(t('menu.price_labels'), `<input class="input" data-k="price_labels" value="${esc((s.price_labels || []).join(', '))}" placeholder="Small, Large">`, t('menu.price_labels_hint')))}
+          field(t('menu.columns'), `<select class="input" data-k="columns">${renderHTML([0, 1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(s.columns) === n ? 'selected' : ''}>${renderHTML(n ? n : t('menu.columns_auto'))}</option>`).join(''))}</select>`),
+          field(t('menu.text_size'), `<select class="input" data-k="font_scale">${renderHTML([0.8, 0.9, 1, 1.15, 1.3, 1.5].map((n) => `<option value="${n}" ${Number(s.font_scale) === n ? 'selected' : ''}>${renderHTML(Math.round(n * 100))}%</option>`).join(''))}</select>`)))}
+    ${renderHTML(row(field(t('menu.currency'), `<input class="input" data-k="currency" value="${esc(s.currency)}" style="max-width:90px">`),
+          field(t('menu.decimals'), `<select class="input" data-k="decimals">${renderHTML([0, 1, 2, 3].map((n) => `<option value="${n}" ${Number(s.decimals) === n ? 'selected' : ''}>${renderHTML(n)}</option>`).join(''))}</select>`),
+          field(t('menu.price_labels'), `<input class="input" data-k="price_labels" value="${esc((s.price_labels || []).join(', '))}" ${translatedAttribute("placeholder", "ui.menu_board_editor.placeholder_small_large_5c20e2")}>`, t('menu.price_labels_hint'))))}
     <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin:4px 0 12px">
-      <label><input type="checkbox" data-k="currency_after" ${s.currency_after ? 'checked' : ''}> ${esc(t('menu.currency_after'))}</label>
-      <label><input type="checkbox" data-k="show_images" ${s.show_images ? 'checked' : ''}> ${esc(t('menu.show_images'))}</label>
-      <label><input type="checkbox" data-k="show_descriptions" ${s.show_descriptions ? 'checked' : ''}> ${esc(t('menu.show_descriptions'))}</label>
-      <label>${esc(t('menu.sold_out_items'))} <select data-k="sold_out" class="input" style="width:auto;display:inline-block">
-        <option value="mark" ${s.sold_out !== 'hide' ? 'selected' : ''}>${esc(t('menu.sold_out_mark'))}</option>
-        <option value="hide" ${s.sold_out === 'hide' ? 'selected' : ''}>${esc(t('menu.sold_out_hide'))}</option></select></label>
-      <label>${esc(t('menu.page_seconds'))} <input type="number" min="5" max="120" data-k="page_seconds" value="${esc(s.page_seconds)}" class="input" style="width:70px;display:inline-block"></label>
+      <label><input type="checkbox" data-k="currency_after" ${s.currency_after ? 'checked' : ''}> ${uiText(t('menu.currency_after'))}</label>
+      <label><input type="checkbox" data-k="show_images" ${s.show_images ? 'checked' : ''}> ${uiText(t('menu.show_images'))}</label>
+      <label><input type="checkbox" data-k="show_descriptions" ${s.show_descriptions ? 'checked' : ''}> ${uiText(t('menu.show_descriptions'))}</label>
+      <label>${uiText(t('menu.sold_out_items'))} <select data-k="sold_out" class="input" style="width:auto;display:inline-block">
+        <option value="mark" ${s.sold_out !== 'hide' ? 'selected' : ''}>${uiText(t('menu.sold_out_mark'))}</option>
+        <option value="hide" ${s.sold_out === 'hide' ? 'selected' : ''}>${uiText(t('menu.sold_out_hide'))}</option></select></label>
+      <label>${uiText(t('menu.page_seconds'))} <input type="number" min="5" max="120" data-k="page_seconds" value="${esc(s.page_seconds)}" class="input" style="width:70px;display:inline-block"></label>
     </div>
-    ${row(field(t('menu.logo'), imgPicker('logo_url', s.logo_url)), field(t('menu.background'), imgPicker('background_url', s.background_url)))}
-    ${field(t('menu.footer'), `<input class="input" data-k="footer" value="${esc(s.footer)}" placeholder="${esc(t('menu.footer_ph'))}">`)}
+    ${renderHTML(row(field(t('menu.logo'), imgPicker('logo_url', s.logo_url)), field(t('menu.background'), imgPicker('background_url', s.background_url))))}
+    ${renderHTML(field(t('menu.footer'), `<input class="input" data-k="footer" value="${esc(s.footer)}" placeholder="${esc(t('menu.footer_ph'))}" data-fil-i18n-placeholder="${binding('menu.footer_ph', undefined)}">`))}
     <div class="form-group" style="margin-top:6px">
-      <label>${esc(t('menu.items_from'))}</label>
+      <label>${uiText(t('menu.items_from'))}</label>
       <select class="input" id="mbSource">
-        <option value="">${esc(t('menu.items_from_editor'))}</option>
-        ${dataSources.map((d) => `<option value="${esc(d.slug)}" ${fromData && s.source.slug === d.slug ? 'selected' : ''}>${esc(t('menu.items_from_ds', { name: d.name || d.slug }))}</option>`).join('')}
+        <option value="">${uiText(t('menu.items_from_editor'))}</option>
+        ${renderHTML(dataSources.map((d) => `<option value="${esc(d.slug)}" ${fromData && s.source.slug === d.slug ? 'selected' : ''}>${uiText(t('menu.items_from_ds', { name: d.name || d.slug }))}</option>`).join(''))}
       </select>
-      ${fromData ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px">${esc(t(POS.has(sourceType(s.source.slug)) ? 'pos.menu_ds_hint' : 'menu.ds_hint'))}</div>` : ''}
+      ${renderHTML(fromData ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px">${uiText(t(POS.has(sourceType(s.source.slug)) ? 'pos.menu_ds_hint' : 'menu.ds_hint'))}</div>` : '')}
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
-        <span style="font-size:12px;color:var(--text-muted)">${esc(t('pos.menu_from_pos'))}</span>
-        <button type="button" class="btn btn-secondary btn-sm" data-pos="square">${esc(t('pos.menu_from_square'))}</button>
-        <button type="button" class="btn btn-secondary btn-sm" data-pos="shopify">${esc(t('pos.menu_from_shopify'))}</button>
+        <span style="font-size:12px;color:var(--text-muted)">${uiText(t('pos.menu_from_pos'))}</span>
+        <button type="button" class="btn btn-secondary btn-sm" data-pos="square">${uiText(t('pos.menu_from_square'))}</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-pos="shopify">${uiText(t('pos.menu_from_shopify'))}</button>
       </div>
     </div>
-    ${fromData ? '' : `<div id="mbSections">${s.sections.map(sectionHtml).join('')}</div>
-      <button type="button" class="btn btn-secondary btn-sm" data-act="add-section">${esc(t('menu.add_section'))}</button>`}`;
+    ${renderHTML(fromData ? '' : `<div id="mbSections">${renderHTML(s.sections.map(sectionHtml).join(''))}</div>
+      <button type="button" class="btn btn-secondary btn-sm" data-act="add-section">${uiText(t('menu.add_section'))}</button>`)}`;
   wire(host);
 }
 
@@ -127,39 +129,39 @@ function sourceType(slug) {
 
 function imgPicker(key, url) {
   return url
-    ? `<div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--text-muted);word-break:break-all;flex:1">${esc(url)}</span>
-        <button type="button" class="btn btn-secondary btn-sm" data-pick="${key}">${esc(t('menu.change'))}</button>
+    ? `<div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--text-muted);word-break:break-all;flex:1">${uiText(url)}</span>
+        <button type="button" class="btn btn-secondary btn-sm" data-pick="${key}">${uiText(t('menu.change'))}</button>
         <button type="button" class="btn-icon" data-clear="${key}" style="color:#ff6b6b">&#215;</button></div>`
-    : `<button type="button" class="btn btn-secondary btn-sm" data-pick="${key}">${esc(t('menu.choose_image'))}</button>`;
+    : `<button type="button" class="btn btn-secondary btn-sm" data-pick="${key}">${uiText(t('menu.choose_image'))}</button>`;
 }
 
 function sectionHtml(sec, si) {
   return `<div class="mb-sec" data-si="${si}" style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px">
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input class="input" data-s="name" value="${esc(sec.name)}" placeholder="${esc(t('menu.section_name'))}" style="flex:2;min-width:140px;font-weight:600">
-      <input class="input" data-s="note" value="${esc(sec.note || '')}" placeholder="${esc(t('menu.section_note'))}" style="flex:2;min-width:120px">
-      <label style="font-size:12px;white-space:nowrap">${esc(t('menu.show'))} <input type="time" class="input" data-s="show_from" value="${esc(sec.show_from || '')}" style="width:auto;display:inline-block"> –
+      <input class="input" data-s="name" value="${esc(sec.name)}" placeholder="${esc(t('menu.section_name'))}" data-fil-i18n-placeholder="${binding('menu.section_name', undefined)}" style="flex:2;min-width:140px;font-weight:600">
+      <input class="input" data-s="note" value="${esc(sec.note || '')}" placeholder="${esc(t('menu.section_note'))}" data-fil-i18n-placeholder="${binding('menu.section_note', undefined)}" style="flex:2;min-width:120px">
+      <label style="font-size:12px;white-space:nowrap">${uiText(t('menu.show'))} <input type="time" class="input" data-s="show_from" value="${esc(sec.show_from || '')}" style="width:auto;display:inline-block"> –
         <input type="time" class="input" data-s="show_until" value="${esc(sec.show_until || '')}" style="width:auto;display:inline-block"></label>
-      <button type="button" class="btn btn-secondary btn-sm" data-act="sec-up" title="${esc(t('menu.move_up'))}">&#8593;</button>
-      <button type="button" class="btn btn-secondary btn-sm" data-act="sec-down" title="${esc(t('menu.move_down'))}">&#8595;</button>
-      <button type="button" class="btn btn-secondary btn-sm" data-act="sec-del" style="color:var(--danger)" title="${esc(t('menu.delete_section'))}">&#215;</button>
+      <button type="button" class="btn btn-secondary btn-sm" data-act="sec-up" title="${esc(t('menu.move_up'))}" data-fil-i18n-title="${binding('menu.move_up', undefined)}">&#8593;</button>
+      <button type="button" class="btn btn-secondary btn-sm" data-act="sec-down" title="${esc(t('menu.move_down'))}" data-fil-i18n-title="${binding('menu.move_down', undefined)}">&#8595;</button>
+      <button type="button" class="btn btn-secondary btn-sm" data-act="sec-del" style="color:var(--danger)" title="${esc(t('menu.delete_section'))}" data-fil-i18n-title="${binding('menu.delete_section', undefined)}">&#215;</button>
     </div>
-    <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">${(sec.items || []).map((it, ii) => itemHtml(it, ii)).join('')}</div>
-    <button type="button" class="btn btn-secondary btn-sm" data-act="add-item" style="margin-top:8px">${esc(t('menu.add_item'))}</button>
+    <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">${renderHTML((sec.items || []).map((it, ii) => itemHtml(it, ii)).join(''))}</div>
+    <button type="button" class="btn btn-secondary btn-sm" data-act="add-item" style="margin-top:8px">${uiText(t('menu.add_item'))}</button>
   </div>`;
 }
 
 function itemHtml(it, ii) {
   return `<div class="mb-it" data-ii="${ii}" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px;background:var(--bg-input);border-radius:6px">
-    <input class="input" data-i="name" value="${esc(it.name)}" placeholder="${esc(t('menu.item_name'))}" style="flex:2;min-width:120px">
-    <input class="input" data-i="prices" value="${esc((it.prices || []).join(', '))}" placeholder="${esc(t('menu.item_price'))}" style="width:110px">
-    <input class="input" data-i="tags" value="${esc((it.tags || []).join(', '))}" placeholder="${esc(t('menu.item_tags'))}" style="width:110px" title="${esc(t('menu.item_tags_hint'))}">
-    <label style="font-size:12px;white-space:nowrap"><input type="checkbox" data-i="sold_out" ${it.sold_out ? 'checked' : ''}> ${esc(t('menu.sold_out'))}</label>
-    <button type="button" class="btn btn-secondary btn-sm" data-act="it-img" title="${esc(t('menu.item_photo'))}">${it.image_url ? '&#128247;&#10003;' : '&#128247;'}</button>
+    <input class="input" data-i="name" value="${esc(it.name)}" placeholder="${esc(t('menu.item_name'))}" data-fil-i18n-placeholder="${binding('menu.item_name', undefined)}" style="flex:2;min-width:120px">
+    <input class="input" data-i="prices" value="${esc((it.prices || []).join(', '))}" placeholder="${esc(t('menu.item_price'))}" data-fil-i18n-placeholder="${binding('menu.item_price', undefined)}" style="width:110px">
+    <input class="input" data-i="tags" value="${esc((it.tags || []).join(', '))}" placeholder="${esc(t('menu.item_tags'))}" data-fil-i18n-placeholder="${binding('menu.item_tags', undefined)}" style="width:110px" title="${esc(t('menu.item_tags_hint'))}" data-fil-i18n-title="${binding('menu.item_tags_hint', undefined)}">
+    <label style="font-size:12px;white-space:nowrap"><input type="checkbox" data-i="sold_out" ${it.sold_out ? 'checked' : ''}> ${uiText(t('menu.sold_out'))}</label>
+    <button type="button" class="btn btn-secondary btn-sm" data-act="it-img" title="${esc(t('menu.item_photo'))}" data-fil-i18n-title="${binding('menu.item_photo', undefined)}">${renderHTML(it.image_url ? '&#128247;&#10003;' : '&#128247;')}</button>
     <button type="button" class="btn btn-secondary btn-sm" data-act="it-up">&#8593;</button>
     <button type="button" class="btn btn-secondary btn-sm" data-act="it-down">&#8595;</button>
     <button type="button" class="btn btn-secondary btn-sm" data-act="it-del" style="color:var(--danger)">&#215;</button>
-    <input class="input" data-i="description" value="${esc(it.description || '')}" placeholder="${esc(t('menu.item_description'))}" style="flex-basis:100%">
+    <input class="input" data-i="description" value="${esc(it.description || '')}" placeholder="${esc(t('menu.item_description'))}" data-fil-i18n-placeholder="${binding('menu.item_description', undefined)}" style="flex-basis:100%">
   </div>`;
 }
 

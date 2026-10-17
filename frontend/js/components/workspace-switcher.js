@@ -1,6 +1,9 @@
+import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
+
+import { getLocale, message as t, messageCount as tn } from '../i18n.js';
+
 import { api } from '../api.js';
 import { showToast } from './toast.js';
-import { t, tn } from '../i18n.js';
 
 // Reusable resource-count formatter. Returns localized "1 device" / "N devices"
 // / "No devices" based on n. Generic so the same shape can wire users /
@@ -21,7 +24,7 @@ function formatResourceCount(n, keyBase, zeroKey) {
 function adminIconsHtml(w) {
   if (!w.can_admin) return '';
   return `
-    <button class="workspace-switcher-members" type="button" data-members-id="${esc(w.id)}" aria-label="${t('switcher.manage_members')}" title="${t('switcher.manage_members')}">
+    <button class="workspace-switcher-members" type="button" data-members-id="${esc(w.id)}" aria-label="${t('switcher.manage_members')}" data-fil-i18n-aria-label="${binding('switcher.manage_members', undefined)}" title="${t('switcher.manage_members')}" data-fil-i18n-title="${binding('switcher.manage_members', undefined)}">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
         <circle cx="9" cy="7" r="4"/>
@@ -29,7 +32,7 @@ function adminIconsHtml(w) {
         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
       </svg>
     </button>
-    <button class="workspace-switcher-pencil" type="button" data-rename-id="${esc(w.id)}" aria-label="${t('switcher.rename')}" title="${t('switcher.rename')}">
+    <button class="workspace-switcher-pencil" type="button" data-rename-id="${esc(w.id)}" aria-label="${t('switcher.rename')}" data-fil-i18n-aria-label="${binding('switcher.rename', undefined)}" title="${t('switcher.rename')}" data-fil-i18n-title="${binding('switcher.rename', undefined)}">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
       </svg>
@@ -68,7 +71,7 @@ function createButtonHtml(me) {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
-      <span>${t('switcher.create_title')}</span>
+      <span>${renderHTML(t('switcher.create_title'))}</span>
     </button>`;
 }
 
@@ -168,7 +171,7 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
      * answers "which customer" and "on which box" in one line.
      */
     organization_name: [o.organizationName, o.serverName || `server ${String(o.nodeId).slice(0, 8)}`]
-      .filter(Boolean).join(' · ') + (o.stale ? ' · not reachable' : ''),
+      .filter(Boolean).join(' · ') + (o.stale ? t("ui.workspace_switcher.not_reachable_5a827e") : ''),
   }));
   const list = [...local, ...remote];
   const picked = selectedRemoteOrg();
@@ -178,7 +181,7 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
 
   if (list.length === 0) {
     container.classList.remove('open');
-    container.innerHTML = `<span class="workspace-switcher-empty">No workspace</span>`;
+    container.innerHTML = `<span class="workspace-switcher-empty">${renderHTML(t("ui.workspace_switcher.no_workspace"))}</span>`;
     return;
   }
 
@@ -190,17 +193,17 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
     const only = list[0];
     container.innerHTML = `
       <div class="workspace-switcher-single">
-        <span class="workspace-switcher-static">${esc(only.name)}</span>
-        ${adminIconsHtml(only)}
+        <span class="workspace-switcher-static"><span class="workspace-switcher-caption">${renderHTML(t('ui.workspace'))}</span>${uiText(only.name)}</span>
+        ${renderHTML(adminIconsHtml(only))}
       </div>
-      ${createButtonHtml(me)}`;
+      ${renderHTML(createButtonHtml(me))}`;
     wireAdminIcons(container, [only]);
     wireCreateButtons(container);
     return;
   }
 
   // >1: dropdown. Alpha sort by workspace name for MVP (no recently-used yet).
-  const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name, getLocale()));
   const current = sorted.find(w => w.id === currentId) || sorted[0];
 
   // Issue #16: show a type-to-filter search box once the list is big enough to
@@ -211,18 +214,18 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
 
   container.innerHTML = `
     <button class="workspace-switcher-button" type="button" aria-haspopup="listbox" aria-expanded="false">
-      <span class="ws-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(current.name)}</span>
+      <span class="ws-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(current.name)}</span>
       <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="6 9 12 15 18 9"/>
       </svg>
     </button>
     <div class="workspace-switcher-menu" role="listbox">
-      ${showSearch ? `
+      ${renderHTML(showSearch ? `
       <div class="workspace-switcher-search">
-        <input type="text" class="ws-search-input" placeholder="${t('switcher.search_placeholder')}"
-               autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${t('switcher.search_placeholder')}">
-      </div>` : ''}
-      ${sorted.map(w => {
+        <input type="text" class="ws-search-input" placeholder="${t('switcher.search_placeholder')}" data-fil-i18n-placeholder="${binding('switcher.search_placeholder', undefined)}"
+               autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${t('switcher.search_placeholder')}" data-fil-i18n-aria-label="${binding('switcher.search_placeholder', undefined)}">
+      </div>` : '')}
+      ${renderHTML(sorted.map(w => {
         const countStr = formatResourceCount(w.device_count, 'switcher.devices_count', 'switcher.no_devices');
         const orgName = w.organization_name || '';
         const subtitle = orgName && countStr ? esc(orgName) + ' · ' + esc(countStr)
@@ -237,19 +240,19 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
             <polyline points="20 6 9 17 4 12"/>
           </svg>
           <div class="ws-meta">
-            <div class="ws-name">${esc(w.name)}${w.remote
+            <div class="ws-name">${uiText(w.name)}${renderHTML(w.remote
               // ⚠️ Marked, always. An operator acting on the wrong customer's screens because two
               // rows looked identical is the failure this one character prevents.
-              ? ' <span class="corp-chip ws-remote-badge" style="font-size:9px;padding:0 6px">remote</span>' : ''}</div>
-            <div class="ws-org">${subtitle}</div>
+              ? ` <span class="corp-chip ws-remote-badge" style="font-size:9px;padding:0 6px">${renderHTML(t("ui.workspace_switcher.remote_b71199"))}</span>` : '')}</div>
+            <div class="ws-org">${renderHTML(subtitle)}</div>
           </div>
-          ${adminIconsHtml(w)}
+          ${renderHTML(adminIconsHtml(w))}
         </div>
       `;
-      }).join('')}
-      <div class="workspace-switcher-noresults" style="display:none">${t('switcher.no_matches')}</div>
+      }).join(''))}
+      <div class="workspace-switcher-noresults" style="display:none">${renderHTML(t('switcher.no_matches'))}</div>
     </div>
-    ${createButtonHtml(me)}
+    ${renderHTML(createButtonHtml(me))}
   `;
 
   const button = container.querySelector('.workspace-switcher-button');
@@ -297,10 +300,10 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
         localStorage.setItem('token', resp.token);
         window.location.reload();
       } else {
-        showToast('Switch returned no token', 'error');
+        showToast(t("ui.workspace_switcher.switch_returned_no_token"), 'error');
       }
     } catch (err) {
-      showToast(err.message || 'Failed to switch workspace', 'error');
+      showToast(err.uiMessage || err.message || t("ui.workspace_switcher.failed_to_switch_workspace_d32f53"), 'error');
     }
   }
 

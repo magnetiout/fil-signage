@@ -1,7 +1,11 @@
+import { renderHTML, uiText, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { displayValue, message as t, getAvailableLanguages } from '../i18n.js';
+
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t, getAvailableLanguages } from '../i18n.js';
+
 import { pluginFieldsHtml, readPluginFields } from '../lib/plugin-fields.js';
 
 /*
@@ -41,8 +45,8 @@ const typeLabel = (type) => {
   const p = pluginDsTypes.find((x) => x.type === type);
   return (p && (p.label || p.type)) || type;
 };
-const iconSvg = (type, size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${typeMeta(type).icon}</svg>`;
-const iconTile = (type, cls = '') => `<span class="ds-icon ${cls}" style="--ds-accent:${typeMeta(type).accent}">${iconSvg(type)}</span>`;
+const iconSvg = (type, size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${renderHTML(typeMeta(type).icon)}</svg>`;
+const iconTile = (type, cls = '') => `<span class="ds-icon ${cls}" style="--ds-accent:${typeMeta(type).accent}">${renderHTML(iconSvg(type))}</span>`;
 
 // Types whose data is rows and columns (lib/data-sources/tabular.js on the server).
 const TABULAR = new Set(['sheets', 'csv', 'table', 'rest', 'square', 'shopify']);
@@ -52,12 +56,12 @@ export async function render(container) {
     <div class="ds-page">
       <header class="ds-hero">
         <div>
-          <h1>${esc(t('data_sources.title'))}</h1>
-          <p>${esc(t('data_sources.subtitle2'))}</p>
+          <h1>${uiText(t('data_sources.title'))}</h1>
+          <p>${uiText(t('data_sources.subtitle2'))}</p>
         </div>
         <button id="newDataSourceBtn" class="btn btn-primary ds-cta">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          <span>${esc(t('data_sources.connect'))}</span>
+          <span>${uiText(t('data_sources.connect'))}</span>
         </button>
       </header>
       <div id="dataSourcesContainer"><div class="ds-loading"><span class="spinner"></span></div></div>
@@ -82,8 +86,8 @@ async function loadDataSources() {
   } catch (err) {
     container.innerHTML = `
       <div class="ds-alert ds-alert-error">
-        <strong>${esc(t('data_sources.failed_load'))}</strong>
-        <span>${esc(err.message)}</span>
+        <strong>${uiText(t('data_sources.failed_load'))}</strong>
+        <span>${uiText((err.uiMessage || err.message))}</span>
       </div>`;
   }
 }
@@ -92,42 +96,42 @@ async function loadDataSources() {
 function galleryHtml() {
   const tiles = TYPES.map((m) => `
     <button type="button" class="ds-tile" data-pick="${m.type}" style="--ds-accent:${m.accent}">
-      ${iconTile(m.type)}
+      ${renderHTML(iconTile(m.type))}
       <span class="ds-tile-text">
-        <span class="ds-tile-title">${esc(t(`data_sources.kind.${m.type}`))}
-          ${m.tag ? `<span class="ds-tag">${esc(t(`data_sources.tag.${m.tag}`))}</span>` : ''}</span>
-        <span class="ds-tile-pitch">${esc(t(`data_sources.pitch.${m.type}`))}</span>
+        <span class="ds-tile-title">${renderHTML(t(`data_sources.kind.${m.type}`))}
+          ${renderHTML(m.tag ? `<span class="ds-tag">${uiText(t(`data_sources.tag.${m.tag}`))}</span>` : '')}</span>
+        <span class="ds-tile-pitch">${uiText(t(`data_sources.pitch.${m.type}`))}</span>
       </span>
     </button>`).join('');
   const plugins = pluginDsTypes.map((p) => `
     <button type="button" class="ds-tile" data-pick="${esc(p.type)}" style="--ds-accent:#64748b">
-      ${iconTile(p.type)}
+      ${renderHTML(iconTile(p.type))}
       <span class="ds-tile-text">
-        <span class="ds-tile-title">${esc(p.label || p.type)} <span class="ds-tag ds-tag-muted">${esc(t('data_sources.tag.plugin'))}</span></span>
-        <span class="ds-tile-pitch">${esc(p.description || t('data_sources.pitch.plugin'))}</span>
+        <span class="ds-tile-title">${uiText(p.label || p.type)} <span class="ds-tag ds-tag-muted">${uiText(t('data_sources.tag.plugin'))}</span></span>
+        <span class="ds-tile-pitch">${uiText(p.description || t('data_sources.pitch.plugin'))}</span>
       </span>
     </button>`).join('');
-  return `<div class="ds-gallery">${tiles}${plugins}</div>`;
+  return `<div class="ds-gallery">${renderHTML(tiles)}${renderHTML(plugins)}</div>`;
 }
 
 function renderDataSourcesList(container) {
   if (!dataSourcesList.length) {
     container.innerHTML = `
       <section class="ds-empty">
-        <h2>${esc(t('data_sources.empty_title2'))}</h2>
-        <p>${esc(t('data_sources.empty_desc2'))}</p>
-        ${galleryHtml()}
+        <h2>${uiText(t('data_sources.empty_title2'))}</h2>
+        <p>${uiText(t('data_sources.empty_desc2'))}</p>
+        ${renderHTML(galleryHtml())}
         <div class="ds-how">
-          <div><b>1</b><span>${esc(t('data_sources.how1'))}</span></div>
-          <div><b>2</b><span>${esc(t('data_sources.how2'))}</span></div>
-          <div><b>3</b><span>${esc(t('data_sources.how3'))}</span></div>
+          <div><b>1</b><span>${uiText(t('data_sources.how1'))}</span></div>
+          <div><b>2</b><span>${uiText(t('data_sources.how2'))}</span></div>
+          <div><b>3</b><span>${uiText(t('data_sources.how3'))}</span></div>
         </div>
       </section>`;
     container.querySelectorAll('[data-pick]').forEach((b) => { b.onclick = () => openEditModal(null, b.dataset.pick); });
     return;
   }
 
-  container.innerHTML = `<div class="ds-grid">${dataSourcesList.map(renderDataSourceCard).join('')}</div>`;
+  container.innerHTML = `<div class="ds-grid">${renderHTML(dataSourcesList.map(renderDataSourceCard).join(''))}</div>`;
 
   container.querySelectorAll('[data-act="refresh"]').forEach((btn) => {
     btn.onclick = async () => {
@@ -139,7 +143,7 @@ function renderDataSourcesList(container) {
         else showToast(t('data_sources.synced_ok'), 'success');
         await loadDataSources();
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
         btn.disabled = false;
         btn.classList.remove('is-busy');
       }
@@ -160,7 +164,7 @@ function renderDataSourcesList(container) {
         showToast(t('data_sources.deleted_ok'), 'success');
         await loadDataSources();
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
       }
     };
   });
@@ -187,7 +191,7 @@ function relTime(sec) {
   if (d < 45) return t('data_sources.just_now');
   if (d < 3600) return t('data_sources.min_ago', { n: Math.round(d / 60) });
   if (d < 86400) return t('data_sources.hr_ago', { n: Math.round(d / 3600) });
-  return new Date(sec * 1000).toLocaleString();
+  return displayValue(new Date(sec * 1000), "toLocaleString", undefined);
 }
 
 function sourceSummary(ds) {
@@ -213,36 +217,36 @@ function renderDataSourceCard(ds) {
   return `
     <article class="ds-card" style="--ds-accent:${typeMeta(ds.type).accent}">
       <div class="ds-card-head">
-        ${iconTile(ds.type)}
+        ${renderHTML(iconTile(ds.type))}
         <div class="ds-card-id">
-          <h3 title="${esc(ds.name)}">${esc(ds.name)}</h3>
-          <div class="ds-card-sub">${esc(typeLabel(ds.type))} · <code>${esc(ds.slug)}</code></div>
+          <h3 title="${esc(ds.name)}"${attributeBinding("title", ds.name)}>${uiText(ds.name)}</h3>
+          <div class="ds-card-sub">${uiText(typeLabel(ds.type))} · <code>${uiText(ds.slug)}</code></div>
         </div>
-        <span class="ds-status ds-status-${st}"><i></i>${esc(stLabel)}</span>
+        <span class="ds-status ds-status-${st}"><i></i>${uiText(stLabel)}</span>
       </div>
-      ${headline ? `<div class="ds-headline">${headline}</div>` : ''}
+      ${renderHTML(headline ? `<div class="ds-headline">${renderHTML(headline)}</div>` : '')}
       <dl class="ds-meta">
-        <div><dt>${esc(t('data_sources.source_label2'))}</dt><dd title="${esc(sourceSummary(ds))}">${esc(sourceSummary(ds))}</dd></div>
-        <div><dt>${esc(t('data_sources.last_sync_label2'))}</dt><dd>${esc(relTime(ds.last_fetched_at))}</dd></div>
+        <div><dt>${uiText(t('data_sources.source_label2'))}</dt><dd title="${esc(sourceSummary(ds))}">${uiText(sourceSummary(ds))}</dd></div>
+        <div><dt>${uiText(t('data_sources.last_sync_label2'))}</dt><dd>${uiText(relTime(ds.last_fetched_at))}</dd></div>
       </dl>
-      ${ds.last_error ? `<div class="ds-card-error" role="alert">${esc(ds.last_error)}</div>` : ''}
+      ${renderHTML(ds.last_error ? `<div class="ds-card-error" role="alert">${uiText(ds.last_error)}</div>` : '')}
       <button class="ds-vars-toggle" data-act="toggle-variables" data-id="${esc(ds.id)}" aria-expanded="false" aria-controls="vars-drawer-${esc(ds.id)}">
-        <span>${esc(t('data_sources.variables_n', { n: nVars }))}</span>
+        <span>${uiText(t('data_sources.variables_n', { n: nVars }))}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div id="vars-drawer-${esc(ds.id)}" class="ds-vars-drawer" hidden></div>
       <div class="ds-card-actions">
-        <button class="btn btn-sm btn-secondary" data-act="refresh" data-id="${esc(ds.id)}">${esc(t('data_sources.sync_now'))}</button>
+        <button class="btn btn-sm btn-secondary" data-act="refresh" data-id="${esc(ds.id)}">${uiText(t('data_sources.sync_now'))}</button>
         <span class="ds-spacer"></span>
-        <button class="btn btn-sm btn-secondary" data-act="edit" data-id="${esc(ds.id)}">${esc(t('common.edit'))}</button>
-        <button class="btn btn-sm btn-danger" data-act="del" data-id="${esc(ds.id)}">${esc(t('common.delete'))}</button>
+        <button class="btn btn-sm btn-secondary" data-act="edit" data-id="${esc(ds.id)}">${uiText(t('common.edit'))}</button>
+        <button class="btn btn-sm btn-danger" data-act="del" data-id="${esc(ds.id)}">${uiText(t('common.delete'))}</button>
       </div>
     </article>`;
 }
 
 /* A glanceable line of the live data on each card — what the screen is showing right now. */
 function cardHeadline(type, d) {
-  const kv = (label, value) => (value === undefined || value === null || value === '' ? '' : `<span class="ds-hl"><em>${esc(label)}</em>${esc(String(value))}</span>`);
+  const kv = (label, value) => (value === undefined || value === null || value === '' ? '' : `<span class="ds-hl"><em>${uiText(label)}</em>${uiText(String(value))}</span>`);
   if (type === 'weather' && d.temperature != null) return kv(d.location || '', `${d.icon || ''} ${d.temperature}°${d.units || ''} · ${d.condition || ''}`);
   if (type === 'ical' && d.status) return kv(d.status, d.status_detail || d.next_title || '');
   if (type === 'rss' && d.item1_title) return kv(t('data_sources.hl_latest'), d.item1_title);
@@ -256,13 +260,13 @@ function tagFor(slug, key) { return `{{ds:${slug || 'slug'}.${key}}}`; }
 function mountVariables(host, slug, data, type, hasKey) {
   const keys = Object.keys(data || {});
   if (!keys.length) {
-    host.innerHTML = `<p class="ds-muted">${esc(t('data_sources.no_data_yet'))}</p>`;
+    host.innerHTML = `<p class="ds-muted">${uiText(t('data_sources.no_data_yet'))}</p>`;
     return;
   }
   host.innerHTML = `
-    ${keys.length > 12 ? `<input type="search" class="input ds-var-search" placeholder="${esc(t('data_sources.search_vars', { n: keys.length }))}" aria-label="${esc(t('data_sources.search_vars', { n: keys.length }))}">` : ''}
-    <p class="ds-hint">${esc(t('data_sources.copy_as', { tag: tagFor(slug, 'KEY') }))}</p>
-    ${TABULAR.has(type) && !POS_TYPES.has(type) && !hasKey && 'row_count' in data ? `<p class="ds-hint">${esc(t('data_sources.tip_lookup'))}</p>` : ''}
+    ${renderHTML(keys.length > 12 ? `<input type="search" class="input ds-var-search" placeholder="${esc(t('data_sources.search_vars', { n: keys.length }))}" data-fil-i18n-placeholder="${binding('data_sources.search_vars', { n: keys.length })}" aria-label="${esc(t('data_sources.search_vars', { n: keys.length }))}" data-fil-i18n-aria-label="${binding('data_sources.search_vars', { n: keys.length })}">` : '')}
+    <p class="ds-hint">${uiText(t('data_sources.copy_as', { tag: tagFor(slug, 'KEY') }))}</p>
+    ${renderHTML(TABULAR.has(type) && !POS_TYPES.has(type) && !hasKey && 'row_count' in data ? `<p class="ds-hint">${uiText(t('data_sources.tip_lookup'))}</p>` : '')}
     <div class="ds-var-list" role="list"></div>
     <p class="ds-muted ds-var-more" hidden></p>`;
   const list = host.querySelector('.ds-var-list');
@@ -275,12 +279,12 @@ function mountVariables(host, slug, data, type, hasKey) {
       const v = data[k];
       const vs = v === null || v === undefined ? '' : String(v);
       return `<div class="ds-var" role="listitem">
-        <button type="button" class="ds-var-tag" data-copy="${esc(tagFor(slug, k))}" title="${esc(t('data_sources.copy_tag'))}: ${esc(tagFor(slug, k))}">${esc(k)}</button>
-        <span class="ds-var-val${vs ? '' : ' is-empty'}" title="${esc(vs.slice(0, 500))}">${esc(vs ? vs.slice(0, 160) : t('data_sources.empty_value'))}</span>
+        <button type="button" class="ds-var-tag" data-copy="${esc(tagFor(slug, k))}" title="${esc(t('data_sources.copy_tag'))}: ${esc(tagFor(slug, k))}">${uiText(k)}</button>
+        <span class="ds-var-val${vs ? '' : ' is-empty'}" title="${esc(vs.slice(0, 500))}">${uiText(vs ? vs.slice(0, 160) : t('data_sources.empty_value'))}</span>
       </div>`;
-    }).join('') || `<p class="ds-muted">${esc(t('data_sources.no_match'))}</p>`;
+    }).join('') || `<p class="ds-muted">${uiText(t('data_sources.no_match'))}</p>`;
     more.hidden = hits.length <= shown.length;
-    more.textContent = t('data_sources.more_vars', { n: hits.length - shown.length });
+    bindText(more, 'data_sources.more_vars', { n: hits.length - shown.length });
   };
   paint('');
   const search = host.querySelector('.ds-var-search');
@@ -316,13 +320,13 @@ function bindCopy(root) {
 // ─── Create / Edit modal ───────────────────────────────────────────────────────
 const field = (label, control, hint, cls = '') => `
   <label class="ds-field ${cls}">
-    <span class="ds-label">${label}</span>
-    ${control}
-    ${hint ? `<span class="ds-field-hint">${hint}</span>` : ''}
+    <span class="ds-label">${uiText(label)}</span>
+    ${renderHTML(control)}
+    ${renderHTML(hint ? `<span class="ds-field-hint">${renderHTML(hint)}</span>` : '')}
   </label>`;
-const opt = (value, label, cur) => `<option value="${esc(value)}" ${String(cur) === String(value) ? 'selected' : ''}>${esc(label)}</option>`;
+const opt = (value, label, cur) => `<option value="${esc(value)}" ${String(cur) === String(value) ? 'selected' : ''}>${uiText(label)}</option>`;
 const langOptions = (cur) => getAvailableLanguages().map((l) => opt(l.code, l.name, cur || 'en')).join('');
-const intervalSelect = (id, cur, choices) => `<select id="${id}" class="input">${choices.map((m) => opt(m, t(`data_sources.every_${m}`), cur || 15)).join('')}</select>`;
+const intervalSelect = (id, cur, choices) => `<select id="${id}" class="input">${renderHTML(choices.map((m) => opt(m, t(`data_sources.every_${m}`), cur || 15)).join(''))}</select>`;
 
 function formHtml(type, cfg, isEdit) {
   const v = (k, d = '') => esc(cfg[k] == null ? d : cfg[k]);
@@ -332,105 +336,105 @@ function formHtml(type, cfg, isEdit) {
   switch (type) {
     case 'sheets': return `
       <div class="ds-callout">
-        <b>${esc(t('data_sources.sheets_steps_title'))}</b>
-        <ol><li>${esc(t('data_sources.sheets_step1'))}</li><li>${esc(t('data_sources.sheets_step2'))}</li><li>${esc(t('data_sources.sheets_step3'))}</li></ol>
+        <b>${uiText(t('data_sources.sheets_steps_title'))}</b>
+        <ol><li>${uiText(t('data_sources.sheets_step1'))}</li><li>${uiText(t('data_sources.sheets_step2'))}</li><li>${uiText(t('data_sources.sheets_step3'))}</li></ol>
       </div>
-      ${field(esc(t('data_sources.sheets_url')) + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0" value="${v('url')}">`, `<span id="f_url_status">${esc(t('data_sources.sheets_url_hint'))}</span>`)}
+      ${renderHTML(field(t('data_sources.sheets_url') + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0" value="${v('url')}">`, `<span id="f_url_status">${uiText(t('data_sources.sheets_url_hint'))}</span>`))}
       <div class="ds-row2">
-        ${field(esc(t('data_sources.sheets_tab')), `<input id="f_sheet" class="input" maxlength="100" placeholder="${esc(t('data_sources.sheets_tab_ph'))}" value="${v('sheet')}">`)}
-        ${field(esc(t('data_sources.sheets_range')), `<input id="f_range" class="input" maxlength="20" placeholder="A1:D50" value="${v('range')}">`)}
+        ${renderHTML(field(t('data_sources.sheets_tab'), `<input id="f_sheet" class="input" maxlength="100" placeholder="${esc(t('data_sources.sheets_tab_ph'))}" data-fil-i18n-placeholder="${binding('data_sources.sheets_tab_ph', undefined)}" value="${v('sheet')}">`))}
+        ${renderHTML(field(t('data_sources.sheets_range'), `<input id="f_range" class="input" maxlength="20" placeholder="A1:D50" value="${v('range')}">`))}
       </div>
-      ${tableOptions(cfg, [5, 15, 60])}`;
+      ${renderHTML(tableOptions(cfg, [5, 15, 60]))}`;
     case 'rest': return `
       <div class="ds-row-url">
-        ${field(esc(t('data_sources.method')), `<select id="f_method" class="input">${opt('GET', 'GET', cfg.method || 'GET')}${opt('POST', 'POST', cfg.method)}</select>`, '', 'ds-method')}
-        ${field(esc(t('data_sources.api_url')) + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.example.com/v1/stats" value="${v('url')}">`)}
+        ${renderHTML(field(t('data_sources.method'), `<select id="f_method" class="input">${renderHTML(opt('GET', 'GET', cfg.method || 'GET'))}${renderHTML(opt('POST', 'POST', cfg.method))}</select>`, '', 'ds-method'))}
+        ${renderHTML(field(t('data_sources.api_url') + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.example.com/v1/stats" value="${v('url')}">`))}
       </div>
-      ${field(esc(t('data_sources.body')), `<textarea id="f_body" class="input ds-mono" rows="3" spellcheck="false" placeholder='{"query": "open tickets"}'>${v('body')}</textarea>`, esc(t('data_sources.body_hint')), 'ds-post-only')}
+      ${renderHTML(field(t('data_sources.body'), `<textarea id="f_body" class="input ds-mono" rows="3" spellcheck="false" ${translatedAttribute("placeholder", "ui.data_sources.placeholder_query_open_tickets_21b26c")}>${renderHTML(v('body'))}</textarea>`, t('data_sources.body_hint'), 'ds-post-only'))}
       <fieldset class="ds-fieldset">
-        <legend>${esc(t('data_sources.auth'))}</legend>
-        <div class="ds-seg" role="radiogroup" aria-label="${esc(t('data_sources.auth'))}">
-          ${['none', 'bearer', 'header', 'basic'].map((a) => `<label><input type="radio" name="f_auth" value="${a}" ${(cfg.auth_type || 'none') === a ? 'checked' : ''}><span>${esc(t(`data_sources.auth_${a}`))}</span></label>`).join('')}
+        <legend>${uiText(t('data_sources.auth'))}</legend>
+        <div class="ds-seg" role="radiogroup" aria-label="${esc(t('data_sources.auth'))}" data-fil-i18n-aria-label="${binding('data_sources.auth', undefined)}">
+          ${renderHTML(['none', 'bearer', 'header', 'basic'].map((a) => `<label><input type="radio" name="f_auth" value="${a}" ${(cfg.auth_type || 'none') === a ? 'checked' : ''}><span>${uiText(t(`data_sources.auth_${a}`))}</span></label>`).join(''))}
         </div>
-        <div class="ds-auth" data-auth="bearer">${field(esc(t('data_sources.token')), `<input id="f_token_b" class="input" type="password" autocomplete="new-password" placeholder="${esc(savedSecret('bearer'))}">`)}</div>
+        <div class="ds-auth" data-auth="bearer">${renderHTML(field(t('data_sources.token'), `<input id="f_token_b" class="input" type="password" autocomplete="new-password" placeholder="${esc(savedSecret('bearer'))}">`))}</div>
         <div class="ds-auth ds-row2" data-auth="header">
-          ${field(esc(t('data_sources.header_name')), `<input id="f_header" class="input" placeholder="X-API-Key" value="${v('auth_header')}">`)}
-          ${field(esc(t('data_sources.header_value')), `<input id="f_token_h" class="input" type="password" autocomplete="new-password" placeholder="${esc(savedSecret('header'))}">`)}
+          ${renderHTML(field(t('data_sources.header_name'), `<input id="f_header" class="input" ${translatedAttribute("placeholder", "ui.data_sources.placeholder_x_api_key_6f9f03")} value="${v('auth_header')}">`))}
+          ${renderHTML(field(t('data_sources.header_value'), `<input id="f_token_h" class="input" type="password" autocomplete="new-password" placeholder="${esc(savedSecret('header'))}">`))}
         </div>
         <div class="ds-auth ds-row2" data-auth="basic">
-          ${field(esc(t('data_sources.username')), `<input id="f_user" class="input" autocomplete="off" value="${v('auth_username')}">`)}
-          ${field(esc(t('data_sources.password')), `<input id="f_pass" class="input" type="password" autocomplete="new-password" placeholder="${esc(savedSecret('basic'))}">`)}
+          ${renderHTML(field(t('data_sources.username'), `<input id="f_user" class="input" autocomplete="off" value="${v('auth_username')}">`))}
+          ${renderHTML(field(t('data_sources.password'), `<input id="f_pass" class="input" type="password" autocomplete="new-password" placeholder="${esc(savedSecret('basic'))}">`))}
         </div>
-        <p class="ds-field-hint ds-lock">${esc(t('data_sources.secret_note'))}</p>
+        <p class="ds-field-hint ds-lock">${uiText(t('data_sources.secret_note'))}</p>
       </fieldset>
       <div class="ds-row2">
-        ${field(esc(t('data_sources.json_path')), `<input id="f_path" class="input ds-mono" spellcheck="false" placeholder="data.items" value="${v('json_path')}">`, esc(t('data_sources.json_path_hint')))}
-        ${field(esc(t('data_sources.format')), `<select id="f_format" class="input">${opt('auto', t('data_sources.format_auto'), cfg.response_format || 'auto')}${opt('json', 'JSON', cfg.response_format)}${opt('csv', 'CSV', cfg.response_format)}</select>`)}
+        ${renderHTML(field(t('data_sources.json_path'), `<input id="f_path" class="input ds-mono" spellcheck="false" ${translatedAttribute("placeholder", "ui.data_sources.placeholder_data_items_425f3f")} value="${v('json_path')}">`, t('data_sources.json_path_hint')))}
+        ${renderHTML(field(t('data_sources.format'), `<select id="f_format" class="input">${renderHTML(opt('auto', t('data_sources.format_auto'), cfg.response_format || 'auto'))}${renderHTML(opt('json', 'JSON', cfg.response_format))}${renderHTML(opt('csv', 'CSV', cfg.response_format))}</select>`))}
       </div>
-      ${tableOptions(cfg, [1, 5, 15, 60], true)}`;
+      ${renderHTML(tableOptions(cfg, [1, 5, 15, 60], true))}`;
     case 'csv': return `
       ${field(esc(t('data_sources.csv_url')) + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/export/menu.csv" value="${v('url')}">`, esc(t('data_sources.csv_url_hint')))}
-      ${field(esc(t('data_sources.delimiter')), `<select id="f_delim" class="input">${[['auto', t('data_sources.delim_auto')], [',', t('data_sources.delim_comma')], [';', t('data_sources.delim_semicolon')], ['tab', t('data_sources.delim_tab')], ['|', t('data_sources.delim_pipe')]].map(([a, b]) => opt(a, b, cfg.delimiter || 'auto')).join('')}</select>`)}
+      ${field(esc(t('data_sources.delimiter')), `<select id="f_delim" class="input">${renderHTML([['auto', t('data_sources.delim_auto')], [',', t('data_sources.delim_comma')], [';', t('data_sources.delim_semicolon')], ['tab', t('data_sources.delim_tab')], ['|', t('data_sources.delim_pipe')]].map(([a, b]) => opt(a, b, cfg.delimiter || 'auto')).join(''))}</select>`)}
       ${tableOptions(cfg, [1, 5, 15, 60])}`;
     case 'rss': return `
-      ${field(esc(t('data_sources.feed_url')) + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.githubstatus.com/history.rss" value="${v('url')}">`, esc(t('data_sources.feed_url_hint')))}
+      ${renderHTML(field(t('data_sources.feed_url') + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.githubstatus.com/history.rss" value="${v('url')}">`, t('data_sources.feed_url_hint')))}
       <div class="ds-row3">
-        ${field(esc(t('data_sources.max_items')), `<input id="f_items" class="input" type="number" min="1" max="50" value="${v('max_items', 10)}">`)}
-        ${field(esc(t('data_sources.summary_chars')), `<input id="f_chars" class="input" type="number" min="40" max="1000" step="20" value="${v('summary_chars', 200)}">`)}
-        ${field(esc(t('data_sources.interval_label')), intervalSelect('f_interval', cfg.interval_min, [5, 15, 60]))}
+        ${renderHTML(field(t('data_sources.max_items'), `<input id="f_items" class="input" type="number" min="1" max="50" value="${v('max_items', 10)}">`))}
+        ${renderHTML(field(t('data_sources.summary_chars'), `<input id="f_chars" class="input" type="number" min="40" max="1000" step="20" value="${v('summary_chars', 200)}">`))}
+        ${renderHTML(field(t('data_sources.interval_label'), intervalSelect('f_interval', cfg.interval_min, [5, 15, 60])))}
       </div>
       <div class="ds-row2">
-        ${field(esc(t('data_sources.language_label2')), `<select id="f_locale" class="input">${langOptions(cfg.locale)}</select>`)}
-        ${field(esc(t('data_sources.timezone_label')), `<input id="f_tz" class="input" value="${v('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}">`)}
+        ${renderHTML(field(t('data_sources.language_label2'), `<select id="f_locale" class="input">${renderHTML(langOptions(cfg.locale))}</select>`))}
+        ${renderHTML(field(t('data_sources.timezone_label'), `<input id="f_tz" class="input" value="${v('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}">`))}
       </div>`;
     case 'table': return `
-      <p class="ds-field-hint">${esc(t('data_sources.table_hint'))}</p>
+      <p class="ds-field-hint">${uiText(t('data_sources.table_hint'))}</p>
       <div class="ds-grid-editor" id="f_grid"></div>
       <div class="ds-grid-tools">
-        <button type="button" class="btn btn-sm btn-secondary" id="f_addrow">${esc(t('data_sources.add_row'))}</button>
-        <button type="button" class="btn btn-sm btn-secondary" id="f_addcol">${esc(t('data_sources.add_col'))}</button>
+        <button type="button" class="btn btn-sm btn-secondary" id="f_addrow">${uiText(t('data_sources.add_row'))}</button>
+        <button type="button" class="btn btn-sm btn-secondary" id="f_addcol">${uiText(t('data_sources.add_col'))}</button>
         <span class="ds-spacer"></span>
         <span class="ds-muted" id="f_gridsize"></span>
       </div>
-      ${field(esc(t('data_sources.key_column')), `<select id="f_key" class="input"></select>`, esc(t('data_sources.key_column_hint')))}`;
+      ${renderHTML(field(t('data_sources.key_column'), `<select id="f_key" class="input"></select>`, t('data_sources.key_column_hint')))}`;
     case 'square': return `
       <div class="ds-callout">
-        <b>${esc(t('pos.square_steps_title'))}</b>
-        <ol><li>${esc(t('pos.square_step1'))}</li><li>${esc(t('pos.square_step2'))}</li><li>${esc(t('pos.square_step3'))}</li></ol>
-        <span class="ds-field-hint">${esc(t('pos.square_token_note'))}</span>
+        <b>${uiText(t('pos.square_steps_title'))}</b>
+        <ol><li>${uiText(t('pos.square_step1'))}</li><li>${uiText(t('pos.square_step2'))}</li><li>${uiText(t('pos.square_step3'))}</li></ol>
+        <span class="ds-field-hint">${uiText(t('pos.square_token_note'))}</span>
       </div>
       <div class="ds-row2">
-        ${field(esc(t('pos.square_token')) + (isEdit ? '' : ' *'), `<input id="f_token" class="input" type="password" autocomplete="new-password" spellcheck="false" placeholder="${esc(isEdit ? t('data_sources.secret_saved') : 'EAAA…')}">`)}
-        ${field(esc(t('pos.environment')), `<select id="f_env" class="input">${opt('production', t('pos.env_production'), cfg.environment || 'production')}${opt('sandbox', t('pos.env_sandbox'), cfg.environment)}</select>`)}
+        ${renderHTML(field(t('pos.square_token') + (isEdit ? '' : ' *'), `<input id="f_token" class="input" type="password" autocomplete="new-password" spellcheck="false" placeholder="${esc(isEdit ? t('data_sources.secret_saved') : 'EAAA…')}">`))}
+        ${renderHTML(field(t('pos.environment'), `<select id="f_env" class="input">${renderHTML(opt('production', t('pos.env_production'), cfg.environment || 'production'))}${renderHTML(opt('sandbox', t('pos.env_sandbox'), cfg.environment))}</select>`))}
       </div>
-      ${field(esc(t('pos.location')), `<select id="f_location" class="input">${opt('', t('pos.all_locations'), cfg.location_id || '')}${cfg.location_id ? opt(cfg.location_id, cfg.location_name || cfg.location_id, cfg.location_id) : ''}</select>`, esc(t('pos.location_hint')))}
-      <p class="ds-field-hint ds-lock">${esc(t('pos.secret_note'))}</p>
-      ${posOptions(cfg)}`;
+      ${renderHTML(field(t('pos.location'), `<select id="f_location" class="input">${renderHTML(opt('', t('pos.all_locations'), cfg.location_id || ''))}${renderHTML(cfg.location_id ? opt(cfg.location_id, cfg.location_name || cfg.location_id, cfg.location_id) : '')}</select>`, t('pos.location_hint')))}
+      <p class="ds-field-hint ds-lock">${uiText(t('pos.secret_note'))}</p>
+      ${renderHTML(posOptions(cfg))}`;
     case 'shopify': {
       const mode = cfg.connect_with === 'client_credentials' ? 'client_credentials' : 'token';
       return `
       <div class="ds-callout">
-        <b>${esc(t('pos.shopify_steps_title'))}</b>
-        <ol><li>${esc(t('pos.shopify_step1'))}</li><li>${esc(t('pos.shopify_step2'))}</li><li>${esc(t('pos.shopify_step3'))}</li></ol>
+        <b>${uiText(t('pos.shopify_steps_title'))}</b>
+        <ol><li>${uiText(t('pos.shopify_step1'))}</li><li>${uiText(t('pos.shopify_step2'))}</li><li>${uiText(t('pos.shopify_step3'))}</li></ol>
       </div>
-      ${field(esc(t('pos.store_domain')) + ' *', `<input id="f_store" class="input" autocomplete="off" spellcheck="false" placeholder="my-cafe.myshopify.com" value="${v('store_domain')}">`, `<span id="f_store_status">${esc(t('pos.store_domain_hint'))}</span>`)}
+      ${renderHTML(field(t('pos.store_domain') + ' *', `<input id="f_store" class="input" autocomplete="off" spellcheck="false" ${translatedAttribute("placeholder", "ui.data_sources.placeholder_my_cafe_myshopify_com_3c39b9")} value="${v('store_domain')}">`, `<span id="f_store_status">${uiText(t('pos.store_domain_hint'))}</span>`))}
       <fieldset class="ds-fieldset">
-        <legend>${esc(t('pos.connect_with'))}</legend>
-        <div class="ds-seg" role="radiogroup" aria-label="${esc(t('pos.connect_with'))}">
-          ${['token', 'client_credentials'].map((m) => `<label><input type="radio" name="f_connect" value="${m}" ${mode === m ? 'checked' : ''}><span>${esc(t(`pos.connect_${m}`))}</span></label>`).join('')}
+        <legend>${uiText(t('pos.connect_with'))}</legend>
+        <div class="ds-seg" role="radiogroup" aria-label="${esc(t('pos.connect_with'))}" data-fil-i18n-aria-label="${binding('pos.connect_with', undefined)}">
+          ${renderHTML(['token', 'client_credentials'].map((m) => `<label><input type="radio" name="f_connect" value="${m}" ${mode === m ? 'checked' : ''}><span>${uiText(t(`pos.connect_${m}`))}</span></label>`).join(''))}
         </div>
-        <div class="ds-auth" data-auth="token">${field(esc(t('pos.admin_token')), `<input id="f_token" class="input" type="password" autocomplete="new-password" spellcheck="false" placeholder="${esc(isEdit && mode === 'token' ? t('data_sources.secret_saved') : 'shpat_…')}">`, esc(t('pos.admin_token_hint')))}</div>
+        <div class="ds-auth" data-auth="token">${renderHTML(field(t('pos.admin_token'), `<input id="f_token" class="input" type="password" autocomplete="new-password" spellcheck="false" placeholder="${esc(isEdit && mode === 'token' ? t('data_sources.secret_saved') : 'shpat_…')}">`, t('pos.admin_token_hint')))}</div>
         <div class="ds-auth ds-row2" data-auth="client_credentials">
-          ${field(esc(t('pos.client_id')), `<input id="f_client_id" class="input" autocomplete="off" spellcheck="false" value="${v('client_id')}">`)}
-          ${field(esc(t('pos.client_secret')), `<input id="f_client_secret" class="input" type="password" autocomplete="new-password" placeholder="${esc(isEdit && mode === 'client_credentials' ? t('data_sources.secret_saved') : '')}">`)}
+          ${renderHTML(field(t('pos.client_id'), `<input id="f_client_id" class="input" autocomplete="off" spellcheck="false" value="${v('client_id')}">`))}
+          ${renderHTML(field(t('pos.client_secret'), `<input id="f_client_secret" class="input" type="password" autocomplete="new-password" placeholder="${esc(isEdit && mode === 'client_credentials' ? t('data_sources.secret_saved') : '')}">`))}
         </div>
-        <p class="ds-field-hint ds-lock">${esc(t('pos.shopify_scope_note'))}</p>
+        <p class="ds-field-hint ds-lock">${uiText(t('pos.shopify_scope_note'))}</p>
       </fieldset>
       <div class="ds-row2">
-        ${field(esc(t('pos.collections')), `<input id="f_collections" class="input" list="f_collections_list" autocomplete="off" spellcheck="false" placeholder="hot-drinks, pastries" value="${esc(listText(cfg.collections))}"><datalist id="f_collections_list"></datalist>`, esc(t('pos.collections_hint')))}
-        ${field(esc(t('pos.tag')), `<input id="f_tag" class="input" maxlength="80" placeholder="${esc(t('pos.tag_ph'))}" value="${v('tag')}">`, esc(t('pos.tag_hint')))}
+        ${renderHTML(field(t('pos.collections'), `<input id="f_collections" class="input" list="f_collections_list" autocomplete="off" spellcheck="false" ${translatedAttribute("placeholder", "ui.data_sources.placeholder_hot_drinks_pastries_63d122")} value="${esc(listText(cfg.collections))}"><datalist id="f_collections_list"></datalist>`, t('pos.collections_hint')))}
+        ${renderHTML(field(t('pos.tag'), `<input id="f_tag" class="input" maxlength="80" placeholder="${esc(t('pos.tag_ph'))}" data-fil-i18n-placeholder="${binding('pos.tag_ph', undefined)}" value="${v('tag')}">`, t('pos.tag_hint')))}
       </div>
-      ${posOptions(cfg)}`;
+      ${renderHTML(posOptions(cfg))}`;
     }
     default: return '';
   }
@@ -443,24 +447,24 @@ function posOptions(cfg) {
   const open = cfg.include_sections || cfg.exclude_sections || cfg.hide_sold_out || (cfg.variations && cfg.variations !== 'columns') || cfg.price_format === 'number' || cfg.locale;
   return `
     <details class="ds-adv" ${open ? 'open' : ''}>
-      <summary>${esc(t('pos.menu_options'))}</summary>
+      <summary>${uiText(t('pos.menu_options'))}</summary>
       <div class="ds-adv-body">
         <div class="ds-row2">
-          ${field(esc(t('pos.include_sections')), `<input id="f_include" class="input" placeholder="${esc(t('pos.include_ph'))}" value="${esc(listText(cfg.include_sections))}">`, esc(t('pos.include_hint')))}
-          ${field(esc(t('pos.exclude_sections')), `<input id="f_exclude" class="input" placeholder="${esc(t('pos.exclude_ph'))}" value="${esc(listText(cfg.exclude_sections))}">`)}
+          ${renderHTML(field(t('pos.include_sections'), `<input id="f_include" class="input" placeholder="${esc(t('pos.include_ph'))}" data-fil-i18n-placeholder="${binding('pos.include_ph', undefined)}" value="${esc(listText(cfg.include_sections))}">`, t('pos.include_hint')))}
+          ${renderHTML(field(t('pos.exclude_sections'), `<input id="f_exclude" class="input" placeholder="${esc(t('pos.exclude_ph'))}" data-fil-i18n-placeholder="${binding('pos.exclude_ph', undefined)}" value="${esc(listText(cfg.exclude_sections))}">`))}
         </div>
         <div class="ds-row3">
-          ${field(esc(t('pos.variations')), `<select id="f_variations" class="input">${['columns', 'rows', 'first'].map((m) => opt(m, t(`pos.variations_${m}`), cfg.variations || 'columns')).join('')}</select>`)}
-          ${field(esc(t('pos.price_format')), `<select id="f_price_format" class="input">${opt('currency', t('pos.price_currency'), cfg.price_format || 'currency')}${opt('number', t('pos.price_number'), cfg.price_format)}</select>`)}
-          ${field(esc(t('pos.locale')), `<input id="f_locale" class="input" maxlength="20" spellcheck="false" placeholder="${esc(t('pos.locale_ph'))}" value="${esc(cfg.locale || '')}">`)}
+          ${renderHTML(field(t('pos.variations'), `<select id="f_variations" class="input">${renderHTML(['columns', 'rows', 'first'].map((m) => opt(m, t(`pos.variations_${m}`), cfg.variations || 'columns')).join(''))}</select>`))}
+          ${renderHTML(field(t('pos.price_format'), `<select id="f_price_format" class="input">${renderHTML(opt('currency', t('pos.price_currency'), cfg.price_format || 'currency'))}${renderHTML(opt('number', t('pos.price_number'), cfg.price_format))}</select>`))}
+          ${renderHTML(field(t('pos.locale'), `<input id="f_locale" class="input" maxlength="20" spellcheck="false" placeholder="${esc(t('pos.locale_ph'))}" data-fil-i18n-placeholder="${binding('pos.locale_ph', undefined)}" value="${esc(cfg.locale || '')}">`))}
         </div>
         <div class="ds-row3">
-          <label class="ds-check"><input type="checkbox" id="f_hide_sold_out" ${cfg.hide_sold_out ? 'checked' : ''}><span>${esc(t('pos.hide_sold_out'))}</span></label>
-          ${field(esc(t('data_sources.interval_label')), intervalSelect('f_interval', cfg.interval_min || 5, [5, 15, 60]))}
-          ${field(esc(t('data_sources.max_rows')), `<input id="f_maxrows" class="input" type="number" min="1" max="100" placeholder="100" value="${esc(cfg.max_rows || '')}">`)}
+          <label class="ds-check"><input type="checkbox" id="f_hide_sold_out" ${cfg.hide_sold_out ? 'checked' : ''}><span>${uiText(t('pos.hide_sold_out'))}</span></label>
+          ${renderHTML(field(t('data_sources.interval_label'), intervalSelect('f_interval', cfg.interval_min || 5, [5, 15, 60])))}
+          ${renderHTML(field(t('data_sources.max_rows'), `<input id="f_maxrows" class="input" type="number" min="1" max="100" placeholder="100" value="${esc(cfg.max_rows || '')}">`))}
         </div>
-        <p class="ds-field-hint">${esc(t('pos.variations_hint'))}</p>
-        <p class="ds-field-hint">${esc(t('pos.sync_note'))}</p>
+        <p class="ds-field-hint">${uiText(t('pos.variations_hint'))}</p>
+        <p class="ds-field-hint">${uiText(t('pos.sync_note'))}</p>
       </div>
     </details>`;
 }
@@ -469,15 +473,15 @@ function posOptions(cfg) {
 function tableOptions(cfg, intervals, restShape = false) {
   return `
     <details class="ds-adv" ${cfg.key_column || cfg.header_row === false || cfg.max_rows ? 'open' : ''}>
-      <summary>${esc(t('data_sources.table_options'))}</summary>
+      <summary>${uiText(t('data_sources.table_options'))}</summary>
       <div class="ds-adv-body">
-        ${field(esc(t('data_sources.key_column')), `<input id="f_key" class="input" list="f_key_list" autocomplete="off" placeholder="${esc(t('data_sources.key_column_ph'))}" value="${esc(cfg.key_column || '')}"><datalist id="f_key_list"></datalist>`, esc(t('data_sources.key_column_hint')))}
+        ${renderHTML(field(t('data_sources.key_column'), `<input id="f_key" class="input" list="f_key_list" autocomplete="off" placeholder="${esc(t('data_sources.key_column_ph'))}" data-fil-i18n-placeholder="${binding('data_sources.key_column_ph', undefined)}" value="${esc(cfg.key_column || '')}"><datalist id="f_key_list"></datalist>`, t('data_sources.key_column_hint')))}
         <div class="ds-row3">
-          ${restShape
-            ? field(esc(t('data_sources.shape')), `<select id="f_shape" class="input">${opt('auto', t('data_sources.shape_auto'), cfg.shape || 'auto')}${opt('table', t('data_sources.shape_table'), cfg.shape)}${opt('object', t('data_sources.shape_object'), cfg.shape)}</select>`)
-            : field(esc(t('data_sources.max_rows')), `<input id="f_maxrows" class="input" type="number" min="1" max="100" placeholder="100" value="${esc(cfg.max_rows || '')}">`)}
-          ${field(esc(t('data_sources.interval_label')), intervalSelect('f_interval', cfg.interval_min, intervals))}
-          <label class="ds-check"><input type="checkbox" id="f_header_row" ${cfg.header_row === false ? '' : 'checked'}><span>${esc(t('data_sources.header_row'))}</span></label>
+          ${renderHTML(restShape
+            ? field(t('data_sources.shape'), `<select id="f_shape" class="input">${renderHTML(opt('auto', t('data_sources.shape_auto'), cfg.shape || 'auto'))}${renderHTML(opt('table', t('data_sources.shape_table'), cfg.shape))}${renderHTML(opt('object', t('data_sources.shape_object'), cfg.shape))}</select>`)
+            : field(t('data_sources.max_rows'), `<input id="f_maxrows" class="input" type="number" min="1" max="100" placeholder="100" value="${esc(cfg.max_rows || '')}">`))}
+          ${renderHTML(field(t('data_sources.interval_label'), intervalSelect('f_interval', cfg.interval_min, intervals)))}
+          <label class="ds-check"><input type="checkbox" id="f_header_row" ${cfg.header_row === false ? '' : 'checked'}><span>${uiText(t('data_sources.header_row'))}</span></label>
         </div>
       </div>
     </details>`;
@@ -485,42 +489,42 @@ function tableOptions(cfg, intervals, restShape = false) {
 
 function icalFormHtml(cfg) {
   return `
-    ${field(esc(t('data_sources.url_label')), `<input type="text" id="dsUrlInput" class="input" placeholder="${esc(t('data_sources.url_placeholder'))}" value="${esc(cfg.url || '')}">`, esc(t('data_sources.url_hint')))}
+    ${renderHTML(field(t('data_sources.url_label'), `<input type="text" id="dsUrlInput" class="input" placeholder="${esc(t('data_sources.url_placeholder'))}" data-fil-i18n-placeholder="${binding('data_sources.url_placeholder', undefined)}" value="${esc(cfg.url || '')}">`, t('data_sources.url_hint')))}
     <details class="ds-adv">
-      <summary>${esc(t('data_sources.advanced_options'))}</summary>
+      <summary>${uiText(t('data_sources.advanced_options'))}</summary>
       <div class="ds-adv-body">
         <div class="ds-row2">
-          ${field(esc(t('data_sources.interval_label')), `<select id="dsIntervalInput" class="input">
-              ${opt(1, t('data_sources.interval_1min'), cfg.interval_min || 15)}${opt(5, t('data_sources.interval_5min'), cfg.interval_min || 15)}
-              ${opt(15, t('data_sources.interval_15min'), cfg.interval_min || 15)}${opt(60, t('data_sources.interval_1hr'), cfg.interval_min || 15)}</select>`)}
-          ${field(esc(t('data_sources.lookahead_label')), `<input type="number" id="dsLookaheadInput" class="input" value="${esc(cfg.lookahead_days || 14)}" min="1" max="90">`)}
+          ${renderHTML(field(t('data_sources.interval_label'), `<select id="dsIntervalInput" class="input">
+              ${renderHTML(opt(1, t('data_sources.interval_1min'), cfg.interval_min || 15))}${renderHTML(opt(5, t('data_sources.interval_5min'), cfg.interval_min || 15))}
+              ${renderHTML(opt(15, t('data_sources.interval_15min'), cfg.interval_min || 15))}${renderHTML(opt(60, t('data_sources.interval_1hr'), cfg.interval_min || 15))}</select>`))}
+          ${renderHTML(field(t('data_sources.lookahead_label'), `<input type="number" id="dsLookaheadInput" class="input" value="${esc(cfg.lookahead_days || 14)}" min="1" max="90">`))}
         </div>
         <div class="ds-row2">
-          ${field(esc(t('data_sources.filter_include_label')), `<input type="text" id="dsFilterIncludeInput" class="input" placeholder="${esc(t('data_sources.filter_include_placeholder'))}" value="${esc(cfg.filter_include || cfg.filter_text || '')}">`)}
-          ${field(esc(t('data_sources.filter_exclude_label')), `<input type="text" id="dsFilterExcludeInput" class="input" placeholder="${esc(t('data_sources.filter_exclude_placeholder'))}" value="${esc(cfg.filter_exclude || cfg.exclude_text || '')}">`)}
+          ${renderHTML(field(t('data_sources.filter_include_label'), `<input type="text" id="dsFilterIncludeInput" class="input" placeholder="${esc(t('data_sources.filter_include_placeholder'))}" data-fil-i18n-placeholder="${binding('data_sources.filter_include_placeholder', undefined)}" value="${esc(cfg.filter_include || cfg.filter_text || '')}">`))}
+          ${renderHTML(field(t('data_sources.filter_exclude_label'), `<input type="text" id="dsFilterExcludeInput" class="input" placeholder="${esc(t('data_sources.filter_exclude_placeholder'))}" data-fil-i18n-placeholder="${binding('data_sources.filter_exclude_placeholder', undefined)}" value="${esc(cfg.filter_exclude || cfg.exclude_text || '')}">`))}
         </div>
         <div class="ds-row2">
-          ${field(esc(t('data_sources.language_label')), `<select id="dsLocaleInput" class="input">${langOptions(cfg.locale)}</select>`)}
-          ${field(esc(t('data_sources.timezone_label')), `<input type="text" id="dsTzInput" class="input" value="${esc(cfg.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}">`)}
+          ${renderHTML(field(t('data_sources.language_label'), `<select id="dsLocaleInput" class="input">${renderHTML(langOptions(cfg.locale))}</select>`))}
+          ${renderHTML(field(t('data_sources.timezone_label'), `<input type="text" id="dsTzInput" class="input" value="${esc(cfg.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}">`))}
         </div>
-        <label class="ds-check"><input type="checkbox" id="dsPrivacyInput" ${cfg.hide_private ? 'checked' : ''}><span>${esc(t('data_sources.privacy_label'))}</span></label>
+        <label class="ds-check"><input type="checkbox" id="dsPrivacyInput" ${cfg.hide_private ? 'checked' : ''}><span>${uiText(t('data_sources.privacy_label'))}</span></label>
       </div>
     </details>`;
 }
 
 function weatherFormHtml(cfg) {
   return `
-    ${field(esc(t('data_sources.weather_location_label')), `<input type="text" id="dsWxLocationInput" class="input" maxlength="100" placeholder="${esc(t('data_sources.weather_location_placeholder'))}" value="${esc(cfg.location || '')}">`, esc(t('data_sources.weather_location_hint')))}
+    ${renderHTML(field(t('data_sources.weather_location_label'), `<input type="text" id="dsWxLocationInput" class="input" maxlength="100" placeholder="${esc(t('data_sources.weather_location_placeholder'))}" data-fil-i18n-placeholder="${binding('data_sources.weather_location_placeholder', undefined)}" value="${esc(cfg.location || '')}">`, t('data_sources.weather_location_hint')))}
     <div class="ds-row2">
-      ${field(esc(t('data_sources.weather_latitude_label')), `<input type="number" id="dsWxLatInput" class="input" step="any" min="-90" max="90" value="${esc(cfg.latitude != null ? cfg.latitude : '')}">`)}
-      ${field(esc(t('data_sources.weather_longitude_label')), `<input type="number" id="dsWxLonInput" class="input" step="any" min="-180" max="180" value="${esc(cfg.longitude != null ? cfg.longitude : '')}">`)}
+      ${renderHTML(field(t('data_sources.weather_latitude_label'), `<input type="number" id="dsWxLatInput" class="input" step="any" min="-90" max="90" value="${esc(cfg.latitude != null ? cfg.latitude : '')}">`))}
+      ${renderHTML(field(t('data_sources.weather_longitude_label'), `<input type="number" id="dsWxLonInput" class="input" step="any" min="-180" max="180" value="${esc(cfg.longitude != null ? cfg.longitude : '')}">`))}
     </div>
     <div class="ds-row3">
-      ${field(esc(t('data_sources.weather_units_label')), `<select id="dsWxUnitsInput" class="input">${opt('metric', t('data_sources.weather_units_metric'), cfg.units || 'metric')}${opt('imperial', t('data_sources.weather_units_imperial'), cfg.units)}</select>`)}
-      ${field(esc(t('data_sources.weather_locale_label')), `<select id="dsWxLocaleInput" class="input">${langOptions(cfg.locale)}</select>`)}
-      ${field(esc(t('data_sources.interval_label')), intervalSelect('dsWxIntervalInput', cfg.interval_min >= 60 ? 60 : cfg.interval_min == 30 ? 30 : 15, [15, 30, 60]))}
+      ${renderHTML(field(t('data_sources.weather_units_label'), `<select id="dsWxUnitsInput" class="input">${renderHTML(opt('metric', t('data_sources.weather_units_metric'), cfg.units || 'metric'))}${renderHTML(opt('imperial', t('data_sources.weather_units_imperial'), cfg.units))}</select>`))}
+      ${renderHTML(field(t('data_sources.weather_locale_label'), `<select id="dsWxLocaleInput" class="input">${renderHTML(langOptions(cfg.locale))}</select>`))}
+      ${renderHTML(field(t('data_sources.interval_label'), intervalSelect('dsWxIntervalInput', cfg.interval_min >= 60 ? 60 : cfg.interval_min == 30 ? 30 : 15, [15, 30, 60])))}
     </div>
-    <p class="ds-field-hint">${esc(t('data_sources.weather_attribution'))}</p>`;
+    <p class="ds-field-hint">${uiText(t('data_sources.weather_attribution'))}</p>`;
 }
 
 /*
@@ -542,7 +546,7 @@ function openEditModal(ds, presetType, opts = {}) {
   overlay.innerHTML = `
     <div class="modal ds-modal" role="dialog" aria-modal="true" aria-labelledby="dsModalTitle">
       <div class="ds-modal-head">
-        <button type="button" class="ds-back" id="dsBack" aria-label="${esc(t('data_sources.back'))}" hidden>
+        <button type="button" class="ds-back" id="dsBack" aria-label="${esc(t('data_sources.back'))}" data-fil-i18n-aria-label="${binding('data_sources.back', undefined)}" hidden>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <span id="dsHeadIcon"></span>
@@ -550,14 +554,14 @@ function openEditModal(ds, presetType, opts = {}) {
           <h2 id="dsModalTitle"></h2>
           <p id="dsModalSub"></p>
         </div>
-        <button type="button" id="closeDsModalBtn" class="ds-x" aria-label="${esc(t('common.cancel'))}">&times;</button>
+        <button type="button" id="closeDsModalBtn" class="ds-x" aria-label="${esc(t('common.cancel'))}" data-fil-i18n-aria-label="${binding('common.cancel', undefined)}">&times;</button>
       </div>
       <div class="ds-modal-body" id="dsBody"></div>
       <div class="ds-modal-foot" id="dsFoot" hidden>
-        <button type="button" id="dsTestBtn" class="btn btn-secondary">${esc(t('data_sources.test_btn2'))}</button>
+        <button type="button" id="dsTestBtn" class="btn btn-secondary">${uiText(t('data_sources.test_btn2'))}</button>
         <span class="ds-spacer"></span>
-        <button type="button" id="cancelDsModalBtn" class="btn btn-secondary">${esc(t('common.cancel'))}</button>
-        <button type="button" id="saveDsModalBtn" class="btn btn-primary">${isEdit ? esc(t('common.save')) : esc(t('data_sources.save_connect'))}</button>
+        <button type="button" id="cancelDsModalBtn" class="btn btn-secondary">${uiText(t('common.cancel'))}</button>
+        <button type="button" id="saveDsModalBtn" class="btn btn-primary">${renderHTML(isEdit ? t('common.save') : t('data_sources.save_connect'))}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -577,8 +581,8 @@ function openEditModal(ds, presetType, opts = {}) {
     type = null;
     $('#dsBack').hidden = true;
     $('#dsHeadIcon').innerHTML = '';
-    $('#dsModalTitle').textContent = t('data_sources.gallery_title');
-    $('#dsModalSub').textContent = t('data_sources.gallery_sub');
+    bindText($('#dsModalTitle'), 'data_sources.gallery_title', undefined);
+    bindText($('#dsModalSub'), 'data_sources.gallery_sub', undefined);
     $('#dsFoot').hidden = true;
     body.innerHTML = galleryHtml();
     body.querySelectorAll('[data-pick]').forEach((b) => { b.onclick = () => showForm(b.dataset.pick); });
@@ -591,8 +595,8 @@ function openEditModal(ds, presetType, opts = {}) {
     lastColumns = [];
     $('#dsBack').hidden = isEdit || !!opts.onSaved;   // a shortcut opened this type on purpose
     $('#dsHeadIcon').innerHTML = iconTile(type, 'ds-icon-sm');
-    $('#dsModalTitle').textContent = isEdit ? t('data_sources.edit_named', { name: ds.name }) : typeLabel(type);
-    $('#dsModalSub').textContent = TYPES.some((x) => x.type === type) ? t(`data_sources.pitch.${type}`) : (plugin() && plugin().description) || '';
+    bindMessage($('#dsModalTitle'), isEdit ? t('data_sources.edit_named', { name: ds.name }) : typeLabel(type));
+    bindMessage($('#dsModalSub'), TYPES.some((x) => x.type === type) ? t(`data_sources.pitch.${type}`) : (plugin() && plugin().description) || '');
     $('#dsFoot').hidden = false;
     const typeCfg = ds && ds.type === type ? cfg : {};
     let specific;
@@ -602,10 +606,10 @@ function openEditModal(ds, presetType, opts = {}) {
     else specific = formHtml(type, typeCfg, isEdit);
     body.innerHTML = `
       <div class="ds-row2">
-        ${field(esc(t('data_sources.name_label2')) + ' *', `<input type="text" id="dsNameInput" class="input" maxlength="80" placeholder="${esc(t(`data_sources.name_ph.${type}`) === `data_sources.name_ph.${type}` ? t('data_sources.name_placeholder') : t(`data_sources.name_ph.${type}`))}" value="${esc((ds && ds.name) || '')}">`)}
-        ${field(esc(t('data_sources.slug_label')), `<input type="text" id="dsSlugInput" class="input ds-mono" maxlength="60" placeholder="${esc(t('data_sources.slug_placeholder'))}" value="${esc((ds && ds.slug) || '')}">`, `<span id="dsSlugHint"></span>`)}
+        ${renderHTML(field(t('data_sources.name_label2') + ' *', `<input type="text" id="dsNameInput" class="input" maxlength="80" placeholder="${esc(t(`data_sources.name_ph.${type}`) === `data_sources.name_ph.${type}` ? t('data_sources.name_placeholder') : t(`data_sources.name_ph.${type}`))}" value="${esc((ds && ds.name) || '')}">`))}
+        ${renderHTML(field(t('data_sources.slug_label'), `<input type="text" id="dsSlugInput" class="input ds-mono" maxlength="60" placeholder="${esc(t('data_sources.slug_placeholder'))}" data-fil-i18n-placeholder="${binding('data_sources.slug_placeholder', undefined)}" value="${esc((ds && ds.slug) || '')}">`, `<span id="dsSlugHint"></span>`))}
       </div>
-      <div class="ds-form">${specific}</div>
+      <div class="ds-form">${renderHTML(specific)}</div>
       <div id="dsTestResult" class="ds-result" aria-live="polite"></div>`;
     wireForm(typeCfg);
     const nameInput = $('#dsNameInput');
@@ -619,7 +623,7 @@ function openEditModal(ds, presetType, opts = {}) {
     let slugTouched = isEdit;
     const paintSlug = () => {
       const tag = tagFor(slugInput.value.trim() || 'slug', 'key');
-      slugHint.textContent = t('data_sources.slug_used_as', { tag });
+      bindText(slugHint, 'data_sources.slug_used_as', { tag });
     };
     slugInput.oninput = () => { slugTouched = true; paintSlug(); };
     nameInput.oninput = () => {
@@ -647,9 +651,9 @@ function openEditModal(ds, presetType, opts = {}) {
       const paint = () => {
         const r = parseSheetLink(url.value);
         status.className = r ? 'ds-ok-text' : '';
-        if (!url.value.trim()) status.textContent = t('data_sources.sheets_url_hint');
-        else if (!r) { status.textContent = t('data_sources.sheets_url_bad'); status.className = 'ds-err-text'; }
-        else status.textContent = r.kind === 'published' ? t('data_sources.sheets_url_published') : r.gid ? t('data_sources.sheets_url_ok_gid', { gid: r.gid }) : t('data_sources.sheets_url_ok');
+        if (!url.value.trim()) bindText(status, 'data_sources.sheets_url_hint', undefined);
+        else if (!r) { bindText(status, 'data_sources.sheets_url_bad', undefined); status.className = 'ds-err-text'; }
+        else bindMessage(status, r.kind === 'published' ? t('data_sources.sheets_url_published') : r.gid ? t('data_sources.sheets_url_ok_gid', { gid: r.gid }) : t('data_sources.sheets_url_ok'));
       };
       url.oninput = paint; paint();
     }
@@ -665,9 +669,9 @@ function openEditModal(ds, presetType, opts = {}) {
       const status = $('#f_store_status');
       const paint = () => {
         const d = shopDomain(store.value);
-        if (!store.value.trim()) { status.className = ''; status.textContent = t('pos.store_domain_hint'); }
-        else if (!d) { status.className = 'ds-err-text'; status.textContent = t('pos.store_domain_bad'); }
-        else { status.className = 'ds-ok-text'; status.textContent = d; }
+        if (!store.value.trim()) { status.className = ''; bindText(status, 'pos.store_domain_hint', undefined); }
+        else if (!d) { status.className = 'ds-err-text'; bindText(status, 'pos.store_domain_bad', undefined); }
+        else { status.className = 'ds-ok-text'; bindMessage(status, d); }
       };
       store.oninput = paint; paint();
     }
@@ -693,14 +697,14 @@ function openEditModal(ds, presetType, opts = {}) {
     const host = $('#f_grid');
     host.innerHTML = `
       <table class="ds-edit-table">
-        <thead><tr>${grid.columns.map((name, c) => `<th><div class="ds-th">
-          <input class="ds-cell ds-cell-head" data-h="${c}" value="${esc(name)}" maxlength="80" placeholder="${esc(t('data_sources.column_n', { n: c + 1 }))}" aria-label="${esc(t('data_sources.column_n', { n: c + 1 }))}">
-          ${grid.columns.length > 1 ? `<button type="button" class="ds-del" data-delcol="${c}" aria-label="${esc(t('data_sources.remove_col'))}" title="${esc(t('data_sources.remove_col'))}">×</button>` : ''}
-        </div></th>`).join('')}<th class="ds-th-x"></th></tr></thead>
-        <tbody>${grid.rows.map((row, r) => `<tr>${grid.columns.map((_, c) => `<td><input class="ds-cell" data-r="${r}" data-c="${c}" value="${esc(row[c] == null ? '' : row[c])}" maxlength="500" aria-label="${esc(t('data_sources.cell_label', { r: r + 1, c: grid.columns[c] || c + 1 }))}"></td>`).join('')}
-          <td class="ds-th-x"><button type="button" class="ds-del" data-delrow="${r}" aria-label="${esc(t('data_sources.remove_row'))}" title="${esc(t('data_sources.remove_row'))}">×</button></td></tr>`).join('')}</tbody>
+        <thead><tr>${renderHTML(grid.columns.map((name, c) => `<th><div class="ds-th">
+          <input class="ds-cell ds-cell-head" data-h="${c}" value="${esc(name)}" maxlength="80" placeholder="${esc(t('data_sources.column_n', { n: c + 1 }))}" data-fil-i18n-placeholder="${binding('data_sources.column_n', { n: c + 1 })}" aria-label="${esc(t('data_sources.column_n', { n: c + 1 }))}" data-fil-i18n-aria-label="${binding('data_sources.column_n', { n: c + 1 })}">
+          ${renderHTML(grid.columns.length > 1 ? `<button type="button" class="ds-del" data-delcol="${c}" aria-label="${esc(t('data_sources.remove_col'))}" data-fil-i18n-aria-label="${binding('data_sources.remove_col', undefined)}" title="${esc(t('data_sources.remove_col'))}" data-fil-i18n-title="${binding('data_sources.remove_col', undefined)}">×</button>` : '')}
+        </div></th>`).join(''))}<th class="ds-th-x"></th></tr></thead>
+        <tbody>${renderHTML(grid.rows.map((row, r) => `<tr>${renderHTML(grid.columns.map((_, c) => `<td><input class="ds-cell" data-r="${r}" data-c="${c}" value="${esc(row[c] == null ? '' : row[c])}" maxlength="500" aria-label="${esc(t('data_sources.cell_label', { r: r + 1, c: grid.columns[c] || c + 1 }))}" data-fil-i18n-aria-label="${binding('data_sources.cell_label', { r: r + 1, c: grid.columns[c] || c + 1 })}"></td>`).join(''))}
+          <td class="ds-th-x"><button type="button" class="ds-del" data-delrow="${r}" aria-label="${esc(t('data_sources.remove_row'))}" data-fil-i18n-aria-label="${binding('data_sources.remove_row', undefined)}" title="${esc(t('data_sources.remove_row'))}" data-fil-i18n-title="${binding('data_sources.remove_row', undefined)}">×</button></td></tr>`).join(''))}</tbody>
       </table>`;
-    $('#f_gridsize').textContent = t('data_sources.grid_size', { r: grid.rows.length, c: grid.columns.length });
+    bindText($('#f_gridsize'), 'data_sources.grid_size', { r: grid.rows.length, c: grid.columns.length });
     const key = $('#f_key');
     key.innerHTML = opt('', t('data_sources.key_none'), grid.key) + grid.columns.filter((n) => n.trim()).map((n) => opt(n, n, grid.key)).join('');
     key.onchange = () => { grid.key = key.value; };
@@ -839,15 +843,15 @@ function openEditModal(ds, presetType, opts = {}) {
     const result = $('#dsTestResult');
     const c = readConfig();
     const why = missing(c);
-    if (why) { result.innerHTML = `<div class="ds-alert ds-alert-error">${esc(why)}</div>`; return; }
+    if (why) { result.innerHTML = `<div class="ds-alert ds-alert-error">${uiText(why)}</div>`; return; }
     testBtn.disabled = true;
     testBtn.classList.add('is-busy');
-    result.innerHTML = `<div class="ds-testing"><span class="spinner"></span>${esc(t('data_sources.testing'))}</div>`;
+    result.innerHTML = `<div class="ds-testing"><span class="spinner"></span>${uiText(t('data_sources.testing'))}</div>`;
     try {
       const res = await api.testDataSource(type, c, ds && ds.id);
       renderTestResult(result, res);
     } catch (err) {
-      result.innerHTML = `<div class="ds-alert ds-alert-error"><strong>${esc(t('data_sources.test_failed2'))}</strong><span>${esc(err.message)}</span></div>`;
+      result.innerHTML = `<div class="ds-alert ds-alert-error"><strong>${uiText(t('data_sources.test_failed2'))}</strong><span>${uiText((err.uiMessage || err.message))}</span></div>`;
     } finally {
       testBtn.disabled = false;
       testBtn.classList.remove('is-busy');
@@ -872,20 +876,20 @@ function openEditModal(ds, presetType, opts = {}) {
     const keyList = $('#f_key_list');
     if (keyList) keyList.innerHTML = lastColumns.map((col) => `<option value="${esc(col.name)}">`).join('');
     host.innerHTML = `
-      <div class="ds-alert ds-alert-ok"><strong>${esc(head)}</strong></div>
-      ${tbl ? `
+      <div class="ds-alert ds-alert-ok"><strong>${uiText(head)}</strong></div>
+      ${renderHTML(tbl ? `
         <div class="ds-sample">
-          <div class="ds-sample-title">${esc(t('data_sources.sample_title'))}
-            ${TABULAR.has(type) && type !== 'table' && !POS_TYPES.has(type) && !val('#f_key') ? `<span class="ds-muted"> · ${esc(t('data_sources.pick_key'))}</span>` : ''}</div>
+          <div class="ds-sample-title">${renderHTML(t('data_sources.sample_title'))}
+            ${renderHTML(TABULAR.has(type) && type !== 'table' && !POS_TYPES.has(type) && !val('#f_key') ? `<span class="ds-muted"> · ${uiText(t('data_sources.pick_key'))}</span>` : '')}</div>
           <div class="ds-sample-scroll"><table class="ds-sample-table">
-            <thead><tr>${tbl.columns.map((col) => `<th>${TABULAR.has(type) && type !== 'table' && !POS_TYPES.has(type)
-              ? `<button type="button" class="ds-colkey" data-key="${esc(col.name)}" title="${esc(t('data_sources.use_as_key'))}">${esc(col.name)}</button>`
-              : esc(col.name)}<code>${esc(col.key)}</code></th>`).join('')}</tr></thead>
-            <tbody>${(tbl.sample || []).map((r) => `<tr>${tbl.columns.map((col) => `<td>${esc(String(r[col.key] == null ? '' : r[col.key]).slice(0, 80))}</td>`).join('')}</tr>`).join('')}</tbody>
+            <thead><tr>${renderHTML(tbl.columns.map((col) => `<th>${renderHTML(TABULAR.has(type) && type !== 'table' && !POS_TYPES.has(type)
+              ? `<button type="button" class="ds-colkey" data-key="${esc(col.name)}" title="${esc(t('data_sources.use_as_key'))}" data-fil-i18n-title="${binding('data_sources.use_as_key', undefined)}">${uiText(col.name)}</button>`
+              : esc(col.name))}<code>${uiText(col.key)}</code></th>`).join(''))}</tr></thead>
+            <tbody>${renderHTML((tbl.sample || []).map((r) => `<tr>${renderHTML(tbl.columns.map((col) => `<td>${uiText(String(r[col.key] == null ? '' : r[col.key]).slice(0, 80))}</td>`).join(''))}</tr>`).join(''))}</tbody>
           </table></div>
-        </div>` : ''}
-      ${res.raw != null && !tbl ? `<details class="ds-adv"><summary>${esc(t('data_sources.raw_title'))}</summary><pre class="ds-raw">${esc(JSON.stringify(res.raw, null, 2).slice(0, 4000))}</pre></details>` : ''}
-      <div class="ds-sample-title">${esc(t('data_sources.vars_title'))}</div>
+        </div>` : '')}
+      ${renderHTML(res.raw != null && !tbl ? `<details class="ds-adv"><summary>${uiText(t('data_sources.raw_title'))}</summary><pre class="ds-raw">${uiText(JSON.stringify(res.raw, null, 2).slice(0, 4000))}</pre></details>` : '')}
+      <div class="ds-sample-title">${uiText(t('data_sources.vars_title'))}</div>
       <div class="ds-vars-inline"></div>`;
     mountVariables(host.querySelector('.ds-vars-inline'), val('#dsSlugInput') || 'slug', data, type, !!(type === 'table' ? grid && grid.key : val('#f_key')));
     host.querySelectorAll('.ds-colkey').forEach((b) => {
@@ -910,7 +914,7 @@ function openEditModal(ds, presetType, opts = {}) {
       loc.innerHTML = opt('', t('pos.all_locations'), cur) + meta.locations.map((l) => opt(l.id, l.name, cur)).join('');
     }
     const dl = $('#f_collections_list');
-    if (dl && Array.isArray(meta.collections)) dl.innerHTML = meta.collections.map((c) => `<option value="${esc(c.handle)}">${esc(c.title)}</option>`).join('');
+    if (dl && Array.isArray(meta.collections)) dl.innerHTML = meta.collections.map((c) => `<option value="${esc(c.handle)}">${uiText(c.title)}</option>`).join('');
   }
 
   // ─── save ────────────────────────────────────────────────────────────────────
@@ -922,12 +926,12 @@ function openEditModal(ds, presetType, opts = {}) {
     const why = !name ? t('data_sources.name_required') : missing(c);
     const result = $('#dsTestResult');
     if (why) {
-      result.innerHTML = `<div class="ds-alert ds-alert-error">${esc(why)}</div>`;
+      result.innerHTML = `<div class="ds-alert ds-alert-error">${uiText(why)}</div>`;
       result.scrollIntoView({ block: 'nearest' });
       return;
     }
     saveBtn.disabled = true;
-    saveBtn.textContent = t('data_sources.saving');
+    bindText(saveBtn, 'data_sources.saving', undefined);
     try {
       const payload = { name, slug: slug || undefined, type, config: c };
       if (isEdit) {
@@ -943,9 +947,9 @@ function openEditModal(ds, presetType, opts = {}) {
       // The first sync runs in the background; show its result without a manual refresh.
       setTimeout(() => { if (document.getElementById('dataSourcesContainer')) loadDataSources(); }, 2500);
     } catch (err) {
-      result.innerHTML = `<div class="ds-alert ds-alert-error">${esc(err.message || t('common.error'))}</div>`;
+      result.innerHTML = `<div class="ds-alert ds-alert-error">${uiText((err.uiMessage || err.message) || t('common.error'))}</div>`;
       saveBtn.disabled = false;
-      saveBtn.textContent = isEdit ? t('common.save') : t('data_sources.save_connect');
+      bindMessage(saveBtn, isEdit ? t('common.save') : t('data_sources.save_connect'));
     }
   };
   $('#dsBack').onclick = showGallery;

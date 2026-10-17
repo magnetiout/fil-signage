@@ -1,7 +1,12 @@
+import {translatedAttribute} from '../lib/i18n-bindings.js';
+import { renderHTML, uiText, attributeBinding } from '../lib/i18n-bindings.js';
+import { displayQuantity, displayValue, message as t } from '../i18n.js';
+
+import { localizeServerError } from '../api.js';
+
 import { api, meshCapability } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
 
 // A refused request must reject, not resolve.
 //
@@ -13,8 +18,8 @@ import { t } from '../i18n.js';
 // the dead catch). The shared client in api.js has always thrown on !res.ok; these local copies did
 // not. Same contract now, including the 401 session-expiry reload.
 const API = (url, opts = {}) => fetch('/api' + url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error('Session expired'); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `Request failed (${r.status})`); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.reports.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
 });
 
@@ -30,12 +35,12 @@ export async function render(container) {
 
   container.innerHTML = `
     <div class="page-header">
-      <div><h1>${t('report.title')} <span class="help-tip" data-tip="${t('report.help_tip')}">?</span></h1><div class="subtitle">${t('report.subtitle')}</div></div>
+      <div><h1>${renderHTML(t('report.title'))} <span class="help-tip" ${translatedAttribute("data-tip", 'report.help_tip')}>?</span></h1><div class="subtitle">${renderHTML(t('report.subtitle'))}</div></div>
       <a class="btn btn-secondary" id="exportBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
-        ${t('report.export_csv')}
+        ${renderHTML(t('report.export_csv'))}
       </a>
     </div>
 
@@ -45,25 +50,25 @@ export async function render(container) {
          servers to report on, so an ordinary install sees nothing new. -->
     <div id="uptimeReportSection"></div>
 
-    ${copied ? `<div class="empty-state" style="margin-bottom:16px;padding:12px 16px"><p style="margin:0">${t('report.history_on_primary')}</p></div>` : ''}
+    ${renderHTML(copied ? `<div class="empty-state" style="margin-bottom:16px;padding:12px 16px"><p style="margin:0">${renderHTML(t('report.history_on_primary'))}</p></div>` : '')}
 
     <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end">
-      <div class="form-group" style="margin:0"><label>${t('report.device')}</label>
+      <div class="form-group" style="margin:0"><label>${renderHTML(t('report.device'))}</label>
         <select id="reportDevice" class="input" style="width:200px;background:var(--bg-input)">
-          <option value="">${t('report.all_devices')}</option>
-          ${devices.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}
+          <option value="">${renderHTML(t('report.all_devices'))}</option>
+          ${renderHTML(devices.map(d => `<option value="${d.id}">${uiText(d.name)}</option>`).join(''))}
         </select>
       </div>
-      <div class="form-group" style="margin:0"><label>${t('report.start_date')}</label>
+      <div class="form-group" style="margin:0"><label>${renderHTML(t('report.start_date'))}</label>
         <input type="date" id="reportStart" class="input" value="${thirtyDaysAgo.toISOString().split('T')[0]}">
       </div>
-      <div class="form-group" style="margin:0"><label>${t('report.end_date')}</label>
+      <div class="form-group" style="margin:0"><label>${renderHTML(t('report.end_date'))}</label>
         <input type="date" id="reportEnd" class="input" value="${today.toISOString().split('T')[0]}">
       </div>
-      <button class="btn btn-primary btn-sm" id="loadReportBtn">${t('report.load_report')}</button>
+      <button class="btn btn-primary btn-sm" id="loadReportBtn">${renderHTML(t('report.load_report'))}</button>
     </div>
 
-    <div id="reportContent"><div class="empty-state"><h3>${t('report.select_range')}</h3></div></div>
+    <div id="reportContent"><div class="empty-state"><h3>${renderHTML(t('report.select_range'))}</h3></div></div>
   `;
 
   document.getElementById('loadReportBtn').onclick = loadReport;
@@ -84,7 +89,7 @@ export async function render(container) {
     const end = document.getElementById('reportEnd').value;
     const content = document.getElementById('reportContent');
 
-    content.innerHTML = `<div class="empty-state"><h3>${t('common.loading')}</h3></div>`;
+    content.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('common.loading'))}</h3></div>`;
 
     try {
       const summary = await API(`/reports/summary?device_id=${deviceId}&start=${start}&end=${end}`);
@@ -92,78 +97,78 @@ export async function render(container) {
       content.innerHTML = `
         <div class="info-grid" style="margin-bottom:24px">
           <div class="info-card">
-            <div class="info-card-label">${t('report.total_plays')}</div>
-            <div class="info-card-value">${summary.overall.total_plays.toLocaleString()}</div>
+            <div class="info-card-label">${renderHTML(t('report.total_plays'))}</div>
+            <div class="info-card-value">${renderHTML(displayValue(summary.overall.total_plays, "toLocaleString", undefined))}</div>
           </div>
           <div class="info-card">
-            <div class="info-card-label">${t('report.total_hours')}</div>
-            <div class="info-card-value">${summary.overall.total_hours}</div>
+            <div class="info-card-label">${renderHTML(t('report.total_hours'))}</div>
+            <div class="info-card-value">${renderHTML(summary.overall.total_hours)}</div>
           </div>
           <div class="info-card">
-            <div class="info-card-label">${t('report.unique_content')}</div>
-            <div class="info-card-value">${summary.overall.unique_content}</div>
+            <div class="info-card-label">${renderHTML(t('report.unique_content'))}</div>
+            <div class="info-card-value">${renderHTML(summary.overall.unique_content)}</div>
           </div>
           <div class="info-card">
-            <div class="info-card-label">${t('report.active_devices')}</div>
-            <div class="info-card-value">${summary.overall.unique_devices}</div>
+            <div class="info-card-label">${renderHTML(t('report.active_devices'))}</div>
+            <div class="info-card-value">${renderHTML(summary.overall.unique_devices)}</div>
           </div>
           <div class="info-card">
-            <div class="info-card-label">${t('report.avg_duration')}</div>
-            <div class="info-card-value small">${formatDuration(summary.overall.avg_duration_sec)}</div>
+            <div class="info-card-label">${renderHTML(t('report.avg_duration'))}</div>
+            <div class="info-card-value small">${renderHTML(formatDuration(summary.overall.avg_duration_sec))}</div>
           </div>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;margin-bottom:24px">
           <div class="settings-section" style="margin:0;min-width:0">
-            <h3 style="font-size:14px;margin-bottom:12px">${t('report.plays_per_day')}</h3>
+            <h3 style="font-size:14px;margin-bottom:12px">${renderHTML(t('report.plays_per_day'))}</h3>
             <div id="dailyChart" style="height:200px;display:flex;align-items:flex-end;gap:2px"></div>
           </div>
 
           <div class="settings-section" style="margin:0;min-width:0">
-            <h3 style="font-size:14px;margin-bottom:12px">${t('report.plays_by_hour')}</h3>
+            <h3 style="font-size:14px;margin-bottom:12px">${renderHTML(t('report.plays_by_hour'))}</h3>
             <div id="hourlyChart" style="height:200px;display:flex;align-items:flex-end;gap:1px"></div>
           </div>
         </div>
 
         <div class="settings-section" style="margin-bottom:20px">
-          <h3 style="font-size:14px;margin-bottom:12px">${t('report.top_content')}</h3>
+          <h3 style="font-size:14px;margin-bottom:12px">${renderHTML(t('report.top_content'))}</h3>
           <div class="table-wrap">
           <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:460px">
             <thead><tr style="border-bottom:1px solid var(--border)">
-              <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('report.col.content')}</th>
-              <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('report.col.plays')}</th>
-              <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('report.col.total_hours')}</th>
+              <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('report.col.content'))}</th>
+              <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('report.col.plays'))}</th>
+              <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('report.col.total_hours'))}</th>
             </tr></thead>
             <tbody>
-              ${summary.by_content.map(c => `
+              ${renderHTML(summary.by_content.map(c => `
                 <tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:8px">${esc(c.content_name || t('common.unknown'))}</td>
-                  <td style="padding:8px;text-align:right">${c.plays}</td>
-                  <td style="padding:8px;text-align:right">${(c.total_seconds / 3600).toFixed(1)}</td>
+                  <td style="padding:8px">${uiText(c.content_name || t('common.unknown'))}</td>
+                  <td style="padding:8px;text-align:right">${renderHTML(c.plays)}</td>
+                  <td style="padding:8px;text-align:right">${renderHTML(displayValue(c.total_seconds/3600,'toLocaleString',{minimumFractionDigits:1,maximumFractionDigits:1}))}</td>
                 </tr>
-              `).join('') || `<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--text-muted)">${t('report.no_data')}</td></tr>`}
+              `).join('') || `<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--text-muted)">${renderHTML(t('report.no_data'))}</td></tr>`)}
             </tbody>
           </table>
           </div>
         </div>
 
         <div class="settings-section">
-          <h3 style="font-size:14px;margin-bottom:12px">${t('report.by_device')}</h3>
+          <h3 style="font-size:14px;margin-bottom:12px">${renderHTML(t('report.by_device'))}</h3>
           <div class="table-wrap">
           <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px">
             <thead><tr style="border-bottom:1px solid var(--border)">
-              <th style="padding:8px;text-align:left;color:var(--text-muted)">${t('report.col.device')}</th>
-              <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('report.col.plays')}</th>
-              <th style="padding:8px;text-align:right;color:var(--text-muted)">${t('report.col.total_hours')}</th>
+              <th style="padding:8px;text-align:left;color:var(--text-muted)">${renderHTML(t('report.col.device'))}</th>
+              <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('report.col.plays'))}</th>
+              <th style="padding:8px;text-align:right;color:var(--text-muted)">${renderHTML(t('report.col.total_hours'))}</th>
             </tr></thead>
             <tbody>
-              ${summary.by_device.map(d => `
+              ${renderHTML(summary.by_device.map(d => `
                 <tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:8px">${esc(d.device_name || '')}</td>
-                  <td style="padding:8px;text-align:right">${d.plays}</td>
-                  <td style="padding:8px;text-align:right">${(d.total_seconds / 3600).toFixed(1)}</td>
+                  <td style="padding:8px">${uiText(d.device_name || '')}</td>
+                  <td style="padding:8px;text-align:right">${renderHTML(d.plays)}</td>
+                  <td style="padding:8px;text-align:right">${renderHTML(displayValue(d.total_seconds/3600,'toLocaleString',{minimumFractionDigits:1,maximumFractionDigits:1}))}</td>
                 </tr>
-              `).join('') || `<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--text-muted)">${t('report.no_data')}</td></tr>`}
+              `).join('') || `<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--text-muted)">${renderHTML(t('report.no_data'))}</td></tr>`)}
             </tbody>
           </table>
           </div>
@@ -177,18 +182,18 @@ export async function render(container) {
       renderKioskSessions(deviceId, start, end).catch(() => {});
 
       renderBarChart('dailyChart', summary.by_day.map(d => ({
-        label: new Date(d.day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        label: displayValue(new Date(d.day), "toLocaleDateString", { month: 'short', day: 'numeric' }),
         value: d.plays
       })));
 
       const hourData = Array.from({ length: 24 }, (_, i) => {
         const found = summary.by_hour.find(h => h.hour === i);
-        return { label: i === 0 ? '12a' : i < 12 ? i + 'a' : i === 12 ? '12p' : (i - 12) + 'p', value: found?.plays || 0 };
+        return { label: displayValue(new Date(2000,0,1,i),"toLocaleTimeString",{hour:"numeric"}), value: found?.plays || 0 };
       });
       renderBarChart('hourlyChart', hourData);
 
     } catch (err) {
-      content.innerHTML = `<div class="empty-state"><h3>${t('report.error')}</h3><p>${esc(err.message)}</p></div>`;
+      content.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('report.error'))}</h3><p>${uiText((err.uiMessage || err.message))}</p></div>`;
     }
   }
 }
@@ -200,34 +205,34 @@ async function renderKioskSessions(deviceId, start, end) {
   if (!host) return;
   const k = await API(`/reports/kiosk-sessions?device_id=${encodeURIComponent(deviceId || '')}&start=${encodeURIComponent(start || '')}&end=${encodeURIComponent(end || '')}`);
   if (!k || !k.overall || !k.overall.sessions) { host.innerHTML = ''; return; }
-  const th = (txt, right) => `<th style="padding:8px;text-align:${right ? 'right' : 'left'};color:var(--text-muted)">${txt}</th>`;
-  const td = (txt, right) => `<td style="padding:8px${right ? ';text-align:right' : ''}">${txt}</td>`;
+  const th = (txt, right) => `<th style="padding:8px;text-align:${right ? 'right' : 'left'};color:var(--text-muted)">${renderHTML(txt)}</th>`;
+  const td = (txt, right) => `<td style="padding:8px${right ? ';text-align:right' : ''}">${renderHTML(txt)}</td>`;
   host.innerHTML = `
     <div class="settings-section" style="margin-top:20px">
-      <h3 style="font-size:14px;margin-bottom:4px">${t('report.kiosk.title')}</h3>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${t('report.kiosk.hint')}</div>
+      <h3 style="font-size:14px;margin-bottom:4px">${renderHTML(t('report.kiosk.title'))}</h3>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${renderHTML(t('report.kiosk.hint'))}</div>
       <div class="info-grid" style="margin-bottom:16px">
-        <div class="info-card"><div class="info-card-label">${t('report.kiosk.sessions')}</div><div class="info-card-value">${Number(k.overall.sessions).toLocaleString()}</div></div>
-        <div class="info-card"><div class="info-card-label">${t('report.kiosk.avg_length')}</div><div class="info-card-value small">${formatDuration(k.overall.avg_duration_sec)}</div></div>
-        <div class="info-card"><div class="info-card-label">${t('report.kiosk.avg_pages')}</div><div class="info-card-value small">${esc(String(k.overall.avg_pages))}</div></div>
+        <div class="info-card"><div class="info-card-label">${renderHTML(t('report.kiosk.sessions'))}</div><div class="info-card-value">${renderHTML(displayValue(Number(k.overall.sessions), "toLocaleString", undefined))}</div></div>
+        <div class="info-card"><div class="info-card-label">${renderHTML(t('report.kiosk.avg_length'))}</div><div class="info-card-value small">${renderHTML(formatDuration(k.overall.avg_duration_sec))}</div></div>
+        <div class="info-card"><div class="info-card-label">${renderHTML(t('report.kiosk.avg_pages'))}</div><div class="info-card-value small">${uiText(String(k.overall.avg_pages))}</div></div>
       </div>
-      <h3 style="font-size:13px;margin-bottom:8px">${t('report.kiosk.per_day')}</h3>
+      <h3 style="font-size:13px;margin-bottom:8px">${renderHTML(t('report.kiosk.per_day'))}</h3>
       <div id="kioskDailyChart" style="height:200px;display:flex;align-items:flex-end;gap:2px;margin-bottom:16px"></div>
       <div class="table-wrap">
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:520px">
         <thead><tr style="border-bottom:1px solid var(--border)">
-          ${th(t('report.kiosk.col.widget'))}${th(t('report.kiosk.sessions'), 1)}${th(t('report.kiosk.col.per_active_day'), 1)}${th(t('report.kiosk.avg_length'), 1)}${th(t('report.kiosk.avg_pages'), 1)}${th(t('report.kiosk.col.errors'), 1)}
+          ${renderHTML(th(t('report.kiosk.col.widget')))}${renderHTML(th(t('report.kiosk.sessions'), 1))}${renderHTML(th(t('report.kiosk.col.per_active_day'), 1))}${renderHTML(th(t('report.kiosk.avg_length'), 1))}${renderHTML(th(t('report.kiosk.avg_pages'), 1))}${renderHTML(th(t('report.kiosk.col.errors'), 1))}
         </tr></thead>
         <tbody>
-          ${k.by_widget.map((w) => `<tr style="border-bottom:1px solid var(--border)">
-            ${td(esc(w.widget_name || t('report.kiosk.deleted_widget')))}${td(Number(w.sessions).toLocaleString(), 1)}${td(esc(String(w.sessions_per_day)), 1)}${td(formatDuration(w.avg_duration_sec), 1)}${td(esc(String(w.avg_pages)), 1)}${td(Number(w.ended_by_error || 0), 1)}
-          </tr>`).join('')}
+          ${renderHTML(k.by_widget.map((w) => `<tr style="border-bottom:1px solid var(--border)">
+            ${renderHTML(td(esc(w.widget_name || t('report.kiosk.deleted_widget'))))}${renderHTML(td(displayValue(Number(w.sessions), "toLocaleString", undefined), 1))}${renderHTML(td(esc(String(w.sessions_per_day)), 1))}${renderHTML(td(formatDuration(w.avg_duration_sec), 1))}${renderHTML(td(esc(String(w.avg_pages)), 1))}${renderHTML(td(Number(w.ended_by_error || 0), 1))}
+          </tr>`).join(''))}
         </tbody>
       </table>
       </div>
     </div>`;
   renderBarChart('kioskDailyChart', k.by_day.map((d) => ({
-    label: new Date(d.day + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+    label: displayValue(new Date(d.day + 'T00:00:00Z'), "toLocaleDateString", { month: 'short', day: 'numeric', timeZone: 'UTC' }),
     value: d.sessions,
   })));
 }
@@ -240,22 +245,21 @@ function renderBarChart(containerId, data) {
 
   container.innerHTML = data.map(d => `
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0" title="${esc(d.label)}: ${esc(d.value)}">
-      <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;display:${d.value > 0 ? 'block' : 'none'}">${d.value}</div>
+      <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;display:${d.value > 0 ? 'block' : 'none'}">${renderHTML(d.value)}</div>
       <div style="width:100%;max-width:20px;height:${Math.max(2, (d.value / maxVal) * 160)}px;background:var(--accent);border-radius:2px 2px 0 0;min-height:2px"></div>
-      <div style="font-size:8px;color:var(--text-muted);margin-top:4px;transform:rotate(-45deg);white-space:nowrap">${esc(d.label)}</div>
+      <div style="font-size:8px;color:var(--text-muted);margin-top:4px;transform:rotate(-45deg);white-space:nowrap">${uiText(d.label)}</div>
     </div>
   `).join('');
 }
 
 function formatDuration(seconds) {
-  if (!seconds) return '0s';
-  if (seconds < 60) return Math.round(seconds) + 's';
-  if (seconds < 3600) return Math.round(seconds / 60) + 'm';
-  return (seconds / 3600).toFixed(1) + 'h';
+  if (!seconds) return displayValue(0,'toLocaleString',{style:'unit',unit:'second',unitDisplay:'short'});
+  if (seconds < 60) return displayValue(Math.round(seconds),'toLocaleString',{style:'unit',unit:'second',unitDisplay:'short'});
+  if (seconds < 3600) return displayValue(Math.round(seconds/60),'toLocaleString',{style:'unit',unit:'minute',unitDisplay:'short'});
+  return displayValue(seconds/3600,'toLocaleString',{style:'unit',unit:'hour',unitDisplay:'short',minimumFractionDigits:1,maximumFractionDigits:1});
 }
 
 export function cleanup() {}
-
 
 /* ===================== per-client uptime (mesh) ===================== */
 
@@ -283,17 +287,17 @@ export async function renderUptimeReport() {
 
   host.innerHTML = `
     <div class="settings-section" style="margin-bottom:20px">
-      <h3 style="font-size:14px;margin-bottom:12px">Screen uptime by client</h3>
+      <h3 style="font-size:14px;margin-bottom:12px">${renderHTML(t("ui.reports.screen_uptime_by_client"))}</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <!-- ⚠️ No "all clients" option. A report headed with no client name, mixing customers into
              one percentage, is the document that gets forwarded to one of those customers. -->
         <select id="upClient" class="input" style="max-width:260px">
-          ${uptimeState.clients.map((c) => `<option value="${esc(c.id)}" ${c.id === uptimeState.clientId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+          ${renderHTML(uptimeState.clients.map((c) => `<option value="${esc(c.id)}" ${c.id === uptimeState.clientId ? 'selected' : ''}>${uiText(c.name)}</option>`).join(''))}
         </select>
         <select id="upDays" class="input" style="max-width:160px">
-          ${[7, 30, 90].map((d) => `<option value="${d}" ${uptimeState.days === d ? 'selected' : ''}>Last ${d} days</option>`).join('')}
+          ${renderHTML([7, 30, 90].map((d) => `<option value="${d}" ${uptimeState.days === d ? 'selected' : ''}>${renderHTML(t("ui.reports.last_days_de8246", {value2: d}))}</option>`).join(''))}
         </select>
-        <button class="btn btn-secondary btn-sm" id="upCsv">Download CSV</button>
+        <button class="btn btn-secondary btn-sm" id="upCsv">${renderHTML(t("ui.reports.download_csv"))}</button>
       </div>
       <div id="upBody"></div>
     </div>`;
@@ -316,17 +320,17 @@ function uptimeWindow() {
 async function loadUptime() {
   const body = document.getElementById('upBody');
   if (!body) return;
-  body.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Building report…</div>';
+  body.innerHTML = `<div style="color:var(--text-muted);font-size:13px">${renderHTML(t("ui.reports.building_report_bcbced"))}</div>`;
   const { from, to } = uptimeWindow();
   let r;
   try {
     r = await api.get(`/mesh/uptime?clientId=${encodeURIComponent(uptimeState.clientId)}&from=${from}&to=${to}`);
   } catch (e) {
-    body.innerHTML = `<div style="color:var(--text-muted)">Could not load: ${esc(e.message)}</div>`;
+    body.innerHTML = `<div style="color:var(--text-muted)">${renderHTML(t("ui.reports.could_not_load_1c60b7", {value0: (e.uiMessage || e.message)}))}</div>`;
     return;
   }
   if (r.uptimePct == null) {
-    body.innerHTML = `<div style="color:var(--text-muted);font-size:13px">${esc(r.note || 'Nothing to report.')}</div>`;
+    body.innerHTML = `<div style="color:var(--text-muted);font-size:13px">${uiText(r.note || t("ui.labels.nothing_to_report_3da897"))}</div>`;
     return;
   }
 
@@ -336,38 +340,38 @@ async function loadUptime() {
 
   body.innerHTML = `
     <div style="display:flex;gap:32px;flex-wrap:wrap;margin-bottom:12px">
-      <div><div style="color:var(--text-muted);font-size:11px">Uptime</div>
-           <div style="font-size:28px">${r.uptimePct}%</div></div>
-      <div><div style="color:var(--text-muted);font-size:11px">Coverage</div>
-           <div style="font-size:28px;${r.coveragePct != null && r.coveragePct < 95 ? 'color:var(--warning,#f59e0b)' : ''}">${r.coveragePct == null ? '—' : r.coveragePct + '%'}</div></div>
-      <div><div style="color:var(--text-muted);font-size:11px">Screens</div>
-           <div style="font-size:28px">${r.deviceCount}</div></div>
-      <div><div style="color:var(--text-muted);font-size:11px">Incidents</div>
-           <div style="font-size:28px">${r.incidentCount}</div></div>
+      <div><div style="color:var(--text-muted);font-size:11px">${renderHTML(t("ui.reports.uptime"))}</div>
+           <div style="font-size:28px">${renderHTML(r.uptimePct)}%</div></div>
+      <div><div style="color:var(--text-muted);font-size:11px">${renderHTML(t("ui.reports.coverage"))}</div>
+           <div style="font-size:28px;${r.coveragePct != null && r.coveragePct < 95 ? 'color:var(--warning,#f59e0b)' : ''}">${renderHTML(r.coveragePct == null ? '—' : r.coveragePct + '%')}</div></div>
+      <div><div style="color:var(--text-muted);font-size:11px">${renderHTML(t("ui.reports.screens"))}</div>
+           <div style="font-size:28px">${renderHTML(r.deviceCount)}</div></div>
+      <div><div style="color:var(--text-muted);font-size:11px">${renderHTML(t("ui.reports.incidents"))}</div>
+           <div style="font-size:28px">${renderHTML(r.incidentCount)}</div></div>
     </div>
-    <p style="color:var(--text-muted);font-size:12px">${esc(r.coverageNote || '')} ${esc(r.timezoneLabel || '')}</p>
+    <p style="color:var(--text-muted);font-size:12px">${uiText(r.coverageNote || '')} ${uiText(r.timezoneLabel || '')}</p>
     <div class="table-wrap">
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:520px">
         <thead><tr style="border-bottom:1px solid var(--border)">
-          <th style="${THs}">Screen</th><th style="${THs}">Server</th><th style="${THs}">What</th>
-          <th style="${THs}">Started</th><th style="${THs}">For</th>
+          <th style="${THs}">${renderHTML(t("ui.reports.screen_6e5613"))}</th><th style="${THs}">${renderHTML(t("ui.reports.server_aef7de"))}</th><th style="${THs}">${renderHTML(t("ui.reports.what_f8cf83"))}</th>
+          <th style="${THs}">${renderHTML(t("ui.reports.started_ecbc89"))}</th><th style="${THs}">${renderHTML(t("ui.reports.for_ca15eb"))}</th>
         </tr></thead>
         <tbody>
-          ${r.incidents.slice(0, 50).map((i) => `
+          ${renderHTML(r.incidents.slice(0, 50).map((i) => `
             <tr style="border-bottom:1px solid var(--border)">
-              <td style="${TDs}">${esc(i.deviceName || i.deviceId)}</td>
-              <td style="${TDs}"><span class="corp-chip" title="${esc(i.originNodeId)}" style="font-family:monospace">${esc(String(i.originNodeId).slice(0, 8))}</span></td>
-              <td style="${TDs}">${esc(String(i.alertType || '').replace(/[_-]/g, ' '))}</td>
-              <td style="${TDs}">${esc(new Date(i.openedAt * 1000).toLocaleString())}</td>
-              <td style="${TDs}">${i.ongoing ? '<strong>still down</strong>' : esc(mins(i.downSeconds))}</td>
+              <td style="${TDs}">${uiText(i.deviceName || i.deviceId)}</td>
+              <td style="${TDs}"><span class="corp-chip" title="${esc(i.originNodeId)}"${attributeBinding("title", i.originNodeId)} style="font-family:monospace">${uiText(String(i.originNodeId).slice(0, 8))}</span></td>
+              <td style="${TDs}">${uiText(String(i.alertType || '').replace(/[_-]/g, ' '))}</td>
+              <td style="${TDs}">${renderHTML(displayValue(new Date(i.openedAt * 1000), "toLocaleString", undefined))}</td>
+              <td style="${TDs}">${renderHTML(i.ongoing ? `<strong>${renderHTML(t("ui.reports.still_down_65a8d1"))}</strong>` : esc(mins(i.downSeconds)))}</td>
             </tr>`).join('') ||
-            '<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--text-muted)">No incidents in this period.</td></tr>'}
+            `<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--text-muted)">${renderHTML(t("ui.reports.no_incidents_in_this_period_f9f610"))}</td></tr>`)}
         </tbody>
       </table>
     </div>
-    ${r.incidents.length > 50
+    ${renderHTML(r.incidents.length > 50
       // Never a silent truncation: showing 50 of 300 reads as "that was all of them".
-      ? `<p style="color:var(--text-muted);font-size:12px">Showing the 50 longest of ${r.incidents.length}. The CSV contains every one.</p>` : ''}`;
+      ? `<p style="color:var(--text-muted);font-size:12px">${renderHTML(t("ui.reports.showing_the_50_longest_of_the_csv_5de48a", {value0: r.incidents.length}))}</p>` : '')}`;
 }
 
 /*
@@ -381,7 +385,7 @@ async function downloadUptimeCsv() {
     const res = await fetch(
       `/api/mesh/uptime.csv?clientId=${encodeURIComponent(uptimeState.clientId)}&from=${from}&to=${to}`,
       { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    if (!res.ok) throw new Error(t("ui.reports.export_failed_value0_6dc4a6", {value0: res.status}));
     const blob = await res.blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -392,6 +396,6 @@ async function downloadUptimeCsv() {
     // Revoked on a delay: some browsers abort a download whose object URL is released too early.
     setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
   } catch (e) {
-    showToast(`Could not export: ${e.message}`, 'error');
+    showToast(t("ui.reports.could_not_export_value0_f26ab1", {value0: e.uiMessage || e.message}), 'error');
   }
 }

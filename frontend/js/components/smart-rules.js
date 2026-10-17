@@ -1,10 +1,13 @@
+import { attributeBinding } from '../lib/i18n-bindings.js';
+import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 // Smart playlist rule editor (server: lib/smart-playlist.js). One modal used both when creating a
 // smart playlist and when editing its rules. It shows a live preview of what the rules select, so
 // the operator sees the result before anything is saved, let alone published.
 
 import { api } from '../api.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 
 const FIELD_OPS = {
   tag: ['has', 'lacks'],
@@ -71,32 +74,31 @@ export async function openSmartRulesModal({ title, initial, saveLabel, onSave, o
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px';
   modal.innerHTML = `
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:720px;max-width:100%;max-height:90vh;overflow:auto">
-      <h3 style="margin-bottom:6px;color:var(--text-primary)">${esc(title || t('smart.title'))}</h3>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">${t('smart.intro')}</p>
+    <div role="dialog" aria-modal="true" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:720px;max-width:100%;max-height:90vh;overflow:auto">
+      <h3 style="margin-bottom:6px;color:var(--text-primary)">${uiText(title || t('smart.title'))}</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">${renderHTML(t('smart.intro'))}</p>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--text-secondary)">
-        ${t('smart.match_prefix')}
-        <select id="smMatch" class="input" style="width:auto">
-          <option value="all">${t('smart.match_all')}</option>
-          <option value="any">${t('smart.match_any')}</option>
+        ${renderHTML(t('smart.rule_match_label'))}
+        <select id="smMatch" aria-label="${esc(t('smart.rule_match_label'))}"${attributeBinding("aria-label",t('smart.rule_match_label'))} class="input" style="width:auto">
+          <option value="all">${renderHTML(t('smart.match_mode_all'))}</option>
+          <option value="any">${renderHTML(t('smart.match_mode_any'))}</option>
         </select>
-        ${t('smart.match_suffix')}
       </div>
       <div id="smRules" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
-      <button class="btn btn-secondary btn-sm" id="smAdd">${t('smart.add_rule')}</button>
+      <button class="btn btn-secondary btn-sm" id="smAdd">${renderHTML(t('smart.add_rule'))}</button>
       <div style="display:flex;flex-wrap:wrap;gap:16px;margin:16px 0;font-size:13px;color:var(--text-secondary)">
-        <label>${t('smart.sort')}
+        <label>${renderHTML(t('smart.sort'))}
           <select id="smSort" class="input" style="width:auto;margin-left:6px">
-            <option value="name">${t('smart.sort_name')}</option>
-            <option value="newest">${t('smart.sort_newest')}</option>
-            <option value="oldest">${t('smart.sort_oldest')}</option>
+            <option value="name">${renderHTML(t('smart.sort_name'))}</option>
+            <option value="newest">${renderHTML(t('smart.sort_newest'))}</option>
+            <option value="oldest">${renderHTML(t('smart.sort_oldest'))}</option>
           </select>
         </label>
-        <label>${t('smart.limit')}
+        <label>${renderHTML(t('smart.limit'))}
           <input id="smLimit" type="number" class="input" min="1" max="500" style="width:80px;margin-left:6px">
         </label>
-        <label>${t('smart.image_duration')}
-          <input id="smImage" type="number" class="input" min="1" style="width:70px;margin-left:6px"> ${t('playlist.sec')}
+        <label>${renderHTML(t('smart.image_duration'))}
+          <input id="smImage" type="number" class="input" min="1" style="width:70px;margin-left:6px"> ${renderHTML(t('playlist.sec'))}
         </label>
       </div>
       <div style="background:var(--bg-input);border-radius:var(--radius);padding:12px;margin-bottom:12px">
@@ -105,8 +107,8 @@ export async function openSmartRulesModal({ title, initial, saveLabel, onSave, o
       </div>
       <div id="smError" style="color:var(--danger);font-size:13px;min-height:18px;margin-bottom:8px"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn btn-secondary" id="smCancel">${t('common.cancel')}</button>
-        <button class="btn btn-primary" id="smSave">${esc(saveLabel || t('smart.save'))}</button>
+        <button class="btn btn-secondary" id="smCancel">${renderHTML(t('common.cancel'))}</button>
+        <button class="btn btn-primary" id="smSave">${uiText(saveLabel || t('smart.save'))}</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -124,29 +126,29 @@ export async function openSmartRulesModal({ title, initial, saveLabel, onSave, o
 
   const valueInput = (r, i) => {
     if (r.field === 'type') {
-      return `<select class="input sm-value" data-i="${i}" style="flex:1">${TYPES.map((ty) => `<option value="${ty}" ${r.value === ty ? 'selected' : ''}>${t(`smart.type.${ty}`)}</option>`).join('')}</select>`;
+      return `<select class="input sm-value" data-i="${i}" style="flex:1">${renderHTML(TYPES.map((ty) => `<option value="${ty}" ${r.value === ty ? 'selected' : ''}>${renderHTML(t(`smart.type.${ty}`))}</option>`).join(''))}</select>`;
     }
     if (r.field === 'folder') {
-      return `<select class="input sm-value" data-i="${i}" style="flex:1">${folders.length
-        ? folders.map((f) => `<option value="${esc(f.id)}" ${r.value === f.id ? 'selected' : ''}>${'&nbsp;&nbsp;'.repeat(f.depth)}${esc(f.name)}</option>`).join('')
-        : `<option value="">${t('smart.no_folders')}</option>`}</select>`;
+      return `<select class="input sm-value" data-i="${i}" style="flex:1">${renderHTML(folders.length
+        ? folders.map((f) => `<option value="${esc(f.id)}" ${r.value === f.id ? 'selected' : ''}>${renderHTML('&nbsp;&nbsp;'.repeat(f.depth))}${uiText(f.name)}</option>`).join('')
+        : `<option value="">${renderHTML(t('smart.no_folders'))}</option>`)}</select>`;
     }
-    if (r.field === 'meta' && (r.op === 'exists' || r.op === 'missing')) return '<span style="flex:1"></span>';
-    return `<input class="input sm-value" data-i="${i}" value="${esc(r.value || '')}" placeholder="${esc(t(r.field === 'tag' ? 'smart.ph_tag' : r.field === 'meta' ? 'smart.ph_meta_value' : 'smart.ph_name'))}" style="flex:1">`;
+    if (r.field === 'meta' && (r.op === 'exists' || r.op === 'missing')) return `<span style="flex:1"></span>`;
+    return `<input class="input sm-value" data-i="${i}" value="${esc(r.value || '')}" placeholder="${esc(t(r.field === 'tag' ? 'smart.ph_tag' : r.field === 'meta' ? 'smart.ph_meta_value' : 'smart.ph_name'))}" data-fil-i18n-placeholder="${binding(r.field === 'tag' ? 'smart.ph_tag' : r.field === 'meta' ? 'smart.ph_meta_value' : 'smart.ph_name', undefined)}" style="flex:1">`;
   };
 
   function paintRules() {
     $('smRules').innerHTML = state.rules.map((r, i) => `
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <select class="input sm-field" data-i="${i}" style="width:auto">
-          ${Object.keys(FIELD_OPS).map((f) => `<option value="${f}" ${r.field === f ? 'selected' : ''}>${t(`smart.field.${f}`)}</option>`).join('')}
+          ${renderHTML(Object.keys(FIELD_OPS).map((f) => `<option value="${f}" ${r.field === f ? 'selected' : ''}>${renderHTML(t(`smart.field.${f}`))}</option>`).join(''))}
         </select>
-        ${r.field === 'meta' ? `<input class="input sm-key" data-i="${i}" value="${esc(r.key || '')}" placeholder="${esc(t('smart.ph_meta_key'))}" style="width:110px">` : ''}
+        ${renderHTML(r.field === 'meta' ? `<input class="input sm-key" data-i="${i}" value="${esc(r.key || '')}" placeholder="${esc(t('smart.ph_meta_key'))}" data-fil-i18n-placeholder="${binding('smart.ph_meta_key', undefined)}" style="width:110px">` : '')}
         <select class="input sm-op" data-i="${i}" style="width:auto">
-          ${FIELD_OPS[r.field].map((op) => `<option value="${op}" ${r.op === op ? 'selected' : ''}>${t(`smart.op.${op}`)}</option>`).join('')}
+          ${renderHTML(FIELD_OPS[r.field].map((op) => `<option value="${op}" ${r.op === op ? 'selected' : ''}>${renderHTML(t(`smart.op.${op}`))}</option>`).join(''))}
         </select>
-        ${valueInput(r, i)}
-        <button class="btn btn-secondary btn-sm sm-del" data-i="${i}" title="${esc(t('smart.remove_rule'))}" ${state.rules.length < 2 ? 'disabled' : ''}>✕</button>
+        ${renderHTML(valueInput(r, i))}
+        <button class="btn btn-secondary btn-sm sm-del" data-i="${i}" title="${esc(t('smart.remove_rule'))}" data-fil-i18n-title="${binding('smart.remove_rule', undefined)}" ${state.rules.length < 2 ? 'disabled' : ''}>✕</button>
       </div>`).join('');
     // What a select DISPLAYS is what gets saved. A stored value that is no longer an option (a deleted
     // folder) would otherwise show one folder while silently keeping another.
@@ -188,24 +190,24 @@ export async function openSmartRulesModal({ title, initial, saveLabel, onSave, o
       const rules = collect();
       // Bump first, so a request already in flight for the old rules cannot land on top of this.
       const seq = ++previewSeq;
-      $('smError').textContent = '';
+      bindMessage($('smError'), '');
       if (incomplete(rules)) {
-        $('smCount').textContent = t('smart.preview_incomplete');
+        bindText($('smCount'), 'smart.preview_incomplete', undefined);
         $('smPreview').innerHTML = '';
         return;
       }
       try {
         const r = await api.smartPlaylistPreview(rules);
         if (seq !== previewSeq) return;
-        $('smCount').textContent = t('smart.preview_count', { n: r.count });
+        bindText($('smCount'), 'smart.preview_count', { n: r.count });
         $('smPreview').innerHTML = r.items.length
-          ? r.items.map((it) => `<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.filename)} <span style="opacity:0.6">· ${esc(t(`smart.type.${it.type}`))}</span></div>`).join('')
-          : `<div>${t('smart.preview_none')}</div>`;
-        $('smError').textContent = '';
+          ? r.items.map((it) => `<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${uiText(it.filename)} <span style="opacity:0.6">· ${uiText(t(`smart.type.${it.type}`))}</span></div>`).join('')
+          : `<div>${renderHTML(t('smart.preview_none'))}</div>`;
+        bindMessage($('smError'), '');
       } catch (err) {
         if (seq !== previewSeq) return;
-        $('smCount').textContent = '';
-        $('smError').textContent = err.message;
+        bindMessage($('smCount'), '');
+        bindMessage($('smError'), (err.uiMessage || err.message));
       }
     }, 250);
   }
@@ -252,7 +254,7 @@ export async function openSmartRulesModal({ title, initial, saveLabel, onSave, o
   $('smCancel').addEventListener('click', () => close());
   $('smSave').addEventListener('click', async () => {
     const rules = collect();
-    if (incomplete(rules)) { $('smError').textContent = t('smart.preview_incomplete'); return; }
+    if (incomplete(rules)) { bindText($('smError'), 'smart.preview_incomplete', undefined); return; }
     const btn = $('smSave');
     btn.disabled = true;
     try {
@@ -260,7 +262,7 @@ export async function openSmartRulesModal({ title, initial, saveLabel, onSave, o
       saved = true;
       close();
     } catch (err) {
-      $('smError').textContent = err.message;
+      bindMessage($('smError'), (err.uiMessage || err.message));
       btn.disabled = false;
     }
   });

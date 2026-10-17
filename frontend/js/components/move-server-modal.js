@@ -1,4 +1,6 @@
-import { t } from '../i18n.js';
+import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { message as t } from '../i18n.js';
 
 /*
  * #312 follow-up: "Move to a new server" for a whole workspace. This is a fleet-wide, blast-radius
@@ -18,8 +20,8 @@ export function openMoveServerModal(opts = {}) {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
-        <h3>${esc(t('moveserver.title'))}</h3>
-        <button class="btn-icon" type="button" data-ms-close aria-label="${esc(t('common.close'))}">
+        <h3>${uiText(t('moveserver.title'))}</h3>
+        <button class="btn-icon" type="button" data-ms-close aria-label="${esc(t('common.close'))}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -27,21 +29,21 @@ export function openMoveServerModal(opts = {}) {
       </div>
       <div class="modal-body">
         <div style="font-size:13px;line-height:1.5;margin-bottom:14px;padding:12px;border-radius:8px;background:var(--danger-bg,rgba(220,38,38,.08));border:1px solid var(--danger,#dc2626)">
-          ${t('moveserver.warning', { n: esc(String(deviceCount)), workspace: esc(workspaceName) })}
+          ${renderHTML(t('moveserver.warning', { n: esc(String(deviceCount)), workspace: esc(workspaceName) }))}
         </div>
         <div class="form-group">
-          <label for="msUrl">${esc(t('moveserver.url_label'))}</label>
+          <label for="msUrl">${uiText(t('moveserver.url_label'))}</label>
           <input id="msUrl" type="url" inputmode="url" class="input" autocomplete="off" placeholder="https://" style="width:100%" value="${esc(suggestedUrl)}">
         </div>
         <div class="form-group">
-          <label for="msConfirm">${t('moveserver.type_label', { name: esc(workspaceName) })}</label>
+          <label for="msConfirm">${renderHTML(t('moveserver.type_label', { name: esc(workspaceName) }))}</label>
           <input id="msConfirm" type="text" class="input" autocomplete="off" style="width:100%">
         </div>
         <div id="msError" style="display:none;color:var(--danger);font-size:13px;margin-top:8px"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" type="button" data-ms-close>${esc(t('common.cancel'))}</button>
-        <button class="btn btn-danger" type="button" id="msConfirmBtn" disabled>${esc(t('moveserver.confirm_btn'))}</button>
+        <button class="btn btn-secondary" type="button" data-ms-close>${uiText(t('common.cancel'))}</button>
+        <button class="btn btn-danger" type="button" id="msConfirmBtn" disabled>${uiText(t('moveserver.confirm_btn'))}</button>
       </div>
     </div>
   `;
@@ -70,18 +72,18 @@ export function openMoveServerModal(opts = {}) {
 
   async function commit() {
     if (!(urlOk() && nameOk())) return;
-    if (!urlOk()) { errorEl.textContent = t('moveserver.url_bad'); errorEl.style.display = 'block'; return; }
+    if (!urlOk()) { bindText(errorEl, 'moveserver.url_bad', undefined); errorEl.style.display = 'block'; return; }
     errorEl.style.display = 'none';
     confirmBtn.disabled = true;
     const label = confirmBtn.textContent;
-    confirmBtn.textContent = t('moveserver.sending');
+    bindText(confirmBtn, 'moveserver.sending', undefined);
     try {
       await onConfirm?.(cleanUrl());
       close();
     } catch (err) {
       confirmBtn.disabled = false;
-      confirmBtn.textContent = label;
-      errorEl.textContent = err?.message || t('moveserver.failed');
+      bindMessage(confirmBtn, label);
+      bindMessage(errorEl, (err.uiMessage || err?.message) || t('moveserver.failed'));
       errorEl.style.display = 'block';
     }
   }

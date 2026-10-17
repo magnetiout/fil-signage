@@ -1,6 +1,10 @@
+import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { localizeServerError } from '../api.js';
+
 import { showToast } from '../components/toast.js';
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { esc, isTouchFirst } from '../utils.js';
 import { publishOrSubmit } from '../components/release.js';
 import { mountStockPicker } from '../components/stock-picker.js';
@@ -25,9 +29,9 @@ function trialBlock() {
   if (!u || u.self_hosted || u.hide_billing || !tr || !tr.active) return '';
   const devices = u.plan_limits && u.plan_limits.max_devices > 0 ? u.plan_limits.max_devices : 25;
   return `<div style="background:var(--bg-input);border:1px solid var(--accent);border-radius:8px;padding:16px;margin-bottom:16px">
-      <p style="font-size:14px;color:var(--text-primary);font-weight:600;margin-bottom:6px">${esc(t('onboarding.trial.title', { plan: u.plan_name || 'Pro', n: tr.days_left }))}</p>
-      <p style="font-size:13px;color:var(--text-secondary);line-height:1.5">${esc(t('onboarding.trial.body', { devices }))}</p>
-      <a href="#/billing?from=onboarding" id="onboardSeePlans" style="display:inline-block;margin-top:8px;font-size:13px;color:var(--accent);font-weight:600">${esc(t('onboarding.trial.see_plans'))} →</a>
+      <p style="font-size:14px;color:var(--text-primary);font-weight:600;margin-bottom:6px">${uiText(t('onboarding.trial.title', { plan: u.plan_name || 'Pro', n: tr.days_left }))}</p>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.5">${uiText(t('onboarding.trial.body', { devices }))}</p>
+      <a href="#/billing?from=onboarding" id="onboardSeePlans" style="display:inline-block;margin-top:8px;font-size:13px;color:var(--accent);font-weight:600">${uiText(t('onboarding.trial.see_plans'))} →</a>
     </div>`;
 }
 
@@ -37,38 +41,38 @@ function getSteps(addMode = false) {
     {
       title: t('onboarding.step.welcome.title'),
       icon: '&#128075;',
-      content: `<p style="font-size:16px;color:var(--text-secondary);margin-bottom:16px">${t('onboarding.step.welcome.intro')}</p>
-        <p style="color:var(--text-muted);font-size:14px">${t('onboarding.step.welcome.guide_through')}</p>
+      content: `<p style="font-size:16px;color:var(--text-secondary);margin-bottom:16px">${renderHTML(t('onboarding.step.welcome.intro'))}</p>
+        <p style="color:var(--text-muted);font-size:14px">${renderHTML(t('onboarding.step.welcome.guide_through'))}</p>
         <ul style="color:var(--text-muted);font-size:14px;padding-left:20px;margin-top:8px;line-height:2">
-          <li>${t('onboarding.step.welcome.bullet_download')}</li>
-          <li>${t('onboarding.step.welcome.bullet_pair')}</li>
-          <li>${t('onboarding.step.welcome.bullet_upload')}</li>
+          <li>${renderHTML(t('onboarding.step.welcome.bullet_download'))}</li>
+          <li>${renderHTML(t('onboarding.step.welcome.bullet_pair'))}</li>
+          <li>${renderHTML(t('onboarding.step.welcome.bullet_upload'))}</li>
         </ul>`,
       action: null
     },
     {
       title: t('onboarding.step.player.title'),
       icon: '&#128229;',
-      content: `<p style="color:var(--text-secondary);margin-bottom:16px">${t('onboarding.step.player.intro')}</p>
+      content: `<p style="color:var(--text-secondary);margin-bottom:16px">${renderHTML(t('onboarding.step.player.intro'))}</p>
         <!-- 3.0: the fastest path to "a screen is playing something I chose" needs no hardware at all. -->
         <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--bg-input);border:1px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:12px">
           <div style="font-size:28px">&#128187;</div>
           <div style="flex:1 1 200px;min-width:0">
-            <div style="font-weight:600;font-size:14px">${t('onboarding.step.player.try_browser_title')}</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${t('onboarding.step.player.try_browser_desc')}</div>
+            <div style="font-weight:600;font-size:14px">${renderHTML(t('onboarding.step.player.try_browser_title'))}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${renderHTML(t('onboarding.step.player.try_browser_desc'))}</div>
           </div>
-          <a href="/player" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="white-space:nowrap;margin-left:auto">${t('onboarding.step.player.try_browser_btn')}</a>
+          <a href="/player" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="white-space:nowrap;margin-left:auto">${renderHTML(t('onboarding.step.player.try_browser_btn'))}</a>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
           <a href="/download/apk" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;text-decoration:none;color:var(--text-primary)">
             <div style="font-size:32px;margin-bottom:8px">&#129302;</div>
-            <div style="font-weight:600;font-size:14px">${t('onboarding.step.player.android_label')}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('onboarding.step.player.android_desc')}</div>
+            <div style="font-weight:600;font-size:14px">${renderHTML(t('onboarding.step.player.android_label'))}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('onboarding.step.player.android_desc'))}</div>
           </a>
           <a href="/player" target="_blank" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;text-decoration:none;color:var(--text-primary)">
             <div style="font-size:32px;margin-bottom:8px">&#127760;</div>
-            <div style="font-weight:600;font-size:14px">${t('onboarding.step.player.web_label')}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t('onboarding.step.player.web_desc')}</div>
+            <div style="font-weight:600;font-size:14px">${renderHTML(t('onboarding.step.player.web_label'))}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t('onboarding.step.player.web_desc'))}</div>
           </a>
         </div>
         <!--
@@ -77,23 +81,23 @@ function getSteps(addMode = false) {
           own downloads index, which lists every player it can serve plus a setup guide for each.
         -->
         <p style="font-size:12px;margin-top:12px">
-          <a href="/download/" target="_blank" style="color:var(--accent);font-weight:600">${t('onboarding.step.player.all_downloads')}</a>
+          <a href="/download/" target="_blank" style="color:var(--accent);font-weight:600">${renderHTML(t('onboarding.step.player.all_downloads'))}</a>
         </p>
-        <p style="color:var(--text-muted);font-size:12px;margin-top:12px">${t('onboarding.step.player.url_hint')}</p>
-        <code style="display:block;background:var(--bg-input);padding:10px;border-radius:6px;margin-top:6px;font-size:14px;user-select:all">${window.location.origin}</code>`,
+        <p style="color:var(--text-muted);font-size:12px;margin-top:12px">${renderHTML(t('onboarding.step.player.url_hint'))}</p>
+        <code style="display:block;background:var(--bg-input);padding:10px;border-radius:6px;margin-top:6px;font-size:14px;user-select:all">${renderHTML(window.location.origin)}</code>`,
       action: null
     },
     {
       title: t('onboarding.step.pair.title'),
       icon: '&#128279;',
-      content: `<p id="onboardPairIntro" style="color:var(--text-secondary);margin-bottom:16px">${t('onboarding.step.pair.intro')}</p>
+      content: `<p id="onboardPairIntro" style="color:var(--text-secondary);margin-bottom:16px">${renderHTML(t('onboarding.step.pair.intro'))}</p>
         <div style="text-align:center;margin:20px 0">
           <input type="text" id="onboardPairingCode" maxlength="6" pattern="[0-9]{6}" placeholder="000000"
             style="max-width:240px;width:100%;padding:16px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;
             color:var(--text-primary);font-size:32px;font-weight:700;text-align:center;letter-spacing:8px;font-family:monospace">
         </div>
         <div style="text-align:center">
-          <input type="text" id="onboardDeviceName" placeholder="${t('onboarding.step.pair.name_placeholder')}"
+          <input type="text" id="onboardDeviceName" placeholder="${t('onboarding.step.pair.name_placeholder')}" data-fil-i18n-placeholder="${binding('onboarding.step.pair.name_placeholder', undefined)}"
             style="max-width:240px;width:100%;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px;text-align:center">
         </div>
         <!--
@@ -105,15 +109,15 @@ function getSteps(addMode = false) {
         <label id="onboardNoStorageWrap" style="display:flex;gap:8px;align-items:flex-start;max-width:340px;margin:16px auto 0;cursor:pointer">
           <input type="checkbox" id="onboardNoStorage" style="margin-top:3px">
           <span>
-            <span style="font-size:13px;color:var(--text-secondary)">${t('add_display.no_storage')}</span>
-            <span style="display:block;font-size:11px;color:var(--text-muted);margin-top:2px">${t('add_display.no_storage_hint')}</span>
+            <span style="font-size:13px;color:var(--text-secondary)">${renderHTML(t('add_display.no_storage'))}</span>
+            <span style="display:block;font-size:11px;color:var(--text-muted);margin-top:2px">${renderHTML(t('add_display.no_storage_hint'))}</span>
           </span>
         </label>
         <div id="onboardPlayerUrlWrap" style="display:none;margin-top:16px">
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">${t('add_display.created_intro')}</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">${renderHTML(t('add_display.created_intro'))}</p>
           <input class="input" id="onboardPlayerUrl" readonly style="width:100%;font-family:monospace;font-size:11px">
-          <div style="margin-top:8px"><button class="btn btn-secondary btn-sm" id="onboardCopyUrlBtn">${t('device.enrol.copy')}</button></div>
-          <p style="font-size:11px;color:#fbbf24;margin-top:8px">${t('device.enrol.warning')}</p>
+          <div style="margin-top:8px"><button class="btn btn-secondary btn-sm" id="onboardCopyUrlBtn">${renderHTML(t('device.enrol.copy'))}</button></div>
+          <p style="font-size:11px;color:#fbbf24;margin-top:8px">${renderHTML(t('device.enrol.warning'))}</p>
         </div>
         <p id="onboardPairStatus" style="color:var(--text-muted);font-size:13px;text-align:center;margin-top:12px"></p>`,
       action: 'pair'
@@ -121,29 +125,29 @@ function getSteps(addMode = false) {
     {
       title: t('onboarding.step.upload.title'),
       icon: '&#128228;',
-      content: `<p style="color:var(--text-secondary);margin-bottom:16px">${t('onboarding.step.upload.intro')}</p>
+      content: `<p style="color:var(--text-secondary);margin-bottom:16px">${renderHTML(t('onboarding.step.upload.intro'))}</p>
         <div style="border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer" id="onboardUploadArea">
           <div style="font-size:32px;margin-bottom:8px">&#128193;</div>
-          <p style="color:var(--text-secondary)">${t(isTouchFirst() ? 'onboarding.step.upload.tap_to_select' : 'onboarding.step.upload.click_to_select')}</p>
-          <p style="color:var(--text-muted);font-size:12px;margin-top:4px">${t('onboarding.step.upload.formats')}</p>
+          <p style="color:var(--text-secondary)">${renderHTML(t(isTouchFirst() ? 'onboarding.step.upload.tap_to_select' : 'onboarding.step.upload.click_to_select'))}</p>
+          <p style="color:var(--text-muted);font-size:12px;margin-top:4px">${renderHTML(t('onboarding.step.upload.formats'))}</p>
           <input type="file" id="onboardFileInput" style="display:none" accept="video/*,image/*,audio/*" multiple>
         </div>
         <div style="text-align:center;margin-top:12px">
-          <span style="color:var(--text-muted);font-size:12px;margin-right:8px">${t('onboarding.step.upload.or')}</span>
-          <button type="button" class="btn btn-secondary btn-sm" id="onboardUseSample">${t('onboarding.step.upload.use_sample')}</button>
+          <span style="color:var(--text-muted);font-size:12px;margin-right:8px">${renderHTML(t('onboarding.step.upload.or'))}</span>
+          <button type="button" class="btn btn-secondary btn-sm" id="onboardUseSample">${renderHTML(t('onboarding.step.upload.use_sample'))}</button>
           <!-- 3.0 Make a sign: no photos needed — a real sign from a built-in template, in a minute. -->
-          <button type="button" class="btn btn-secondary btn-sm" id="onboardMakeSign" style="margin-left:4px">&#127991;&#65039; ${esc(t('signs.onboarding_btn'))}</button>
-          <p style="color:var(--text-muted);font-size:12px;margin-top:8px">${esc(t('signs.onboarding_hint'))}</p>
+          <button type="button" class="btn btn-secondary btn-sm" id="onboardMakeSign" style="margin-left:4px">🏷️ ${uiText(t('signs.onboarding_btn'))}</button>
+          <p style="color:var(--text-muted);font-size:12px;margin-top:8px">${uiText(t('signs.onboarding_hint'))}</p>
         </div>
         <!-- 3.0 free stock photos (components/stock-picker.js); hidden when the server has no key. -->
         <div id="onboardStock" class="onboard-stock" hidden></div>
         <!-- 3.0 Add screen: a second screen usually shows what the first one does. Filled in by
              populateSameAs() from the workspace's playlists; hidden when there are none. -->
         <div id="onboardSameAsBlock" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-          <label for="onboardSameAs" style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:8px">${t('onboarding.step.upload.same_as_label')}</label>
+          <label for="onboardSameAs" style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:8px">${renderHTML(t('onboarding.step.upload.same_as_label'))}</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <select class="input" id="onboardSameAs" style="flex:1;min-width:180px"></select>
-            <button type="button" class="btn btn-primary btn-sm" id="onboardSameAsBtn">${t('onboarding.step.upload.same_as_btn')}</button>
+            <button type="button" class="btn btn-primary btn-sm" id="onboardSameAsBtn">${renderHTML(t('onboarding.step.upload.same_as_btn'))}</button>
           </div>
           <p id="onboardSameAsStatus" style="color:var(--text-muted);font-size:12px;margin-top:6px"></p>
         </div>
@@ -151,7 +155,7 @@ function getSteps(addMode = false) {
           <div style="height:4px;background:var(--bg-primary);border-radius:2px;overflow:hidden">
             <div id="onboardProgressBar" style="height:100%;background:var(--accent);width:0%;transition:width 0.3s"></div>
           </div>
-          <p id="onboardUploadText" style="font-size:12px;color:var(--text-muted);margin-top:6px">${t('onboarding.step.upload.uploading')}</p>
+          <p id="onboardUploadText" style="font-size:12px;color:var(--text-muted);margin-top:6px">${renderHTML(t('onboarding.step.upload.uploading'))}</p>
         </div>`,
       action: 'upload'
     },
@@ -169,32 +173,32 @@ function getSteps(addMode = false) {
        * skippable, because a first-run wizard that will not let you leave is worse than one that
        * ends a step early.
        */
-      content: `<p style="font-size:16px;color:var(--text-secondary);margin-bottom:20px">${t('onboarding.step.done.intro')}</p>
+      content: `<p style="font-size:16px;color:var(--text-secondary);margin-bottom:20px">${renderHTML(t('onboarding.step.done.intro'))}</p>
         <!-- #313: shown only when this run created a display that needs a URL. -->
         <div id="onboardDonePlayerUrl" style="display:none;background:var(--bg-input);border-radius:8px;padding:16px;margin-bottom:16px">
-          <p style="font-size:14px;color:var(--text-primary);font-weight:600;margin-bottom:6px">${t('add_display.created_intro')}</p>
+          <p style="font-size:14px;color:var(--text-primary);font-weight:600;margin-bottom:6px">${renderHTML(t('add_display.created_intro'))}</p>
           <input class="input" id="onboardDoneUrl" readonly style="width:100%;font-family:monospace;font-size:11px">
-          <div style="margin-top:8px"><button class="btn btn-secondary btn-sm" id="onboardDoneCopyBtn">${t('device.enrol.copy')}</button></div>
-          <p style="font-size:11px;color:#fbbf24;margin-top:8px">${t('device.enrol.warning')}</p>
+          <div style="margin-top:8px"><button class="btn btn-secondary btn-sm" id="onboardDoneCopyBtn">${renderHTML(t('device.enrol.copy'))}</button></div>
+          <p style="font-size:11px;color:#fbbf24;margin-top:8px">${renderHTML(t('device.enrol.warning'))}</p>
         </div>
         <div id="onboardAssignBlock" style="display:none;background:var(--bg-input);border-radius:8px;padding:16px;margin-bottom:16px">
-          <label for="onboardPlaylistPick" style="display:block;font-size:14px;color:var(--text-primary);font-weight:600;margin-bottom:8px">${t('onboarding.step.done.assign_label')}</label>
+          <label for="onboardPlaylistPick" style="display:block;font-size:14px;color:var(--text-primary);font-weight:600;margin-bottom:8px">${renderHTML(t('onboarding.step.done.assign_label'))}</label>
           <select class="input" id="onboardPlaylistPick" style="width:100%">
-            <option value="">${t('onboarding.step.done.assign_none')}</option>
+            <option value="">${renderHTML(t('onboarding.step.done.assign_none'))}</option>
           </select>
           <p id="onboardAssignStatus" style="color:var(--text-muted);font-size:12px;margin-top:8px"></p>
         </div>
-        ${addMode ? '' : trialBlock()}
+        ${renderHTML(addMode ? '' : trialBlock())}
         <!-- 3.0: next steps a first-week user can actually take, in the order they tend to need them;
              the power-user surfaces (layouts, kiosk, widgets...) are one toggle away, and say so. -->
         <div style="background:var(--bg-input);border-radius:8px;padding:16px;margin-bottom:16px">
-          <p style="font-size:14px;color:var(--text-primary);font-weight:600;margin-bottom:8px">${t('onboarding.step.done.whats_next')}</p>
+          <p style="font-size:14px;color:var(--text-primary);font-weight:600;margin-bottom:8px">${renderHTML(t('onboarding.step.done.whats_next'))}</p>
           <ul style="color:var(--text-muted);font-size:13px;padding-left:20px;line-height:2">
-            <li>${t('onboarding.step.done.next_another_screen')}</li>
-            <li>${t('onboarding.step.done.next_playlist')}</li>
-            <li>${t('onboarding.step.done.next_schedule')}</li>
-            <li>${t('onboarding.step.done.next_templates')}</li>
-            <li>${t('onboarding.step.done.next_all_features')}</li>
+            <li>${renderHTML(t('onboarding.step.done.next_another_screen'))}</li>
+            <li>${renderHTML(t('onboarding.step.done.next_playlist'))}</li>
+            <li>${renderHTML(t('onboarding.step.done.next_schedule'))}</li>
+            <li>${renderHTML(t('onboarding.step.done.next_templates'))}</li>
+            <li>${renderHTML(t('onboarding.step.done.next_all_features'))}</li>
           </ul>
         </div>`,
       action: null
@@ -288,23 +292,23 @@ export function render(container, { mode = 'first' } = {}) {
         <div style="width:560px;max-width:95vw">
           <!-- Progress -->
           <div style="display:flex;gap:4px;margin-bottom:32px">
-            ${STEPS.map((_, i) => `<div style="flex:1;height:4px;border-radius:2px;background:${i <= currentStep ? 'var(--accent)' : 'var(--border)'}"></div>`).join('')}
+            ${renderHTML(STEPS.map((_, i) => `<div style="flex:1;height:4px;border-radius:2px;background:${i <= currentStep ? 'var(--accent)' : 'var(--border)'}"></div>`).join(''))}
           </div>
 
           <div style="text-align:center;margin-bottom:24px">
-            <div style="font-size:48px;margin-bottom:12px">${step.icon}</div>
-            <h2 style="font-size:24px">${step.title}</h2>
+            <div style="font-size:48px;margin-bottom:12px">${renderHTML(step.icon)}</div>
+            <h2 style="font-size:24px">${uiText(step.title)}</h2>
           </div>
 
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px">
-            ${step.content}
+            ${renderHTML(step.content)}
           </div>
 
           <div style="display:flex;justify-content:space-between">
-            ${isFirst ? '<div></div>' : `<button class="btn btn-secondary" id="prevBtn">${t('onboarding.back')}</button>`}
+            ${renderHTML(isFirst ? `<div></div>` : `<button class="btn btn-secondary" id="prevBtn">${renderHTML(t('onboarding.back'))}</button>`)}
             <div style="display:flex;gap:8px">
-              ${!isLast ? `<button class="btn btn-secondary" id="skipBtn" style="color:var(--text-muted)">${t(addMode ? 'common.cancel' : 'onboarding.skip')}</button>` : ''}
-              <button class="btn btn-primary" id="nextBtn">${isLast ? t('onboarding.go_to_dashboard') : step.action === 'pair' ? t('onboarding.pair_display') : step.action === 'import' ? esc(t('migrate.guide.fresh')) : t('onboarding.next')}</button>
+              ${renderHTML(!isLast ? `<button class="btn btn-secondary" id="skipBtn" style="color:var(--text-muted)">${renderHTML(t(addMode ? 'common.cancel' : 'onboarding.skip'))}</button>` : '')}
+              <button class="btn btn-primary" id="nextBtn">${renderHTML(isLast ? t('onboarding.go_to_dashboard') : step.action === 'pair' ? t('onboarding.pair_display') : step.action === 'import' ? t('migrate.guide.fresh') : t('onboarding.next'))}</button>
             </div>
           </div>
         </div>
@@ -334,8 +338,8 @@ export function render(container, { mode = 'first' } = {}) {
         if (codeWrap) codeWrap.style.display = noStorage ? 'none' : '';
         // The prose and the button have to move with it. Leaving "Enter the 6-digit code" above a
         // hidden code box, under a button that says Pair, describes a step that is not happening.
-        if (intro) intro.textContent = noStorage ? t('add_display.intro_no_storage') : t('onboarding.step.pair.intro');
-        if (nextBtn) nextBtn.textContent = noStorage ? t('add_display.create_btn') : t('onboarding.pair_display');
+        if (intro) bindMessage(intro, noStorage ? t('add_display.intro_no_storage') : t('onboarding.step.pair.intro'));
+        if (nextBtn) bindMessage(nextBtn, noStorage ? t('add_display.create_btn') : t('onboarding.pair_display'));
       };
       box?.addEventListener('change', sync);
       sync();
@@ -357,7 +361,7 @@ export function render(container, { mode = 'first' } = {}) {
         if (introEl) introEl.style.display = 'none';
         document.getElementById('onboardPlayerUrl').value = createdPlayerUrl;
         urlWrap.style.display = 'block';
-        if (nextBtn) nextBtn.textContent = t('onboarding.next');
+        if (nextBtn) bindText(nextBtn, 'onboarding.next', undefined);
       }
       document.getElementById('onboardCopyUrlBtn')?.addEventListener('click', () => {
         const el = document.getElementById('onboardPlayerUrl');
@@ -388,11 +392,11 @@ export function render(container, { mode = 'first' } = {}) {
     if (isLast && sentForReview) {
       // Nothing is playing yet: the workspace reviews changes first. Say so, plainly.
       const h2 = container.querySelector('h2');
-      if (h2) h2.textContent = t('simple.done.review_title');
+      if (h2) bindText(h2, 'simple.done.review_title', undefined);
       const icon = h2?.previousElementSibling;
       if (icon) icon.innerHTML = '&#9203;';
       const intro = document.querySelector('#onboardDonePlayerUrl')?.previousElementSibling;
-      if (intro) intro.textContent = t('onboarding.step.done.intro_review');
+      if (intro) bindText(intro, 'onboarding.step.done.intro_review', undefined);
     }
     if (isLast) {
       populatePlaylistPicker();
@@ -408,7 +412,7 @@ export function render(container, { mode = 'first' } = {}) {
          * not happened is the same failure as the publish bug earlier in this release.
          */
         const introEl = document.querySelector('#onboardDonePlayerUrl')?.previousElementSibling;
-        if (introEl) introEl.textContent = t('onboarding.step.done.intro_url');
+        if (introEl) bindText(introEl, 'onboarding.step.done.intro_url', undefined);
 
         const wrap = document.getElementById('onboardDonePlayerUrl');
         const input = document.getElementById('onboardDoneUrl');
@@ -446,7 +450,7 @@ export function render(container, { mode = 'first' } = {}) {
         if (!p.published_snapshot) neverPublished.add(p.id);
         const opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = `${p.name} (${p.item_count || 0})`;
+        bindMessage(opt, `${p.name} (${p.item_count || 0})`);
         // The upload step already assigned this device's own auto-generated playlist; preselecting
         // it means "keep what is playing" is the default and Finish changes nothing by surprise.
         if (p.id === assignedPlaylistId) opt.selected = true;
@@ -474,7 +478,7 @@ export function render(container, { mode = 'first' } = {}) {
       const noStorage = document.getElementById('onboardNoStorage')?.checked;
       if (noStorage && !createdPlayerUrl) {
         try {
-          if (status) status.textContent = '';
+          if (status) bindMessage(status, '');
           const r = await api.createWebPlayerDisplay(name || undefined);
           pairedDeviceId = r.device.id;
           createdPlayerUrl = r.player_url;
@@ -489,14 +493,14 @@ export function render(container, { mode = 'first' } = {}) {
           renderStep();
         } catch (err) {
           // At the screen limit the upgrade prompt says it (plan-nudges.js); the step stays quiet.
-          if (status) status.textContent = err.planPromptShown ? '' : (err.message || t('onboarding.toast.pair_failed'));
+          if (status) bindMessage(status, err.planPromptShown ? '' : ((err.uiMessage || err.message) || t('onboarding.toast.pair_failed')));
         }
         return;
       }
       if (noStorage && createdPlayerUrl) { currentStep++; renderStep(); return; }
 
       if (!code || code.length !== 6) {
-        if (status) status.textContent = t('onboarding.toast.invalid_code');
+        if (status) bindText(status, 'onboarding.toast.invalid_code', undefined);
         return;
       }
 
@@ -509,13 +513,13 @@ export function render(container, { mode = 'first' } = {}) {
        */
       let data;
       try {
-        if (status) status.textContent = t('onboarding.toast.pairing');
+        if (status) bindText(status, 'onboarding.toast.pairing', undefined);
         data = await api.pairDevice(code, name || undefined);
       } catch (err) {
         // A plan limit is answered by the upgrade prompt (plan-nudges.js); the step does not repeat it.
-        if (err.planPromptShown) { if (status) status.textContent = ''; return; }
-        if (status) status.textContent = err.status ? ((err.body && err.body.error) || t('onboarding.toast.pair_failed'))
-          : t('onboarding.toast.pair_failed_with_error', { error: err.message });
+        if (err.planPromptShown) { if (status) bindMessage(status, ''); return; }
+        if (status) bindMessage(status, err.status ? ((err.body && err.body.error) || t('onboarding.toast.pair_failed'))
+          : t('onboarding.toast.pair_failed_with_error', { error: (err.uiMessage || err.message) }));
         return;
       }
       pairedDeviceId = data.id;
@@ -546,7 +550,7 @@ export function render(container, { mode = 'first' } = {}) {
           if (!res.ok) {
             // Say so and stay put: silently dropping it is the gap this step exists to close.
             const data = await res.json().catch(() => ({}));
-            if (status) status.textContent = data.error || t('onboarding.toast.assign_failed');
+            if (status) bindMessage(status, data.error || t('onboarding.toast.assign_failed'));
             return;
           }
           /*
@@ -559,13 +563,13 @@ export function render(container, { mode = 'first' } = {}) {
           if (neverPublished.has(pick)) {
             const published = await publish(pick);
             if (!published.ok) {
-              if (status) status.textContent = published.error || t('onboarding.toast.publish_failed');
+              if (status) bindMessage(status, published.error || t('onboarding.toast.publish_failed'));
               return;
             }
           }
           showToast(t('onboarding.toast.playlist_assigned'), 'success');
         } catch (err) {
-          if (status) status.textContent = t('onboarding.toast.assign_failed');
+          if (status) bindText(status, 'onboarding.toast.assign_failed', undefined);
           return;
         }
       }
@@ -631,12 +635,12 @@ export function render(container, { mode = 'first' } = {}) {
     if (progress) progress.style.display = 'block';
     if (area) area.style.pointerEvents = 'none';
     const fail = (msg) => {
-      if (text) text.textContent = msg;
+      if (text) bindMessage(text, msg);
       if (area) area.style.pointerEvents = '';
     };
-    if (text) text.textContent = files.length > 1
+    if (text) bindMessage(text, files.length > 1
       ? t('onboarding.step.upload.uploading_n', { n: files.length })
-      : t('onboarding.step.upload.uploading');
+      : t('onboarding.step.upload.uploading'));
 
     let uploaded;
     try {
@@ -659,10 +663,10 @@ export function render(container, { mode = 'first' } = {}) {
     const area = document.getElementById('onboardUploadArea');
     if (progress) progress.style.display = 'block';
     const fail = (msg) => {
-      if (text) text.textContent = msg;
+      if (text) bindMessage(text, msg);
       if (area) area.style.pointerEvents = '';
     };
-    if (text) text.textContent = t('onboarding.toast.uploaded_assigning');
+    if (text) bindText(text, 'onboarding.toast.uploaded_assigning', undefined);
 
     if (pairedDeviceId) {
       for (const content of items) {
@@ -707,7 +711,7 @@ export function render(container, { mode = 'first' } = {}) {
       if (!p.published_snapshot) neverPublished.add(p.id);
       const opt = document.createElement('option');
       opt.value = p.id;
-      opt.textContent = `${p.name} (${p.item_count || 0})`;
+      bindMessage(opt, `${p.name} (${p.item_count || 0})`);
       select.appendChild(opt);
     }
     block.style.display = 'block';
@@ -720,14 +724,14 @@ export function render(container, { mode = 'first' } = {}) {
         await api.assignPlaylistToDevice(pick, pairedDeviceId);
         if (neverPublished.has(pick)) {
           const published = await publish(pick);
-          if (!published.ok) throw new Error(published.error || t('onboarding.toast.publish_failed'));
+          if (!published.ok) throw new Error(localizeServerError(published.error) || t('onboarding.toast.publish_failed'));
         }
         assignedPlaylistId = pick;
         showToast(t('onboarding.toast.playlist_assigned'), 'success');
         currentStep++;
         renderStep();
       } catch (err) {
-        if (status) status.textContent = err.message || t('onboarding.toast.assign_failed');
+        if (status) bindMessage(status, (err.uiMessage || err.message) || t('onboarding.toast.assign_failed'));
         e.target.disabled = false;
       }
     });

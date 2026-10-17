@@ -22,6 +22,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const front = (...p) => fs.readFileSync(path.join(__dirname, '..', '..', 'frontend', ...p), 'utf8');
+const en = require('../../frontend/js/i18n/en.js').default;
+function translated(source, pattern, reason) {
+ const keys = Object.entries(en).filter(([,value])=>pattern.test(value)).map(([key])=>key);
+ assert(keys.length, 'English catalog retains meaning: '+pattern);
+ assert(keys.some(key=>source.includes(key)), reason || ('view renders translated '+pattern));
+}
 const VIEW = front('js', 'views', 'servers.js');
 const ACTIVITY = front('js', 'views', 'activity.js');
 const REPORTS = front('js', 'views', 'reports.js');
@@ -94,7 +100,7 @@ test('⚠️ a stale link is AMBER, never red', () => {
   assert.ok(stale, 'a stale status style must exist');
   assert.ok(!/#ef4444/.test(stale[0]), 'stale must not use the offline red');
   assert.match(stale[0], /#f59e0b/, 'it should be amber');
-  assert.match(stale[0], /Last known/, 'and read as last-known rather than as a live state');
+  translated(stale[0], /Last known/, 'and read as last-known rather than as a live state');
 });
 
 test('⚠️ every row shows its age, not just the stale ones', () => {
@@ -106,8 +112,8 @@ test('⚠️ every row shows its age, not just the stale ones', () => {
 test('⚠️ the origin server is its own column, not folded into the name', () => {
   // "Lobby (Acme)" breaks sort and search for every row at once, and is hard to undo once customers
   // have learned to read it that way.
-  assert.match(VIEW, /'Screen', 'Server', 'Status'/, 'the server gets its own column header');
-  assert.match(VIEW, /\$\{idBadge\(d\.originNodeId\)\}/, 'and its own cell');
+  assert.match(VIEW, /t\("ui\.servers\.screen_[^"]+"\), t\("ui\.servers\.server_[^"]+"\), t\("ui\.servers\.status_[^"]+"\)/, 'the server gets its own column header');
+  assert.match(VIEW, /\$\{renderHTML\(idBadge\(d\.originNodeId\)\)\}/, 'and its own cell');
   assert.doesNotMatch(VIEW, /\$\{d\.name\}\s*\(\$\{d\.originNodeId/, 'never concatenated');
 });
 
@@ -132,7 +138,7 @@ test('⚠️ THE DEEP LINK IS GONE, deliberately', () => {
 
 test('a device with no shared name says so rather than rendering blank', () => {
   // A health-only grant sends no name. An empty cell reads as a bug; "not shared" reads as a choice.
-  assert.match(VIEW, /not shared/);
+  translated(VIEW, /not shared/);
 });
 
 test('the search caveat from the server is rendered, not swallowed', () => {
@@ -170,9 +176,9 @@ test('⚠️ MINTING AND REPORTING UPWARD ARE SEPARATE, and gated separately', (
     'the tab follows the uplink flag, never the mint flag');
   assert.match(VIEW, /api\.get\('\/mesh\/capabilities'\)/,
     'the flags are asked for, never duplicated into the bundle');
-  assert.match(VIEW, /\$\{connect\.canMint \?[\s\S]{0,160}connectServerBtn/,
+  assert.match(VIEW, /\$\{(?:renderHTML\()?connect\.canMint \?[\s\S]{0,160}connectServerBtn/,
     'minting is a header button, gated on its own flag');
-  assert.match(VIEW, /\$\{caps\.canEnroll \?/, 'and the uplink half on its own');
+  assert.match(VIEW, /\$\{(?:renderHTML\()?caps\.canEnroll \?/, 'and the uplink half on its own');
   assert.doesNotMatch(code(VIEW), /caps\.canMint/,
     'the tab body must no longer contain the mint half at all');
 });
@@ -250,7 +256,7 @@ test('⚠️ version skew is measured against the COMMON version, not this serve
 test('an edge with TLS verification off is surfaced, not hidden', () => {
   // A decision somebody made once and nobody revisits unless a screen shows it.
   assert.match(VIEW, /tlsVerify === false/);
-  assert.match(VIEW, /TLS unverified/);
+  translated(VIEW, /TLS unverified/);
 });
 
 /* ===================== alerts are centralized, not mesh-only ===================== */
@@ -272,7 +278,7 @@ test('⚠️ the SELF-SUSPICION banner renders ABOVE the alerts it explains', ()
    * simultaneous outages — and the reader has to see that BEFORE the rows, because by row three
    * they are already phoning a client whose screens are fine.
    */
-  const banner = ACTIVITY.indexOf("Check this server's connection first");
+  const banner = ACTIVITY.indexOf("ui.activity.check_this_server_s_connection_first_af97ec");
   const rows = ACTIVITY.indexOf('${local.map(');
   assert.ok(banner > -1, 'the banner must exist');
   assert.ok(rows > -1 && banner < rows, 'and be rendered before the alert rows');
@@ -283,7 +289,7 @@ test('local and remote incidents appear together, and remote ones say where', ()
   // To the person on call there is no such thing as "a remote outage": there is an outage.
   assert.match(ACTIVITY, /mesh\.local/);
   assert.match(ACTIVITY, /mesh\.alerts/);
-  assert.match(ACTIVITY, /last known, that server is not reachable/,
+  translated(ACTIVITY, /last known, that server is not reachable/,
     'a stale alert must say so — acting on one is how somebody drives to a screen that is fine');
 });
 
@@ -307,8 +313,8 @@ test('⚠️ COVERAGE IS RENDERED BESIDE UPTIME, THE SAME SIZE', () => {
    * their screens were fine during a week nobody was watching them. Whichever number is smaller is
    * the one cropped out of the screenshot somebody emails.
    */
-  const up = REPORTS.match(/Uptime<\/div>\s*<div style="font-size:(\d+)px/);
-  const cov = REPORTS.match(/Coverage<\/div>\s*<div style="font-size:(\d+)px/);
+  const up = REPORTS.match(/ui\.reports\.uptime"\)\)\}<\/div>\s*<div style="font-size:(\d+)px/);
+  const cov = REPORTS.match(/ui\.reports\.coverage"\)\)\}<\/div>\s*<div style="font-size:(\d+)px/);
   assert.ok(up && cov, 'both figures must be rendered');
   assert.equal(up[1], cov[1], 'and at the same size — coverage is not a footnote');
   assert.match(REPORTS, /coverageNote/);
@@ -334,8 +340,8 @@ test('⚠️ the CSV is FETCHED with the auth header, not linked', () => {
 
 test('a truncated incident list says so', () => {
   // A report quietly showing 50 of 300 reads as "that was all of them".
-  assert.match(REPORTS, /Showing the 50 longest of/);
-  assert.match(REPORTS, /CSV contains every one/);
+  translated(REPORTS, /Showing the 50 longest of/);
+  translated(REPORTS, /CSV contains every one/);
 });
 
 test('the uptime section renders NOTHING when there is no mesh', () => {
@@ -377,8 +383,9 @@ test('⚠️ a persistent banner names the server being viewed', () => {
   // Every screen now potentially shows another company's estate; "which server am I on" must never
   // be a question the UI leaves to memory.
   assert.match(APP, /renderRemoteOrgBanner/);
-  assert.match(APP, /Viewing <strong>\$\{name\}<\/strong>/);
-  assert.match(APP, /Back to this server/);
+  assert.match(APP, /t\('ui\.remote\.viewing',\{name/);
+  assert.match(en['ui.remote.viewing'], /Viewing <strong>\{name\}<\/strong>/);
+  translated(APP, /Back to this server/);
 
   /*
    * ⚠️ This asserted the literal words "Read-only for now", which was right while nothing could be
@@ -388,7 +395,7 @@ test('⚠️ a persistent banner names the server being viewed', () => {
    */
   assert.match(APP, /org\.writable/,
     'the banner must reflect what the customer granted, not a fixed sentence');
-  assert.match(APP, /[Rr]ead-only/,
+  translated(APP, /[Rr]ead-only/,
     'and must still say read-only when they have granted nothing');
 });
 
@@ -479,7 +486,7 @@ test('⚠️ an offline server falls back to the mirror AND SAYS SO', () => {
   const fn = DASHBOARD.slice(DASHBOARD.indexOf('async function loadRemoteDashboard'),
                              DASHBOARD.indexOf('async function loadDashboard'));
   assert.match(fn, /if \(rows === null\)/, 'the fallback is on the live read failing');
-  assert.match(fn, /Showing the last state this server received/);
+  translated(fn, /Showing the last state this server received/);
 });
 
 /* ===================== the read-through proxy ===================== */

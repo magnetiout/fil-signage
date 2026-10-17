@@ -1,4 +1,5 @@
 'use strict';
+const {runInViewContext}=require('./helpers/admin-render');
 
 // The display power schedule editor on a screen whose player cannot blank its display YET
 // (components/power-schedule-editor.js). Reported on alpha: a healthy, device-owner Android 15 screen
@@ -17,8 +18,8 @@ const ROOT = path.join(__dirname, '..', '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'frontend', 'js', 'components', 'power-schedule-editor.js'), 'utf8');
 function load() {
   const src = SRC.replace(/^import [\s\S]*?from '[^']+';\n/gm, '').replace(/^export (const|function) /gm, '$1 ').replace(/^export \{[^}]*\};?$/gm, '');
-  const box = { module: {}, t: (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k) };
-  vm.runInNewContext(`${src}\nmodule.exports = { renderPowerScheduleEditor };`, box);
+  const box = { module: {}, renderValue: v => String(v ?? ''), binding: (key, vars) => encodeURIComponent(JSON.stringify({key, vars})), t: (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k) };
+  runInViewContext(`${src}\nmodule.exports = { renderPowerScheduleEditor };`, box);
   return box.module.exports.renderPowerScheduleEditor;
 }
 const render = load();
@@ -33,7 +34,7 @@ test('a supported screen gets the editor, with no note', () => {
 
 test('a screen that cannot blank yet can still be given a schedule, and is told when it starts working', () => {
   const html = render({ windows: [], enabled: true }, { supported: false, playerVersion: '2.1.5-beta1' });
-  assert.match(html, /power\.pending_device_version:\{&quot;version&quot;:&quot;2\.1\.5-beta1&quot;\}/, 'names its player');
+  assert.match(html, /power\.pending_device_version:\{(?:&quot;|")version(?:&quot;|"):(?:&quot;|")2\.1\.5-beta1(?:&quot;|")\}/, 'names its player');
   assert.doesNotMatch(html, />power\.unsupported</, 'never the group wording');
   for (const id of ['powerAddWindow', 'powerSave', 'powerEnabled']) assert.match(html, new RegExp(`id="${id}"`), `${id} is there`);
   assert.match(html, /power-preset/);

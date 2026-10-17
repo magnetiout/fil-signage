@@ -1,6 +1,14 @@
+import {translatedAttribute} from '../lib/i18n-bindings.js';
+import {displayDateRange} from '../i18n.js';
+import { renderHTML, uiText, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { displayValue, getLocale, message as t, messageCount as tn } from '../i18n.js';
+
+import { localizeServerError } from '../api.js';
+
 import { api, assertLocalCallAllowed } from '../api.js';
 import { showToast } from '../components/toast.js';
-import { t, tn } from '../i18n.js';
+
 import { workspaceCoverage } from '../components/corporate-ui.js';
 import {
   HOUR_PX, pxToMinutes, minutesToPx, rangeFromDrag, moveRange, resizeRange,
@@ -119,12 +127,10 @@ function wireRepeatOnce() {
 
 const p2 = (n) => String(n).padStart(2, '0');
 function fmt12(min) {
-  const h24 = Math.floor(min / 60) % 24, mm = min % 60;
-  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  return `${h12}:${p2(mm)} ${h24 < 12 ? 'AM' : 'PM'}`;
+  return displayValue(new Date(2000,0,1,Math.floor(min/60)%24,min%60),"toLocaleTimeString",{hour:'numeric',minute:'2-digit'});
 }
 const hhmmToMin = (s) => { const [h, m] = String(s || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
-const fmtDate = (d, opts) => d.toLocaleDateString(undefined, opts || { month: 'short', day: 'numeric', year: 'numeric' });
+const fmtDate = (d, opts) => displayValue(d, "toLocaleDateString", opts || { month: 'short', day: 'numeric', year: 'numeric' });
 
 // The human sentence under the repeat control and in the peek: "Every Mon, Wed, Fri from 9:00 AM
 // to 5:00 PM until Oct 31". Assembled from describeRecurrence's data through t(), so every locale
@@ -155,11 +161,11 @@ function syncRepeatUI() {
   if (summary) {
     const untilRaw = document.getElementById('schedRepeatEnd')?.value;
     const until = untilRaw ? new Date(untilRaw + 'T00:00:00') : null;
-    summary.textContent = recurrenceSentence(readRecurrence(), {
+    bindMessage(summary, recurrenceSentence(readRecurrence(), {
       startMin: hhmmToMin(document.getElementById('schedStart')?.value),
       endMin: hhmmToMin(document.getElementById('schedEnd')?.value),
       until, startDate: recurrenceStartDate || new Date(),
-    });
+    }));
   }
 }
 
@@ -169,14 +175,15 @@ function syncRepeatUI() {
 const API = (url, opts = {}) => {
   assertLocalCallAllowed(url, opts.method);
   return fetch('/api' + url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-    if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error('Session expired'); }
-    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `Request failed (${r.status})`); }
+    if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.schedule.request_failed_value0_ad6dc0", {value0: r.status})); }
     return r.json();
   });
 };
 
 // Teardown registered during render. Declared here so it exists before any render pushes to it.
 const cleanupFns = [];
+let renderGeneration = 0;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DEFAULT_SCROLL_HOUR = 8;
 // Below this a seven-column week is unusable (~50px a column), so the time grid shows ONE day and
@@ -185,12 +192,14 @@ const NARROW_PX = 700;
 const isNarrow = () => window.innerWidth < NARROW_PX;
 const MONTH_PILLS = 3;
 
-function esc(str) { const d = document.createElement('div'); d.textContent = str == null ? '' : String(str); return d.innerHTML; }
+function esc(str) { const d = document.createElement('div'); bindMessage(d, str == null ? '' : String(str)); return d.innerHTML; }
 
 const readStored = (k, fallback) => { try { return localStorage.getItem(k) ?? fallback; } catch (_) { return fallback; } };
 const writeStored = (k, v) => { try { localStorage.setItem(k, v); } catch (_) { /* private mode */ } };
 
 export async function render(container) {
+  const generation=++renderGeneration;
+  const active=()=>generation===renderGeneration && container.isConnected;
   /*
    * ⚠️ getAllContent, NOT getContent — same bug as #417. GET /api/content defaults to LIMIT 100,
    * so this picker showed the newest 100 files of a workspace and silently hid the rest. Sorted
@@ -202,6 +211,7 @@ export async function render(container) {
     workspaceCoverage({ force: true }),
     API('/walls').catch(() => []),
   ]);
+  if(!active())return;
   /*
    * A video wall is scheduled AS A WALL (services/scheduler.js): a panel follows only its wall's
    * schedules, so a schedule on one panel would never run — and before that rule it switched that
@@ -230,34 +240,34 @@ export async function render(container) {
 
   container.innerHTML = `
     <div class="page-header">
-      <div><h1>${t('schedule.title')} <span class="help-tip" data-tip="${t('schedule.help_tip')}">?</span></h1><div class="subtitle">${t('schedule.subtitle')}</div></div>
+      <div><h1>${renderHTML(t('schedule.title'))} <span class="help-tip" ${translatedAttribute("data-tip", 'schedule.help_tip')}>?</span></h1><div class="subtitle">${renderHTML(t('schedule.subtitle'))}</div></div>
     </div>
     <div class="sched-toolbar">
-      <button class="btn btn-secondary btn-sm" id="schedRailBtn" aria-label="${t('schedule.rail_toggle')}" title="${t('schedule.rail_toggle')}">&#9776;</button>
-      <button class="btn btn-secondary btn-sm" id="schedToday">${t('schedule.today')}</button>
-      <button class="btn btn-secondary btn-sm" id="schedPrev" aria-label="${t('schedule.prev')}" title="${t('schedule.prev')}">&lsaquo;</button>
-      <button class="btn btn-secondary btn-sm" id="schedNext" aria-label="${t('schedule.next')}" title="${t('schedule.next')}">&rsaquo;</button>
-      <button class="sched-datelabel" id="schedDateLabel" aria-haspopup="dialog" title="${t('schedule.jump_to_date')}"></button>
+      <button class="btn btn-secondary btn-sm" id="schedRailBtn" aria-label="${t('schedule.rail_toggle')}" data-fil-i18n-aria-label="${binding('schedule.rail_toggle', undefined)}" title="${t('schedule.rail_toggle')}" data-fil-i18n-title="${binding('schedule.rail_toggle', undefined)}">&#9776;</button>
+      <button class="btn btn-secondary btn-sm" id="schedToday">${renderHTML(t('schedule.today'))}</button>
+      <button class="btn btn-secondary btn-sm" id="schedPrev" aria-label="${t('schedule.prev')}" data-fil-i18n-aria-label="${binding('schedule.prev', undefined)}" title="${t('schedule.prev')}" data-fil-i18n-title="${binding('schedule.prev', undefined)}">&lsaquo;</button>
+      <button class="btn btn-secondary btn-sm" id="schedNext" aria-label="${t('schedule.next')}" data-fil-i18n-aria-label="${binding('schedule.next', undefined)}" title="${t('schedule.next')}" data-fil-i18n-title="${binding('schedule.next', undefined)}">&rsaquo;</button>
+      <button class="sched-datelabel" id="schedDateLabel" aria-haspopup="dialog" title="${t('schedule.jump_to_date')}" data-fil-i18n-title="${binding('schedule.jump_to_date', undefined)}"></button>
       <span class="spacer"></span>
-      <span class="sched-kbd">${t('schedule.keyboard_hint')}</span>
-      <div class="sched-views" role="group" aria-label="${t('schedule.view_week')}">
-        ${VIEWS.map((v) => `<button type="button" data-view="${v}">${t(v === 'day' ? 'schedule.view_day' : v === 'workweek' ? 'schedule.view_workweek' : v === 'week' ? 'schedule.view_week' : 'schedule.view_month')}</button>`).join('')}
+      <span class="sched-kbd">${renderHTML(t('schedule.keyboard_hint'))}</span>
+      <div class="sched-views" role="group" aria-label="${t('schedule.view_week')}" data-fil-i18n-aria-label="${binding('schedule.view_week', undefined)}">
+        ${renderHTML(VIEWS.map((v) => `<button type="button" data-view="${v}">${renderHTML(t(v === 'day' ? 'schedule.view_day' : v === 'workweek' ? 'schedule.view_workweek' : v === 'week' ? 'schedule.view_week' : 'schedule.view_month'))}</button>`).join(''))}
       </div>
-      <button class="btn btn-primary btn-sm" id="addScheduleBtn">${t('schedule.new')}</button>
+      <button class="btn btn-primary btn-sm" id="addScheduleBtn">${renderHTML(t('schedule.new'))}</button>
     </div>
     <div class="sched-shell">
       <aside class="sched-rail" id="schedRail">
         <div>
           <div class="sched-mini-head">
-            <button class="btn-icon" id="miniPrev" aria-label="${t('schedule.prev')}">&lsaquo;</button>
+            <button class="btn-icon" id="miniPrev" aria-label="${t('schedule.prev')}" data-fil-i18n-aria-label="${binding('schedule.prev', undefined)}">&lsaquo;</button>
             <span id="miniLabel"></span>
-            <button class="btn-icon" id="miniNext" aria-label="${t('schedule.next')}">&rsaquo;</button>
+            <button class="btn-icon" id="miniNext" aria-label="${t('schedule.next')}" data-fil-i18n-aria-label="${binding('schedule.next', undefined)}">&rsaquo;</button>
           </div>
           <div class="sched-mini" id="schedMini" role="grid"></div>
         </div>
         <div>
-          <h4>${t('schedule.calendars')}</h4>
-          <input type="search" id="schedCalSearch" class="input" placeholder="${t('schedule.search_calendars')}" style="margin-bottom:6px;background:var(--bg-input)">
+          <h4>${renderHTML(t('schedule.calendars'))}</h4>
+          <input type="search" id="schedCalSearch" class="input" placeholder="${t('schedule.search_calendars')}" data-fil-i18n-placeholder="${binding('schedule.search_calendars', undefined)}" style="margin-bottom:6px;background:var(--bg-input)">
           <div class="sched-cal-list" id="schedCalList"></div>
         </div>
       </aside>
@@ -274,104 +284,104 @@ export async function render(container) {
 
     <div class="modal-overlay" id="scheduleModal" style="display:none">
       <div class="modal" style="width:480px">
-        <div class="modal-header"><h3 id="schedModalTitle">${t('schedule.add_schedule')}</h3>
-          <button class="btn-icon" onclick="document.getElementById('scheduleModal').style.display='none'" aria-label="${t('common.close')}">
+        <div class="modal-header"><h3 id="schedModalTitle">${renderHTML(t('schedule.add_schedule'))}</h3>
+          <button class="btn-icon" onclick="document.getElementById('scheduleModal').style.display='none'" aria-label="${t('common.close')}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         <div class="modal-body">
-          <div class="form-group"><label>${t('schedule.apply_to')}</label>
+          <div class="form-group"><label>${renderHTML(t('schedule.apply_to'))}</label>
             <div style="display:flex;gap:16px;margin-bottom:8px">
               <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px">
-                <input type="radio" name="schedTarget" value="device" checked id="schedTargetDevice"> ${t('schedule.target_device')}
+                <input type="radio" name="schedTarget" value="device" checked id="schedTargetDevice"> ${renderHTML(t('schedule.target_device'))}
               </label>
               <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px">
-                <input type="radio" name="schedTarget" value="group" id="schedTargetGroup"> ${t('schedule.target_group')}
+                <input type="radio" name="schedTarget" value="group" id="schedTargetGroup"> ${renderHTML(t('schedule.target_group'))}
               </label>
-              ${walls.length ? `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px">
-                <input type="radio" name="schedTarget" value="wall" id="schedTargetWall"> ${t('schedule.target_wall')}
-              </label>` : ''}
+              ${renderHTML(walls.length ? `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px">
+                <input type="radio" name="schedTarget" value="wall" id="schedTargetWall"> ${renderHTML(t('schedule.target_wall'))}
+              </label>` : '')}
             </div>
             <select id="schedDeviceSelect" class="input" style="background:var(--bg-input)">
-              ${devices.map((d) => `<option value="${esc(d.id)}">${esc(d.name)}${esc(corpMark(corpDevice(d.id)))}</option>`).join('')}
+              ${renderHTML(devices.map((d) => `<option value="${esc(d.id)}">${uiText(d.name)}${uiText(corpMark(corpDevice(d.id)))}</option>`).join(''))}
             </select>
             <select id="schedGroupSelect" class="input" style="background:var(--bg-input);display:none">
-              ${groups.map((g) => `<option value="${esc(g.id)}">${esc(g.name)} (${t('schedule.group_devices_count', { n: g.device_count })})${esc(corpMark(corpGroup(g.id)))}</option>`).join('')}
+              ${renderHTML(groups.map((g) => `<option value="${esc(g.id)}">${uiText(g.name)} (${renderHTML(t('schedule.group_devices_count', { n: g.device_count }))})${uiText(corpMark(corpGroup(g.id)))}</option>`).join(''))}
             </select>
             <select id="schedWallSelect" class="input" style="background:var(--bg-input);display:none">
-              ${walls.map((w) => `<option value="${esc(w.id)}">${esc(w.name)} (${tn('schedule.wall_panels_count', (w.devices || []).length)})</option>`).join('')}
+              ${renderHTML(walls.map((w) => `<option value="${esc(w.id)}">${uiText(w.name)} (${renderHTML(tn('schedule.wall_panels_count', (w.devices || []).length))})</option>`).join(''))}
             </select>
             <div id="schedCorpNote" class="corp-notice corp-notice-warn" style="display:none;margin-top:6px"></div>
-            ${groups.length === 0 ? `<div id="schedNoGroups" style="display:none;color:var(--text-muted);font-size:12px;margin-top:4px">${t('schedule.no_groups_msg')}</div>` : ''}
-            <div id="schedZoneNote" style="display:none;color:var(--text-muted);font-size:11px;margin-top:4px">${t('schedule.zone_note')}</div>
+            ${renderHTML(groups.length === 0 ? `<div id="schedNoGroups" style="display:none;color:var(--text-muted);font-size:12px;margin-top:4px">${renderHTML(t('schedule.no_groups_msg'))}</div>` : '')}
+            <div id="schedZoneNote" style="display:none;color:var(--text-muted);font-size:11px;margin-top:4px">${renderHTML(t('schedule.zone_note'))}</div>
           </div>
-          <div class="form-group"><label>${t('schedule.playlist_override')}</label>
+          <div class="form-group"><label>${renderHTML(t('schedule.playlist_override'))}</label>
             <select id="schedPlaylist" class="input" style="background:var(--bg-input)">
-              <option value="">${t('schedule.no_playlist_override')}</option>
-              ${playlists.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}${p.status === 'draft' ? ' ' + t('schedule.draft_suffix') : ''}</option>`).join('')}
+              <option value="">${renderHTML(t('schedule.no_playlist_override'))}</option>
+              ${renderHTML(playlists.map((p) => `<option value="${esc(p.id)}">${uiText(p.name)}${renderHTML(p.status === 'draft' ? ' ' + t('schedule.draft_suffix') : '')}</option>`).join(''))}
             </select>
           </div>
-          <div class="form-group"><label>${t('schedule.layout_override')}</label>
+          <div class="form-group"><label>${renderHTML(t('schedule.layout_override'))}</label>
             <select id="schedLayout" class="input" style="background:var(--bg-input)">
-              <option value="">${t('schedule.no_layout_override')}</option>
-              ${layouts.map((l) => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('')}
+              <option value="">${renderHTML(t('schedule.no_layout_override'))}</option>
+              ${renderHTML(layouts.map((l) => `<option value="${esc(l.id)}">${uiText(l.name)}</option>`).join(''))}
             </select>
           </div>
-          <div class="form-group"><label>${t('schedule.content_label')} <span style="color:var(--text-muted);font-weight:normal;font-size:11px">${t('schedule.content_hint')}</span></label>
+          <div class="form-group"><label>${renderHTML(t('schedule.content_label'))} <span style="color:var(--text-muted);font-weight:normal;font-size:11px">${renderHTML(t('schedule.content_hint'))}</span></label>
             <select id="schedContent" class="input" style="background:var(--bg-input)">
-              <option value="">${t('schedule.content_none')}</option>
-              ${content.map((c) => `<option value="${esc(c.id)}">${esc(c.filename)}</option>`).join('')}
+              <option value="">${renderHTML(t('schedule.content_none'))}</option>
+              ${renderHTML(content.map((c) => `<option value="${esc(c.id)}">${uiText(c.filename)}</option>`).join(''))}
             </select>
           </div>
-          <div class="form-group"><label>${t('schedule.title_label')}</label><input type="text" id="schedTitle" class="input" placeholder="${t('schedule.title_placeholder')}"></div>
+          <div class="form-group"><label>${renderHTML(t('schedule.title_label'))}</label><input type="text" id="schedTitle" class="input" placeholder="${t('schedule.title_placeholder')}" data-fil-i18n-placeholder="${binding('schedule.title_placeholder', undefined)}"></div>
           <div style="display:flex;gap:12px">
-            <div class="form-group" style="flex:1"><label>${t('schedule.start_time')}</label><input type="time" id="schedStart" class="input" value="09:00"></div>
-            <div class="form-group" style="flex:1"><label>${t('schedule.end_time')}</label><input type="time" id="schedEnd" class="input" value="17:00"></div>
+            <div class="form-group" style="flex:1"><label>${renderHTML(t('schedule.start_time'))}</label><input type="time" id="schedStart" class="input" value="09:00"></div>
+            <div class="form-group" style="flex:1"><label>${renderHTML(t('schedule.end_time'))}</label><input type="time" id="schedEnd" class="input" value="17:00"></div>
           </div>
           <!-- Which clock these hours are on. The server stores the schedule in the TARGET's zone and
                the player evaluates in it; without this line "9 to 5" silently meant a zone the user
                could not see. -->
           <div id="schedTzNote" style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px"></div>
-          <div class="form-group"><label>${t('schedule.repeat')}</label>
+          <div class="form-group"><label>${renderHTML(t('schedule.repeat'))}</label>
             <select id="schedRepeat" class="input" style="background:var(--bg-input)">
-              <option value="">${t('schedule.repeat_none')}</option>
-              <option value="FREQ=DAILY">${t('schedule.repeat_daily')}</option>
-              <option value="WEEKLY">${t('schedule.repeat_weekly')}</option>
-              <option value="${WEEKDAYS_RULE}">${t('schedule.repeat_weekdays')}</option>
-              <option value="${WEEKENDS_RULE}">${t('schedule.repeat_weekends')}</option>
-              <option value="FREQ=MONTHLY">${t('schedule.repeat_monthly')}</option>
-              <option value="CUSTOM">${t('schedule.repeat_custom')}</option>
+              <option value="">${renderHTML(t('schedule.repeat_none'))}</option>
+              <option value="FREQ=DAILY">${renderHTML(t('schedule.repeat_daily'))}</option>
+              <option value="WEEKLY">${renderHTML(t('schedule.repeat_weekly'))}</option>
+              <option value="${WEEKDAYS_RULE}">${renderHTML(t('schedule.repeat_weekdays'))}</option>
+              <option value="${WEEKENDS_RULE}">${renderHTML(t('schedule.repeat_weekends'))}</option>
+              <option value="FREQ=MONTHLY">${renderHTML(t('schedule.repeat_monthly'))}</option>
+              <option value="CUSTOM">${renderHTML(t('schedule.repeat_custom'))}</option>
             </select>
           </div>
           <!-- #327: the engine has always understood BYDAY. These checkboxes compose the same BYDAY
                string the presets hardcode, for the weekly and custom repeats. -->
           <div class="form-group" id="schedDaysRow" style="display:none">
-            <label>${t('schedule.repeat_days')}</label>
+            <label>${renderHTML(t('schedule.repeat_days'))}</label>
             <div id="schedDays" style="display:flex;gap:6px;flex-wrap:wrap">
               <!-- Every key spelled out: the i18n checker only sees literal t() calls. -->
-              ${[['MO', t('schedule.day_mo')], ['TU', t('schedule.day_tu')], ['WE', t('schedule.day_we')],
+              ${renderHTML([['MO', t('schedule.day_mo')], ['TU', t('schedule.day_tu')], ['WE', t('schedule.day_we')],
                  ['TH', t('schedule.day_th')], ['FR', t('schedule.day_fr')], ['SA', t('schedule.day_sa')],
                  ['SU', t('schedule.day_su')]].map(([d, label]) => `
                 <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius)">
-                  <input type="checkbox" class="sched-day" value="${d}"> ${label}
-                </label>`).join('')}
+                  <input type="checkbox" class="sched-day" value="${d}"> ${renderHTML(label)}
+                </label>`).join(''))}
             </div>
           </div>
           <!-- #327: recurrence_end is stored, honoured by the engine and the calendar, and inclusive. -->
           <div class="form-group" id="schedRepeatEndRow" style="display:none">
-            <label>${t('schedule.repeat_until')}</label>
+            <label>${renderHTML(t('schedule.repeat_until'))}</label>
             <input type="date" id="schedRepeatEnd" class="input">
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${t('schedule.repeat_until_hint')}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${renderHTML(t('schedule.repeat_until_hint'))}</div>
           </div>
           <div id="schedRepeatSummary" style="font-size:12px;color:var(--text-secondary);margin:-6px 0 12px"></div>
-          <div class="form-group"><label>${t('schedule.priority')}</label><input type="number" id="schedPriority" class="input" value="0" min="0" max="100"></div>
-          <div class="form-group"><label>${t('schedule.color')}</label><input type="color" id="schedColor" value="#3B82F6" style="width:60px;height:32px;border:none;cursor:pointer"></div>
+          <div class="form-group"><label>${renderHTML(t('schedule.priority'))}</label><input type="number" id="schedPriority" class="input" value="0" min="0" max="100"></div>
+          <div class="form-group"><label>${renderHTML(t('schedule.color'))}</label><input type="color" id="schedColor" value="#3B82F6" style="width:60px;height:32px;border:none;cursor:pointer"></div>
         </div>
         <div class="modal-footer" style="display:flex;justify-content:space-between;gap:8px">
-          <button class="btn btn-danger" id="deleteScheduleBtn" style="display:none">${t('common.delete')}</button>
+          <button class="btn btn-danger" id="deleteScheduleBtn" style="display:none">${renderHTML(t('common.delete'))}</button>
           <div style="display:flex;gap:8px;margin-left:auto">
-            <button class="btn btn-secondary" onclick="document.getElementById('scheduleModal').style.display='none'">${t('common.cancel')}</button>
-            <button class="btn btn-primary" id="saveScheduleBtn">${t('common.save')}</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('scheduleModal').style.display='none'">${renderHTML(t('common.cancel'))}</button>
+            <button class="btn btn-primary" id="saveScheduleBtn">${renderHTML(t('common.save'))}</button>
           </div>
         </div>
       </div>
@@ -381,12 +391,12 @@ export async function render(container) {
          a repeating block. A real dialog rather than confirm(): the answer has three outcomes. -->
     <div class="modal-overlay" id="schedSeriesModal" style="display:none">
       <div class="modal" style="width:420px" role="dialog" aria-labelledby="schedSeriesTitle">
-        <div class="modal-header"><h3 id="schedSeriesTitle">${t('schedule.series_prompt_title')}</h3></div>
-        <div class="modal-body"><p style="margin:0;color:var(--text-secondary);font-size:13px">${t('schedule.series_prompt_body')}</p></div>
+        <div class="modal-header"><h3 id="schedSeriesTitle">${renderHTML(t('schedule.series_prompt_title'))}</h3></div>
+        <div class="modal-body"><p style="margin:0;color:var(--text-secondary);font-size:13px">${renderHTML(t('schedule.series_prompt_body'))}</p></div>
         <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px">
-          <button class="btn btn-secondary" data-scope="cancel">${t('common.cancel')}</button>
-          <button class="btn btn-secondary" data-scope="this">${t('schedule.series_this')}</button>
-          <button class="btn btn-primary" data-scope="all">${t('schedule.series_all')}</button>
+          <button class="btn btn-secondary" data-scope="cancel">${renderHTML(t('common.cancel'))}</button>
+          <button class="btn btn-secondary" data-scope="this">${renderHTML(t('schedule.series_this'))}</button>
+          <button class="btn btn-primary" data-scope="all">${renderHTML(t('schedule.series_all'))}</button>
         </div>
       </div>
     </div>
@@ -435,7 +445,7 @@ export async function render(container) {
     const id = isGroup ? groupSelect.value : deviceSelect.value;
     const hit = isGroup ? (corpGroup(id) && corpCov.groups[id]) : (corpDevice(id) && corpCov.devices[id]);
     corpNote.style.display = hit ? '' : 'none';
-    corpNote.textContent = hit ? t('corp.err.CORPORATE_SCHEDULE', { name: hit.playlist_name || t('corp.badge.dark') }) : '';
+    bindMessage(corpNote, hit ? t('corp.err.CORPORATE_SCHEDULE', { name: hit.playlist_name || t('corp.badge.dark') }) : '');
   }
   deviceRadio.addEventListener('change', updateTargetVisibility);
   groupRadio.addEventListener('change', updateTargetVisibility);
@@ -457,10 +467,10 @@ export async function render(container) {
     } else if (!groupRadio.checked) {
       zone = zoneOf(devices.find((x) => x.id === deviceSelect.value));
     }
-    if (!zone) { tzNote.textContent = t('schedule.tz_unknown'); return; }
-    tzNote.textContent = (zone === local)
-      ? t('schedule.tz_same').replace('{zone}', zone)
-      : t('schedule.tz_device').replace('{zone}', zone).replace('{local}', local || '');
+    if (!zone) { bindText(tzNote, 'schedule.tz_unknown', undefined); return; }
+    bindMessage(tzNote, (zone === local)
+      ? t('schedule.tz_same', {zone: zone})
+      : t('schedule.tz_device', {zone: zone, local: local || ''}));
   }
   deviceRadio.addEventListener('change', updateTzNote);
   groupRadio.addEventListener('change', updateTzNote);
@@ -527,14 +537,14 @@ export async function render(container) {
     // 2026". Do NOT hand toLocaleDateString a month-less {day, year} skeleton for the same-month
     // case: ICU cannot form a date from it and emits a fallback like "2026 (day: 12)".
     try {
-      return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).formatRange(a, b);
+      return displayDateRange(a,b,{month:'short',day:'numeric',year:'numeric'});
     } catch (_) {
       return `${fmtDate(a, { month: 'short', day: 'numeric' })} – ${fmtDate(b, { month: 'short', day: 'numeric', year: 'numeric' })}`;
     }
   }
 
   function renderToolbar() {
-    document.getElementById('schedDateLabel').textContent = dateLabel();
+    bindMessage(document.getElementById('schedDateLabel'), dateLabel());
     document.querySelectorAll('.sched-views button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
     const rail = document.getElementById('schedRail');
     rail.classList.toggle('collapsed', !railOpen);
@@ -545,10 +555,10 @@ export async function render(container) {
   function renderMini(host, monthDate, { onPick, busyDays = new Set() }) {
     const g = monthGrid(monthDate);
     const today = startOfDay(new Date());
-    host.innerHTML = DAYS.map((d) => `<div class="sched-mini-dow">${d.slice(0, 1)}</div>`).join('')
+    host.innerHTML = DAYS.map((d,i) => `<div class="sched-mini-dow">${renderHTML(displayValue(new Date(2026,0,4+i),"toLocaleDateString",{weekday:"narrow"}))}</div>`).join('')
       + g.weeks.flat().map(({ date, inMonth }) => {
         const cls = ['sched-mini-day', inMonth ? '' : 'out', sameDay(date, today) ? 'today' : '', sameDay(date, anchor) ? 'selected' : '', busyDays.has(ymd(date)) ? 'busy' : ''].filter(Boolean).join(' ');
-        return `<button type="button" class="${cls}" data-date="${ymd(date)}" aria-label="${fmtDate(date)}">${date.getDate()}</button>`;
+        return `<button type="button" class="${cls}" data-date="${ymd(date)}" aria-label="${fmtDate(date)}">${renderHTML(date.getDate())}</button>`;
       }).join('');
     host.onclick = (e) => {
       const b = e.target.closest('[data-date]');
@@ -558,7 +568,7 @@ export async function render(container) {
     };
   }
   function renderRailMini() {
-    document.getElementById('miniLabel').textContent = fmtDate(miniMonth, { month: 'long', year: 'numeric' });
+    bindMessage(document.getElementById('miniLabel'), fmtDate(miniMonth, { month: 'long', year: 'numeric' }));
     const busy = new Set(allEvents.map((ev) => ymd(evStart(ev))));
     renderMini(document.getElementById('schedMini'), miniMonth, { onPick: (d) => setView(null, d), busyDays: busy });
   }
@@ -568,18 +578,18 @@ export async function render(container) {
   // ---------------------------------------------------------------- rail: calendars
   function renderCalList() {
     const host = document.getElementById('schedCalList');
-    const q = calSearch.trim().toLowerCase();
-    const match = (c) => !q || c.name.toLowerCase().includes(q);
-    const section = (title, items) => items.length ? `<h4 style="margin-top:8px">${title}</h4>` + items.map((c) => `
+    const q = calSearch.trim().toLocaleLowerCase(getLocale());
+    const match = (c) => !q || c.name.toLocaleLowerCase(getLocale()).includes(q);
+    const section = (title, items) => items.length ? `<h4 style="margin-top:8px">${renderHTML(title)}</h4>` + items.map((c) => `
       <label class="sched-cal-item">
         <input type="checkbox" data-key="${esc(c.key)}" ${visibleKeys.has(c.key) ? 'checked' : ''}>
         <span class="sched-cal-swatch${c.isGroup ? ' group' : ''}" style="background:${c.color}"></span>
-        <span class="name">${esc(c.name)}</span>
+        <span class="name">${uiText(c.name)}</span>
       </label>`).join('') : '';
     const html = section(t('schedule.calendars_screens'), calendars.filter((c) => !c.isGroup && match(c)))
       + section(t('schedule.calendars_groups'), calendars.filter((c) => c.isGroup && !c.isWall && match(c)))
       + section(t('schedule.calendars_walls'), calendars.filter((c) => c.isWall && match(c)));
-    host.innerHTML = html || `<div style="color:var(--text-muted);font-size:12px;padding:4px 6px">${t('schedule.no_calendars')}</div>`;
+    host.innerHTML = html || `<div style="color:var(--text-muted);font-size:12px;padding:4px 6px">${renderHTML(t('schedule.no_calendars'))}</div>`;
     host.onchange = (e) => {
       const cb = e.target.closest('input[data-key]');
       if (!cb) return;
@@ -598,15 +608,16 @@ export async function render(container) {
   const playlistItemsById = new Map();
   async function hydratePlaylistItems(events) {
     const ids = [...new Set((events || []).map((e) => e.playlist_id).filter(Boolean))];
-    playlistItemsById.clear();
+    const loaded=new Map();
     await Promise.all(ids.map(async (id) => {
       try {
         const p = await api.getPlaylist(id);
-        playlistItemsById.set(id, p.items || []);
+        loaded.set(id, p.items || []);
       } catch {
-        playlistItemsById.set(id, []);
+        loaded.set(id, []);
       }
     }));
+    return loaded;
   }
   function itemsOf(ev) {
     return ev && ev.playlist_id ? (playlistItemsById.get(ev.playlist_id) || []) : [];
@@ -624,14 +635,20 @@ export async function render(container) {
       + (schedules.length > 1 ? ` +${schedules.length - 1}` : '');
   }
 
+  let calendarRequest=0;
   async function loadCalendar() {
-    period = periodRange(effectiveView(), anchor);
+    if(!active())return;
+    const request=++calendarRequest;
+    const nextPeriod=periodRange(effectiveView(),anchor);
+    period=nextPeriod;
     renderToolbar();
-    allEvents = await API(`/schedules/week?date=${ymd(period.fetchStart)}&all=1&days=${period.fetchDays}`);
-    await hydratePlaylistItems(allEvents);
-    renderRailMini();
-    renderCalList();
-    draw();
+    const events=await API(`/schedules/week?date=${ymd(nextPeriod.fetchStart)}&all=1&days=${nextPeriod.fetchDays}`);
+    if(!active()||request!==calendarRequest)return;
+    const items=await hydratePlaylistItems(events);
+    if(!active()||request!==calendarRequest)return;
+    allEvents=events;
+    playlistItemsById.clear();for(const [id,value]of items)playlistItemsById.set(id,value);
+    renderRailMini();renderCalList();draw();
   }
 
   function draw() {
@@ -649,8 +666,8 @@ export async function render(container) {
     if (strip.style.display === 'flex') drawDayStrip();
 
     const empty = document.getElementById('schedEmpty');
-    if (!allEvents.length) empty.innerHTML = `<div class="sched-empty">${t('schedule.drag_hint')}</div>`;
-    else if (!events.length && visibleKeys.size < calendars.length) empty.innerHTML = `<div class="sched-empty">${t('schedule.hidden_calendars_hint')}</div>`;
+    if (!allEvents.length) empty.innerHTML = `<div class="sched-empty">${renderHTML(t('schedule.drag_hint'))}</div>`;
+    else if (!events.length && visibleKeys.size < calendars.length) empty.innerHTML = `<div class="sched-empty">${renderHTML(t('schedule.hidden_calendars_hint'))}</div>`;
     else empty.innerHTML = '';
   }
 
@@ -658,7 +675,7 @@ export async function render(container) {
   function drawDayStrip() {
     const strip = document.getElementById('dayStrip');
     const ws = periodRange('week', anchor).days;
-    strip.innerHTML = ws.map((d) => `<button type="button" class="btn btn-sm${sameDay(d, anchor) ? ' on' : ''}" data-date="${ymd(d)}">${DAYS[d.getDay()]}<br>${d.getDate()}</button>`).join('');
+    strip.innerHTML = ws.map((d) => `<button type="button" class="btn btn-sm${sameDay(d, anchor) ? ' on' : ''}" data-date="${ymd(d)}">${renderHTML(DAYS[d.getDay()])}<br>${renderHTML(d.getDate())}</button>`).join('');
     strip.onclick = (e) => { const b = e.target.closest('[data-date]'); if (!b) return; const [y, m, dd] = b.dataset.date.split('-').map(Number); setView(null, new Date(y, m - 1, dd)); };
   }
 
@@ -673,10 +690,10 @@ export async function render(container) {
     let html = '<div class="sched-corner"></div>';
     days.forEach((d, i) => {
       const cls = ['sched-daycol-head', sameDay(d, today) ? 'today' : '', (effectiveView() !== 'day' && sameDay(d, anchor)) ? 'selected' : ''].filter(Boolean).join(' ');
-      html += `<div class="${cls}" data-head-day="${i}" role="button" tabindex="0">${DAYS[d.getDay()]}<br><span class="num">${d.getDate()}</span></div>`;
+      html += `<div class="${cls}" data-head-day="${i}" role="button" tabindex="0">${renderHTML(DAYS[d.getDay()])}<br><span class="num">${renderHTML(d.getDate())}</span></div>`;
     });
     for (const h of HOURS) {
-      html += `<div class="sched-hour-label">${h === 0 ? t('schedule.hour_12am') : h < 12 ? h + t('schedule.hour_am') : h === 12 ? t('schedule.hour_12pm') : (h - 12) + t('schedule.hour_pm')}</div>`;
+      html += `<div class="sched-hour-label">${renderHTML(displayValue(new Date(2000,0,1,h),"toLocaleTimeString",{hour:"numeric"}))}</div>`;
       days.forEach((d, i) => {
         const work = WORK_DAYS.includes(d.getDay()) && h * 60 >= WORK_START_MIN && h * 60 < WORK_END_MIN;
         const off = !WORK_DAYS.includes(d.getDay());
@@ -702,7 +719,7 @@ export async function render(container) {
         if (seg.dayIdx < days.length) perCol[seg.dayIdx].push({ ev, ...seg });
       }
     }
-    allDayHost.innerHTML = `<div class="sched-allday-label">${t('schedule.all_day')}</div>` + allDayCells.map((list, i) => `<div class="sched-allday-cell" data-allday="${i}">${list.map((ev) => `<button type="button" class="sched-chip${ev.group_id ? ' group' : ''}${corpShadowed.has(ev.id) ? ' corp-shadowed' : ''}" data-sched-id="${esc(ev.id)}" style="background:${colorOf(ev)}" title="${esc(labelOf(ev))}">${esc(targetOf(ev).name)} · ${esc(labelOf(ev))}</button>`).join('')}</div>`).join('');
+    allDayHost.innerHTML = `<div class="sched-allday-label">${renderHTML(t('schedule.all_day'))}</div>` + allDayCells.map((list, i) => `<div class="sched-allday-cell" data-allday="${i}">${renderHTML(list.map((ev) => `<button type="button" class="sched-chip${ev.group_id ? ' group' : ''}${corpShadowed.has(ev.id) ? ' corp-shadowed' : ''}" data-sched-id="${esc(ev.id)}" style="background:${colorOf(ev)}" title="${esc(labelOf(ev))}">${uiText(targetOf(ev).name)} · ${uiText(labelOf(ev))}</button>`).join(''))}</div>`).join('');
     allDayHost.querySelectorAll('.sched-chip').forEach((chip) => {
       const ev = events.find((x) => String(x.id) === chip.dataset.schedId);
       chip.onclick = () => openPeek(ev, chip);
@@ -730,16 +747,16 @@ export async function render(container) {
         if (durationPx >= 34) {
           const extras = itemsOf(ev).filter((it) => it.play_from || it.play_until || (it.schedules && it.schedules.length)).slice(0, 3);
           const extraHtml = (extras.length && durationPx >= 56)
-            ? extras.map((it) => `<div class="what" style="opacity:.85">${esc(it.filename || it.widget_name || 'item')} · ${esc(itemWindowLabel(it))}</div>`).join('')
+            ? extras.map((it) => `<div class="what" style="opacity:.85">${uiText(it.filename || it.widget_name || 'item')} · ${uiText(itemWindowLabel(it))}</div>`).join('')
             : '';
-          block.innerHTML = `<div class="who">${esc(target.name)}</div><div class="what">${esc(labelOf(ev))}</div>${corpShadowed.has(ev.id) ? `<div class="what">${esc(t('corp.sched.paused'))}</div>` : ''}${extraHtml}`;
+          block.innerHTML = `<div class="who">${uiText(target.name)}</div><div class="what">${uiText(labelOf(ev))}</div>${renderHTML(corpShadowed.has(ev.id) ? `<div class="what">${uiText(t('corp.sched.paused'))}</div>` : '')}${renderHTML(extraHtml)}`;
         } else {
-          block.textContent = `${target.name} · ${labelOf(ev)}`;
+          bindMessage(block, `${target.name} · ${labelOf(ev)}`);
         }
-        block.title = `${target.isWall ? t('schedule.target_wall') : target.isGroup ? t('schedule.target_group') : t('schedule.target_device')}: ${target.name}\n${labelOf(ev)}\n${formatRange(minsOf(evStart(ev)), minsOf(evEnd(ev)))}`
+        bindAttribute(block, "title", `${target.isWall ? t('schedule.target_wall') : target.isGroup ? t('schedule.target_group') : t('schedule.target_device')}: ${target.name}\n${labelOf(ev)}\n${formatRange(minsOf(evStart(ev)), minsOf(evEnd(ev)))}`
           + ((continues || continued) ? `\n${t('schedule.overnight_note')}` : '')
           + `\n${t('schedule.tooltip_priority', { n: ev.priority })}`
-          + (corpShadowed.has(ev.id) ? `\n${t('corp.sched.paused')}` : '');
+          + (corpShadowed.has(ev.id) ? `\n${t('corp.sched.paused')}` : ''));
         if (corpShadowed.has(ev.id)) block.classList.add('corp-shadowed');
         block.dataset.schedId = ev.id;
         block.dataset.overnight = (continues || continued) ? '1' : '';
@@ -805,17 +822,17 @@ export async function render(container) {
     for (const list of byDay.values()) list.sort((a, b) => evStart(a) - evStart(b));
     const narrow = isNarrow();
     const pill = (ev) => `<button type="button" class="sched-pill${ev.group_id ? ' group' : ''}${corpShadowed.has(ev.id) ? ' corp-shadowed' : ''}" data-sched-id="${esc(ev.id)}" style="background:${colorOf(ev)}" title="${esc(targetOf(ev).name)} · ${esc(labelOf(ev))}">`
-      + `<span class="tm">${fmt12(minsOf(evStart(ev))).replace(':00', '')}</span><span class="lbl">${esc(labelOf(ev))}</span></button>`;
-    host.innerHTML = DAYS.map((d) => `<div class="sched-month-dow">${d}</div>`).join('')
+      + `<span class="tm">${renderHTML(fmt12(minsOf(evStart(ev))).replace(':00', ''))}</span><span class="lbl">${uiText(labelOf(ev))}</span></button>`;
+    host.innerHTML = DAYS.map((d) => `<div class="sched-month-dow">${renderHTML(d)}</div>`).join('')
       + g.weeks.flat().map(({ date, inMonth }) => {
         const list = byDay.get(ymd(date)) || [];
         const max = narrow ? 4 : MONTH_PILLS;
         const shown = list.slice(0, max), extra = list.length - shown.length;
         const cls = ['sched-month-cell', inMonth ? '' : 'out', sameDay(date, today) ? 'today' : '', sameDay(date, anchor) ? 'selected' : ''].filter(Boolean).join(' ');
         return `<div class="${cls}" data-date="${ymd(date)}">
-          <button type="button" class="sched-month-daynum" data-open-day="${ymd(date)}" aria-label="${fmtDate(date)}">${date.getDate()}</button>
-          ${shown.map(pill).join('')}
-          ${extra > 0 ? `<button type="button" class="sched-more" data-more="${ymd(date)}">${t('schedule.more_count', { n: extra })}</button>` : ''}
+          <button type="button" class="sched-month-daynum" data-open-day="${ymd(date)}" aria-label="${fmtDate(date)}">${renderHTML(date.getDate())}</button>
+          ${renderHTML(shown.map(pill).join(''))}
+          ${renderHTML(extra > 0 ? `<button type="button" class="sched-more" data-more="${ymd(date)}">${renderHTML(t('schedule.more_count', { n: extra }))}</button>` : '')}
         </div>`;
       }).join('');
 
@@ -889,7 +906,7 @@ export async function render(container) {
       try {
         await API(`/schedules/${st.ev.id}`, { method: 'PUT', body: JSON.stringify({ start_time: toLocalStamp(ns, minsOf(ns)), end_time: toLocalStamp(ne, minsOf(ne)) }) });
         showToast(t('schedule.toast.saved'), 'success');
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
       loadCalendar();
     };
     host.addEventListener('pointerup', end);
@@ -936,22 +953,22 @@ export async function render(container) {
     const until = ev.recurrence_end ? new Date(String(ev.recurrence_end).slice(0, 10) + 'T00:00:00') : null;
     const items = itemsOf(ev);
     const itemRows = items.length
-      ? `<div class="meta" style="margin-top:8px"><strong>${esc(t('schedule.peek_items'))}</strong><ul style="margin:6px 0 0 16px;padding:0">${items.slice(0, 12).map((it) => `<li>${esc(it.filename || it.widget_name || it.child_playlist_name || 'item')} · ${esc(itemWindowLabel(it))}</li>`).join('')}${items.length > 12 ? `<li>…</li>` : ''}</ul></div>`
+      ? `<div class="meta" style="margin-top:8px"><strong>${uiText(t('schedule.peek_items'))}</strong><ul style="margin:6px 0 0 16px;padding:0">${renderHTML(items.slice(0, 12).map((it) => `<li>${uiText(it.filename || it.widget_name || it.child_playlist_name || 'item')} · ${uiText(itemWindowLabel(it))}</li>`).join(''))}${renderHTML(items.length > 12 ? `<li>…</li>` : '')}</ul></div>`
       : '';
     const pop = openPopover(`
-      <h3><span class="sw" style="background:${colorOf(ev)}"></span>${esc(labelOf(ev))}</h3>
+      <h3><span class="sw" style="background:${colorOf(ev)}"></span>${uiText(labelOf(ev))}</h3>
       <div class="meta">
-        ${esc(fmtDate(s, { weekday: 'short', month: 'short', day: 'numeric' }))} · ${esc(formatRange(minsOf(s), minsOf(e)))}<br>
-        ${esc(target.isWall ? t('schedule.target_wall') : target.isGroup ? t('schedule.target_group') : t('schedule.target_device'))}: ${esc(target.name)}<br>
-        ${what.map((w) => esc(w) + '<br>').join('')}
-        ${esc(recurrenceSentence(ev.recurrence, { startMin: minsOf(new Date(ev.start_time)), endMin: minsOf(new Date(ev.end_time)), until, startDate: new Date(ev.start_time) }))}
+        ${uiText(fmtDate(s, { weekday: 'short', month: 'short', day: 'numeric' }))} · ${uiText(formatRange(minsOf(s), minsOf(e)))}<br>
+        ${uiText(target.isWall ? t('schedule.target_wall') : target.isGroup ? t('schedule.target_group') : t('schedule.target_device'))}: ${uiText(target.name)}<br>
+        ${renderHTML(what.map((w) => esc(w) + '<br>').join(''))}
+        ${uiText(recurrenceSentence(ev.recurrence, { startMin: minsOf(new Date(ev.start_time)), endMin: minsOf(new Date(ev.end_time)), until, startDate: new Date(ev.start_time) }))}
       </div>
-      ${itemRows}
+      ${renderHTML(itemRows)}
       <div class="sched-pop-actions">
-        <button type="button" class="btn btn-danger btn-sm left" data-act="delete">${t('schedule.peek_delete')}</button>
-        ${ev.playlist_id ? `<button type="button" class="btn btn-secondary btn-sm" data-act="playlist">${t('schedule.peek_open_playlist')}</button>` : ''}
-        <button type="button" class="btn btn-secondary btn-sm" data-act="close">${t('schedule.peek_close')}</button>
-        <button type="button" class="btn btn-primary btn-sm" data-act="edit">${t('schedule.peek_edit')}</button>
+        <button type="button" class="btn btn-danger btn-sm left" data-act="delete">${renderHTML(t('schedule.peek_delete'))}</button>
+        ${renderHTML(ev.playlist_id ? `<button type="button" class="btn btn-secondary btn-sm" data-act="playlist">${renderHTML(t('schedule.peek_open_playlist'))}</button>` : '')}
+        <button type="button" class="btn btn-secondary btn-sm" data-act="close">${renderHTML(t('schedule.peek_close'))}</button>
+        <button type="button" class="btn btn-primary btn-sm" data-act="edit">${renderHTML(t('schedule.peek_edit'))}</button>
       </div>`, anchorEl.getBoundingClientRect());
     pop.onclick = (evt) => {
       const b = evt.target.closest('[data-act]'); if (!b) return;
@@ -966,23 +983,23 @@ export async function render(container) {
   // values to the full dialog.
   function openCompose(dayDate, startMin, endMin, anchorRect) {
     const hhmm = (m) => `${p2(Math.floor(m / 60) % 24)}:${p2(m % 60)}`;
-    const opts = `<optgroup label="${t('schedule.calendars_screens')}">${devices.map((d) => `<option value="d:${esc(d.id)}">${esc(d.name)}${esc(corpMark(corpDevice(d.id)))}</option>`).join('')}</optgroup>`
-      + (groups.length ? `<optgroup label="${t('schedule.calendars_groups')}">${groups.map((g) => `<option value="g:${esc(g.id)}">${esc(g.name)}${esc(corpMark(corpGroup(g.id)))}</option>`).join('')}</optgroup>` : '')
-      + (walls.length ? `<optgroup label="${t('schedule.calendars_walls')}">${walls.map((w) => `<option value="w:${esc(w.id)}">${esc(w.name)}</option>`).join('')}</optgroup>` : '');
+    const opts = `<optgroup label="${t('schedule.calendars_screens')}">${renderHTML(devices.map((d) => `<option value="d:${esc(d.id)}">${uiText(d.name)}${uiText(corpMark(corpDevice(d.id)))}</option>`).join(''))}</optgroup>`
+      + (groups.length ? `<optgroup label="${t('schedule.calendars_groups')}">${renderHTML(groups.map((g) => `<option value="g:${esc(g.id)}">${uiText(g.name)}${uiText(corpMark(corpGroup(g.id)))}</option>`).join(''))}</optgroup>` : '')
+      + (walls.length ? `<optgroup label="${t('schedule.calendars_walls')}">${renderHTML(walls.map((w) => `<option value="w:${esc(w.id)}">${uiText(w.name)}</option>`).join(''))}</optgroup>` : '');
     const pop = openPopover(`
-      <h3>${t('schedule.compose_title')}</h3>
-      <div class="meta">${esc(t('schedule.compose_date', { date: fmtDate(dayDate, { weekday: 'short', month: 'short', day: 'numeric' }) }))}</div>
-      <div class="row"><div><label>${t('schedule.title_label')}</label><input type="text" class="input" id="cmpTitle" placeholder="${t('schedule.title_placeholder')}"></div></div>
+      <h3>${renderHTML(t('schedule.compose_title'))}</h3>
+      <div class="meta">${uiText(t('schedule.compose_date', { date: fmtDate(dayDate, { weekday: 'short', month: 'short', day: 'numeric' }) }))}</div>
+      <div class="row"><div><label>${renderHTML(t('schedule.title_label'))}</label><input type="text" class="input" id="cmpTitle" placeholder="${t('schedule.title_placeholder')}" data-fil-i18n-placeholder="${binding('schedule.title_placeholder', undefined)}"></div></div>
       <div class="row">
-        <div><label>${t('schedule.start_time')}</label><input type="time" class="input" id="cmpStart" value="${hhmm(startMin)}"></div>
-        <div><label>${t('schedule.end_time')}</label><input type="time" class="input" id="cmpEnd" value="${hhmm(endMin)}"></div>
+        <div><label>${renderHTML(t('schedule.start_time'))}</label><input type="time" class="input" id="cmpStart" value="${hhmm(startMin)}"></div>
+        <div><label>${renderHTML(t('schedule.end_time'))}</label><input type="time" class="input" id="cmpEnd" value="${hhmm(endMin)}"></div>
       </div>
-      <div class="row"><div><label>${t('schedule.compose_target')}</label><select class="input" id="cmpTarget">${opts}</select></div></div>
-      <div class="row"><div><label>${t('schedule.compose_playlist')}</label><select class="input" id="cmpPlaylist"><option value="">${t('schedule.no_playlist_override')}</option>${playlists.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></div></div>
+      <div class="row"><div><label>${renderHTML(t('schedule.compose_target'))}</label><select class="input" id="cmpTarget">${renderHTML(opts)}</select></div></div>
+      <div class="row"><div><label>${renderHTML(t('schedule.compose_playlist'))}</label><select class="input" id="cmpPlaylist"><option value="">${renderHTML(t('schedule.no_playlist_override'))}</option>${renderHTML(playlists.map((p) => `<option value="${esc(p.id)}">${uiText(p.name)}</option>`).join(''))}</select></div></div>
       <div class="sched-pop-actions">
-        <button type="button" class="btn btn-secondary btn-sm left" data-act="more">${t('schedule.compose_more')}</button>
-        <button type="button" class="btn btn-secondary btn-sm" data-act="close">${t('common.cancel')}</button>
-        <button type="button" class="btn btn-primary btn-sm" data-act="save">${t('schedule.compose_save')}</button>
+        <button type="button" class="btn btn-secondary btn-sm left" data-act="more">${renderHTML(t('schedule.compose_more'))}</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-act="close">${renderHTML(t('common.cancel'))}</button>
+        <button type="button" class="btn btn-primary btn-sm" data-act="save">${renderHTML(t('schedule.compose_save'))}</button>
       </div>`, anchorRect);
     const readForm = () => {
       const tv = pop.querySelector('#cmpTarget').value;
@@ -1005,7 +1022,7 @@ export async function render(container) {
         closePopovers();
         showToast(t('schedule.toast.saved'), 'success');
         loadCalendar();
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     };
     pop.onclick = (evt) => {
       const b = evt.target.closest('[data-act]'); if (!b) return;
@@ -1029,13 +1046,13 @@ export async function render(container) {
   // Month "+N more": the whole day, each entry opening its peek.
   function openDayFlyout(date, list, anchorEl) {
     const pop = openPopover(`
-      <h3>${esc(t('schedule.day_flyout_title', { date: fmtDate(date, { weekday: 'short', month: 'short', day: 'numeric' }) }))}</h3>
+      <h3>${uiText(t('schedule.day_flyout_title', { date: fmtDate(date, { weekday: 'short', month: 'short', day: 'numeric' }) }))}</h3>
       <div style="display:flex;flex-direction:column;gap:3px;max-height:50vh;overflow:auto">
-        ${list.length ? list.map((ev) => `<button type="button" class="sched-pill${ev.group_id ? ' group' : ''}" data-sched-id="${esc(ev.id)}" style="background:${colorOf(ev)}"><span class="tm">${fmt12(minsOf(evStart(ev)))}</span><span class="lbl">${esc(targetOf(ev).name)} · ${esc(labelOf(ev))}</span></button>`).join('') : `<div class="meta">${t('schedule.day_flyout_empty')}</div>`}
+        ${renderHTML(list.length ? list.map((ev) => `<button type="button" class="sched-pill${ev.group_id ? ' group' : ''}" data-sched-id="${esc(ev.id)}" style="background:${colorOf(ev)}"><span class="tm">${renderHTML(fmt12(minsOf(evStart(ev))))}</span><span class="lbl">${uiText(targetOf(ev).name)} · ${uiText(labelOf(ev))}</span></button>`).join('') : `<div class="meta">${renderHTML(t('schedule.day_flyout_empty'))}</div>`)}
       </div>
       <div class="sched-pop-actions">
-        <button type="button" class="btn btn-secondary btn-sm" data-act="close">${t('schedule.peek_close')}</button>
-        <button type="button" class="btn btn-primary btn-sm" data-act="open">${t('schedule.peek_open_day')}</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-act="close">${renderHTML(t('schedule.peek_close'))}</button>
+        <button type="button" class="btn btn-primary btn-sm" data-act="open">${renderHTML(t('schedule.peek_open_day'))}</button>
       </div>`, anchorEl.getBoundingClientRect());
     pop.onclick = (evt) => {
       const pillEl = evt.target.closest('.sched-pill');
@@ -1049,10 +1066,10 @@ export async function render(container) {
   // Date label: a jump-to-date picker.
   document.getElementById('schedDateLabel').onclick = (e) => {
     if (popover && popover.dataset.kind === 'jump') { closePopovers(); return; }
-    const pop = openPopover(`<div class="sched-mini-head"><button class="btn-icon" data-nav="-1" aria-label="${t('schedule.prev')}">&lsaquo;</button><span id="jumpLabel"></span><button class="btn-icon" data-nav="1" aria-label="${t('schedule.next')}">&rsaquo;</button></div><div class="sched-mini" id="jumpMini"></div>`, e.currentTarget.getBoundingClientRect());
+    const pop = openPopover(`<div class="sched-mini-head"><button class="btn-icon" data-nav="-1" aria-label="${t('schedule.prev')}" data-fil-i18n-aria-label="${binding('schedule.prev', undefined)}">&lsaquo;</button><span id="jumpLabel"></span><button class="btn-icon" data-nav="1" aria-label="${t('schedule.next')}" data-fil-i18n-aria-label="${binding('schedule.next', undefined)}">&rsaquo;</button></div><div class="sched-mini" id="jumpMini"></div>`, e.currentTarget.getBoundingClientRect());
     pop.dataset.kind = 'jump';
     let m = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-    const paint = () => { pop.querySelector('#jumpLabel').textContent = fmtDate(m, { month: 'long', year: 'numeric' }); renderMini(pop.querySelector('#jumpMini'), m, { onPick: (d) => { closePopovers(); setView(null, d); } }); };
+    const paint = () => { bindMessage(pop.querySelector('#jumpLabel'), fmtDate(m, { month: 'long', year: 'numeric' })); renderMini(pop.querySelector('#jumpMini'), m, { onPick: (d) => { closePopovers(); setView(null, d); } }); };
     pop.addEventListener('click', (evt) => { const b = evt.target.closest('[data-nav]'); if (b) { m = stepAnchor('month', m, Number(b.dataset.nav)); paint(); } });
     paint();
   };
@@ -1093,7 +1110,7 @@ export async function render(container) {
         await API(`/schedules/${ev.id}`, { method: 'PUT', body: JSON.stringify({ start_time: toLocalStamp(base, range.startMin), end_time: toLocalStamp(base, range.endMin) }) });
         showToast(t('schedule.toast.saved'), 'success');
       }
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     loadCalendar();
   }
 
@@ -1119,7 +1136,7 @@ export async function render(container) {
     if (!ghostEl) { ghostEl = document.createElement('div'); ghostEl.className = 'sched-ghost'; }
     ghostEl.style.top = `${minutesToPx(startMin % 60)}px`;
     ghostEl.style.height = `${Math.max(14, minutesToPx(endMin - startMin))}px`;
-    ghostEl.textContent = label;
+    bindMessage(ghostEl, label);
     host.appendChild(ghostEl);
   }
   const clearGhost = () => { if (ghostEl && ghostEl.parentNode) ghostEl.parentNode.removeChild(ghostEl); };
@@ -1249,7 +1266,7 @@ export async function render(container) {
       : [[t('schedule.ctx_new'), () => openCompose(dayDate, start, Math.min(start + 60, DAY_MIN), { left: x, right: x, top: y, bottom: y })]];
     items.forEach(([label, fn]) => {
       const b = document.createElement('button');
-      b.type = 'button'; b.setAttribute('role', 'menuitem'); b.textContent = label;
+      b.type = 'button'; b.setAttribute('role', 'menuitem'); bindMessage(b, label);
       b.style.cssText = 'display:block;width:100%;text-align:left;padding:7px 10px;border-radius:var(--radius);cursor:pointer;color:var(--text-primary);background:transparent;border:0;font:inherit';
       b.onmouseenter = () => { b.style.background = 'var(--bg-card-hover)'; };
       b.onmouseleave = () => { b.style.background = ''; };
@@ -1271,7 +1288,7 @@ export async function render(container) {
         recurrence: ev.recurrence || null, recurrence_end: ev.recurrence_end || null, priority: ev.priority || 0, color: ev.color || '#3B82F6',
       }) });
       showToast(t('schedule.toast.saved'), 'success');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     loadCalendar();
   }
 
@@ -1280,7 +1297,7 @@ export async function render(container) {
     try {
       await API(`/schedules/${ev.id}`, { method: 'DELETE' });
       showToast(t('schedule.toast.deleted'), 'success');
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     loadCalendar();
   }
 
@@ -1306,7 +1323,7 @@ export async function render(container) {
     // SCHEDULE's own anchor, not the clicked occurrence, so editing a rule keeps its start date.
     pendingCreateDate = new Date(ev.start_time);
     recurrenceStartDate = new Date(ev.start_time);
-    document.getElementById('schedModalTitle').textContent = t('schedule.edit_schedule');
+    bindText(document.getElementById('schedModalTitle'), 'schedule.edit_schedule', undefined);
     document.getElementById('schedPlaylist').value = ev.playlist_id || '';
     document.getElementById('schedLayout').value = ev.layout_id || '';
     document.getElementById('schedContent').value = ev.content_id || '';
@@ -1334,7 +1351,7 @@ export async function render(container) {
     // date left over from a cancelled drag would otherwise stamp the next schedule.
     pendingCreateDate = null;
     recurrenceStartDate = anchor;
-    document.getElementById('schedModalTitle').textContent = t('schedule.add_schedule');
+    bindText(document.getElementById('schedModalTitle'), 'schedule.add_schedule', undefined);
     document.getElementById('schedTitle').value = '';
     document.getElementById('schedPlaylist').value = '';
     document.getElementById('schedLayout').value = '';
@@ -1363,7 +1380,7 @@ export async function render(container) {
       document.getElementById('scheduleModal').style.display = 'none';
       showToast(t('schedule.toast.deleted'), 'success');
       loadCalendar();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   };
 
   document.getElementById('saveScheduleBtn').onclick = async () => {
@@ -1399,7 +1416,7 @@ export async function render(container) {
       document.getElementById('scheduleModal').style.display = 'none';
       showToast(t('schedule.toast.saved'), 'success');
       loadCalendar();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
   };
 
   // ---------------------------------------------------------------- toolbar wiring + keyboard
@@ -1445,4 +1462,4 @@ export async function render(container) {
   loadCalendar();
 }
 
-export function cleanup() { while (cleanupFns.length) { try { cleanupFns.pop()(); } catch (_) { /* */ } } }
+export function cleanup() { renderGeneration++; while (cleanupFns.length) { try { cleanupFns.pop()(); } catch (_) { /* */ } } }

@@ -73,7 +73,7 @@ function interpolations(src) {
   return out;
 }
 
-const escaped = (expr) => /^(esc|escAttr)\(/.test(expr);
+const escaped = (expr) => /^(esc|escAttr|uiText)\(/.test(expr);
 // A ternary (` ? `, with spaces — `el.data?.slice` is optional chaining, not a ternary) chooses
 // between literals for a `selected`/`checked` flag; an arithmetic expression yields a number or NaN.
 const isTernary = (expr) => / \? /.test(expr) || /&&/.test(expr);
@@ -93,8 +93,8 @@ test('⚠️ F08: proof-of-play names (player-reported content, editor-set devic
   // aggregates; the strings are not.
   const raw = rawUses(body, /^[cd]\.\w*name\b/);
   assert.deepEqual(raw, [], `unescaped name interpolations in the Reports tables: ${JSON.stringify(raw)}`);
-  assert.match(body, /esc\(c\.content_name/, 'the content cell must escape content_name');
-  assert.match(body, /esc\(d\.device_name/, 'the device cell must escape device_name');
+  assert.match(body, /(?:esc|uiText)\(c\.content_name/, 'the content cell must escape content_name');
+  assert.match(body, /(?:esc|uiText)\(d\.device_name/, 'the device cell must escape device_name');
 });
 
 /* ============================================================ F09 Device detail */

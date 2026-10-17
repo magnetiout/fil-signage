@@ -1,6 +1,8 @@
+import { renderHTML, uiText, attributeBinding } from '../lib/i18n-bindings.js';
+
 import { api } from '../api.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 
 /*
@@ -61,7 +63,7 @@ export function badgeHtml(s) {
   if (!s || s.state === 'unknown') return '';
   const icon = s.state === 'verified' ? '&#10003;' : s.state === 'panel_off' ? '&#9211;' : '&#9888;';
   const title = s.since ? `${stateLabel(s)} · ${t('sv.since', { when: ago(s.since) })}` : stateLabel(s);
-  return `<span class="sv-badge" data-sv-state="${esc(s.state)}" title="${esc(title)}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:${COLOR[s.state] || COLOR.unknown}">${icon} ${esc(stateLabel(s))}</span>`;
+  return `<span class="sv-badge" data-sv-state="${esc(s.state)}" title="${esc(title)}"${attributeBinding("title", title)} style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:${COLOR[s.state] || COLOR.unknown}">${renderHTML(icon)} ${uiText(stateLabel(s))}</span>`;
 }
 
 /** { device_id -> state } for the current workspace; empty on any failure (a courtesy, never a blocker). */
@@ -94,8 +96,8 @@ function incidentLine(i) {
   const end = i.resolved_at ? t(`sv.resolved.${i.resolved_reason || 'recovered'}`) : t('sv.ongoing');
   return `<div style="display:flex;gap:8px;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
     <span style="flex:none;width:9px;height:9px;border-radius:50%;background:${COLOR[i.kind] || COLOR.unknown}"></span>
-    <span style="flex:1;min-width:0">${esc(t(`sv.state.${i.kind}`))}${i.device_name && i.showDevice ? ` · <strong>${esc(i.device_name)}</strong>` : ''}</span>
-    <span style="color:var(--text-muted);flex:none">${esc(t('sv.incident_when', { when: ago(i.opened_at), mins }))} · ${esc(end)}</span></div>`;
+    <span style="flex:1;min-width:0">${renderHTML(t(`sv.state.${i.kind}`))}${renderHTML(i.device_name && i.showDevice ? ` · <strong>${uiText(i.device_name)}</strong>` : '')}</span>
+    <span style="color:var(--text-muted);flex:none">${uiText(t('sv.incident_when', { when: ago(i.opened_at), mins }))} · ${uiText(end)}</span></div>`;
 }
 
 function panelLine(p) {
@@ -116,25 +118,25 @@ export async function mountDeviceSection(host, device) {
   const reason = data.state === 'unknown' && data.reason ? t(`sv.reason.${data.reason}`) : '';
   const canCheck = canChangeVerification() && data.reason !== 'disabled' && data.reason !== 'no_capture' && data.reason !== 'offline';
   host.innerHTML = `<div style="margin-top:20px">
-    <h4 style="font-size:13px;margin-bottom:8px">${esc(t('sv.title'))}</h4>
+    <h4 style="font-size:13px;margin-bottom:8px">${uiText(t('sv.title'))}</h4>
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
-      <span style="font-size:14px;font-weight:600;color:${COLOR[data.state] || COLOR.unknown}" data-sv-device-state>${esc(stateLabel(data))}</span>
-      ${data.since && data.state !== 'unknown' ? `<span style="font-size:12px;color:var(--text-muted)">${esc(t('sv.since', { when: ago(data.since) }))}</span>` : ''}
-      ${reason ? `<span style="font-size:12px;color:var(--text-muted)">${esc(reason)}</span>` : ''}
-      ${canCheck ? `<button class="btn btn-secondary btn-sm" id="svCheckNow">${esc(t('sv.check_now'))}</button>` : ''}
+      <span style="font-size:14px;font-weight:600;color:${COLOR[data.state] || COLOR.unknown}" data-sv-device-state>${uiText(stateLabel(data))}</span>
+      ${renderHTML(data.since && data.state !== 'unknown' ? `<span style="font-size:12px;color:var(--text-muted)">${uiText(t('sv.since', { when: ago(data.since) }))}</span>` : '')}
+      ${renderHTML(reason ? `<span style="font-size:12px;color:var(--text-muted)">${uiText(reason)}</span>` : '')}
+      ${renderHTML(canCheck ? `<button class="btn btn-secondary btn-sm" id="svCheckNow">${uiText(t('sv.check_now'))}</button>` : '')}
     </div>
-    <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">${esc(t('sv.explain.' + data.state))}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:6px">${esc(t('sv.panel.label'))}: ${panelLine(data.panel)}${data.last_check_at ? ` · ${esc(t('sv.last_check', { when: ago(data.last_check_at) }))}` : ''}</div>
-    <div style="margin-top:8px">${(data.incidents || []).length
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">${uiText(t('sv.explain.' + data.state))}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:6px">${uiText(t('sv.panel.label'))}: ${renderHTML(panelLine(data.panel))}${renderHTML(data.last_check_at ? ` · ${esc(t('sv.last_check', { when: ago(data.last_check_at) }))}` : '')}</div>
+    <div style="margin-top:8px">${renderHTML((data.incidents || []).length
       ? data.incidents.slice(0, 8).map(incidentLine).join('')
-      : `<div style="font-size:12px;color:var(--text-muted)">${esc(t('sv.no_incidents'))}</div>`}</div>
+      : `<div style="font-size:12px;color:var(--text-muted)">${uiText(t('sv.no_incidents'))}</div>`)}</div>
   </div>`;
   const btn = host.querySelector('#svCheckNow');
   if (btn) {
     btn.addEventListener('click', async () => {
       btn.disabled = true;
       try { await api.post(`/screen-verification/devices/${encodeURIComponent(device.id)}/check`, {}); showToast(t('sv.check_requested'), 'info'); }
-      catch (e) { showToast((e && e.message) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
       setTimeout(() => { if (document.contains(host)) mountDeviceSection(host, device); }, 8000);
     });
   }
@@ -146,7 +148,7 @@ export async function mountSettings(host) {
   if (!host) return;
   let s, incidents;
   try { [s, incidents] = await Promise.all([api.get('/screen-verification/settings'), api.get('/screen-verification/incidents?limit=25')]); }
-  catch (e) { host.innerHTML = `<p class="corp-notice corp-notice-danger">${esc((e && e.message) || t('common.error'))}</p>`; return; }
+  catch (e) { host.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`; return; }
   if (!document.contains(host)) return;
   const admin = canAdminVerification();
   const dis = admin ? '' : 'disabled';
@@ -155,28 +157,28 @@ export async function mountSettings(host) {
   const ch = s.channels || { total: 0, subscribed: 0 };
   host.innerHTML = `<div class="corp-card" style="margin-bottom:16px;padding:16px">
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
-      <strong>${esc(t('sv.title'))}</strong>
-      <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="svEnabled" ${s.enabled ? 'checked' : ''} ${dis}> ${esc(t('sv.f.enabled'))}</label>
+      <strong>${uiText(t('sv.title'))}</strong>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="svEnabled" ${s.enabled ? 'checked' : ''} ${dis}> ${uiText(t('sv.f.enabled'))}</label>
     </div>
-    <div class="corp-help" style="font-size:12px;margin-top:6px">${esc(t('sv.intro'))}</div>
+    <div class="corp-help" style="font-size:12px;margin-top:6px">${uiText(t('sv.intro'))}</div>
     <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:12px">
-      <div class="form-group" style="margin:0;min-width:200px"><label>${esc(t('sv.f.cadence'))}</label>
-        <select id="svCadence" class="input" ${dis}>${cadences.sort((a, b) => a - b).map((m) => `<option value="${m}" ${m === s.cadence_minutes ? 'selected' : ''}>${esc(m === 0 ? t('sv.f.cadence_off') : t('sv.f.cadence_every', { n: m }))}</option>`).join('')}</select></div>
-      <div class="form-group" style="margin:0;min-width:160px"><label>${esc(t('sv.f.sensitivity'))}</label>
-        <select id="svSens" class="input" ${dis}>${(s.sensitivities || ['low', 'normal', 'high']).map((v) => `<option value="${esc(v)}" ${v === s.sensitivity ? 'selected' : ''}>${esc(t(`sv.f.sens_${v}`))}</option>`).join('')}</select></div>
-      <div class="form-group" style="margin:0;min-width:160px"><label>${esc(t('sv.f.persist'))}</label>
+      <div class="form-group" style="margin:0;min-width:200px"><label>${uiText(t('sv.f.cadence'))}</label>
+        <select id="svCadence" class="input" ${dis}>${renderHTML(cadences.sort((a, b) => a - b).map((m) => `<option value="${m}" ${m === s.cadence_minutes ? 'selected' : ''}>${uiText(m === 0 ? t('sv.f.cadence_off') : t('sv.f.cadence_every', { n: m }))}</option>`).join(''))}</select></div>
+      <div class="form-group" style="margin:0;min-width:160px"><label>${uiText(t('sv.f.sensitivity'))}</label>
+        <select id="svSens" class="input" ${dis}>${renderHTML((s.sensitivities || ['low', 'normal', 'high']).map((v) => `<option value="${esc(v)}" ${v === s.sensitivity ? 'selected' : ''}>${uiText(t(`sv.f.sens_${v}`))}</option>`).join(''))}</select></div>
+      <div class="form-group" style="margin:0;min-width:160px"><label>${uiText(t('sv.f.persist'))}</label>
         <input id="svPersist" type="number" min="2" max="240" class="input" value="${esc(s.persist_minutes)}" style="width:100px" ${dis}></div>
     </div>
-    <div class="form-group" style="margin-top:12px"><label>${esc(t('sv.f.alert_checks'))}</label>
-      <div style="display:flex;flex-wrap:wrap;gap:12px">${(s.checks || []).map((c) => `<label style="display:flex;gap:6px;font-size:13px"><input type="checkbox" class="sv-check" value="${esc(c)}" ${s.alert_checks.includes(c) ? 'checked' : ''} ${dis}> ${esc(t(`sv.state.${c}`))}</label>`).join('')}</div>
-      <div class="corp-help" style="font-size:12px;margin-top:4px">${esc(ch.subscribed ? t('sv.f.channels', { n: ch.subscribed, total: ch.total }) : t('sv.f.no_channels'))}</div></div>
-    <div class="corp-help" style="font-size:12px">${esc(t('sv.f.privacy'))}</div>
-    ${admin ? `<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn btn-primary btn-sm" id="svSave">${esc(t('common.save'))}</button></div>`
-      : `<div class="corp-help" style="font-size:12px;margin-top:8px">${esc(t('sv.f.admin_only'))}</div>`}
+    <div class="form-group" style="margin-top:12px"><label>${uiText(t('sv.f.alert_checks'))}</label>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">${renderHTML((s.checks || []).map((c) => `<label style="display:flex;gap:6px;font-size:13px"><input type="checkbox" class="sv-check" value="${esc(c)}" ${s.alert_checks.includes(c) ? 'checked' : ''} ${dis}> ${uiText(t(`sv.state.${c}`))}</label>`).join(''))}</div>
+      <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(ch.subscribed ? t('sv.f.channels', { n: ch.subscribed, total: ch.total }) : t('sv.f.no_channels'))}</div></div>
+    <div class="corp-help" style="font-size:12px">${uiText(t('sv.f.privacy'))}</div>
+    ${renderHTML(admin ? `<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn btn-primary btn-sm" id="svSave">${uiText(t('common.save'))}</button></div>`
+      : `<div class="corp-help" style="font-size:12px;margin-top:8px">${uiText(t('sv.f.admin_only'))}</div>`)}
   </div>
   <div class="corp-card" style="margin-bottom:16px;padding:16px">
-    <strong>${esc(t('sv.history'))}</strong>
-    <div style="margin-top:8px">${(incidents || []).length ? incidents.map((i) => incidentLine({ ...i, showDevice: true })).join('') : `<div class="corp-help" style="font-size:12px">${esc(t('sv.no_incidents'))}</div>`}</div>
+    <strong>${uiText(t('sv.history'))}</strong>
+    <div style="margin-top:8px">${renderHTML((incidents || []).length ? incidents.map((i) => incidentLine({ ...i, showDevice: true })).join('') : `<div class="corp-help" style="font-size:12px">${uiText(t('sv.no_incidents'))}</div>`)}</div>
   </div>`;
   const save = host.querySelector('#svSave');
   if (save) {
@@ -190,7 +192,7 @@ export async function mountSettings(host) {
         alert_checks: [...host.querySelectorAll('.sv-check:checked')].map((i) => i.value),
       };
       try { await api.put('/screen-verification/settings', body); showToast(t('sv.saved'), 'success'); mountSettings(host); }
-      catch (e) { showToast((e && e.message) || t('common.error'), 'error'); save.disabled = false; }
+      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); save.disabled = false; }
     });
   }
 }

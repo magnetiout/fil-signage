@@ -2491,6 +2491,8 @@ const migrations = [
    */
   "ALTER TABLE users ADD COLUMN ui_mode TEXT NOT NULL DEFAULT 'simple'",
   "ALTER TABLE users ADD COLUMN onboarded_at INTEGER",
+  // FIL admin language: NULL means no account choice yet; display defaults to Turkish.
+  "ALTER TABLE users ADD COLUMN ui_language TEXT CHECK(ui_language IS NULL OR ui_language IN ('tr','en'))",
   /*
    * Trial-to-paid funnel (lib/conversion-events.js). Hosted only: nothing is written when
    * SELF_HOSTED is set. No foreign keys, like the other log tables; user deletion removes a

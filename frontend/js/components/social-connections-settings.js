@@ -1,3 +1,7 @@
+import { uiText, renderHTML, bindMessage, bindText } from '../lib/i18n-bindings.js';
+
+import { displayValue, message as t } from '../i18n.js';
+
 /*
  * "Social connections" (server/routes/social.js, docs/social-feeds.md): the organization's
  * Instagram, Facebook, YouTube and X credentials for social walls. Org owners and admins only.
@@ -8,7 +12,7 @@
  */
 import { api } from '../api.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
+
 import { showToast } from './toast.js';
 
 const BASE = '/social/connections';
@@ -49,11 +53,11 @@ export async function mountSocialConnections(host) {
   try { data = await api.get(BASE); } catch (_) { host.style.display = 'none'; return; }
   if (!data.can_manage) { host.style.display = 'none'; return; }
   host.style.display = '';
-  host.innerHTML = `<h3>${esc(t('social.conn_title'))}</h3>
-    <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${esc(t('social.conn_blurb'))}</p>
+  host.innerHTML = `<h3>${uiText(t('social.conn_title'))}</h3>
+    <p style="color:var(--text-muted);font-size:12px;margin-bottom:8px">${uiText(t('social.conn_blurb'))}</p>
     <div data-sc="list"></div>
     <details data-sc="add" style="margin-top:12px">
-      <summary style="cursor:pointer;font-size:13px">${esc(t('social.conn_add'))}</summary>
+      <summary style="cursor:pointer;font-size:13px">${uiText(t('social.conn_add'))}</summary>
       <div data-sc="addform" style="margin-top:12px;max-width:560px"></div>
     </details>`;
   const list = host.querySelector('[data-sc="list"]');
@@ -62,26 +66,26 @@ export async function mountSocialConnections(host) {
   renderForm(addForm, null, 'instagram');
 
   async function reload() {
-    try { data = await api.get(BASE); } catch (err) { showToast(err.message, 'error'); return; }
+    try { data = await api.get(BASE); } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
     render();
   }
 
   function render() {
     const rows = data.connections || [];
-    if (!rows.length) { list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${esc(t('social.conn_none'))}</p>`; return; }
+    if (!rows.length) { list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText(t('social.conn_none'))}</p>`; return; }
     list.innerHTML = rows.map((c) => `
       <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
           <div style="min-width:0">
-            <strong>${esc(c.name)}</strong>
-            <span style="font-size:12px;color:var(--text-muted)"> · ${esc(KINDS[c.kind] ? KINDS[c.kind].label() : c.kind)}</span>
-            ${c.token_expires_at ? `<div style="font-size:12px;color:var(--text-muted)">${esc(t('social.token_expires', { date: new Date(c.token_expires_at * 1000).toLocaleDateString() }))}</div>` : ''}
-            ${c.last_error ? `<div style="font-size:12px;color:var(--danger,#b91c1c)">${esc(c.last_error)}</div>` : ''}
+            <strong>${uiText(c.name)}</strong>
+            <span style="font-size:12px;color:var(--text-muted)"> · ${uiText(KINDS[c.kind] ? KINDS[c.kind].label() : c.kind)}</span>
+            ${renderHTML(c.token_expires_at ? `<div style="font-size:12px;color:var(--text-muted)">${renderHTML(t('social.token_expires', { date: displayValue(new Date(c.token_expires_at * 1000), "toLocaleDateString", undefined) }))}</div>` : '')}
+            ${renderHTML(c.last_error ? `<div style="font-size:12px;color:var(--danger,#b91c1c)">${uiText(c.last_error)}</div>` : '')}
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn btn-secondary btn-sm" data-sc-test="${esc(c.id)}">${esc(t('social.test'))}</button>
-            <button class="btn btn-secondary btn-sm" data-sc-edit="${esc(c.id)}">${esc(t('common.edit'))}</button>
-            <button class="btn btn-danger btn-sm" data-sc-del="${esc(c.id)}">${esc(t('common.delete'))}</button>
+            <button class="btn btn-secondary btn-sm" data-sc-test="${esc(c.id)}">${uiText(t('social.test'))}</button>
+            <button class="btn btn-secondary btn-sm" data-sc-edit="${esc(c.id)}">${uiText(t('common.edit'))}</button>
+            <button class="btn btn-danger btn-sm" data-sc-del="${esc(c.id)}">${uiText(t('common.delete'))}</button>
           </div>
         </div>
         <div data-sc-out="${esc(c.id)}" style="display:none;margin-top:8px;font-size:12px"></div>
@@ -91,11 +95,11 @@ export async function mountSocialConnections(host) {
     list.querySelectorAll('[data-sc-test]').forEach((b) => b.addEventListener('click', async () => {
       const out = list.querySelector(`[data-sc-out="${b.dataset.scTest}"]`);
       out.style.display = '';
-      out.textContent = t('social.testing');
+      bindText(out, 'social.testing', undefined);
       try {
         const r = await api.post(`${BASE}/${b.dataset.scTest}/test`, {});
-        out.textContent = `${r.ok ? '✅' : '❌'} ${r.detail || ''}`;
-      } catch (err) { out.textContent = err.message; }
+        bindMessage(out, `${r.ok ? '✅' : '❌'} ${r.detail || ''}`);
+      } catch (err) { bindMessage(out, (err.uiMessage || err.message)); }
     }));
     list.querySelectorAll('[data-sc-edit]').forEach((b) => b.addEventListener('click', () => {
       const box = list.querySelector(`[data-sc-editbox="${b.dataset.scEdit}"]`);
@@ -109,7 +113,7 @@ export async function mountSocialConnections(host) {
       if (!confirm(t('social.conn_confirm_delete'))) return;
       try { await api.delete(`${BASE}/${b.dataset.scDel}`); }
       catch (err) {
-        if (err.status !== 409) { showToast(err.message, 'error'); return; }
+        if (err.status !== 409) { showToast(err.uiMessage || err.message, 'error'); return; }
         if (!confirm(err.message)) return;
         try { await api.delete(`${BASE}/${b.dataset.scDel}?force=1`); } catch (e2) { showToast(e2.message, 'error'); return; }
       }
@@ -122,16 +126,16 @@ export async function mountSocialConnections(host) {
     const spec = KINDS[kind];
     const cfg = draft || (row && row.config) || {};
     box.innerHTML = `<div style="display:grid;gap:10px">
-      ${row ? '' : `<div class="form-group"><label>${esc(t('social.f_network'))}</label>
-        <select class="input" data-f="kind">${Object.keys(KINDS).map((k) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${esc(KINDS[k].label())}</option>`).join('')}</select></div>`}
-      <div style="font-size:12px;color:var(--text-muted)">${esc(spec.hint())}</div>
-      <div class="form-group"><label>${esc(t('social.f_name'))}</label><input class="input" data-f="name" value="${esc(row ? row.name : (draft && draft.name) || '')}"></div>
-      ${spec.fields.filter((f) => !f.only || f.only(cfg)).map((f) => (f.select
-        ? `<div class="form-group"><label>${esc(f.label())}</label><select class="input" data-f="${f.k}">${f.select.map(([v, l]) => `<option value="${v}" ${(cfg[f.k] || f.select[0][0]) === v ? 'selected' : ''}>${esc(l())}</option>`).join('')}</select></div>`
-        : `<div class="form-group"><label>${esc(f.label())}</label><input class="input" data-f="${f.k}" value="${esc(cfg[f.k] || '')}" placeholder="${esc(f.ph || '')}"></div>`)).join('')}
-      <div class="form-group"><label>${esc(spec.secret())}</label>
+      ${renderHTML(row ? '' : `<div class="form-group"><label>${uiText(t('social.f_network'))}</label>
+        <select class="input" data-f="kind">${renderHTML(Object.keys(KINDS).map((k) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${uiText(KINDS[k].label())}</option>`).join(''))}</select></div>`)}
+      <div style="font-size:12px;color:var(--text-muted)">${uiText(spec.hint())}</div>
+      <div class="form-group"><label>${uiText(t('social.f_name'))}</label><input class="input" data-f="name" value="${esc(row ? row.name : (draft && draft.name) || '')}"></div>
+      ${renderHTML(spec.fields.filter((f) => !f.only || f.only(cfg)).map((f) => (f.select
+        ? `<div class="form-group"><label>${uiText(f.label())}</label><select class="input" data-f="${f.k}">${renderHTML(f.select.map(([v, l]) => `<option value="${v}" ${(cfg[f.k] || f.select[0][0]) === v ? 'selected' : ''}>${uiText(l())}</option>`).join(''))}</select></div>`
+        : `<div class="form-group"><label>${uiText(f.label())}</label><input class="input" data-f="${f.k}" value="${esc(cfg[f.k] || '')}" placeholder="${esc(f.ph || '')}"></div>`)).join(''))}
+      <div class="form-group"><label>${uiText(spec.secret())}</label>
         <input type="password" class="input" data-f="secret" autocomplete="new-password" placeholder="${esc(row && row.has_secret ? t('social.secret_kept') : '')}"></div>
-      <div><button class="btn btn-primary btn-sm" data-f="save">${esc(row ? t('common.save') : t('social.conn_create'))}</button></div>
+      <div><button class="btn btn-primary btn-sm" data-f="save">${uiText(row ? t('common.save') : t('social.conn_create'))}</button></div>
     </div>`;
     const val = (k) => { const el = box.querySelector(`[data-f="${k}"]`); return el ? el.value.trim() : undefined; };
     const kindSel = box.querySelector('[data-f="kind"]');
@@ -147,7 +151,7 @@ export async function mountSocialConnections(host) {
       if (secret) body.secret = secret;
       try {
         if (row) await api.put(`${BASE}/${row.id}`, body); else await api.post(BASE, body);
-      } catch (err) { showToast(err.message, 'error'); return; }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
       showToast(t('social.saved'), 'success');
       if (!row) { host.querySelector('[data-sc="add"]').open = false; renderForm(addForm, null, 'instagram'); }
       reload();

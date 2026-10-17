@@ -1,3 +1,6 @@
+import {builtinLayoutName, builtinZoneName} from '../lib/builtin-layout-labels.js';
+import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0: a layout on a playlist (docs/layouts-and-campaigns.md).
  *
@@ -11,7 +14,7 @@
 import { api } from '../api.js';
 import { showToast } from './toast.js';
 import { esc } from '../utils.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 
 let layoutsCache = null;
 
@@ -30,12 +33,12 @@ export function layoutPickerHtml(playlist) {
   const explicit = !!(playlist.layout && playlist.layout.explicit);
   return `
     <div id="playlistLayoutRow" ${explicit ? "" : "data-advanced-ui"} style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 12px;font-size:13px">
-      <label for="playlistLayoutSelect" style="color:var(--text-muted)">${esc(t('layoutpl.label'))}</label>
+      <label for="playlistLayoutSelect" style="color:var(--text-muted)">${uiText(t('layoutpl.label'))}</label>
       <select id="playlistLayoutSelect" class="input" style="width:auto;max-width:280px;background:var(--bg-input);font-size:13px;padding:4px 8px">
-        <option value="">${esc(t('layoutpl.screen_own'))}</option>
-        ${explicit ? `<option value="${esc(playlist.layout.id)}" selected>${esc(playlist.layout.name || '')}</option>` : ''}
+        <option value="">${uiText(t('layoutpl.screen_own'))}</option>
+        ${renderHTML(explicit ? `<option value="${esc(playlist.layout.id)}" selected>${uiText(playlist.layout.name || '')}</option>` : '')}
       </select>
-      <span style="font-size:12px;color:var(--text-muted)">${esc(explicit ? t('layoutpl.hint_set') : t('layoutpl.hint_unset'))}</span>
+      <span style="font-size:12px;color:var(--text-muted)">${uiText(explicit ? t('layoutpl.hint_set') : t('layoutpl.hint_unset'))}</span>
     </div>`;
 }
 
@@ -46,8 +49,8 @@ export async function mountLayoutPicker(playlist, onChanged) {
   let layouts = [];
   try { layouts = await loadLayouts(); } catch { return; }
   const current = playlist.layout && playlist.layout.explicit ? playlist.layout.id : '';
-  const opt = (l) => `<option value="${esc(l.id)}" ${l.id === current ? 'selected' : ''}>${esc(l.is_template ? t('layoutpl.template_name', { name: l.name }) : l.name)} (${esc(tn('playlist.zones_count', (l.zones || []).length))})</option>`;
-  sel.innerHTML = `<option value="">${esc(t('layoutpl.screen_own'))}</option>`
+  const opt = (l) => `<option value="${esc(l.id)}" ${l.id === current ? 'selected' : ''}>${uiText(l.is_template ? t('layoutpl.template_name', { name: builtinLayoutName(l) }) : l.name)} (${uiText(tn('playlist.zones_count', (l.zones || []).length))})</option>`;
+  sel.innerHTML = `<option value="">${uiText(t('layoutpl.screen_own'))}</option>`
     + layouts.filter((l) => !l.is_template).map(opt).join('')
     + layouts.filter((l) => l.is_template).map(opt).join('');
   sel.addEventListener('change', async () => {
@@ -57,7 +60,7 @@ export async function mountLayoutPicker(playlist, onChanged) {
       if (done) { showToast(t('layoutpl.toast_changed'), 'info'); onChanged && onChanged(); }
       else sel.value = current;
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
       sel.value = current;
     }
   });
@@ -89,31 +92,31 @@ async function changeLayout(playlist, layoutId) {
 function zoneMapDialog(plan) {
   return new Promise((resolve) => {
     const zones = (plan.layout && plan.layout.zones) || [];
-    const option = (z, selected) => `<option value="${esc(z.id)}" ${selected ? 'selected' : ''}>${esc(z.name)}${z.id === plan.main_zone_id ? ' ' + esc(t('layoutpl.main_suffix')) : ''}</option>`;
+    const option = (z, selected) => `<option value="${esc(z.id)}" ${selected ? 'selected' : ''}>${uiText(z.name)}${renderHTML(z.id === plan.main_zone_id ? ' ' + t('layoutpl.main_suffix') : '')}</option>`;
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000';
     modal.innerHTML = `
       <div role="dialog" aria-modal="true" aria-labelledby="zoneMapTitle" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:520px;max-width:92vw;max-height:86vh;overflow:auto">
-        <h3 id="zoneMapTitle" style="margin:0 0 8px;color:var(--text-primary)">${esc(t('layoutpl.map_title', { name: plan.layout ? plan.layout.name : '' }))}</h3>
-        <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px">${esc(t('layoutpl.map_intro'))}</p>
+        <h3 id="zoneMapTitle" style="margin:0 0 8px;color:var(--text-primary)">${uiText(t('layoutpl.map_title', { name: plan.layout ? plan.layout.name : '' }))}</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px">${uiText(t('layoutpl.map_intro'))}</p>
         <div style="display:flex;flex-direction:column;gap:8px">
-          ${plan.zones.map((z) => `
+          ${renderHTML(plan.zones.map((z) => `
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               <div style="flex:1;min-width:160px;font-size:13px">
-                <strong>${esc(z.name)}</strong>
-                <span style="color:var(--text-muted)">${z.layout_name ? ' · ' + esc(z.layout_name) : ''} · ${esc(tn('layoutpl.items_n', z.items))}</span>
+                <strong>${uiText(z.name)}</strong>
+                <span style="color:var(--text-muted)">${renderHTML(z.layout_name ? ' · ' + esc(z.layout_name) : '')} · ${uiText(tn('layoutpl.items_n', z.items))}</span>
               </div>
               <span aria-hidden="true" style="color:var(--text-muted)">&rarr;</span>
-              <select class="input zone-map-target" data-from="${esc(z.id)}" aria-label="${esc(t('layoutpl.map_target_for', { name: z.name }))}" style="width:200px;background:var(--bg-input)">
-                ${zones.map((n) => option(n, n.id === (z.suggested || plan.main_zone_id))).join('')}
+              <select class="input zone-map-target" data-from="${esc(z.id)}" aria-label="${esc(t('layoutpl.map_target_for', { name: z.name }))}" data-fil-i18n-aria-label="${binding('layoutpl.map_target_for', { name: z.name })}" style="width:200px;background:var(--bg-input)">
+                ${renderHTML(zones.map((n) => option(n, n.id === (z.suggested || plan.main_zone_id))).join(''))}
               </select>
-            </div>`).join('')}
+            </div>`).join(''))}
         </div>
-        ${plan.unzoned_items ? `<p style="font-size:12px;color:var(--text-muted);margin:12px 0 0">${esc(tn('layoutpl.unzoned_note', plan.unzoned_items))}</p>` : ''}
+        ${renderHTML(plan.unzoned_items ? `<p style="font-size:12px;color:var(--text-muted);margin:12px 0 0">${uiText(tn('layoutpl.unzoned_note', plan.unzoned_items))}</p>` : '')}
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
-          <button class="btn btn-secondary" id="zoneMapCancel">${esc(t('common.cancel'))}</button>
-          <button class="btn btn-primary" id="zoneMapOk">${esc(t('layoutpl.map_confirm'))}</button>
+          <button class="btn btn-secondary" id="zoneMapCancel">${uiText(t('common.cancel'))}</button>
+          <button class="btn btn-primary" id="zoneMapOk">${uiText(t('layoutpl.map_confirm'))}</button>
         </div>
       </div>`;
     document.body.appendChild(modal);
@@ -139,10 +142,10 @@ export function zoneSelectHtml(item, layout) {
   if (item.child_playlist_id || item.slot_id) return '';
   const known = layout.zones.some((z) => z.id === item.zone_id);
   const main = layout.zones.find((z) => z.id === layout.main_zone_id);
-  return `<select class="input item-zone" data-item-id="${esc(String(item.id))}" aria-label="${esc(t('layoutpl.zone_for_item'))}" title="${esc(t('layoutpl.zone_for_item'))}" style="width:130px;padding:4px 6px;font-size:12px;background:var(--bg-input)${item.zone_id && !known ? ';border-color:var(--danger)' : ''}">
-    <option value="" ${!item.zone_id ? 'selected' : ''}>${esc(t('layoutpl.zone_main_auto', { name: main ? main.name : '' }))}</option>
-    ${layout.zones.map((z) => `<option value="${esc(z.id)}" ${z.id === item.zone_id ? 'selected' : ''}>${esc(z.name)}</option>`).join('')}
-    ${item.zone_id && !known ? `<option value="${esc(item.zone_id)}" selected>${esc(t('layoutpl.zone_other_layout'))}</option>` : ''}
+  return `<select class="input item-zone" data-item-id="${esc(String(item.id))}" aria-label="${esc(t('layoutpl.zone_for_item'))}" data-fil-i18n-aria-label="${binding('layoutpl.zone_for_item', undefined)}" title="${esc(t('layoutpl.zone_for_item'))}" data-fil-i18n-title="${binding('layoutpl.zone_for_item', undefined)}" style="width:130px;padding:4px 6px;font-size:12px;background:var(--bg-input)${item.zone_id && !known ? ';border-color:var(--danger)' : ''}">
+    <option value="" ${!item.zone_id ? 'selected' : ''}>${uiText(t('layoutpl.zone_main_auto', { name: main ? main.name : '' }))}</option>
+    ${renderHTML(layout.zones.map((z) => `<option value="${esc(z.id)}" ${z.id === item.zone_id ? 'selected' : ''}>${uiText(z.name)}</option>`).join(''))}
+    ${renderHTML(item.zone_id && !known ? `<option value="${esc(item.zone_id)}" selected>${uiText(t('layoutpl.zone_other_layout'))}</option>` : '')}
   </select>`;
 }
 
@@ -155,7 +158,7 @@ export function bindZoneSelects(root, playlistId, onChanged) {
         await api.updatePlaylistItem(playlistId, sel.dataset.itemId, { zone_id: sel.value || null });
         showToast(t('layoutpl.toast_zone'), 'info');
         onChanged && onChanged();
-      } catch (err) { showToast(err.message, 'error'); onChanged && onChanged(); }
+      } catch (err) { showToast(err.uiMessage || err.message, 'error'); onChanged && onChanged(); }
     });
   });
 }

@@ -1,3 +1,6 @@
+import {localizeServerError} from '../../api.js';
+import { uiText, renderHTML, attributeBinding, binding } from '../../lib/i18n-bindings.js';
+
 // The Content Library's upload queue and its tray.
 //
 // Files go up one at a time through the resumable uploader (lib/chunked-upload.js), each with its
@@ -19,7 +22,7 @@
 import { uploadFileResumable } from '../../lib/chunked-upload.js';
 import { isPdf } from '../pdf-pages.js';
 import { esc } from '../../utils.js';
-import { t } from '../../i18n.js';
+import { message as t } from '../../i18n.js';
 import { confirmDialog } from './dialog.js';
 
 const items = [];
@@ -101,7 +104,7 @@ async function runOne(it) {
     const aborted = (err && err.cancelled) || (it.controller && it.controller.signal.aborted) || (err && err.name === 'AbortError');
     it.controller = null;
     if (aborted) { it.state = 'cancelled'; }
-    else { it.state = 'failed'; it.error = (err && err.message) || t('library.upload.failed_generic'); }
+    else { it.state = 'failed'; it.error = (err && (err.uiMessage || localizeServerError(err.message,err.status))) || t('library.upload.failed_generic'); }
     renderTray();
   }
 }
@@ -169,27 +172,27 @@ function renderTray() {
   const focusedAct = document.activeElement && tray.contains(document.activeElement) ? document.activeElement.dataset : null;
   tray.innerHTML = `
     <div class="lib-tray-head">
-      <h2 id="libTrayTitle" class="lib-tray-title">${esc(t('library.upload.title'))}</h2>
-      <span class="lib-tray-summary" role="status" aria-live="polite">${esc(summary)}</span>
-      ${!active ? `<button type="button" class="btn btn-secondary btn-sm" data-act="clear">${esc(t('library.upload.clear'))}</button>` : ''}
+      <h2 id="libTrayTitle" class="lib-tray-title">${uiText(t('library.upload.title'))}</h2>
+      <span class="lib-tray-summary" role="status" aria-live="polite">${uiText(summary)}</span>
+      ${renderHTML(!active ? `<button type="button" class="btn btn-secondary btn-sm" data-act="clear">${uiText(t('library.upload.clear'))}</button>` : '')}
       <button type="button" class="lib-icon-btn" data-act="collapse" aria-expanded="${!collapsed}" aria-label="${esc(collapsed ? t('library.upload.expand') : t('library.upload.collapse'))}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="${collapsed ? '6 15 12 9 18 15' : '6 9 12 15 18 9'}"/></svg>
       </button>
     </div>
-    ${collapsed ? '' : `<ul class="lib-tray-list">${items.map((it) => {
+    ${renderHTML(collapsed ? '' : `<ul class="lib-tray-list">${renderHTML(items.map((it) => {
       const pct = it.total ? Math.min(100, Math.round((it.sent / it.total) * 100)) : 0;
       const live = ['uploading', 'processing', 'queued'].includes(it.state);
       return `<li class="lib-tray-item is-${it.state}">
         <div class="lib-tray-row">
-          <span class="lib-tray-name" title="${esc(it.file.name)}">${esc(it.file.name)}</span>
-          ${live && !it.pdf ? `<button type="button" class="btn btn-secondary btn-sm" data-act="cancel" data-item="${it.id}" aria-label="${esc(t('library.upload.cancel_named', { name: it.file.name }))}">${esc(t('common.cancel'))}</button>` : ''}
-          ${it.state === 'failed' ? `<button type="button" class="btn btn-secondary btn-sm" data-act="retry" data-item="${it.id}" aria-label="${esc(t('library.upload.retry_named', { name: it.file.name }))}">${esc(t('library.upload.retry'))}</button>` : ''}
-          ${!live ? `<button type="button" class="lib-icon-btn" data-act="dismiss" data-item="${it.id}" aria-label="${esc(t('library.upload.dismiss_named', { name: it.file.name }))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}
+          <span class="lib-tray-name" title="${esc(it.file.name)}"${attributeBinding("title", it.file.name)}>${uiText(it.file.name)}</span>
+          ${renderHTML(live && !it.pdf ? `<button type="button" class="btn btn-secondary btn-sm" data-act="cancel" data-item="${it.id}" aria-label="${esc(t('library.upload.cancel_named', { name: it.file.name }))}" data-fil-i18n-aria-label="${binding('library.upload.cancel_named', { name: it.file.name })}">${uiText(t('common.cancel'))}</button>` : '')}
+          ${renderHTML(it.state === 'failed' ? `<button type="button" class="btn btn-secondary btn-sm" data-act="retry" data-item="${it.id}" aria-label="${esc(t('library.upload.retry_named', { name: it.file.name }))}" data-fil-i18n-aria-label="${binding('library.upload.retry_named', { name: it.file.name })}">${uiText(t('library.upload.retry'))}</button>` : '')}
+          ${renderHTML(!live ? `<button type="button" class="lib-icon-btn" data-act="dismiss" data-item="${it.id}" aria-label="${esc(t('library.upload.dismiss_named', { name: it.file.name }))}" data-fil-i18n-aria-label="${binding('library.upload.dismiss_named', { name: it.file.name })}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : '')}
         </div>
-        ${it.state === 'uploading' || it.state === 'processing' ? `<div class="lib-progress" role="progressbar" aria-label="${esc(it.file.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"${it.state === 'processing' ? ' aria-valuetext="' + esc(t('library.upload.processing')) + '"' : ''}><div class="lib-progress-fill${it.state === 'processing' ? ' is-indeterminate' : ''}" style="width:${it.state === 'processing' ? 100 : pct}%"></div></div>` : ''}
-        <div class="lib-tray-meta"><span class="lib-dot is-${it.state === 'ready' ? 'ok' : it.state === 'failed' ? 'bad' : it.state === 'cancelled' ? 'muted' : 'busy'}" aria-hidden="true"></span>${esc(stateText(it))}${it.folderLabel ? ` · ${esc(t('library.upload.to_folder', { folder: it.folderLabel }))}` : ''}</div>
+        ${renderHTML(it.state === 'uploading' || it.state === 'processing' ? `<div class="lib-progress" role="progressbar" aria-label="${esc(it.file.name)}"${attributeBinding("aria-label", it.file.name)} aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"${it.state === 'processing' ? ' aria-valuetext="' + esc(t('library.upload.processing')) + '"' : ''}><div class="lib-progress-fill${it.state === 'processing' ? ' is-indeterminate' : ''}" style="width:${it.state === 'processing' ? 100 : pct}%"></div></div>` : '')}
+        <div class="lib-tray-meta"><span class="lib-dot is-${it.state === 'ready' ? 'ok' : it.state === 'failed' ? 'bad' : it.state === 'cancelled' ? 'muted' : 'busy'}" aria-hidden="true"></span>${uiText(stateText(it))}${renderHTML(it.folderLabel ? ` · ${esc(t('library.upload.to_folder', { folder: it.folderLabel }))}` : '')}</div>
       </li>`;
-    }).join('')}</ul>`}`;
+    }).join(''))}</ul>`)}`;
   // Re-rendering replaces the buttons; keep keyboard focus on the same control where it still exists.
   if (focusedAct && focusedAct.act) {
     const sel = focusedAct.item ? `[data-act="${focusedAct.act}"][data-item="${focusedAct.item}"]` : `[data-act="${focusedAct.act}"]`;

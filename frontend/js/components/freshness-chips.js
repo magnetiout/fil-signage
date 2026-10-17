@@ -1,3 +1,5 @@
+import { uiText } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 content freshness: the "Stale" / "Mentions a past date" chips on screen cards, playlist cards
  * and content library items (server: lib/freshness.js chipsFrom, GET /api/freshness/chips).
@@ -12,7 +14,7 @@
  * values from the server reach the DOM through esc() only.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { isSimpleMode } from './ui-mode.js';
 
@@ -74,7 +76,7 @@ const LABEL = {
 /** Chip markup for one entry ({ status, reasons }), one chip per reason. */
 export function freshnessChipsHtml(entry) {
   if (!entry || !Array.isArray(entry.reasons)) return '';
-  return entry.reasons.filter((r) => LABEL[r.code]).map((r) => `<span class="fresh-chip fresh-chip-${esc(r.code)}" title="${esc(freshnessWhy(r))}">${esc(t(LABEL[r.code]))}</span>`).join('');
+  return entry.reasons.filter((r) => LABEL[r.code]).map((r) => `<span class="fresh-chip fresh-chip-${esc(r.code)}" title="${esc(freshnessWhy(r))}">${uiText(t(LABEL[r.code]))}</span>`).join('');
 }
 
 /*

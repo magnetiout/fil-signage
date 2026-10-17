@@ -1,3 +1,8 @@
+import { messageCount as tn } from '../i18n.js';
+import { renderHTML, uiText, translatedAttribute, bindMessage, bindText } from '../lib/i18n-bindings.js';
+
+import { displayValue, message as t } from '../i18n.js';
+
 // Admin view for the player_debug_logs telemetry sink. Platform-admin only.
 // Mounted at #/admin/player-debug. Reads from /api/player-debug/list,
 // /api/player-debug/summary, /api/player-debug/older-than (DELETE).
@@ -67,7 +72,7 @@ function esc(s) {
 
 function fmtTime(unixSec) {
   if (!unixSec) return '';
-  try { return new Date(unixSec * 1000).toLocaleString(); } catch { return String(unixSec); }
+  try { return displayValue(new Date(unixSec * 1000), "toLocaleString", undefined); } catch { return String(unixSec); }
 }
 
 function uaShort(ua) {
@@ -80,7 +85,7 @@ function uaShort(ua) {
 export async function render(container) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (!isPlatformAdmin(user)) {
-    container.innerHTML = '<div class="empty-state"><h3>Access denied</h3><p>Platform-admin role required.</p></div>';
+    container.innerHTML = `<div class="empty-state"><h3>${renderHTML(t("ui.admin_player_debug.access_denied_cc11d4"))}</h3><p>${renderHTML(t("ui.admin_player_debug.platform_admin_role_required_b07f40"))}</p></div>`;
     return;
   }
 
@@ -94,49 +99,49 @@ export async function render(container) {
   container.innerHTML = `
     <div class="page-header">
       <div>
-        <h1>Player Debug Logs</h1>
-        <div class="subtitle">Captured errors and state from player clients. Mostly smart TVs we can't reach with devtools.</div>
+        <h1>${renderHTML(t("ui.admin_player_debug.player_debug_logs"))}</h1>
+        <div class="subtitle">${renderHTML(t("ui.admin_player_debug.captured_errors_and_state_from_player_clients"))}</div>
       </div>
     </div>
 
     <div class="settings-section">
-      <h3>Summary</h3>
-      <div id="pdSummary" style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-secondary)">Loading...</div>
+      <h3>${renderHTML(t("ui.admin_player_debug.summary"))}</h3>
+      <div id="pdSummary" style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-secondary)">${renderHTML(t("ui.admin_player_debug.loading"))}</div>
     </div>
 
     <div class="settings-section">
-      <h3>Filters</h3>
+      <h3>${renderHTML(t("ui.admin_player_debug.filters"))}</h3>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
         <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">User agent contains</label>
-          <input class="input" id="pdFilterUa" value="${esc(currentUa)}" placeholder="Tizen, WebOS, AFTS..." style="width:220px">
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t("ui.admin_player_debug.user_agent_contains"))}</label>
+          <input class="input" id="pdFilterUa" value="${esc(currentUa)}" ${translatedAttribute("placeholder", "ui.admin_player_debug.placeholder_tizen_webos_afts_647397")} style="width:220px">
         </div>
         <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Since (YYYY-MM-DD)</label>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t("ui.admin_player_debug.since_yyyy_mm_dd"))}</label>
           <input class="input" id="pdFilterSince" value="${esc(currentSince)}" placeholder="2026-05-01" style="width:140px">
         </div>
         <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Until (YYYY-MM-DD)</label>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t("ui.admin_player_debug.until_yyyy_mm_dd"))}</label>
           <input class="input" id="pdFilterUntil" value="${esc(currentUntil)}" placeholder="2026-05-31" style="width:140px">
         </div>
         <div>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-            <input type="checkbox" id="pdFilterHasError" ${currentHasError ? 'checked' : ''}> Has error data
+            <input type="checkbox" id="pdFilterHasError" ${currentHasError ? 'checked' : ''}> ${renderHTML(t("ui.admin_player_debug.has_error_data_415445"))}
           </label>
         </div>
-        <button class="btn btn-primary btn-sm" id="pdApplyFilters">Apply</button>
-        <button class="btn btn-secondary btn-sm" id="pdClearFilters">Clear</button>
+        <button class="btn btn-primary btn-sm" id="pdApplyFilters">${renderHTML(t("ui.admin_player_debug.apply"))}</button>
+        <button class="btn btn-secondary btn-sm" id="pdClearFilters">${renderHTML(t("ui.admin_player_debug.clear"))}</button>
         <div style="flex:1"></div>
-        <button class="btn btn-danger btn-sm" id="pdDeleteOld">Delete older than 30 days</button>
+        <button class="btn btn-danger btn-sm" id="pdDeleteOld">${renderHTML(t("ui.admin_player_debug.delete_older_than_30_days"))}</button>
       </div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:10px">
-        Note: <code>device_id</code> is self-reported by the player and is not server-verified. The submission endpoint is unauthenticated by design so unpaired players can also report errors.
+        ${renderHTML(t("ui.admin_player_debug.note_code_device_id_code_is_self"))}
       </div>
     </div>
 
     <div class="settings-section">
-      <h3>Logs <span id="pdRowMeta" style="font-size:13px;color:var(--text-muted);font-weight:400"></span></h3>
-      <div id="pdList"><p style="color:var(--text-muted)">Loading...</p></div>
+      <h3>${renderHTML(t("ui.admin_player_debug.logs_ea2100"))} <span id="pdRowMeta" style="font-size:13px;color:var(--text-muted);font-weight:400"></span></h3>
+      <div id="pdList"><p style="color:var(--text-muted)">${renderHTML(t("ui.admin_player_debug.loading"))}</p></div>
       <div id="pdPagination" style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px"></div>
     </div>
   `;
@@ -159,15 +164,15 @@ export async function render(container) {
     loadList();
   };
   document.getElementById('pdDeleteOld').onclick = async () => {
-    if (!confirm('Delete all logs older than 30 days? This cannot be undone.')) return;
+    if (!confirm(t("ui.admin_player_debug.delete_all_logs_older_than_30_days"))) return;
     try {
       const res = await API('/player-debug/older-than?days=30', { method: 'DELETE' });
       const data = await res.json();
-      showToast(`Deleted ${data.deleted} log${data.deleted === 1 ? '' : 's'} older than 30 days`, 'success');
+      showToast(tn('ui.debug.deleted_logs', data.deleted), 'success');
       loadSummary();
       loadList();
     } catch (err) {
-      showToast('Delete failed: ' + (err.message || err), 'error');
+      showToast(t("ui.admin_player_debug.delete_failed_c834e9") + ((err.uiMessage || err.message) || err), 'error');
     }
   };
 
@@ -191,19 +196,19 @@ async function loadSummary() {
       ['Chrome', data.byFamily.chrome, '#fbbf24'],
       ['Firefox', data.byFamily.firefox, '#ef4444'],
       ['Safari', data.byFamily.safari, '#64748b'],
-      ['Other', data.byFamily.other, '#94a3b8'],
+      [t("ui.admin_player_debug.other_6e6a6f"), data.byFamily.other, '#94a3b8'],
     ];
     el.innerHTML = `
-      <div style="font-weight:600;color:var(--text-primary)">Total: ${data.total}</div>
-      ${families.map(([name, count, color]) => `
+      <div style="font-weight:600;color:var(--text-primary)">${renderHTML(t("ui.admin_player_debug.total_292596", {value0: data.total}))}</div>
+      ${renderHTML(families.map(([name, count, color]) => `
         <div style="display:flex;align-items:center;gap:6px">
           <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color}"></span>
-          <span>${name}: <strong style="color:var(--text-primary)">${count}</strong></span>
+          <span>${renderHTML(name)}: <strong style="color:var(--text-primary)">${renderHTML(count)}</strong></span>
         </div>
-      `).join('')}
+      `).join(''))}
     `;
   } catch (err) {
-    el.innerHTML = '<span style="color:var(--danger)">Failed to load summary: ' + esc(err.message || err) + '</span>';
+    el.innerHTML = `<span style="color:var(--danger)">${renderHTML(t('ui.debug.summary_failed',{error:err.uiMessage||err.message||err}))}</span>`;
   }
 }
 
@@ -221,7 +226,7 @@ async function loadList() {
   const meta = document.getElementById('pdRowMeta');
   const pag = document.getElementById('pdPagination');
   if (!el) return;
-  el.innerHTML = '<p style="color:var(--text-muted)">Loading...</p>';
+  el.innerHTML = `<p style="color:var(--text-muted)">${renderHTML(t("ui.admin_player_debug.loading_47d2a5"))}</p>`;
 
   const params = parseHashParams();
   const page = Math.max(1, parseInt(params.page) || 1);
@@ -241,34 +246,34 @@ async function loadList() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const totalPages = Math.max(1, Math.ceil(data.total / data.limit));
-    meta.textContent = `(${data.total} total, page ${data.page} of ${totalPages})`;
+    bindMessage(meta, t("ui.admin_player_debug.value0_total_page_value1_of_value2_66f7d8", {value0: data.total, value1: data.page, value2: totalPages}));
 
     if (data.rows.length === 0) {
-      el.innerHTML = '<p style="color:var(--text-muted);padding:14px 0">No logs match the current filters.</p>';
+      el.innerHTML = `<p style="color:var(--text-muted);padding:14px 0">${renderHTML(t("ui.admin_player_debug.no_logs_match_the_current_filters_bf3e05"))}</p>`;
     } else {
       el.innerHTML = `
         <div class="table-wrap">
           <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:960px">
             <thead><tr style="border-bottom:1px solid var(--border);text-align:left">
-              <th style="padding:8px;width:50px">ID</th>
-              <th style="padding:8px;width:140px">Time</th>
-              <th style="padding:8px;width:180px" title="Self-reported by the player; not server-verified.">device_id (self-reported)</th>
-              <th style="padding:8px;width:130px">IP</th>
-              <th style="padding:8px">User agent</th>
-              <th style="padding:8px;width:130px">Fingerprint</th>
+              <th style="padding:8px;width:50px">${renderHTML(t("ui.admin_player_debug.id"))}</th>
+              <th style="padding:8px;width:140px">${renderHTML(t("ui.admin_player_debug.time"))}</th>
+              <th style="padding:8px;width:180px" ${translatedAttribute("title", "ui.admin_player_debug.title_self_reported_by_the_player_not_server_c7ff98")}>${renderHTML(t("ui.admin_player_debug.device_id_self_reported"))}</th>
+              <th style="padding:8px;width:130px">${renderHTML(t("ui.admin_player_debug.ip"))}</th>
+              <th style="padding:8px">${renderHTML(t("ui.admin_player_debug.user_agent"))}</th>
+              <th style="padding:8px;width:130px">${renderHTML(t("ui.admin_player_debug.fingerprint"))}</th>
               <th style="padding:8px;width:80px"></th>
             </tr></thead>
             <tbody>
-              ${data.rows.map(r => `
+              ${renderHTML(data.rows.map(r => `
                 <tr style="border-bottom:1px solid var(--border-light)" data-row-id="${r.id}">
-                  <td style="padding:8px;font-family:monospace;color:var(--text-muted)">${r.id}</td>
-                  <td style="padding:8px;font-size:12px">${esc(fmtTime(r.created_at))}</td>
-                  <td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text-secondary)">${esc(r.device_id || '(none)')}</td>
-                  <td style="padding:8px;font-family:monospace;font-size:12px;color:var(--text-secondary)">${esc(r.ip || '')}</td>
-                  <td style="padding:8px;font-size:12px;color:var(--text-secondary)">${esc(uaShort(r.user_agent))}</td>
-                  <td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text-muted)">${esc(r.error_fingerprint || '')}</td>
+                  <td style="padding:8px;font-family:monospace;color:var(--text-muted)">${renderHTML(r.id)}</td>
+                  <td style="padding:8px;font-size:12px">${uiText(fmtTime(r.created_at))}</td>
+                  <td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text-secondary)">${uiText(r.device_id || '(none)')}</td>
+                  <td style="padding:8px;font-family:monospace;font-size:12px;color:var(--text-secondary)">${uiText(r.ip || '')}</td>
+                  <td style="padding:8px;font-size:12px;color:var(--text-secondary)">${uiText(uaShort(r.user_agent))}</td>
+                  <td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text-muted)">${uiText(r.error_fingerprint || '')}</td>
                   <td style="padding:8px;text-align:right">
-                    <button class="btn btn-secondary btn-sm" data-expand="${r.id}" style="font-size:11px;padding:2px 8px">Expand</button>
+                    <button class="btn btn-secondary btn-sm" data-expand="${r.id}" style="font-size:11px;padding:2px 8px">${renderHTML(t("ui.admin_player_debug.expand_07548c"))}</button>
                   </td>
                 </tr>
                 <tr style="display:none" data-expanded-for="${r.id}">
@@ -276,20 +281,20 @@ async function loadList() {
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                       <div>
                         <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">URL</div>
-                        <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;margin-bottom:10px">${esc(r.url || '(none)')}</div>
-                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Full User Agent</div>
-                        <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;margin-bottom:10px">${esc(r.user_agent || '(none)')}</div>
-                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">error_data</div>
-                        <pre style="margin:0;padding:8px;background:var(--bg-primary);border-radius:4px;font-family:monospace;font-size:11px;color:var(--text-secondary);overflow:auto;max-height:300px;white-space:pre-wrap;word-break:break-word">${esc(prettyJson(r.error_data))}</pre>
+                        <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;margin-bottom:10px">${uiText(r.url || '(none)')}</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t("ui.admin_player_debug.full_user_agent"))}</div>
+                        <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;margin-bottom:10px">${uiText(r.user_agent || '(none)')}</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t("ui.admin_player_debug.error_data"))}</div>
+                        <pre style="margin:0;padding:8px;background:var(--bg-primary);border-radius:4px;font-family:monospace;font-size:11px;color:var(--text-secondary);overflow:auto;max-height:300px;white-space:pre-wrap;word-break:break-word">${uiText(prettyJson(r.error_data))}</pre>
                       </div>
                       <div>
-                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">context</div>
-                        <pre style="margin:0;padding:8px;background:var(--bg-primary);border-radius:4px;font-family:monospace;font-size:11px;color:var(--text-secondary);overflow:auto;max-height:420px;white-space:pre-wrap;word-break:break-word">${esc(prettyJson(r.context))}</pre>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t("ui.admin_player_debug.context"))}</div>
+                        <pre style="margin:0;padding:8px;background:var(--bg-primary);border-radius:4px;font-family:monospace;font-size:11px;color:var(--text-secondary);overflow:auto;max-height:420px;white-space:pre-wrap;word-break:break-word">${uiText(prettyJson(r.context))}</pre>
                       </div>
                     </div>
                   </td>
                 </tr>
-              `).join('')}
+              `).join(''))}
             </tbody>
           </table>
         </div>
@@ -302,7 +307,7 @@ async function loadList() {
           if (exp) {
             const visible = exp.style.display !== 'none';
             exp.style.display = visible ? 'none' : '';
-            btn.textContent = visible ? 'Expand' : 'Collapse';
+            bindMessage(btn, visible ? t("ui.admin_player_debug.expand_9869e5") : t("ui.admin_player_debug.collapse_9cf188"));
           }
         };
       });
@@ -313,24 +318,24 @@ async function loadList() {
     if (totalPages > 1) {
       const prev = document.createElement('button');
       prev.className = 'btn btn-secondary btn-sm';
-      prev.textContent = '< Prev';
+      bindText(prev, "ui.admin_player_debug.prev");
       prev.disabled = page <= 1;
       prev.onclick = () => { setHashParams({ page: page - 1 }); loadList(); };
       pag.appendChild(prev);
 
       const indicator = document.createElement('span');
       indicator.style.cssText = 'padding:0 12px;font-size:13px;color:var(--text-muted)';
-      indicator.textContent = `Page ${page} of ${totalPages}`;
+      bindMessage(indicator, `Page ${page} of ${totalPages}`);
       pag.appendChild(indicator);
 
       const next = document.createElement('button');
       next.className = 'btn btn-secondary btn-sm';
-      next.textContent = 'Next >';
+      bindText(next, "ui.admin_player_debug.next");
       next.disabled = page >= totalPages;
       next.onclick = () => { setHashParams({ page: page + 1 }); loadList(); };
       pag.appendChild(next);
     }
   } catch (err) {
-    el.innerHTML = '<p style="color:var(--danger)">Failed to load: ' + esc(err.message || err) + '</p>';
+    el.innerHTML = `<p style="color:var(--danger)">${renderHTML(t('ui.debug.load_failed',{error:err.uiMessage||err.message||err}))}</p>`;
   }
 }

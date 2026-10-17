@@ -45,11 +45,12 @@ test('real headless browser: login, managed editor, publish, hierarchy, narrow/w
  browser=await launch();const tab=await browser.newPage();const errors=[];tab.on('pageerror',e=>errors.push(e.message));
  await tab.setViewport({width:1366,height:900});await tab.goto(s.base+'/app');await tab.waitForSelector('#loginEmail');
  await tab.type('#loginEmail',user.email);await tab.click('#loginBtn');await tab.waitForFunction(()=>getComputedStyle(document.getElementById('loginPassword')).display!=='none');
- await tab.type('#loginPassword','Passw0rd123');await tab.click('#loginBtn');
+ await tab.type('#loginPassword','Passw0rd123');
+ await Promise.all([tab.waitForNavigation({waitUntil:'domcontentloaded'}),tab.click('#loginBtn')]);
  await tab.waitForFunction(()=>!!localStorage.getItem('token'));await tab.goto(s.base+'/app#/kiosk/'+page.id);await tab.waitForSelector('#filTitle');
  await tab.$eval('#filTitle',e=>{e.value='Güncel Türkçe menü'});await tab.click('#filSave');await tab.waitForFunction(()=>document.getElementById('filStatus').textContent.includes('Taslak kaydedildi'));
  assert.equal(JSON.parse((await s.api('GET',`/kiosk/${page.id}`)).config).title,'Güncel Türkçe menü');
- await tab.click('#filPublish');await tab.waitForFunction(()=>document.getElementById('filStatus').textContent.includes('Menü yayınlandı'));
+ await tab.click('#filPublish');await tab.waitForFunction(()=>document.getElementById('filStatus').textContent.includes('Menü yayımlandı'));
  await tab.setViewport({width:390,height:844});assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'phone layout has no horizontal overflow');
  await tab.setViewport({width:1366,height:900});const artifact=process.env.FIL_TEST_ARTIFACTS;if(artifact){fs.mkdirSync(artifact,{recursive:true});await tab.screenshot({path:path.join(artifact,'managed-menu.png'),fullPage:true})}
  await tab.waitForFunction(()=>document.getElementById('filPreview').contentWindow!==null);const preview=await (await tab.$('#filPreview')).contentFrame();assert.ok(preview);await preview.waitForSelector('.tile');await preview.click('.tile');assert.equal(await preview.$eval('#title',e=>e.textContent),'Hizmetler');await preview.click('.tile');assert.equal(await preview.$eval('#detail',e=>e.textContent),'Güvenli açıklama');

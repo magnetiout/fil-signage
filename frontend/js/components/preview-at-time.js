@@ -1,3 +1,7 @@
+import { uiText, renderHTML, bindMessage, attributeBinding, binding } from '../lib/i18n-bindings.js';
+
+import { displayValue, message as t, messageCount as tn } from '../i18n.js';
+
 /*
  * "What will this screen show at…?" — the device page's Preview at… tab (docs/preview-at-time.md).
  *
@@ -12,7 +16,7 @@
  * Read-only. Every server string reaches the page through esc() or textContent.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+
 import { esc } from '../utils.js';
 import { frameDeviceOutput, displayAspectRatio } from '../lib/device-frame.js';
 
@@ -54,7 +58,7 @@ function wallLabel(stamp, withDate = true) {
   const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]));
   const opts = withDate ? { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }
     : { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' };
-  return d.toLocaleString(undefined, opts);
+  return displayValue(d, "toLocaleString", opts);
 }
 
 function sourceText(src) {
@@ -92,43 +96,43 @@ export function mountPreviewAtTime(host, device) {
 
   host.innerHTML = `
     <div class="pat">
-      <p class="pat-intro">${esc(t('forecast.intro'))}</p>
+      <p class="pat-intro">${uiText(t('forecast.intro'))}</p>
       <div class="pat-controls">
-        <label class="pat-field"><span>${esc(t('forecast.when'))}</span>
+        <label class="pat-field"><span>${uiText(t('forecast.when'))}</span>
           <input type="datetime-local" class="input" id="patWhen" step="60"></label>
         <span class="pat-tz" id="patTz"></span>
         <div class="pat-quick">
-          <button type="button" class="btn btn-secondary btn-sm" data-quick="now">${esc(t('forecast.quick.now'))}</button>
-          <button type="button" class="btn btn-secondary btn-sm" data-quick="tomorrow9">${esc(t('forecast.quick.tomorrow9'))}</button>
-          <button type="button" class="btn btn-secondary btn-sm" data-quick="monday9">${esc(t('forecast.quick.monday9'))}</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-quick="now">${uiText(t('forecast.quick.now'))}</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-quick="tomorrow9">${uiText(t('forecast.quick.tomorrow9'))}</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-quick="monday9">${uiText(t('forecast.quick.monday9'))}</button>
         </div>
-        <label class="pat-field"><span>${esc(t('forecast.weather'))}</span>
+        <label class="pat-field"><span>${uiText(t('forecast.weather'))}</span>
           <select class="input" id="patWeather">
-            <option value="">${esc(t('forecast.weather.current'))}</option>
-            ${WEATHER.map((w) => `<option value="${w}">${esc(t(`forecast.weather.${w}`))}</option>`).join('')}
+            <option value="">${uiText(t('forecast.weather.current'))}</option>
+            ${renderHTML(WEATHER.map((w) => `<option value="${w}">${uiText(t(`forecast.weather.${w}`))}</option>`).join(''))}
           </select></label>
       </div>
       <div class="pat-strip-head">
         <strong id="patRangeLabel"></strong>
-        <div class="pat-range" role="radiogroup" aria-label="${esc(t('forecast.range'))}">
-          <button type="button" class="btn btn-sm btn-primary" data-range="day" role="radio" aria-checked="true">${esc(t('forecast.range.day'))}</button>
-          <button type="button" class="btn btn-sm btn-secondary" data-range="week" role="radio" aria-checked="false">${esc(t('forecast.range.week'))}</button>
+        <div class="pat-range" role="radiogroup" aria-label="${esc(t('forecast.range'))}" data-fil-i18n-aria-label="${binding('forecast.range', undefined)}">
+          <button type="button" class="btn btn-sm btn-primary" data-range="day" role="radio" aria-checked="true">${uiText(t('forecast.range.day'))}</button>
+          <button type="button" class="btn btn-sm btn-secondary" data-range="week" role="radio" aria-checked="false">${uiText(t('forecast.range.week'))}</button>
         </div>
       </div>
-      <div class="pat-strip" id="patStrip" role="list" aria-label="${esc(t('forecast.timeline'))}"></div>
+      <div class="pat-strip" id="patStrip" role="list" aria-label="${esc(t('forecast.timeline'))}" data-fil-i18n-aria-label="${binding('forecast.timeline', undefined)}"></div>
       <div class="pat-axis" id="patAxis" aria-hidden="true"></div>
       <div class="pat-legend" id="patLegend"></div>
       <div class="pat-body">
         <div class="pat-frame-col">
           <div class="pat-stage-wrap">
             <div class="pat-stage" id="patStage" style="aspect-ratio:${displayAspectRatio(device.orientation)}">
-              <iframe id="patFrame" title="${esc(t('forecast.frame_title'))}" style="border:0;background:#000"></iframe>
+              <iframe id="patFrame" title="${esc(t('forecast.frame_title'))}" data-fil-i18n-title="${binding('forecast.frame_title', undefined)}" style="border:0;background:#000"></iframe>
             </div>
             <div class="pat-overlay" id="patOverlay" hidden></div>
           </div>
-          <p class="pat-frame-note">${esc(t('forecast.frame_note'))}</p>
+          <p class="pat-frame-note">${uiText(t('forecast.frame_note'))}</p>
         </div>
-        <div class="pat-explain" id="patExplain" aria-live="polite"><p class="pat-muted">${esc(t('common.loading'))}</p></div>
+        <div class="pat-explain" id="patExplain" aria-live="polite"><p class="pat-muted">${uiText(t('common.loading'))}</p></div>
       </div>
     </div>`;
 
@@ -152,13 +156,13 @@ export function mountPreviewAtTime(host, device) {
     try {
       sim = await api.simulateDevice(device.id, iso, extra);
     } catch (err) {
-      if (my === seq) $('#patExplain').innerHTML = `<p class="pat-warn">${esc(err.message)}</p>`;
+      if (my === seq) $('#patExplain').innerHTML = `<p class="pat-warn">${uiText((err.uiMessage || err.message))}</p>`;
       return;
     }
     if (my !== seq) return;
     const firstAnswer = tz === null;
     tz = sim.timezone || null;
-    $('#patTz').textContent = sim.timezone ? t('forecast.tz', { tz: sim.timezone }) : t('forecast.tz_unknown');
+    bindMessage($('#patTz'), sim.timezone ? t('forecast.tz', { tz: sim.timezone }) : t('forecast.tz_unknown'));
     if (firstAnswer || document.activeElement !== when) when.value = utcToWall(atMs, tz);
     renderFrame(iso, sim);
     renderExplain(sim);
@@ -175,7 +179,7 @@ export function mountPreviewAtTime(host, device) {
     if (sim.power && sim.power.off) msg = t('forecast.overlay.off');
     else if (!sim.playing && !sim.default_content) msg = t('forecast.overlay.nothing');
     overlay.hidden = !msg;
-    overlay.textContent = msg;
+    bindMessage(overlay, msg);
   }
 
   function renderExplain(sim) {
@@ -186,19 +190,19 @@ export function mountPreviewAtTime(host, device) {
       : sim.resolved.playlist_id ? t('forecast.head.playing', { playlist: sim.resolved.playlist_name || '—', source: sourceText(sim.resolved.source) })
         : t('forecast.head.nothing');
     // Why: the schedules, then the fallback chain.
-    for (const s of sim.schedules) lines.push(`<li class="pat-why pat-${esc(s.state)}">${esc(scheduleLine(s, tzLabel))}</li>`);
-    if (!sim.schedules.length) lines.push(`<li class="pat-why">${esc(t('forecast.no_schedules'))}</li>`);
-    for (const s of sim.fallback) lines.push(`<li class="pat-why">${esc(fallbackLine(s))}</li>`);
+    for (const s of sim.schedules) lines.push(`<li class="pat-why pat-${esc(s.state)}">${uiText(scheduleLine(s, tzLabel))}</li>`);
+    if (!sim.schedules.length) lines.push(`<li class="pat-why">${uiText(t('forecast.no_schedules'))}</li>`);
+    for (const s of sim.fallback) lines.push(`<li class="pat-why">${uiText(fallbackLine(s))}</li>`);
 
     const items = sim.items.map((it) => {
       const label = it.label || t('forecast.unnamed');
-      const reason = it.reason ? t(`forecast.item.${it.reason}`, { at: it.expired_at ? new Date(it.expired_at).toLocaleString() : '', from: it.play_from || '', until: it.play_until || '' }) : t('forecast.item.plays');
-      const warn = it.may_not_play ? `<span class="pat-badge pat-badge-warn" title="${esc(t('forecast.may_not_play_tip', { cap: it.may_not_play }))}">${esc(t('forecast.may_not_play'))}</span>` : '';
-      return `<li class="${it.plays ? 'pat-on' : 'pat-off'}"><span class="pat-mark" aria-hidden="true">${it.plays ? '&#10003;' : '&#10005;'}</span><span class="pat-item-name">${esc(label)}</span> <span class="pat-muted">${esc(reason)}</span> ${warn}</li>`;
+      const reason = it.reason ? t(`forecast.item.${it.reason}`, { at: it.expired_at ? displayValue(new Date(it.expired_at), "toLocaleString", undefined) : '', from: it.play_from || '', until: it.play_until || '' }) : t('forecast.item.plays');
+      const warn = it.may_not_play ? `<span class="pat-badge pat-badge-warn" title="${esc(t('forecast.may_not_play_tip', { cap: it.may_not_play }))}" data-fil-i18n-title="${binding('forecast.may_not_play_tip', { cap: it.may_not_play })}">${uiText(t('forecast.may_not_play'))}</span>` : '';
+      return `<li class="${it.plays ? 'pat-on' : 'pat-off'}"><span class="pat-mark" aria-hidden="true">${renderHTML(it.plays ? '&#10003;' : '&#10005;')}</span><span class="pat-item-name">${uiText(label)}</span> <span class="pat-muted">${uiText(reason)}</span> ${renderHTML(warn)}</li>`;
     }).join('');
     const skipped = sim.skipped.map((s) => {
       const why = s.reason === 'unsupported' ? t('forecast.skip.unsupported', { cap: s.capability || '' }) : t(`forecast.skip.${s.reason}`);
-      return `<li class="pat-off"><span class="pat-mark" aria-hidden="true">&#10005;</span><span class="pat-item-name">${esc(s.label || t('forecast.unnamed'))}</span> <span class="pat-muted">${esc(why)}</span> <span class="pat-badge pat-badge-warn">${esc(t('forecast.not_on_player'))}</span></li>`;
+      return `<li class="pat-off"><span class="pat-mark" aria-hidden="true">&#10005;</span><span class="pat-item-name">${uiText(s.label || t('forecast.unnamed'))}</span> <span class="pat-muted">${uiText(why)}</span> <span class="pat-badge pat-badge-warn">${uiText(t('forecast.not_on_player'))}</span></li>`;
     }).join('');
 
     const notes = [];
@@ -214,23 +218,23 @@ export function mountPreviewAtTime(host, device) {
     const steps = sim.campaign && !sim.campaign.fallback ? sim.campaign.steps.map((s) => {
       const what = s.type === 'layout' ? t('campaign.step_layout', { name: s.label || '', zones: s.zones, items: s.items }) : (s.label || t('forecast.unnamed'));
       const reason = s.reason ? t(`forecast.item.${s.reason}`, { at: '', from: '', until: '' }) : t('forecast.item.plays');
-      return `<li class="${s.plays ? 'pat-on' : 'pat-off'}"><span class="pat-mark" aria-hidden="true">${s.plays ? '&#10003;' : '&#10005;'}</span><span class="pat-item-name">${esc(what)}</span> <span class="pat-muted">${esc(reason)}${s.duration_sec ? ' · ' + esc(t('campaign.step_secs', { n: s.duration_sec })) : ''}</span></li>`;
+      return `<li class="${s.plays ? 'pat-on' : 'pat-off'}"><span class="pat-mark" aria-hidden="true">${renderHTML(s.plays ? '&#10003;' : '&#10005;')}</span><span class="pat-item-name">${uiText(what)}</span> <span class="pat-muted">${uiText(reason)}${renderHTML(s.duration_sec ? ' · ' + t('campaign.step_secs', { n: s.duration_sec }) : '')}</span></li>`;
     }).join('') : '';
     if (sim.campaign && sim.campaign.fallback) notes.push(t('campaign.forecast_fallback'));
-    const triggers = (sim.triggers || []).map((tr) => `<li>${esc(tr.name || t('forecast.unnamed'))}${tr.kind === 'emergency' ? ` <span class="pat-badge">${esc(t('forecast.trigger_emergency'))}</span>` : ''}</li>`).join('');
+    const triggers = (sim.triggers || []).map((tr) => `<li>${uiText(tr.name || t('forecast.unnamed'))}${renderHTML(tr.kind === 'emergency' ? ` <span class="pat-badge">${uiText(t('forecast.trigger_emergency'))}</span>` : '')}</li>`).join('');
 
     $('#patExplain').innerHTML = `
       <div class="pat-headline">
-        <div class="pat-at">${esc(wallLabel(sim.local.items))}</div>
-        <div>${esc(head)}</div>
-        <div class="pat-muted">${esc(tn('forecast.playing_count', sim.playing, { total: sim.items.length }))}</div>
+        <div class="pat-at">${uiText(wallLabel(sim.local.items))}</div>
+        <div>${uiText(head)}</div>
+        <div class="pat-muted">${uiText(tn('forecast.playing_count', sim.playing, { total: sim.items.length }))}</div>
       </div>
-      <h4>${esc(t('forecast.why'))}</h4><ul class="pat-list">${lines.join('')}</ul>
-      ${steps ? `<h4>${esc(t('campaign.forecast_steps'))}</h4><ul class="pat-list pat-items">${steps}</ul>` : ''}
-      <h4>${esc(steps ? t('campaign.forecast_fallback_items') : t('forecast.items'))}</h4>
-      <ul class="pat-list pat-items">${items || `<li class="pat-muted">${esc(t('forecast.no_items'))}</li>`}${skipped}</ul>
-      ${triggers ? `<h4>${esc(t('forecast.triggers'))}</h4><p class="pat-muted">${esc(t('forecast.triggers_note'))}</p><ul class="pat-list">${triggers}</ul>` : ''}
-      ${notes.length ? `<ul class="pat-notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`;
+      <h4>${uiText(t('forecast.why'))}</h4><ul class="pat-list">${renderHTML(lines.join(''))}</ul>
+      ${renderHTML(steps ? `<h4>${uiText(t('campaign.forecast_steps'))}</h4><ul class="pat-list pat-items">${renderHTML(steps)}</ul>` : '')}
+      <h4>${uiText(steps ? t('campaign.forecast_fallback_items') : t('forecast.items'))}</h4>
+      <ul class="pat-list pat-items">${renderHTML(items || `<li class="pat-muted">${uiText(t('forecast.no_items'))}</li>`)}${renderHTML(skipped)}</ul>
+      ${renderHTML(triggers ? `<h4>${uiText(t('forecast.triggers'))}</h4><p class="pat-muted">${uiText(t('forecast.triggers_note'))}</p><ul class="pat-list">${renderHTML(triggers)}</ul>` : '')}
+      ${renderHTML(notes.length ? `<ul class="pat-notes">${renderHTML(notes.map((n) => `<li>${uiText(n)}</li>`).join(''))}</ul>` : '')}`;
   }
 
   let segments = [];
@@ -245,15 +249,15 @@ export function mountPreviewAtTime(host, device) {
     try {
       tl = await api.deviceTimeline(device.id, new Date(fromMs).toISOString(), new Date(toMs).toISOString(), weather ? { weather } : {});
     } catch (err) {
-      $('#patStrip').textContent = err.message;
+      bindMessage($('#patStrip'), (err.uiMessage || err.message));
       return;
     }
     if (my !== seq) return;
     segments = tl.segments || [];
     tlFrom = Date.parse(tl.from); tlTo = Date.parse(tl.to);
-    $('#patRangeLabel').textContent = range === 'week'
+    bindMessage($('#patRangeLabel'), range === 'week'
       ? t('forecast.range_week_of', { day: wallLabel(day).replace(/,?\s*\d{1,2}:\d{2}.*$/, '') })
-      : wallLabel(day).replace(/,?\s*\d{1,2}:\d{2}.*$/, '');
+      : wallLabel(day).replace(/,?\s*\d{1,2}:\d{2}.*$/, ''));
     drawStrip();
   }
 
@@ -269,8 +273,8 @@ export function mountPreviewAtTime(host, device) {
       const name = off ? t('forecast.seg.off') : empty ? t('forecast.seg.nothing') : (s.playlist_name || '—');
       const tip = `${wallLabel(s.local)} — ${name}${s.schedule_title ? ` (${s.schedule_title})` : ''}${!off && !empty ? ` · ${tn('forecast.playing_count', s.playing, { total: s.total })}` : ''}`;
       const cls = off ? 'pat-seg pat-seg-off' : empty ? 'pat-seg pat-seg-empty' : 'pat-seg';
-      return `<button type="button" role="listitem" class="${cls}" data-seg="${i}" style="left:${a.toFixed(3)}%;width:${Math.max(w, 0.15).toFixed(3)}%;${color ? `background:${color}` : ''}" title="${esc(tip)}" aria-label="${esc(tip)}">${w > 9 ? `<span>${esc(name)}</span>` : ''}</button>`;
-    }).join('') + '<span class="pat-now" id="patMarker" aria-hidden="true"></span>';
+      return `<button type="button" role="listitem" class="${cls}" data-seg="${i}" style="left:${a.toFixed(3)}%;width:${Math.max(w, 0.15).toFixed(3)}%;${color ? `background:${color}` : ''}" title="${esc(tip)}"${attributeBinding("title", tip)} aria-label="${esc(tip)}"${attributeBinding("aria-label", tip)}>${renderHTML(w > 9 ? `<span>${uiText(name)}</span>` : '')}</button>`;
+    }).join('') + `<span class="pat-now" id="patMarker" aria-hidden="true"></span>`;
     strip.querySelectorAll('[data-seg]').forEach((b) => b.addEventListener('click', () => {
       const s = segments[Number(b.dataset.seg)];
       if (!s) return;
@@ -284,14 +288,14 @@ export function mountPreviewAtTime(host, device) {
       const ms = tlFrom + h * 3600 * 1000;
       if (ms > tlTo) break;
       const lbl = range === 'week' ? wallLabel(utcToWall(ms, tz)).replace(/,?\s*\d{1,2}:\d{2}.*$/, '') : wallLabel(utcToWall(ms, tz), false);
-      ticks.push(`<span style="left:${((ms - tlFrom) / span * 100).toFixed(3)}%">${esc(lbl)}</span>`);
+      ticks.push(`<span style="left:${((ms - tlFrom) / span * 100).toFixed(3)}%">${uiText(lbl)}</span>`);
     }
     $('#patAxis').innerHTML = ticks.join('');
     // Legend: every playlist in view plus the two non-content states, so identity is never colour alone.
     const seen = new Map();
     for (const s of segments) if (s.power !== 'off' && s.playlist_id && s.playing) seen.set(s.playlist_id, s.playlist_name || '—');
-    $('#patLegend').innerHTML = [...seen].map(([id, name]) => `<span><i style="background:${colorOf(id)}"></i>${esc(name)}</span>`).join('')
-      + `<span><i class="pat-sw-off"></i>${esc(t('forecast.seg.off'))}</span><span><i class="pat-sw-empty"></i>${esc(t('forecast.seg.nothing'))}</span>`;
+    $('#patLegend').innerHTML = [...seen].map(([id, name]) => `<span><i style="background:${colorOf(id)}"></i>${uiText(name)}</span>`).join('')
+      + `<span><i class="pat-sw-off"></i>${uiText(t('forecast.seg.off'))}</span><span><i class="pat-sw-empty"></i>${uiText(t('forecast.seg.nothing'))}</span>`;
     markStrip();
   }
 
@@ -341,19 +345,19 @@ export function mountPreviewAtTime(host, device) {
  * ("the rest of this screen's group") — cheap, because the server answers the whole group at once.
  */
 export async function renderGroupAt(host, groupId, atIso) {
-  host.innerHTML = `<p class="pat-muted">${esc(t('common.loading'))}</p>`;
+  host.innerHTML = `<p class="pat-muted">${uiText(t('common.loading'))}</p>`;
   let r;
-  try { r = await api.simulateGroup(groupId, atIso); } catch (err) { host.innerHTML = `<p class="pat-warn">${esc(err.message)}</p>`; return; }
+  try { r = await api.simulateGroup(groupId, atIso); } catch (err) { host.innerHTML = `<p class="pat-warn">${uiText((err.uiMessage || err.message))}</p>`; return; }
   const rows = r.devices.map((d) => {
-    if (d.error) return `<tr><td>${esc(d.id)}</td><td colspan="3" class="pat-muted">${esc(t('forecast.group.error'))}</td></tr>`;
+    if (d.error) return `<tr><td>${uiText(d.id)}</td><td colspan="3" class="pat-muted">${uiText(t('forecast.group.error'))}</td></tr>`;
     const what = d.power === 'off' ? t('forecast.seg.off')
       : (!d.playlist_id || !d.playing) && !d.default_content ? t('forecast.seg.nothing') : (d.playlist_name || '—');
-    return `<tr><td><a href="#/device/${encodeURIComponent(d.id)}">${esc(d.name || d.id)}</a></td><td>${esc(wallLabel(d.local))}</td><td>${esc(what)}</td><td class="pat-muted">${esc(d.schedule_title ? t('forecast.group.by_schedule', { title: d.schedule_title }) : sourceText(d.source))}</td></tr>`;
+    return `<tr><td><a href="#/device/${encodeURIComponent(d.id)}">${uiText(d.name || d.id)}</a></td><td>${uiText(wallLabel(d.local))}</td><td>${uiText(what)}</td><td class="pat-muted">${uiText(d.schedule_title ? t('forecast.group.by_schedule', { title: d.schedule_title }) : sourceText(d.source))}</td></tr>`;
   }).join('');
   host.innerHTML = `
-    <table class="pat-table"><thead><tr><th>${esc(t('forecast.group.screen'))}</th><th>${esc(t('forecast.group.local'))}</th><th>${esc(t('forecast.group.shows'))}</th><th>${esc(t('forecast.group.why'))}</th></tr></thead>
-    <tbody>${rows || `<tr><td colspan="4" class="pat-muted">${esc(t('forecast.group.empty'))}</td></tr>`}</tbody></table>
-    ${r.truncated ? `<p class="pat-muted">${esc(t('forecast.group.truncated'))}</p>` : ''}`;
+    <table class="pat-table"><thead><tr><th>${uiText(t('forecast.group.screen'))}</th><th>${uiText(t('forecast.group.local'))}</th><th>${uiText(t('forecast.group.shows'))}</th><th>${uiText(t('forecast.group.why'))}</th></tr></thead>
+    <tbody>${renderHTML(rows || `<tr><td colspan="4" class="pat-muted">${uiText(t('forecast.group.empty'))}</td></tr>`)}</tbody></table>
+    ${renderHTML(r.truncated ? `<p class="pat-muted">${uiText(t('forecast.group.truncated'))}</p>` : '')}`;
 }
 
 /*

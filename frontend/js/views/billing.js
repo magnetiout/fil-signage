@@ -1,17 +1,21 @@
+import { renderHTML, uiText } from '../lib/i18n-bindings.js';
+import { displayValue, message as t } from '../i18n.js';
+
+import { localizeServerError } from '../api.js';
+
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
 
 export async function render(container) {
   container.innerHTML = `
     <div class="page-header">
       <div>
-        <h1>${t('billing.title')}</h1>
-        <div class="subtitle">${t('billing.subtitle')}</div>
+        <h1>${renderHTML(t('billing.title'))}</h1>
+        <div class="subtitle">${renderHTML(t('billing.subtitle'))}</div>
       </div>
     </div>
-    <div id="billingContent"><div class="empty-state"><h3>${t('common.loading')}</h3></div></div>
+    <div id="billingContent"><div class="empty-state"><h3>${renderHTML(t('common.loading'))}</h3></div></div>
   `;
 
   try {
@@ -31,7 +35,6 @@ export async function render(container) {
       && (promo.cycles === 'both' || promo.cycles === cycle)
       && (!promo.plan_ids.length || promo.plan_ids.includes(p.id));
     const cut = (n) => Math.round(Number(n) * (100 - (promo ? promo.percent_off : 0))) / 100;
-
 
     const content = document.getElementById('billingContent');
     if (!content) return; // navigated away while the plans were loading
@@ -60,121 +63,121 @@ export async function render(container) {
 
     content.innerHTML = `
       <div class="settings-section">
-        <h3>${t('billing.current_plan')}</h3>
+        <h3>${renderHTML(t('billing.current_plan'))}</h3>
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-          <div style="font-size:28px;font-weight:700;color:var(--accent)">${esc(subData.plan.display_name)}</div>
-          ${subData.self_hosted ? `<span style="background:var(--success-dim);color:var(--success);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:500">${t('billing.self_hosted')}</span>` : ''}
-          ${subData.trial?.active ? `<span style="background:var(--warning-dim);color:var(--warning);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:500">${t('billing.trial_days_left', { n: subData.trial.days_left })}</span>` : ''}
+          <div style="font-size:28px;font-weight:700;color:var(--accent)">${uiText(subData.plan.display_name)}</div>
+          ${renderHTML(subData.self_hosted ? `<span style="background:var(--success-dim);color:var(--success);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:500">${renderHTML(t('billing.self_hosted'))}</span>` : '')}
+          ${renderHTML(subData.trial?.active ? `<span style="background:var(--warning-dim);color:var(--warning);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:500">${renderHTML(t('billing.trial_days_left', { n: subData.trial.days_left }))}</span>` : '')}
         </div>
-        ${subData.trial?.active ? `
+        ${renderHTML(subData.trial?.active ? `
         <div style="background:var(--bg-secondary);border:1px solid var(--warning);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
           <span style="font-size:20px">&#9201;</span>
           <div>
-            <div style="font-size:13px;font-weight:500">${t('billing.trial_ends', { plan: (subData.trial.plan?.charAt(0).toUpperCase() + subData.trial.plan?.slice(1)) || '', n: subData.trial.days_left })}</div>
-            <div style="font-size:12px;color:var(--text-muted)">${t('billing.trial_after', { n: freePlan ? freePlan.max_devices : 1 })}</div>
+            <div style="font-size:13px;font-weight:500">${renderHTML(t('billing.trial_ends', { plan: (subData.trial.plan?.charAt(0).toUpperCase() + subData.trial.plan?.slice(1)) || '', n: subData.trial.days_left }))}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${renderHTML(t('billing.trial_after', { n: freePlan ? freePlan.max_devices : 1 }))}</div>
           </div>
         </div>
         <!-- 3.0: what the end of a trial actually means, before it happens. -->
         <div class="billing-keep-lose">
           <div>
-            <h4>${t('billing.keep.title')}</h4>
+            <h4>${renderHTML(t('billing.keep.title'))}</h4>
             <ul>
-              <li>${t('billing.keep.content')}</li>
-              <li>${t('billing.keep.screens', { n: freePlan ? freePlan.max_devices : 1 })}</li>
-              <li>${t('billing.keep.account')}</li>
+              <li>${renderHTML(t('billing.keep.content'))}</li>
+              <li>${renderHTML(t('billing.keep.screens', { n: freePlan ? freePlan.max_devices : 1 }))}</li>
+              <li>${renderHTML(t('billing.keep.account'))}</li>
             </ul>
           </div>
           <div>
-            <h4>${t('billing.lose.title')}</h4>
+            <h4>${renderHTML(t('billing.lose.title'))}</h4>
             <ul>
-              <li>${t('billing.lose.screens', { n: freePlan ? freePlan.max_devices : 1 })}</li>
-              ${freePlan && !freePlan.remote_url ? `<li>${t('billing.lose.remote_url')}</li>` : ''}
-              ${freePlan && !freePlan.remote_control ? `<li>${t('billing.lose.remote_control')}</li>` : ''}
-              ${freePlan && freePlan.max_storage_mb !== -1 ? `<li>${t('billing.lose.storage', { size: freePlan.max_storage_mb >= 1024 ? (freePlan.max_storage_mb / 1024) + ' GB' : freePlan.max_storage_mb + ' MB' })}</li>` : ''}
+              <li>${renderHTML(t('billing.lose.screens', { n: freePlan ? freePlan.max_devices : 1 }))}</li>
+              ${renderHTML(freePlan && !freePlan.remote_url ? `<li>${renderHTML(t('billing.lose.remote_url'))}</li>` : '')}
+              ${renderHTML(freePlan && !freePlan.remote_control ? `<li>${renderHTML(t('billing.lose.remote_control'))}</li>` : '')}
+              ${renderHTML(freePlan && freePlan.max_storage_mb !== -1 ? `<li>${renderHTML(t('billing.lose.storage', { size: freePlan.max_storage_mb >= 1024 ? (freePlan.max_storage_mb / 1024) + ' GB' : freePlan.max_storage_mb + ' MB' }))}</li>` : '')}
             </ul>
           </div>
         </div>
-        ` : ''}
-        ${(!subData.trial?.active && subData.trial?.expired_at && subData.plan.name === 'free') ? `
+        ` : '')}
+        ${renderHTML((!subData.trial?.active && subData.trial?.expired_at && subData.plan.name === 'free') ? `
         <div style="background:var(--bg-secondary);border:1px solid var(--warning);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
           <span style="font-size:20px">&#9201;</span>
           <div>
-            <div style="font-size:13px;font-weight:500">${t('billing.trial_ended', { plan: (subData.trial.plan?.charAt(0).toUpperCase() + subData.trial.plan?.slice(1)) || '', date: esc(new Date(subData.trial.expired_at).toLocaleDateString()) })}</div>
-            <div style="font-size:12px;color:var(--text-muted)">${t('billing.trial_ended_after', { n: subData.plan.max_devices })}</div>
+            <div style="font-size:13px;font-weight:500">${renderHTML(t('billing.trial_ended', { plan: (subData.trial.plan?.charAt(0).toUpperCase() + subData.trial.plan?.slice(1)) || '', date: esc(displayValue(new Date(subData.trial.expired_at), "toLocaleDateString", undefined)) }))}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${renderHTML(t('billing.trial_ended_after', { n: subData.plan.max_devices }))}</div>
           </div>
         </div>
-        ` : ''}
+        ` : '')}
         <div class="info-grid" style="margin-bottom:0">
           <div class="info-card">
-            <div class="info-card-label">${t('billing.devices')}</div>
-            <div class="info-card-value">${subData.usage.devices} <span style="font-size:14px;color:var(--text-secondary)">/ ${subData.plan.max_devices === -1 ? t('billing.unlimited') : subData.plan.max_devices}</span></div>
-            ${subData.plan.max_devices > 0 ? `
+            <div class="info-card-label">${renderHTML(t('billing.devices'))}</div>
+            <div class="info-card-value">${renderHTML(subData.usage.devices)} <span style="font-size:14px;color:var(--text-secondary)">/ ${renderHTML(subData.plan.max_devices === -1 ? t('billing.unlimited') : subData.plan.max_devices)}</span></div>
+            ${renderHTML(subData.plan.max_devices > 0 ? `
             <div class="progress-bar">
               <div class="progress-bar-fill ${subData.usage.devices / subData.plan.max_devices > 0.8 ? 'warning' : 'success'}"
                    style="width:${Math.min(100, (subData.usage.devices / subData.plan.max_devices) * 100)}%"></div>
-            </div>` : ''}
+            </div>` : '')}
           </div>
           <div class="info-card">
-            <div class="info-card-label">${t('billing.storage')}</div>
-            <div class="info-card-value small">${subData.usage.storage_mb} MB <span style="color:var(--text-secondary)">/ ${subData.plan.max_storage_mb === -1 ? t('billing.unlimited') : subData.plan.max_storage_mb + ' MB'}</span></div>
-            ${subData.plan.max_storage_mb > 0 ? `
+            <div class="info-card-label">${renderHTML(t('billing.storage'))}</div>
+            <div class="info-card-value small">${renderHTML(subData.usage.storage_mb)} MB <span style="color:var(--text-secondary)">/ ${renderHTML(subData.plan.max_storage_mb === -1 ? t('billing.unlimited') : subData.plan.max_storage_mb + ' MB')}</span></div>
+            ${renderHTML(subData.plan.max_storage_mb > 0 ? `
             <div class="progress-bar">
               <div class="progress-bar-fill ${subData.usage.storage_mb / subData.plan.max_storage_mb > 0.8 ? 'warning' : 'success'}"
                    style="width:${Math.min(100, (subData.usage.storage_mb / subData.plan.max_storage_mb) * 100)}%"></div>
-            </div>` : ''}
+            </div>` : '')}
           </div>
           <div class="info-card">
-            <div class="info-card-label">${t('billing.features')}</div>
+            <div class="info-card-label">${renderHTML(t('billing.features'))}</div>
             <div style="font-size:13px;margin-top:4px">
-              ${subData.plan.remote_control ? `<div style="color:var(--success)">&#10003; ${t('billing.feat.remote_control')}</div>` : `<div style="color:var(--text-muted)">&#10007; ${t('billing.feat.remote_control')}</div>`}
-              ${subData.plan.remote_url ? `<div style="color:var(--success)">&#10003; ${t('billing.feat.remote_urls')}</div>` : `<div style="color:var(--text-muted)">&#10007; ${t('billing.feat.remote_urls')}</div>`}
-              ${subData.plan.priority_support ? `<div style="color:var(--success)">&#10003; ${t('billing.feat.priority_support')}</div>` : `<div style="color:var(--text-muted)">&#10007; ${t('billing.feat.priority_support')}</div>`}
+              ${renderHTML(subData.plan.remote_control ? `<div style="color:var(--success)">✓ ${renderHTML(t('billing.feat.remote_control'))}</div>` : `<div style="color:var(--text-muted)">✗ ${renderHTML(t('billing.feat.remote_control'))}</div>`)}
+              ${renderHTML(subData.plan.remote_url ? `<div style="color:var(--success)">✓ ${renderHTML(t('billing.feat.remote_urls'))}</div>` : `<div style="color:var(--text-muted)">✗ ${renderHTML(t('billing.feat.remote_urls'))}</div>`)}
+              ${renderHTML(subData.plan.priority_support ? `<div style="color:var(--success)">✓ ${renderHTML(t('billing.feat.priority_support'))}</div>` : `<div style="color:var(--text-muted)">✗ ${renderHTML(t('billing.feat.priority_support'))}</div>`)}
             </div>
           </div>
         </div>
       </div>
 
       <div class="settings-section">
-        <h3>${t('billing.available_plans')}</h3>
-        ${saleEligible ? `<div class="billing-sale"><span class="billing-sale-tag">${t('billing.sale_tag', { pct: promo.percent_off })}</span><strong>${esc(promo.headline)}</strong>${promo.ends_at ? `<span class="billing-sale-end">${t('billing.sale_ends', { when: new Date(promo.ends_at * 1000).toLocaleString() })}</span>` : ''}</div>` : ''}
+        <h3>${renderHTML(t('billing.available_plans'))}</h3>
+        ${renderHTML(saleEligible ? `<div class="billing-sale"><span class="billing-sale-tag">${renderHTML(t('billing.sale_tag', { pct: promo.percent_off }))}</span><strong>${uiText(promo.headline)}</strong>${renderHTML(promo.ends_at ? `<span class="billing-sale-end">${renderHTML(t('billing.sale_ends', { when: displayValue(new Date(promo.ends_at * 1000), "toLocaleString", undefined) }))}</span>` : '')}</div>` : '')}
         <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:16px">
-          ${plans.map(p => `
+          ${renderHTML(plans.map(p => `
             <div id="plan-card-${esc(p.id)}" style="background:var(--bg-secondary);border:${p.id === subData.plan.id ? '2px solid var(--accent)' : p.id === recommendedId ? '2px solid var(--success)' : '1px solid var(--border)'};border-radius:var(--radius-lg);padding:20px;position:relative">
-              ${p.id === subData.plan.id ? `<div style="position:absolute;top:-10px;right:12px;background:var(--accent);color:white;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500">${t('billing.current')}</div>` : ''}
-              ${p.id === recommendedId && p.id !== subData.plan.id ? `<div style="position:absolute;top:-10px;right:12px;background:var(--success);color:#06210f;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600">${t('billing.recommended')}</div>` : ''}
-              <div style="font-size:18px;font-weight:700;margin-bottom:4px">${esc(p.display_name)}</div>
+              ${renderHTML(p.id === subData.plan.id ? `<div style="position:absolute;top:-10px;right:12px;background:var(--accent);color:white;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500">${renderHTML(t('billing.current'))}</div>` : '')}
+              ${renderHTML(p.id === recommendedId && p.id !== subData.plan.id ? `<div style="position:absolute;top:-10px;right:12px;background:var(--success);color:#06210f;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600">${renderHTML(t('billing.recommended'))}</div>` : '')}
+              <div style="font-size:18px;font-weight:700;margin-bottom:4px">${uiText(p.display_name)}</div>
               <div style="font-size:24px;font-weight:700;color:var(--accent);margin-bottom:12px">
-                ${p.price_monthly > 0
+                ${renderHTML(p.price_monthly > 0
                   ? (saleFor(p, 'monthly')
-                    ? `<s class="billing-was">$${p.price_monthly}</s> $${cut(p.price_monthly)}<span style="font-size:13px;color:var(--text-secondary);font-weight:400">${t('billing.per_month')}</span>`
-                    : `$${p.price_monthly}<span style="font-size:13px;color:var(--text-secondary);font-weight:400">${t('billing.per_month')}</span>`)
-                  : t('billing.free')}
+                    ? `<s class="billing-was">\$${renderHTML(p.price_monthly)}</s> \$${renderHTML(cut(p.price_monthly))}<span style="font-size:13px;color:var(--text-secondary);font-weight:400">${renderHTML(t('billing.per_month'))}</span>`
+                    : `\$${renderHTML(p.price_monthly)}<span style="font-size:13px;color:var(--text-secondary);font-weight:400">${renderHTML(t('billing.per_month'))}</span>`)
+                  : t('billing.free'))}
               </div>
-              ${p.id === recommendedId && p.id !== subData.plan.id ? `<div style="font-size:12px;color:var(--success);margin:-6px 0 8px">${subData.usage.devices > 0 ? t('billing.recommended_why', { n: subData.usage.devices }) : t('billing.recommended_why_new')}</div>` : ''}
+              ${renderHTML(p.id === recommendedId && p.id !== subData.plan.id ? `<div style="font-size:12px;color:var(--success);margin:-6px 0 8px">${renderHTML(subData.usage.devices > 0 ? t('billing.recommended_why', { n: subData.usage.devices }) : t('billing.recommended_why_new'))}</div>` : '')}
               <div style="font-size:13px;color:var(--text-secondary);line-height:2">
-                <div>${p.max_devices === -1 ? t('billing.unlimited') : p.max_devices} ${t('billing.devices_lc')}</div>
-                <div>${p.max_storage_mb === -1 ? t('billing.unlimited') : (p.max_storage_mb >= 1024 ? (p.max_storage_mb/1024) + ' GB' : p.max_storage_mb + ' MB')} ${t('billing.storage_lc')}</div>
-                <div>${p.remote_control ? '&#10003;' : '&#10007;'} ${t('billing.feat.remote_control')}</div>
-                <div>${p.remote_url ? '&#10003;' : '&#10007;'} ${t('billing.feat.remote_urls')}</div>
-                <div>${p.priority_support ? '&#10003;' : '&#10007;'} ${t('billing.feat.priority_support')}</div>
+                <div>${renderHTML(p.max_devices === -1 ? t('billing.unlimited') : p.max_devices)} ${renderHTML(t('billing.devices_lc'))}</div>
+                <div>${renderHTML(p.max_storage_mb === -1 ? t('billing.unlimited') : (p.max_storage_mb >= 1024 ? (p.max_storage_mb/1024) + ' GB' : p.max_storage_mb + ' MB'))} ${renderHTML(t('billing.storage_lc'))}</div>
+                <div>${renderHTML(p.remote_control ? '&#10003;' : '&#10007;')} ${renderHTML(t('billing.feat.remote_control'))}</div>
+                <div>${renderHTML(p.remote_url ? '&#10003;' : '&#10007;')} ${renderHTML(t('billing.feat.remote_urls'))}</div>
+                <div>${renderHTML(p.priority_support ? '&#10003;' : '&#10007;')} ${renderHTML(t('billing.feat.priority_support'))}</div>
               </div>
-              ${p.price_yearly > 0 ? (saleFor(p, 'yearly')
-                ? `<div style="font-size:12px;margin-top:8px">${t('billing.yearly_sale', { was: p.price_yearly, now: cut(p.price_yearly) })}</div>`
-                : `<div style="font-size:11px;color:var(--text-muted);margin-top:8px">${t('billing.yearly_save', { price: p.price_yearly, pct: Math.round((1 - p.price_yearly / (p.price_monthly * 12)) * 100) })}</div>`) : ''}
-              ${saleFor(p, 'monthly') || saleFor(p, 'yearly') ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t(`billing.sale_dur_${promo.duration}`, { n: promo.duration_in_months })}</div>` : ''}
-              ${!subData.self_hosted && p.price_monthly > 0 && p.id !== subData.plan.id ? `
+              ${renderHTML(p.price_yearly > 0 ? (saleFor(p, 'yearly')
+                ? `<div style="font-size:12px;margin-top:8px">${renderHTML(t('billing.yearly_sale', { was: p.price_yearly, now: cut(p.price_yearly) }))}</div>`
+                : `<div style="font-size:11px;color:var(--text-muted);margin-top:8px">${renderHTML(t('billing.yearly_save', { price: p.price_yearly, pct: Math.round((1 - p.price_yearly / (p.price_monthly * 12)) * 100) }))}</div>`) : '')}
+              ${renderHTML(saleFor(p, 'monthly') || saleFor(p, 'yearly') ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(t(`billing.sale_dur_${promo.duration}`, { n: promo.duration_in_months }))}</div>` : '')}
+              ${renderHTML(!subData.self_hosted && p.price_monthly > 0 && p.id !== subData.plan.id ? `
                 <div style="margin-top:12px;display:flex;gap:6px">
-                  <button class="btn btn-primary btn-sm" style="flex:1" onclick="window._checkout('${p.id}','monthly')">${t('billing.monthly')}</button>
-                  ${p.price_yearly > 0 ? `<button class="btn btn-secondary btn-sm" style="flex:1" onclick="window._checkout('${p.id}','yearly')">${t('billing.yearly')}</button>` : ''}
+                  <button class="btn btn-primary btn-sm" style="flex:1" onclick="window._checkout('${p.id}','monthly')">${renderHTML(t('billing.monthly'))}</button>
+                  ${renderHTML(p.price_yearly > 0 ? `<button class="btn btn-secondary btn-sm" style="flex:1" onclick="window._checkout('${p.id}','yearly')">${renderHTML(t('billing.yearly'))}</button>` : '')}
                 </div>
-              ` : ''}
-              ${!subData.self_hosted && p.id === subData.plan.id && subData.subscription?.stripe_subscription_id ? `
-                <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:12px" onclick="window._manageSubscription()">${t('billing.manage_subscription')}</button>
-              ` : ''}
+              ` : '')}
+              ${renderHTML(!subData.self_hosted && p.id === subData.plan.id && subData.subscription?.stripe_subscription_id ? `
+                <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:12px" onclick="window._manageSubscription()">${renderHTML(t('billing.manage_subscription'))}</button>
+              ` : '')}
             </div>
-          `).join('')}
+          `).join(''))}
         </div>
-        ${subData.self_hosted ? `<p style="color:var(--text-muted);font-size:12px;margin-top:12px">${t('billing.self_hosted_note')}</p>` : ''}
+        ${renderHTML(subData.self_hosted ? `<p style="color:var(--text-muted);font-size:12px;margin-top:12px">${renderHTML(t('billing.self_hosted_note'))}</p>` : '')}
       </div>
     `;
 
@@ -186,10 +189,10 @@ export async function render(container) {
           body: JSON.stringify({ plan_id: planId, interval, from })
         });
         const data = await res.json();
-        if (data.error) { showToast(data.error, 'error'); return; }
+        if (data.error) { showToast(localizeServerError(data.error), 'error'); return; }
         if (data.url) window.location.href = data.url;
       } catch (err) {
-        showToast(t('billing.toast.checkout_failed', { error: err.message }), 'error');
+        showToast(t('billing.toast.checkout_failed', { error: (err.uiMessage || err.message) }), 'error');
       }
     };
 
@@ -200,10 +203,10 @@ export async function render(container) {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         const data = await res.json();
-        if (data.error) { showToast(data.error, 'error'); return; }
+        if (data.error) { showToast(localizeServerError(data.error), 'error'); return; }
         if (data.url) window.location.href = data.url;
       } catch (err) {
-        showToast(t('billing.toast.portal_failed', { error: err.message }), 'error');
+        showToast(t('billing.toast.portal_failed', { error: (err.uiMessage || err.message) }), 'error');
       }
     };
 
@@ -220,7 +223,7 @@ export async function render(container) {
 
   } catch (err) {
     const host = document.getElementById('billingContent');
-    if (host) host.innerHTML = `<div class="empty-state"><h3>${t('billing.failed_to_load')}</h3><p>${esc(err.message)}</p></div>`;
+    if (host) host.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('billing.failed_to_load'))}</h3><p>${uiText((err.uiMessage || err.message))}</p></div>`;
   }
 }
 

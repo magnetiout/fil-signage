@@ -1,0 +1,41 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {startServer,launch,SKIP}=require('./helpers/web-player-e2e');
+for(const language of ['tr','en'])test(`admin ${language}: media upload/error, playlist draft/publish, schedule state and modal language controls`,{skip:SKIP,timeout:150000},async()=>{
+ const s=await startServer('fil-flows-'+language),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'fil-i18n-media-'));let browser,page;const errors=[];
+ try{
+  await s.api('PUT','/auth/me',{ui_mode:'advanced',ui_language:language,onboarded:true});const user=await s.api('GET','/auth/me'),d=await s.webPlayerDisplay('Kullanıcı IŞIK İZMİR');
+  const png=path.join(tmp,'İÇERİK & özel.png'),bad=path.join(tmp,'rejected.exe');await require('sharp')({create:{width:40,height:30,channels:3,background:'#237c94'}}).png().toFile(png);fs.writeFileSync(bad,'not a supported media file');
+  browser=await launch();page=await browser.newPage();page.on('pageerror',e=>errors.push(e.stack||e.message));await page.setViewport({width:1366,height:900});await page.goto(s.base+'/app');await page.evaluate((token,user)=>{localStorage.setItem('token',token);localStorage.setItem('user',JSON.stringify(user));localStorage.setItem('rd_onboarded','1')},s.token,user);
+  await page.goto(s.base+'/app#/content');await page.waitForSelector('#fileInput');
+  await (await page.$('#fileInput')).uploadFile(png);await page.waitForFunction(()=>document.querySelector('.lib-card,.lib-row'));
+  assert((await page.$eval('#contentGrid',e=>e.innerText)).includes('İÇERİK & özel.png'));
+  await (await page.$('#fileInput')).uploadFile(bad);await page.waitForFunction(()=>!!document.querySelector('.toast.error,.lib-tray [data-act="retry"]'));
+  const uploadError=await page.$eval('.lib-tray',e=>e.innerText);
+  assert(uploadError.includes(language==='tr'?'Başarısız:':'Failed:'),'upload failure is presented in the active language');
+  if(language==='tr')assert(!/Unsupported file|File type not allowed|Request failed/.test(uploadError),'raw backend English is not shown');
+  const rawMedia=await s.api('GET','/content'),media=Array.isArray(rawMedia)?{items:rawMedia}:rawMedia;assert.equal(media.items.length,1,'refused upload never becomes content');
+  await page.type('#contentSearch','İÇERİK');await page.select('#adminLanguage',language==='tr'?'en':'tr');assert.equal(await page.$eval('#contentSearch',e=>e.value),'İÇERİK');await page.select('#adminLanguage',language);
+  await page.goto(s.base+'/app#/playlists');await page.waitForSelector('#createPlaylistBtn');await page.click('#createPlaylistBtn');await page.waitForSelector('[role="dialog"] [data-admin-language]');await page.type('#newPlaylistName','Değişmeyen liste adı');await page.type('#newPlaylistDesc','Kaydedilmemiş açıklama');
+  await page.evaluate(()=>window.originalPlaylistName=document.getElementById('newPlaylistName'));
+  await page.select('[role="dialog"] [data-admin-language]',language==='tr'?'en':'tr');assert.equal(await page.$eval('#newPlaylistName',e=>e.value),'Değişmeyen liste adı');assert(await page.evaluate(()=>originalPlaylistName===document.getElementById('newPlaylistName')));
+  assert.equal(await page.$eval('#confirmCreateBtn',e=>e.textContent.trim()),language==='tr'?'Create':'Oluştur');
+  await page.select('[role="dialog"] [data-admin-language]',language);await page.click('#confirmCreateBtn');await page.waitForSelector('#addItemBtn');
+  const playlists=await s.api('GET','/playlists'),list=playlists.find(p=>p.name==='Değişmeyen liste adı');assert(list);assert.equal(list.description,'Kaydedilmemiş açıklama');
+  await page.click('#addItemBtn');await page.waitForSelector('.add-item-btn');await page.click('.add-item-btn');await page.click('#closeAddModal');await page.waitForFunction(()=>document.getElementById('playlistItems').textContent.includes('İÇERİK'));
+  await page.click('#publishBtn');await page.waitForFunction(()=>!document.getElementById('publishBtn'));
+  const published=await s.api('GET','/playlists/'+list.id);assert.equal(published.status,'published');assert.equal(published.items[0].content_id,media.items[0].id);
+  await page.goto(s.base+'/app#/schedule');await page.waitForSelector('#addScheduleBtn');await page.click('#addScheduleBtn');await page.waitForSelector('#scheduleModal [data-admin-language]');await page.select('#schedDeviceSelect',d.id);await page.type('#schedTitle','Dil değiştirme yayını');
+  await page.$eval('#schedStart',e=>e.value='10:15');await page.$eval('#schedEnd',e=>e.value='12:45');await page.select('#schedPlaylist',list.id);
+  await page.select('#scheduleModal [data-admin-language]',language==='tr'?'en':'tr');assert.equal(await page.$eval('#schedStart',e=>e.value),'10:15');assert.equal(await page.$eval('#schedEnd',e=>e.value),'12:45');assert.equal(await page.$eval('#schedTitle',e=>e.value),'Dil değiştirme yayını');await page.select('#scheduleModal [data-admin-language]',language);
+  let heldRequest;let releaseRequest;
+  const held=new Promise(resolve=>releaseRequest=resolve);
+  await page.setRequestInterception(true);
+  page.on('request',request=>{if(!heldRequest && new URL(request.url()).pathname==='/api/schedules/week'){heldRequest=request;releaseRequest();}else request.continue();});
+  await page.click('#saveScheduleBtn');await page.waitForFunction(()=>getComputedStyle(document.getElementById('scheduleModal')).display==='none');
+  const schedules=await s.api('GET','/schedules?device_id='+d.id);assert(schedules.some(x=>x.title==='Dil değiştirme yayını'));
+  await held;
+  await page.goto(s.base+'/app#/members');await heldRequest.continue();await page.waitForNetworkIdle({idleTime:150});await page.waitForSelector('#app h1');assert((await page.$eval('#app',e=>e.innerText)).includes(language==='tr'?'Çalışma alanı üyeleri':'Workspace members'));
+  assert.deepEqual(errors,[]);
+ }catch(error){error.message+='\n'+JSON.stringify({url:page?.url(),errors,body:await page?.evaluate(()=>document.body.innerText.slice(0,1200)).catch(()=>null)});throw error;}finally{await browser?.close();s.stop();fs.rmSync(tmp,{recursive:true,force:true})}
+});

@@ -1,3 +1,4 @@
+import {requestError} from '../api.js';
 /*
  * Resumable uploads, client side.
  *
@@ -71,7 +72,7 @@ function forget(fp) {
 async function jsonOrThrow(res) {
   let body = null;
   try { body = await res.json(); } catch (_) { /* some responses have no body */ }
-  if (!res.ok) throw Object.assign(new Error((body && body.error) || `HTTP ${res.status}`), { status: res.status, body });
+  if (!res.ok) throw requestError(res.status,body);
   return body;
 }
 

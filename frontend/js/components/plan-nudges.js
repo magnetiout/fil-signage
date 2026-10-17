@@ -1,3 +1,4 @@
+import { bindMessage } from '../lib/i18n-bindings.js';
 /*
  * 3.0: trial-to-paid, done as help rather than a wall. Two surfaces, both HOSTED ONLY — nothing
  * here renders when the account is on a self-hosted instance or billing is hidden (HIDE_BILLING),
@@ -17,7 +18,7 @@
  * Everything shown is built with textContent; values from the server never reach innerHTML.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { isPlatformAdmin, inManagerApp } from '../utils.js';
 
 const BANNER_ID = 'trialBanner';
@@ -50,7 +51,7 @@ function el(tag, attrs = {}, text) {
   for (const [k, v] of Object.entries(attrs)) {
     if (k === 'class') n.className = v; else if (k === 'style') n.style.cssText = v; else n.setAttribute(k, v);
   }
-  if (text != null) n.textContent = text;
+  if (text != null) bindMessage(n, text);
   return n;
 }
 
@@ -154,7 +155,7 @@ export function updateSponsorBanner(user = cachedUser()) {
   later.addEventListener('click', snooze(String(Date.now() + SPONSOR_SNOOZE_DAYS * 86400000)));
   b.appendChild(later);
   const never = el('button', { type: 'button', class: 'trial-banner-link' }, t('sponsor.banner.never'));
-  never.addEventListener('click', snooze('never'));
+  never.addEventListener('click', snooze(t("ui.labels.never_85777c")));
   b.appendChild(never);
   // Opening the sponsors page counts as an answer: no point asking again next week.
   b.querySelector('.trial-banner-cta').addEventListener('click', snooze(String(Date.now() + 180 * 86400000)));

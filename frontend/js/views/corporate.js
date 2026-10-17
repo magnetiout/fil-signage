@@ -1,3 +1,6 @@
+import { uiText, renderHTML, binding, bindText } from '../lib/i18n-bindings.js';
+import { displayValue, message as t, messageCount as tn } from '../i18n.js';
+
 /*
  * #/corporate — head office (corporate) playlists. docs/corporate-playlists.md, spec §7.
  *
@@ -20,7 +23,7 @@
 import { api, downloadSlotReportCsv } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc, hydrateAuthImages } from '../utils.js';
-import { t, tn } from '../i18n.js';
+
 import * as cui from '../components/corporate-ui.js';
 
 const TABS = ['playlists', 'where', 'slots', 'emergency'];
@@ -41,16 +44,16 @@ function currentWorkspace() {
   } catch { return null; }
 }
 
-const when = (ts) => (ts ? new Date(Number(ts) * 1000).toLocaleDateString() : '');
+const when = (ts) => (ts ? displayValue(new Date(Number(ts) * 1000), "toLocaleDateString", undefined) : '');
 
 export async function render(container) {
   currentApp = container;
   stopLiveTimer();
-  container.innerHTML = `<div style="color:var(--text-muted);padding:40px;text-align:center">${esc(t('common.loading'))}</div>`;
+  container.innerHTML = `<div style="color:var(--text-muted);padding:40px;text-align:center">${uiText(t('common.loading'))}</div>`;
   const s = await cui.corporateSettings({ force: true });
   cui.renderHqContextBar(s);
   if (!s) {
-    container.innerHTML = pageShell(t('nav.head_office'), `<div class="corp-empty">${esc(t('corp.page.no_org'))}</div>`);
+    container.innerHTML = pageShell(t('nav.head_office'), `<div class="corp-empty">${uiText(t('corp.page.no_org'))}</div>`);
     return;
   }
   const hqFace = s.can_author || s.is_admin;
@@ -59,19 +62,19 @@ export async function render(container) {
   if (!s.hq_workspace_id) {
     container.innerHTML = pageShell(t('corp.hq.title'), `
       <div class="corp-empty">
-        <p>${esc(t('corp.page.setup'))}</p>
-        <a class="btn btn-primary" href="#/settings">${esc(t('corp.page.open_settings'))}</a>
+        <p>${uiText(t('corp.page.setup'))}</p>
+        <a class="btn btn-primary" href="#/settings">${uiText(t('corp.page.open_settings'))}</a>
       </div>`);
     return;
   }
   if (!s.active_workspace_is_hq) {
     // §7.1: head office's editors, pickers and uploads only work inside the head office workspace.
-    container.innerHTML = pageShell(t('corp.hq.title'), `<div class="corp-empty">${esc(t('corp.ctx.switching', { name: s.hq_workspace_name || '' }))}</div>`);
+    container.innerHTML = pageShell(t('corp.hq.title'), `<div class="corp-empty">${uiText(t('corp.ctx.switching', { name: s.hq_workspace_name || '' }))}</div>`);
     const from = currentWorkspace();
     if (from) cui.rememberReturnWorkspace(from);
     try { await cui.switchWorkspaceTo(s.hq_workspace_id, window.location.hash || '#/corporate'); }
     catch (e) {
-      container.innerHTML = pageShell(t('corp.hq.title'), `<div class="corp-empty">${esc(e.message)}</div>`);
+      container.innerHTML = pageShell(t('corp.hq.title'), `<div class="corp-empty">${uiText((e.uiMessage || e.message))}</div>`);
     }
     return;
   }
@@ -88,10 +91,10 @@ function stopLiveTimer() { if (liveTimer) { clearInterval(liveTimer); liveTimer 
 function pageShell(title, inner, subtitle = '') {
   return `
     <div class="page-header"><div>
-      <h1>${esc(title)}</h1>
-      ${subtitle ? `<div class="subtitle">${esc(subtitle)}</div>` : ''}
+      <h1>${uiText(title)}</h1>
+      ${renderHTML(subtitle ? `<div class="subtitle">${uiText(subtitle)}</div>` : '')}
     </div></div>
-    ${inner}`;
+    ${renderHTML(inner)}`;
 }
 
 /* ════════════════════════════════════════════════════════════════════════ head office face */
@@ -100,15 +103,15 @@ function renderHq(container, s) {
   const tab = tabFromHash();
   const tabLabel = { playlists: t('corp.tab.playlists'), where: t('corp.where.title'), slots: t('corp.slots.title'), emergency: t('corp.em.title') };
   container.innerHTML = pageShell(t('corp.hq.title'), `
-    ${!s.available ? `<div class="corp-notice corp-notice-danger">${esc(t('corp.err.CORPORATE_UNAVAILABLE'))}</div>` : ''}
-    ${!s.corporate_enabled ? `<div class="corp-notice">${esc(t('corp.page.off'))} <a href="#/settings">${esc(t('corp.page.open_settings'))}</a></div>` : ''}
+    ${renderHTML(!s.available ? `<div class="corp-notice corp-notice-danger">${uiText(t('corp.err.CORPORATE_UNAVAILABLE'))}</div>` : '')}
+    ${renderHTML(!s.corporate_enabled ? `<div class="corp-notice">${renderHTML(t('corp.page.off'))} <a href="#/settings">${uiText(t('corp.page.open_settings'))}</a></div>` : '')}
     <div class="tabs corp-tabs" role="tablist">
-      ${TABS.map((k) => `<a class="tab ${k === tab ? 'active' : ''}" role="tab" href="#/corporate/${k}" data-corp-tab="${k}">${esc(tabLabel[k])}</a>`).join('')}
+      ${renderHTML(TABS.map((k) => `<a class="tab ${k === tab ? 'active' : ''}" role="tab" href="#/corporate/${k}" data-corp-tab="${k}">${uiText(tabLabel[k])}</a>`).join(''))}
     </div>
     <div id="corpTab"></div>`, t('corp.hq.subtitle', { name: s.hq_workspace_name || '' }));
   const host = container.querySelector('#corpTab');
   const run = { playlists: renderPlaylistsTab, where: renderWhereTab, slots: renderSlotsTab, emergency: renderEmergencyTab }[tab];
-  run(host, s).catch((e) => { host.innerHTML = `<div class="corp-notice corp-notice-danger">${esc(e.message)}</div>`; });
+  run(host, s).catch((e) => { host.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; });
 }
 
 function reloadTab() { if (currentApp) render(currentApp); }
@@ -120,28 +123,28 @@ async function renderPlaylistsTab(host, s) {
   const author = s.can_author;
   host.innerHTML = `
     ${author ? `<div class="corp-toolbar">
-      <button class="btn btn-primary" id="corpNewPl">${esc(t('corp.hq.new'))}</button>
-      <button class="btn btn-secondary" id="corpPromote">${esc(t('corp.hq.promote'))}</button>
-    </div>` : `<div class="corp-notice">${esc(t('corp.err.CORPORATE_AUTHOR_REQUIRED'))}</div>`}
-    ${playlists.length ? `<div class="corp-cards">${playlists.map((p) => `
+      <button class="btn btn-primary" id="corpNewPl">${uiText(t('corp.hq.new'))}</button>
+      <button class="btn btn-secondary" id="corpPromote">${uiText(t('corp.hq.promote'))}</button>
+    </div>` : `<div class="corp-notice">${uiText(t('corp.err.CORPORATE_AUTHOR_REQUIRED'))}</div>`}
+    ${playlists.length ? `<div class="corp-cards">${renderHTML(playlists.map((p) => `
       <div class="corp-card" data-pl="${esc(p.id)}">
         <div class="corp-card-head">
-          <a class="corp-card-title" href="#/playlists/${esc(p.id)}">${esc(p.name)}</a>
-          ${cui.chip(t('corp.badge.corporate'), 'hq', '', { lock: true })}
-          ${p.status === 'draft' ? cui.chip(p.has_published ? t('corp.status.changes') : t('corp.status.never'), 'muted') : cui.chip(t('corp.status.published'), 'slot')}
+          <a class="corp-card-title" href="#/playlists/${esc(p.id)}">${uiText(p.name)}</a>
+          ${renderHTML(cui.chip(t('corp.badge.corporate'), 'hq', '', { lock: true }))}
+          ${renderHTML(p.status === 'draft' ? cui.chip(p.has_published ? t('corp.status.changes') : t('corp.status.never'), 'muted') : cui.chip(t('corp.status.published'), 'slot'))}
         </div>
         <div class="corp-card-meta">
-          ${esc(p.places ? t('corp.hq.plays_on', { screens: tn('corp.n_screens', p.screens), places: tn('corp.n_places', p.places) }) : t('corp.hq.not_playing'))}
-          · ${esc(tn('corp.n_items', Math.max(0, p.item_count - (p.slot_count || 0))))}
-          · ${esc(tn('corp.n_slots', p.slot_count || 0))}
+          ${uiText(p.places ? t('corp.hq.plays_on', { screens: tn('corp.n_screens', p.screens), places: tn('corp.n_places', p.places) }) : t('corp.hq.not_playing'))}
+          · ${uiText(tn('corp.n_items', Math.max(0, p.item_count - (p.slot_count || 0))))}
+          · ${uiText(tn('corp.n_slots', p.slot_count || 0))}
         </div>
         <div class="corp-card-actions">
-          <a class="btn btn-secondary btn-sm" href="#/playlists/${esc(p.id)}">${esc(author ? t('common.edit') : t('corp.open'))}</a>
-          <a class="btn btn-secondary btn-sm" href="#/corporate/where">${esc(t('corp.where.title'))}</a>
-          <button class="btn btn-secondary btn-sm" data-preview="${esc(p.id)}">${esc(t('corp.hq.preview'))}</button>
-          ${author ? `<button class="btn btn-secondary btn-sm" data-demote="${esc(p.id)}">${esc(t('corp.hq.demote'))}</button>` : ''}
+          <a class="btn btn-secondary btn-sm" href="#/playlists/${esc(p.id)}">${uiText(author ? t('common.edit') : t('corp.open'))}</a>
+          <a class="btn btn-secondary btn-sm" href="#/corporate/where">${uiText(t('corp.where.title'))}</a>
+          <button class="btn btn-secondary btn-sm" data-preview="${esc(p.id)}">${uiText(t('corp.hq.preview'))}</button>
+          ${renderHTML(author ? `<button class="btn btn-secondary btn-sm" data-demote="${esc(p.id)}">${uiText(t('corp.hq.demote'))}</button>` : '')}
         </div>
-      </div>`).join('')}</div>` : `<div class="corp-empty">${esc(t('corp.hq.empty'))}</div>`}`;
+      </div>`).join(''))}</div>` : `<div class="corp-empty">${uiText(t('corp.hq.empty'))}</div>`}`;
 
   host.querySelector('#corpNewPl')?.addEventListener('click', () => newCorporatePlaylist());
   host.querySelector('#corpPromote')?.addEventListener('click', () => promoteDialog());
@@ -150,17 +153,17 @@ async function renderPlaylistsTab(host, s) {
     const p = playlists.find((x) => x.id === b.dataset.demote);
     if (!await cui.ask({ title: t('corp.hq.demote'), text: t('corp.hq.demote_confirm', { name: p.name }), confirmLabel: t('corp.hq.demote') })) return;
     try { await api.demoteCorporatePlaylist(p.id); showToast(t('corp.hq.demoted', { name: p.name }), 'success'); reloadTab(); }
-    catch (e) { showToast(e.message, 'error'); }
+    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   }));
 }
 
 function newCorporatePlaylist() {
   const m = cui.openModal({
     title: t('corp.hq.new'),
-    body: `<div class="form-group"><label for="corpPlName">${esc(t('corp.form.name'))}</label><input id="corpPlName" class="input" maxlength="120" style="width:100%"></div>
-           <div class="form-group"><label for="corpPlDesc">${esc(t('corp.form.description'))}</label><textarea id="corpPlDesc" class="input" style="width:100%;height:60px"></textarea></div>
-           <p class="corp-help">${esc(t('corp.hq.new_help'))}</p>`,
-    footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button><button class="btn btn-primary" id="corpPlCreate">${esc(t('corp.form.create'))}</button>`,
+    body: `<div class="form-group"><label for="corpPlName">${uiText(t('corp.form.name'))}</label><input id="corpPlName" class="input" maxlength="120" style="width:100%"></div>
+           <div class="form-group"><label for="corpPlDesc">${uiText(t('corp.form.description'))}</label><textarea id="corpPlDesc" class="input" style="width:100%;height:60px"></textarea></div>
+           <p class="corp-help">${uiText(t('corp.hq.new_help'))}</p>`,
+    footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button><button class="btn btn-primary" id="corpPlCreate">${uiText(t('corp.form.create'))}</button>`,
   });
   m.q('#corpPlName').focus();
   m.q('#corpPlCreate').addEventListener('click', async () => {
@@ -170,24 +173,24 @@ function newCorporatePlaylist() {
       const p = await api.createCorporatePlaylist(name, m.q('#corpPlDesc').value.trim());
       m.close();
       window.location.hash = `#/playlists/${p.id}`;
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   });
 }
 
 async function promoteDialog() {
   let rows = [];
   try { rows = (await api.getPlaylists()).filter((p) => !p.corporate && !p.smart_rules && !p.is_auto_generated && !p.corporate_slot); }
-  catch (e) { showToast(e.message, 'error'); return; }
+  catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
   const m = cui.openModal({
     title: t('corp.hq.promote'),
-    body: rows.length ? `<p class="corp-help">${esc(t('corp.hq.promote_help'))}</p>
-      <select id="corpPromoteSel" class="input" style="width:100%">${rows.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select>`
-      : `<p class="corp-help">${esc(t('corp.hq.promote_none'))}</p>`,
-    footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button>${rows.length ? `<button class="btn btn-primary" id="corpPromoteGo">${esc(t('corp.hq.promote_go'))}</button>` : ''}`,
+    body: rows.length ? `<p class="corp-help">${uiText(t('corp.hq.promote_help'))}</p>
+      <select id="corpPromoteSel" class="input" style="width:100%">${renderHTML(rows.map((p) => `<option value="${esc(p.id)}">${uiText(p.name)}</option>`).join(''))}</select>`
+      : `<p class="corp-help">${uiText(t('corp.hq.promote_none'))}</p>`,
+    footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button>${renderHTML(rows.length ? `<button class="btn btn-primary" id="corpPromoteGo">${uiText(t('corp.hq.promote_go'))}</button>` : '')}`,
   });
   m.q('#corpPromoteGo')?.addEventListener('click', async () => {
     try { await api.promoteCorporatePlaylist(m.q('#corpPromoteSel').value); m.close(); showToast(t('corp.hq.promoted'), 'success'); reloadTab(); }
-    catch (e) { showToast(e.message, 'error'); }
+    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   });
 }
 
@@ -197,27 +200,27 @@ async function renderWhereTab(host, s) {
   const [{ mandates }, { playlists }] = await Promise.all([api.getMandates(), api.getCorporatePlaylists()]);
   const admin = s.is_admin;
   host.innerHTML = `
-    ${admin ? `<div class="corp-toolbar"><button class="btn btn-primary" id="corpAssign" ${s.corporate_enabled && s.available ? '' : 'disabled'}>${esc(t('corp.where.assign'))}</button>
-      ${!s.corporate_enabled ? `<span class="corp-help">${esc(t('corp.err.CORPORATE_DISABLED'))}</span>` : ''}</div>`
-      : `<div class="corp-notice">${esc(t('corp.err.CORPORATE_ADMIN_REQUIRED'))}</div>`}
-    <p class="corp-help">${esc(t('corp.where.prefer_levels'))}</p>
-    ${admin && (s.store_triggers_under_mandate || 'off') === 'allow' ? `<div class="corp-notice corp-notice-warn">${esc(t('corp.where.store_triggers_allowed'))} <a href="#/settings">${esc(t('corp.page.open_settings'))}</a></div>` : ''}
-    ${mandates.length ? `<div class="table-wrap"><table class="corp-table">
-      <thead><tr><th>${esc(t('corp.where.col_where'))}</th><th>${esc(t('corp.where.col_playlist'))}</th><th>${esc(t('corp.where.col_layout'))}</th><th>${esc(t('corp.where.col_screens'))}</th><th>${esc(t('corp.where.col_on'))}</th><th></th></tr></thead>
-      <tbody>${mandates.map((mm) => `
+    ${renderHTML(admin ? `<div class="corp-toolbar"><button class="btn btn-primary" id="corpAssign" ${s.corporate_enabled && s.available ? '' : 'disabled'}>${uiText(t('corp.where.assign'))}</button>
+      ${renderHTML(!s.corporate_enabled ? `<span class="corp-help">${uiText(t('corp.err.CORPORATE_DISABLED'))}</span>` : '')}</div>`
+      : `<div class="corp-notice">${uiText(t('corp.err.CORPORATE_ADMIN_REQUIRED'))}</div>`)}
+    <p class="corp-help">${uiText(t('corp.where.prefer_levels'))}</p>
+    ${renderHTML(admin && (s.store_triggers_under_mandate || 'off') === 'allow' ? `<div class="corp-notice corp-notice-warn">${renderHTML(t('corp.where.store_triggers_allowed'))} <a href="#/settings">${uiText(t('corp.page.open_settings'))}</a></div>` : '')}
+    ${renderHTML(mandates.length ? `<div class="table-wrap"><table class="corp-table">
+      <thead><tr><th>${uiText(t('corp.where.col_where'))}</th><th>${uiText(t('corp.where.col_playlist'))}</th><th>${uiText(t('corp.where.col_layout'))}</th><th>${uiText(t('corp.where.col_screens'))}</th><th>${uiText(t('corp.where.col_on'))}</th><th></th></tr></thead>
+      <tbody>${renderHTML(mandates.map((mm) => `
         <tr data-mandate="${esc(mm.id)}">
-          <td>${esc(cui.targetLabel(mm.target_kind, mm.target_name))}</td>
-          <td>${mm.dark ? cui.chip(t('corp.badge.dark'), 'dark') : esc(mm.playlist_name || '')}</td>
-          <td>${esc(mm.layout_name || t('corp.where.full_screen_short'))}</td>
-          <td>${esc(tn('corp.n_screens', mm.screens))}</td>
-          <td>${admin ? `<label class="corp-switch"><input type="checkbox" data-toggle="${esc(mm.id)}" ${mm.enabled ? 'checked' : ''} aria-label="${esc(t('corp.where.col_on'))}"></label>` : esc(mm.enabled ? t('corp.yes') : t('corp.no'))}</td>
+          <td>${uiText(cui.targetLabel(mm.target_kind, mm.target_name))}</td>
+          <td>${renderHTML(mm.dark ? cui.chip(t('corp.badge.dark'), 'dark') : esc(mm.playlist_name || ''))}</td>
+          <td>${uiText(mm.layout_name || t('corp.where.full_screen_short'))}</td>
+          <td>${uiText(tn('corp.n_screens', mm.screens))}</td>
+          <td>${renderHTML(admin ? `<label class="corp-switch"><input type="checkbox" data-toggle="${esc(mm.id)}" ${mm.enabled ? 'checked' : ''} aria-label="${esc(t('corp.where.col_on'))}" data-fil-i18n-aria-label="${binding('corp.where.col_on', undefined)}"></label>` : esc(mm.enabled ? t('corp.yes') : t('corp.no')))}</td>
           <td class="corp-actions-cell">
-            ${mm.target_kind === 'device' ? `<button class="btn btn-secondary btn-sm" data-pv="${esc(mm.target_id)}">${esc(t('corp.hq.preview'))}</button>` : ''}
-            ${admin ? `<button class="btn btn-secondary btn-sm" data-change="${esc(mm.id)}">${esc(t('corp.where.change'))}</button>
-            <button class="btn btn-secondary btn-sm" data-remove="${esc(mm.id)}">${esc(t('corp.where.remove'))}</button>` : ''}
+            ${renderHTML(mm.target_kind === 'device' ? `<button class="btn btn-secondary btn-sm" data-pv="${esc(mm.target_id)}">${uiText(t('corp.hq.preview'))}</button>` : '')}
+            ${renderHTML(admin ? `<button class="btn btn-secondary btn-sm" data-change="${esc(mm.id)}">${uiText(t('corp.where.change'))}</button>
+            <button class="btn btn-secondary btn-sm" data-remove="${esc(mm.id)}">${uiText(t('corp.where.remove'))}</button>` : '')}
           </td>
-        </tr>`).join('')}</tbody></table></div>`
-      : `<div class="corp-empty">${esc(t('corp.where.empty'))}</div>`}`;
+        </tr>`).join(''))}</tbody></table></div>`
+      : `<div class="corp-empty">${uiText(t('corp.where.empty'))}</div>`)}`;
 
   host.querySelector('#corpAssign')?.addEventListener('click', () => mandateDialog(null, playlists));
   host.querySelectorAll('[data-change]').forEach((b) => b.addEventListener('click', () => mandateDialog(mandates.find((x) => x.id === b.dataset.change), playlists)));
@@ -239,7 +242,7 @@ async function renderWhereTab(host, s) {
         r = await api.updateMandate(mm.id, { enabled: cb.checked, acknowledge_impact: true });
       }
       showToast(tn('corp.where.changed_screens', r.screens_changed || 0), 'success'); cui.forgetCorporateCache(); reloadTab();
-    } catch (e) { cb.checked = !cb.checked; if (e.code !== 'CORPORATE_STORE_TRIGGERS_IMPACT') showToast(e.message, 'error'); }
+    } catch (e) { cb.checked = !cb.checked; if (e.code !== 'CORPORATE_STORE_TRIGGERS_IMPACT') showToast(e.uiMessage || e.message, 'error'); }
   }));
   host.querySelectorAll('[data-remove]').forEach((b) => b.addEventListener('click', async () => {
     const mm = mandates.find((x) => x.id === b.dataset.remove);
@@ -251,7 +254,7 @@ async function renderWhereTab(host, s) {
     });
     if (!ok) return;
     try { const r = await api.deleteMandate(mm.id); showToast(tn('corp.where.changed_screens', r.screens_changed || 0), 'success'); cui.forgetCorporateCache(); reloadTab(); }
-    catch (e) { showToast(e.message, 'error'); }
+    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   }));
 }
 
@@ -260,53 +263,53 @@ async function mandateDialog(existing, playlists) {
   let layouts = [];
   try {
     [targets, layouts] = await Promise.all([api.getCorporateTargets(), api.get('/layouts').catch(() => [])]);
-  } catch (e) { showToast(e.message, 'error'); return; }
+  } catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
   const pickable = playlists;
   const kind0 = existing ? existing.target_kind : 'workspace';
   const m = cui.openModal({
     title: existing ? t('corp.where.change') : t('corp.where.assign'),
     wide: true,
     body: `
-      <div class="form-group"><label>${esc(t('corp.where.step_playlist'))}</label>
+      <div class="form-group"><label>${uiText(t('corp.where.step_playlist'))}</label>
         <select id="mdPl" class="input" style="width:100%">
-          ${pickable.map((p) => `<option value="${esc(p.id)}" ${p.has_published ? '' : 'disabled'} ${existing && existing.playlist_id === p.id ? 'selected' : ''}>${esc(p.name)}${p.has_published ? '' : ' — ' + esc(t('corp.where.publish_first'))}</option>`).join('')}
+          ${renderHTML(pickable.map((p) => `<option value="${esc(p.id)}" ${p.has_published ? '' : 'disabled'} ${existing && existing.playlist_id === p.id ? 'selected' : ''}>${uiText(p.name)}${renderHTML(p.has_published ? '' : ' — ' + t('corp.where.publish_first'))}</option>`).join(''))}
         </select>
-        <label class="corp-check" style="margin-top:6px"><input type="checkbox" id="mdDark" ${existing && existing.dark ? 'checked' : ''}> ${esc(t('corp.where.dark'))}</label>
-        <div class="corp-help">${esc(t('corp.where.dark_help'))}</div>
+        <label class="corp-check" style="margin-top:6px"><input type="checkbox" id="mdDark" ${existing && existing.dark ? 'checked' : ''}> ${uiText(t('corp.where.dark'))}</label>
+        <div class="corp-help">${uiText(t('corp.where.dark_help'))}</div>
       </div>
-      <div class="form-group"><label>${esc(t('corp.where.step_where'))}</label>
+      <div class="form-group"><label>${uiText(t('corp.where.step_where'))}</label>
         <div class="corp-row">
           <select id="mdKind" class="input">
-            ${['org', 'workspace', 'group', 'wall', 'device'].map((k) => `<option value="${k}" ${k === kind0 ? 'selected' : ''}>${esc(t('corp.kind.' + k))}</option>`).join('')}
+            ${renderHTML(['org', 'workspace', 'group', 'wall', 'device'].map((k) => `<option value="${k}" ${k === kind0 ? 'selected' : ''}>${uiText(t('corp.kind.' + k))}</option>`).join(''))}
           </select>
           <select id="mdTarget" class="input" style="flex:1"></select>
         </div>
-        <div class="corp-help">${esc(t('corp.where.wall_note'))}</div>
+        <div class="corp-help">${uiText(t('corp.where.wall_note'))}</div>
       </div>
-      <div class="form-group"><label>${esc(t('corp.where.col_layout'))}</label>
+      <div class="form-group"><label>${uiText(t('corp.where.col_layout'))}</label>
         <select id="mdLayout" class="input" style="width:100%">
-          <option value="">${esc(t('corp.where.full_screen'))}</option>
-          ${(layouts || []).map((l) => `<option value="${esc(l.id)}" ${existing && existing.layout_id === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
+          <option value="">${uiText(t('corp.where.full_screen'))}</option>
+          ${renderHTML((layouts || []).map((l) => `<option value="${esc(l.id)}" ${existing && existing.layout_id === l.id ? 'selected' : ''}>${uiText(l.name)}</option>`).join(''))}
         </select>
       </div>
       <div id="mdPreview" class="corp-preview-box"></div>`,
-    footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button><button class="btn btn-primary" id="mdSave" disabled>${esc(t('corp.where.confirm'))}</button>`,
+    footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button><button class="btn btn-primary" id="mdSave" disabled>${uiText(t('corp.where.confirm'))}</button>`,
   });
   const kindSel = m.q('#mdKind');
   const targetSel = m.q('#mdTarget');
   const fillTargets = () => {
     const k = kindSel.value;
     let opts = [];
-    if (k === 'org') opts = [`<option value="${esc(targets.organization_id)}">${esc(targets.organization_name || t('corp.where.org'))}</option>`];
+    if (k === 'org') opts = [`<option value="${esc(targets.organization_id)}">${uiText(targets.organization_name || t('corp.where.org'))}</option>`];
     else {
       opts = targets.workspaces.map((w) => {
-        if (k === 'workspace') return `<option value="${esc(w.id)}" ${w.replicated ? 'disabled' : ''}>${esc(w.name)}${w.hq ? ' — ' + esc(t('corp.where.hq_ws')) : ''}${w.replicated ? ' — ' + esc(t('corp.where.replicated')) : ''}</option>`;
+        if (k === 'workspace') return `<option value="${esc(w.id)}" ${w.replicated ? 'disabled' : ''}>${uiText(w.name)}${renderHTML(w.hq ? ' — ' + t('corp.where.hq_ws') : '')}${renderHTML(w.replicated ? ' — ' + t('corp.where.replicated') : '')}</option>`;
         const list = k === 'group' ? w.groups : k === 'wall' ? w.walls : w.devices;
         if (!list.length) return '';
-        return `<optgroup label="${esc(w.name)}">${list.map((x) => `<option value="${esc(x.id)}" ${k === 'device' && x.wall_id ? 'disabled' : ''}>${esc(x.name)}${k === 'device' && x.wall_id ? ' — ' + esc(t('corp.where.wall_member', { name: x.wall_name || '' })) : ''}</option>`).join('')}</optgroup>`;
+        return `<optgroup label="${esc(w.name)}">${renderHTML(list.map((x) => `<option value="${esc(x.id)}" ${k === 'device' && x.wall_id ? 'disabled' : ''}>${uiText(x.name)}${renderHTML(k === 'device' && x.wall_id ? ' — ' + t('corp.where.wall_member', { name: x.wall_name || '' }) : '')}</option>`).join(''))}</optgroup>`;
       });
     }
-    targetSel.innerHTML = opts.join('') || `<option value="">${esc(t('corp.where.no_targets'))}</option>`;
+    targetSel.innerHTML = opts.join('') || `<option value="">${uiText(t('corp.where.no_targets'))}</option>`;
     targetSel.disabled = k === 'org';
     if (existing && existing.target_kind === k) targetSel.value = existing.target_id;
   };
@@ -338,9 +341,9 @@ async function mandateDialog(existing, playlists) {
       if (mine !== seq) return;
       const name = b.dark ? t('corp.badge.dark') : (playlists.find((p) => p.id === b.playlist_id) || {}).name || '';
       box.innerHTML = `
-        ${preview.screens ? `<p><strong>${esc(tn('corp.where.preview', preview.screens, { w: tn('corp.n_workspaces', preview.workspaces.length), name, k: tn('corp.n_schedules', preview.schedules || 0), j: tn('corp.n_screen_playlists', preview.screen_playlists || 0), l: tn('corp.n_store_layouts', preview.store_layouts || 0) }))}</strong></p>` : ''}
-        ${preview.workspaces.length ? `<ul class="corp-list">${preview.workspaces.map((w) => `<li>${esc(w.name)} — ${esc(tn('corp.n_screens', w.screens))}</li>`).join('')}</ul>
-          <div class="corp-help">${esc(t('corp.where.exclude_hint'))}</div>` : `<div class="corp-help">${esc(t('corp.where.no_change'))}</div>`}
+        ${preview.screens ? `<p><strong>${uiText(tn('corp.where.preview', preview.screens, { w: tn('corp.n_workspaces', preview.workspaces.length), name, k: tn('corp.n_schedules', preview.schedules || 0), j: tn('corp.n_screen_playlists', preview.screen_playlists || 0), l: tn('corp.n_store_layouts', preview.store_layouts || 0) }))}</strong></p>` : ''}
+        ${preview.workspaces.length ? `<ul class="corp-list">${renderHTML(preview.workspaces.map((w) => `<li>${uiText(w.name)} — ${uiText(tn('corp.n_screens', w.screens))}</li>`).join(''))}</ul>
+          <div class="corp-help">${uiText(t('corp.where.exclude_hint'))}</div>` : `<div class="corp-help">${uiText(t('corp.where.no_change'))}</div>`}
         ${cui.storeTriggerImpactHtml(preview.store_triggers_affected, preview.store_trigger_policy, { ackId: 'mdTrigAck' })}`;
       // Store triggers this would hide: Save waits for "I've checked these".
       impact = preview.store_triggers_affected || [];
@@ -349,7 +352,7 @@ async function mandateDialog(existing, playlists) {
       if (ack) ack.addEventListener('change', () => { save.disabled = !ack.checked; });
     } catch (e) {
       if (mine !== seq) return;
-      box.innerHTML = `<div class="corp-notice corp-notice-danger">${esc(e.message)}</div>`;
+      box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`;
     }
   };
   kindSel.addEventListener('change', () => { fillTargets(); refreshPreview(); });
@@ -374,7 +377,7 @@ async function mandateDialog(existing, playlists) {
       showToast(tn('corp.where.changed_screens', r.screens_changed || 0), 'success');
       cui.forgetCorporateCache();
       reloadTab();
-    } catch (e) { if (e.code !== 'CORPORATE_STORE_TRIGGERS_IMPACT') showToast(e.message, 'error'); }
+    } catch (e) { if (e.code !== 'CORPORATE_STORE_TRIGGERS_IMPACT') showToast(e.uiMessage || e.message, 'error'); }
   });
 }
 
@@ -391,33 +394,33 @@ function stateLabel(state) {
 async function renderSlotsTab(host) {
   host.innerHTML = `
     <div class="corp-toolbar">
-      <label class="corp-check"><input type="checkbox" id="corpOnlyProblems"> ${esc(t('corp.slots.only_problems'))}</label>
-      <button class="btn btn-secondary btn-sm" id="corpCsv">${esc(t('corp.slots.csv'))}</button>
+      <label class="corp-check"><input type="checkbox" id="corpOnlyProblems"> ${uiText(t('corp.slots.only_problems'))}</label>
+      <button class="btn btn-secondary btn-sm" id="corpCsv">${uiText(t('corp.slots.csv'))}</button>
     </div>
-    <div id="corpSlotRows">${esc(t('common.loading'))}</div>
-    <h3 class="corp-h3">${esc(t('corp.slots.airtime'))}</h3>
+    <div id="corpSlotRows">${uiText(t('common.loading'))}</div>
+    <h3 class="corp-h3">${uiText(t('corp.slots.airtime'))}</h3>
     <div class="corp-toolbar">
       <select id="corpAirRange" class="input" style="width:auto">
-        <option value="7">${esc(tn('corp.slots.last_days', 7))}</option>
-        <option value="30">${esc(tn('corp.slots.last_days', 30))}</option>
-        <option value="90">${esc(tn('corp.slots.last_days', 90))}</option>
+        <option value="7">${uiText(tn('corp.slots.last_days', 7))}</option>
+        <option value="30">${uiText(tn('corp.slots.last_days', 30))}</option>
+        <option value="90">${uiText(tn('corp.slots.last_days', 90))}</option>
       </select>
     </div>
-    <div id="corpAirtime">${esc(t('common.loading'))}</div>`;
+    <div id="corpAirtime">${uiText(t('common.loading'))}</div>`;
   const rowsEl = host.querySelector('#corpSlotRows');
   const problems = host.querySelector('#corpOnlyProblems');
   async function loadRows() {
     try {
       const { rows } = await api.getSlotReport(problems.checked);
       rowsEl.innerHTML = rows.length ? `<div class="table-wrap"><table class="corp-table">
-        <thead><tr><th>${esc(t('corp.where.col_playlist'))}</th><th>${esc(t('corp.slots.col_slot'))}</th><th>${esc(t('corp.slots.col_workspace'))}</th><th>${esc(t('corp.slots.col_state'))}</th><th>${esc(t('corp.slots.col_levels'))}</th></tr></thead>
-        <tbody>${rows.map((r) => `<tr>
-          <td>${esc(r.playlist_name)}</td><td>${esc(r.slot_name)}</td>
-          <td>${esc(r.workspace_name || '')}<div class="corp-help">${esc(t('corp.slots.screens_filled', { n: r.screens_filled, of: r.screens }))}</div></td>
-          <td>${cui.chip(stateLabel(r.state), STATE_TONE[r.state] || 'muted')}</td>
-          <td>${(r.fills || []).map((f) => `<div>${esc(cui.levelLabel(f.scope_kind, f.scope_name))}: ${esc(tn('corp.n_items', f.items))}, ${esc(cui.formatSec(f.seconds))}${f.fill_state === 'over_limit' ? ' ' + cui.chip(t('corp.slots.over'), 'emergency') : ''}${!f.published ? ' ' + cui.chip(t('corp.status.never'), 'muted') : ''}<span class="corp-help"> · ${esc(when(f.updated_at))}</span></div>`).join('') || '—'}</td>
-        </tr>`).join('')}</tbody></table></div>` : `<div class="corp-empty">${esc(problems.checked ? t('corp.slots.no_problems') : t('corp.slots.empty'))}</div>`;
-    } catch (e) { rowsEl.innerHTML = `<div class="corp-notice corp-notice-danger">${esc(e.message)}</div>`; }
+        <thead><tr><th>${uiText(t('corp.where.col_playlist'))}</th><th>${uiText(t('corp.slots.col_slot'))}</th><th>${uiText(t('corp.slots.col_workspace'))}</th><th>${uiText(t('corp.slots.col_state'))}</th><th>${uiText(t('corp.slots.col_levels'))}</th></tr></thead>
+        <tbody>${renderHTML(rows.map((r) => `<tr>
+          <td>${uiText(r.playlist_name)}</td><td>${uiText(r.slot_name)}</td>
+          <td>${uiText(r.workspace_name || '')}<div class="corp-help">${uiText(t('corp.slots.screens_filled', { n: r.screens_filled, of: r.screens }))}</div></td>
+          <td>${renderHTML(cui.chip(stateLabel(r.state), STATE_TONE[r.state] || 'muted'))}</td>
+          <td>${renderHTML((r.fills || []).map((f) => `<div>${uiText(cui.levelLabel(f.scope_kind, f.scope_name))}: ${uiText(tn('corp.n_items', f.items))}, ${uiText(cui.formatSec(f.seconds))}${renderHTML(f.fill_state === 'over_limit' ? ' ' + cui.chip(t('corp.slots.over'), 'emergency') : '')}${renderHTML(!f.published ? ' ' + cui.chip(t('corp.status.never'), 'muted') : '')}<span class="corp-help"> · ${uiText(when(f.updated_at))}</span></div>`).join('') || '—')}</td>
+        </tr>`).join(''))}</tbody></table></div>` : `<div class="corp-empty">${uiText(problems.checked ? t('corp.slots.no_problems') : t('corp.slots.empty'))}</div>`;
+    } catch (e) { rowsEl.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
   }
   problems.addEventListener('change', loadRows);
   host.querySelector('#corpCsv').addEventListener('click', async () => {
@@ -428,7 +431,7 @@ async function renderSlotsTab(host) {
       a.download = 'store-slots.csv';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   });
   const airEl = host.querySelector('#corpAirtime');
   const range = host.querySelector('#corpAirRange');
@@ -437,13 +440,13 @@ async function renderSlotsTab(host) {
     const from = to - Number(range.value) * 86400;
     try {
       const r = await api.getAirtimeReport(from, to);
-      const table = (rows, nameKey) => rows.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th></th><th>${esc(t('corp.slots.plays'))}</th><th>${esc(t('corp.slots.time'))}</th></tr></thead>
-        <tbody>${rows.map((x) => `<tr><td>${esc(x[nameKey] || '')}</td><td>${esc(String(x.plays))}</td><td>${esc(cui.formatSec(x.seconds))}</td></tr>`).join('')}</tbody></table></div>` : `<div class="corp-help">${esc(t('corp.slots.no_plays'))}</div>`;
+      const table = (rows, nameKey) => rows.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th></th><th>${uiText(t('corp.slots.plays'))}</th><th>${uiText(t('corp.slots.time'))}</th></tr></thead>
+        <tbody>${renderHTML(rows.map((x) => `<tr><td>${uiText(x[nameKey] || '')}</td><td>${uiText(String(x.plays))}</td><td>${uiText(cui.formatSec(x.seconds))}</td></tr>`).join(''))}</tbody></table></div>` : `<div class="corp-help">${uiText(t('corp.slots.no_plays'))}</div>`;
       airEl.innerHTML = `
-        <h4 class="corp-h4">${esc(t('corp.slots.by_workspace'))}</h4>${table(r.workspaces || [], 'workspace_name')}
-        <h4 class="corp-h4">${esc(t('corp.slots.by_playlist'))}</h4>${table(r.playlists || [], 'playlist_name')}
-        <div class="corp-help">${esc(t('corp.slots.airtime_note'))}</div>`;
-    } catch (e) { airEl.innerHTML = `<div class="corp-notice corp-notice-danger">${esc(e.message)}</div>`; }
+        <h4 class="corp-h4">${uiText(t('corp.slots.by_workspace'))}</h4>${renderHTML(table(r.workspaces || [], 'workspace_name'))}
+        <h4 class="corp-h4">${uiText(t('corp.slots.by_playlist'))}</h4>${renderHTML(table(r.playlists || [], 'playlist_name'))}
+        <div class="corp-help">${uiText(t('corp.slots.airtime_note'))}</div>`;
+    } catch (e) { airEl.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
   }
   range.addEventListener('change', loadAir);
   await Promise.all([loadRows(), loadAir()]);
@@ -467,41 +470,41 @@ function scopeSummary(scopes) {
 const EM_TARGET_PROBLEM = { missing: 'corp.em.target_missing', unpublished: 'corp.em.target_unpublished', empty: 'corp.em.target_empty' };
 
 async function renderEmergencyTab(host, s) {
-  if (!s.is_admin) { host.innerHTML = `<div class="corp-notice">${esc(t('corp.err.CORPORATE_EMERGENCY'))}</div>`; return; }
+  if (!s.is_admin) { host.innerHTML = `<div class="corp-notice">${uiText(t('corp.err.CORPORATE_EMERGENCY'))}</div>`; return; }
   const r = await api.getEmergencyAlerts();
   const alerts = r.triggers || [];
   host.innerHTML = `
-    ${!r.enabled_for_org ? `<div class="corp-notice corp-notice-warn">${esc(t('corp.em.off_banner'))} <a href="#/settings">${esc(t('corp.page.open_settings'))}</a></div>` : ''}
+    ${renderHTML(!r.enabled_for_org ? `<div class="corp-notice corp-notice-warn">${renderHTML(t('corp.em.off_banner'))} <a href="#/settings">${uiText(t('corp.page.open_settings'))}</a></div>` : '')}
     <div class="corp-panel">
-      <h4 class="corp-h4">${esc(t('corp.em.how_title'))}</h4>
-      <p class="corp-help">${esc(t('corp.em.how'))}</p>
+      <h4 class="corp-h4">${uiText(t('corp.em.how_title'))}</h4>
+      <p class="corp-help">${uiText(t('corp.em.how'))}</p>
     </div>
-    <div class="corp-toolbar"><button class="btn btn-primary" id="emNew">${esc(t('corp.em.new'))}</button></div>
-    ${alerts.length ? `<div class="corp-cards">${alerts.map((a) => {
+    <div class="corp-toolbar"><button class="btn btn-primary" id="emNew">${uiText(t('corp.em.new'))}</button></div>
+    ${renderHTML(alerts.length ? `<div class="corp-cards">${renderHTML(alerts.map((a) => {
       const live = a.active_activation;
       const cov = a.coverage || { total: 0, trigger_ready: 0, activate_ready: 0, online: 0 };
       return `
       <div class="corp-card ${live ? 'corp-card-live' : ''}" data-em="${esc(a.id)}">
         <div class="corp-card-head">
-          <strong class="corp-card-title">${esc(a.name)}</strong>
-          ${live ? cui.chip(t('corp.em.live_left', { left: cui.formatSec(live.remaining_sec) }), 'emergency') : a.enabled ? cui.chip(t('corp.em.active'), 'slot') : cui.chip(t('corp.em.off'), 'muted')}
+          <strong class="corp-card-title">${uiText(a.name)}</strong>
+          ${renderHTML(live ? cui.chip(t('corp.em.live_left', { left: cui.formatSec(live.remaining_sec) }), 'emergency') : a.enabled ? cui.chip(t('corp.em.active'), 'slot') : cui.chip(t('corp.em.off'), 'muted'))}
         </div>
-        ${a.target_problem ? `<div class="corp-notice corp-notice-danger">${esc(t(EM_TARGET_PROBLEM[a.target_problem] || 'corp.em.target_missing'))}</div>` : ''}
-        <div class="corp-card-meta">${esc(scopeSummary(a.scopes))} · ${esc(a.mode === 'once' ? t('corp.em.mode_once_short') : t('corp.em.mode_until_short'))}</div>
-        <div class="corp-card-meta">${esc(t('corp.em.cov_trigger', { r: cov.trigger_ready, t: cov.total }))}</div>
-        <div class="corp-card-meta">${esc(t('corp.em.cov_activate', { a: cov.activate_ready, t: cov.total, o: cov.online }))}</div>
+        ${renderHTML(a.target_problem ? `<div class="corp-notice corp-notice-danger">${uiText(t(EM_TARGET_PROBLEM[a.target_problem] || 'corp.em.target_missing'))}</div>` : '')}
+        <div class="corp-card-meta">${uiText(scopeSummary(a.scopes))} · ${uiText(a.mode === 'once' ? t('corp.em.mode_once_short') : t('corp.em.mode_until_short'))}</div>
+        <div class="corp-card-meta">${uiText(t('corp.em.cov_trigger', { r: cov.trigger_ready, t: cov.total }))}</div>
+        <div class="corp-card-meta">${uiText(t('corp.em.cov_activate', { a: cov.activate_ready, t: cov.total, o: cov.online }))}</div>
         <div class="corp-card-actions">
-          ${live ? `<button class="btn btn-danger btn-sm" data-act="end">${esc(t('corp.em.end'))}</button>`
-            : `<button class="btn btn-danger btn-sm" data-act="activate" ${r.enabled_for_org && a.enabled ? '' : 'disabled'} title="${esc(!r.enabled_for_org ? t('corp.em.off_banner') : !a.enabled ? t('corp.em.alert_off_tip') : '')}">${esc(t('corp.em.activate'))}</button>`}
-          <button class="btn btn-secondary btn-sm" data-act="coverage">${esc(t('corp.em.coverage'))}</button>
-          <button class="btn btn-secondary btn-sm" data-act="sheet">${esc(t('corp.em.sheet'))}</button>
-          <button class="btn btn-secondary btn-sm" data-act="rotate">${esc(t('corp.em.rotate'))}</button>
-          <button class="btn btn-secondary btn-sm" data-act="edit">${esc(t('common.edit'))}</button>
-          <button class="btn btn-secondary btn-sm" data-act="delete">${esc(t('common.delete'))}</button>
+          ${renderHTML(live ? `<button class="btn btn-danger btn-sm" data-act="end">${uiText(t('corp.em.end'))}</button>`
+            : `<button class="btn btn-danger btn-sm" data-act="activate" ${r.enabled_for_org && a.enabled ? '' : 'disabled'} title="${esc(!r.enabled_for_org ? t('corp.em.off_banner') : !a.enabled ? t('corp.em.alert_off_tip') : '')}">${uiText(t('corp.em.activate'))}</button>`)}
+          <button class="btn btn-secondary btn-sm" data-act="coverage">${uiText(t('corp.em.coverage'))}</button>
+          <button class="btn btn-secondary btn-sm" data-act="sheet">${uiText(t('corp.em.sheet'))}</button>
+          <button class="btn btn-secondary btn-sm" data-act="rotate">${uiText(t('corp.em.rotate'))}</button>
+          <button class="btn btn-secondary btn-sm" data-act="edit">${uiText(t('common.edit'))}</button>
+          <button class="btn btn-secondary btn-sm" data-act="delete">${uiText(t('common.delete'))}</button>
         </div>
         <div class="corp-em-detail" hidden></div>
       </div>`;
-    }).join('')}</div>` : `<div class="corp-empty">${esc(t('corp.em.empty'))}</div>`}`;
+    }).join(''))}</div>` : `<div class="corp-empty">${uiText(t('corp.em.empty'))}</div>`)}`;
 
   host.querySelector('#emNew').addEventListener('click', () => emergencyEditor(null));
   host.querySelectorAll('[data-em]').forEach((card) => {
@@ -528,7 +531,7 @@ async function renderEmergencyTab(host, s) {
           if (!await cui.ask({ title: t('common.delete'), text: t('corp.em.delete_confirm', { name: a.name }), danger: true, confirmLabel: t('common.delete') })) return;
           await api.deleteEmergencyAlert(a.id); showToast(t('corp.em.deleted'), 'success'); reloadTab();
         }
-      } catch (e) { showToast(e.message, 'error'); }
+      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
     }));
   });
   // "Live now" counts down without a reload, and the tab refreshes when an alert ends on its own.
@@ -542,7 +545,7 @@ async function renderEmergencyTab(host, s) {
         if (!a || !a.active_activation) return;
         const left = a.active_activation.remaining_sec - gone;
         const c = card.querySelector('.corp-chip-emergency');
-        if (c) c.textContent = t('corp.em.live_left', { left: cui.formatSec(Math.max(0, left)) });
+        if (c) bindText(c, 'corp.em.live_left', { left: cui.formatSec(Math.max(0, left)) });
         if (left <= 0) ended = true;
       });
       if (ended) { stopLiveTimer(); setTimeout(reloadTab, 1500); }
@@ -559,11 +562,11 @@ function coverageHtml(c) {
   }
   const n = new Set((c.unreachable || []).map((u) => u.device_id)).size;
   return `
-    <div class="corp-help"><strong>${esc(tn('corp.em.cant_receive', n))}</strong></div>
-    ${[...groups.entries()].map(([r, list]) => `
-      <details class="corp-details"><summary>${esc(reasonText(r))} (${list.length})</summary>
-        <ul class="corp-list">${list.map((u) => `<li>${esc(u.name || '')} <span class="corp-help">${esc(u.workspace || '')}</span></li>`).join('')}</ul>
-      </details>`).join('')}`;
+    <div class="corp-help"><strong>${uiText(tn('corp.em.cant_receive', n))}</strong></div>
+    ${renderHTML([...groups.entries()].map(([r, list]) => `
+      <details class="corp-details"><summary>${uiText(reasonText(r))} (${renderHTML(list.length)})</summary>
+        <ul class="corp-list">${renderHTML(list.map((u) => `<li>${uiText(u.name || '')} <span class="corp-help">${uiText(u.workspace || '')}</span></li>`).join(''))}</ul>
+      </details>`).join(''))}`;
 }
 
 function installerSheetDialog(a, sheet) {
@@ -576,12 +579,12 @@ function installerSheetDialog(a, sheet) {
   const text = lines.join('\n');
   const m = cui.openModal({
     title: t('corp.em.sheet'), wide: true,
-    body: `<p class="corp-help">${esc(t('corp.em.sheet_help'))}</p>
-      <div class="corp-help">${esc(t('corp.em.codes', { fire: sheet.trigger.match_token || '', clear: sheet.trigger.clear_token || '—' }))}</div>
-      <div class="table-wrap"><table class="corp-table"><thead><tr><th>${esc(t('corp.slots.col_workspace'))}</th><th>${esc(t('corp.em.col_screen'))}</th><th>${esc(t('corp.em.col_ip'))}</th><th>${esc(t('corp.em.col_ports'))}</th><th>${esc(t('corp.em.col_secret'))}</th></tr></thead>
-      <tbody>${(sheet.screens || []).map((s) => `<tr><td>${esc(s.workspace || '')}</td><td>${esc(s.screen || '')}</td><td>${esc(s.lan_ip || '?')}</td><td>${esc(`${s.accept_http ? 'HTTP ' + s.http_port : ''}${s.accept_http && s.accept_udp ? ' · ' : ''}${s.accept_udp ? 'UDP ' + s.udp_port : ''}` || t('corp.em.listener_off_short'))}</td><td><code>${esc(s.secret || '—')}</code></td></tr>`).join('')}</tbody></table></div>
-      <textarea class="input corp-code" readonly>${esc(text)}</textarea>`,
-    footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.close'))}</button><button class="btn btn-primary" id="emSheetDl">${esc(t('corp.em.download'))}</button>`,
+    body: `<p class="corp-help">${uiText(t('corp.em.sheet_help'))}</p>
+      <div class="corp-help">${uiText(t('corp.em.codes', { fire: sheet.trigger.match_token || '', clear: sheet.trigger.clear_token || '—' }))}</div>
+      <div class="table-wrap"><table class="corp-table"><thead><tr><th>${uiText(t('corp.slots.col_workspace'))}</th><th>${uiText(t('corp.em.col_screen'))}</th><th>${uiText(t('corp.em.col_ip'))}</th><th>${uiText(t('corp.em.col_ports'))}</th><th>${uiText(t('corp.em.col_secret'))}</th></tr></thead>
+      <tbody>${renderHTML((sheet.screens || []).map((s) => `<tr><td>${uiText(s.workspace || '')}</td><td>${uiText(s.screen || '')}</td><td>${uiText(s.lan_ip || '?')}</td><td>${uiText(`${s.accept_http ? 'HTTP ' + s.http_port : ''}${s.accept_http && s.accept_udp ? ' · ' : ''}${s.accept_udp ? 'UDP ' + s.udp_port : ''}` || t('corp.em.listener_off_short'))}</td><td><code>${uiText(s.secret || '—')}</code></td></tr>`).join(''))}</tbody></table></div>
+      <textarea class="input corp-code" readonly>${uiText(text)}</textarea>`,
+    footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.close'))}</button><button class="btn btn-primary" id="emSheetDl">${uiText(t('corp.em.download'))}</button>`,
   });
   m.q('#emSheetDl').addEventListener('click', () => {
     const a2 = document.createElement('a');
@@ -597,14 +600,14 @@ async function activateDialog(a) {
   const m = cui.openModal({
     title: t('corp.em.activate'),
     body: `
-      <div class="form-group"><label for="emDur">${esc(t('corp.em.duration'))}</label>
-        <select id="emDur" class="input">${[1, 2, 5, 10, 15, 30, 45, 60].map((n) => `<option value="${n * 60}" ${n === 10 ? 'selected' : ''}>${esc(tn('corp.minutes', n))}</option>`).join('')}</select></div>
-      <div class="form-group"><label for="emNote">${esc(t('corp.em.note'))}</label><input id="emNote" class="input" maxlength="200" style="width:100%"></div>
+      <div class="form-group"><label for="emDur">${uiText(t('corp.em.duration'))}</label>
+        <select id="emDur" class="input">${renderHTML([1, 2, 5, 10, 15, 30, 45, 60].map((n) => `<option value="${n * 60}" ${n === 10 ? 'selected' : ''}>${uiText(tn('corp.minutes', n))}</option>`).join(''))}</select></div>
+      <div class="form-group"><label for="emNote">${uiText(t('corp.em.note'))}</label><input id="emNote" class="input" maxlength="200" style="width:100%"></div>
       <p class="corp-explain" id="emAsk"></p>`,
-    footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button><button class="btn btn-danger" id="emGo">${esc(t('corp.em.activate'))}</button>`,
+    footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button><button class="btn btn-danger" id="emGo">${uiText(t('corp.em.activate'))}</button>`,
   });
   const dur = m.q('#emDur');
-  const say = () => { m.q('#emAsk').textContent = tn('corp.em.activate_confirm', cov.activate_ready, { name: a.name, duration: tn('corp.minutes', Number(dur.value) / 60) }); };
+  const say = () => { bindText(m.q('#emAsk'), 'corp.em.activate_confirm', { name: a.name, duration: tn('corp.minutes', Number(dur.value) / 60) }, cov.activate_ready); };
   dur.addEventListener('change', say);
   say();
   m.q('#emGo').addEventListener('click', async () => {
@@ -613,7 +616,7 @@ async function activateDialog(a) {
       m.close();
       showToast(t('corp.em.activated', { online: r.reached.online, offline: r.reached.offline_will_get_on_reconnect, not: (r.reached.not_eligible || []).length }), 'success');
       reloadTab();
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   });
 }
 
@@ -621,49 +624,49 @@ async function emergencyEditor(a) {
   let playlists = [];
   let targets = null;
   try { [playlists, targets] = await Promise.all([api.getPlaylists(), api.getCorporateTargets()]); }
-  catch (e) { showToast(e.message, 'error'); return; }
+  catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
   const published = playlists.filter((p) => p.published_snapshot || p.status === 'published');
   const scopes = new Set((a && a.scopes || []).map((x) => `${x.scope_kind}:${x.scope_id}`));
   const mode0 = a ? a.mode : 'until_cleared';
-  const scopeBox = (kind, id, label, sub = '') => `<label class="corp-check"><input type="checkbox" data-scope="${esc(kind)}:${esc(id)}" ${scopes.has(`${kind}:${id}`) ? 'checked' : ''}> ${esc(label)}${sub ? ` <span class="corp-help">${esc(sub)}</span>` : ''}</label>`;
+  const scopeBox = (kind, id, label, sub = '') => `<label class="corp-check"><input type="checkbox" data-scope="${esc(kind)}:${esc(id)}" ${scopes.has(`${kind}:${id}`) ? 'checked' : ''}> ${uiText(label)}${renderHTML(sub ? ` <span class="corp-help">${uiText(sub)}</span>` : '')}</label>`;
   const m = cui.openModal({
     title: a ? t('corp.em.edit', { name: a.name }) : t('corp.em.new'), wide: true,
     body: `
       <div class="corp-grid2">
-        <div class="form-group"><label for="emName">${esc(t('corp.form.name'))}</label><input id="emName" class="input" maxlength="80" value="${esc(a ? a.name : '')}"></div>
-        <div class="form-group"><label for="emPl">${esc(t('corp.em.playlist'))}</label>
-          ${published.length ? `<select id="emPl" class="input">${published.map((p) => `<option value="${esc(p.id)}" ${a && a.target_ref === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>`
-            : `<div class="corp-help">${esc(t('corp.em.no_playlist'))}</div>`}
-          <div class="corp-help">${esc(t('corp.em.playlist_help'))}</div></div>
-        <div class="form-group"><label for="emMatch">${esc(t('corp.em.match'))}</label><input id="emMatch" class="input" maxlength="64" value="${esc(a ? a.match_token || '' : '')}" autocomplete="off"></div>
-        <div class="form-group"><label for="emClear">${esc(t('corp.em.clear_token'))}</label><input id="emClear" class="input" maxlength="64" value="${esc(a ? a.clear_token || '' : '')}" autocomplete="off"></div>
-        <div class="form-group"><label>${esc(t('corp.em.sources'))}</label>
+        <div class="form-group"><label for="emName">${uiText(t('corp.form.name'))}</label><input id="emName" class="input" maxlength="80" value="${esc(a ? a.name : '')}"></div>
+        <div class="form-group"><label for="emPl">${uiText(t('corp.em.playlist'))}</label>
+          ${renderHTML(published.length ? `<select id="emPl" class="input">${renderHTML(published.map((p) => `<option value="${esc(p.id)}" ${a && a.target_ref === p.id ? 'selected' : ''}>${uiText(p.name)}</option>`).join(''))}</select>`
+            : `<div class="corp-help">${uiText(t('corp.em.no_playlist'))}</div>`)}
+          <div class="corp-help">${uiText(t('corp.em.playlist_help'))}</div></div>
+        <div class="form-group"><label for="emMatch">${uiText(t('corp.em.match'))}</label><input id="emMatch" class="input" maxlength="64" value="${esc(a ? a.match_token || '' : '')}" autocomplete="off"></div>
+        <div class="form-group"><label for="emClear">${uiText(t('corp.em.clear_token'))}</label><input id="emClear" class="input" maxlength="64" value="${esc(a ? a.clear_token || '' : '')}" autocomplete="off"></div>
+        <div class="form-group"><label>${uiText(t('corp.em.sources'))}</label>
           <label class="corp-check"><input type="checkbox" id="emHttp" ${!a || a.source_http ? 'checked' : ''}> HTTP</label>
           <label class="corp-check"><input type="checkbox" id="emUdp" ${!a || a.source_udp ? 'checked' : ''}> UDP</label></div>
-        <div class="form-group"><label for="emMode">${esc(t('corp.em.mode'))}</label>
+        <div class="form-group"><label for="emMode">${uiText(t('corp.em.mode'))}</label>
           <select id="emMode" class="input">
-            <option value="until_cleared" ${mode0 === 'until_cleared' ? 'selected' : ''}>${esc(t('corp.em.mode_until_short'))}</option>
-            <option value="once" ${mode0 === 'once' ? 'selected' : ''}>${esc(t('corp.em.mode_once_short'))}</option>
+            <option value="until_cleared" ${mode0 === 'until_cleared' ? 'selected' : ''}>${uiText(t('corp.em.mode_until_short'))}</option>
+            <option value="once" ${mode0 === 'once' ? 'selected' : ''}>${uiText(t('corp.em.mode_once_short'))}</option>
           </select>
-          <div class="corp-row" id="emLeaseRow"><input id="emLease" class="input" type="number" min="5" max="300" value="${esc(String(a && a.lease_sec ? a.lease_sec : 120))}" style="width:90px"> <span class="corp-help">${esc(t('corp.em.lease_help'))}</span></div>
-          <div class="corp-row" id="emMaxRow"><input id="emMax" class="input" type="number" min="60" max="3600" value="${esc(String(a && a.max_duration_sec ? a.max_duration_sec : 600))}" style="width:90px"> <span class="corp-help">${esc(t('corp.em.max_help'))}</span></div>
+          <div class="corp-row" id="emLeaseRow"><input id="emLease" class="input" type="number" min="5" max="300" value="${esc(String(a && a.lease_sec ? a.lease_sec : 120))}" style="width:90px"> <span class="corp-help">${uiText(t('corp.em.lease_help'))}</span></div>
+          <div class="corp-row" id="emMaxRow"><input id="emMax" class="input" type="number" min="60" max="3600" value="${esc(String(a && a.max_duration_sec ? a.max_duration_sec : 600))}" style="width:90px"> <span class="corp-help">${uiText(t('corp.em.max_help'))}</span></div>
         </div>
-        <div class="form-group"><label for="emPri">${esc(t('corp.em.priority'))}</label><input id="emPri" class="input" type="number" min="0" max="1000" value="${esc(String(a ? a.priority || 0 : 0))}">
-          <div class="corp-help">${esc(t('corp.em.priority_help'))}</div></div>
-        <div class="form-group"><label class="corp-check"><input type="checkbox" id="emEnabled" ${!a || a.enabled ? 'checked' : ''}> ${esc(t('corp.em.enabled'))}</label></div>
+        <div class="form-group"><label for="emPri">${uiText(t('corp.em.priority'))}</label><input id="emPri" class="input" type="number" min="0" max="1000" value="${esc(String(a ? a.priority || 0 : 0))}">
+          <div class="corp-help">${uiText(t('corp.em.priority_help'))}</div></div>
+        <div class="form-group"><label class="corp-check"><input type="checkbox" id="emEnabled" ${!a || a.enabled ? 'checked' : ''}> ${uiText(t('corp.em.enabled'))}</label></div>
       </div>
-      <div class="form-group"><label>${esc(t('corp.em.where'))}</label>
+      <div class="form-group"><label>${uiText(t('corp.em.where'))}</label>
         <div class="corp-scope-box">
-          ${scopeBox('org', targets.organization_id, t('corp.where.org'))}
-          ${targets.workspaces.map((w) => `
-            <details class="corp-details"><summary>${esc(w.name)}</summary>
-              ${scopeBox('workspace', w.id, t('corp.level.workspace', { name: w.name }))}
-              ${w.groups.map((g) => scopeBox('group', g.id, t('corp.level.group', { name: g.name }))).join('')}
-              ${w.devices.map((d) => scopeBox('device', d.id, d.name, d.wall_name ? t('corp.where.wall_member', { name: d.wall_name }) : '')).join('')}
-            </details>`).join('')}
+          ${renderHTML(scopeBox('org', targets.organization_id, t('corp.where.org')))}
+          ${renderHTML(targets.workspaces.map((w) => `
+            <details class="corp-details"><summary>${uiText(w.name)}</summary>
+              ${renderHTML(scopeBox('workspace', w.id, t('corp.level.workspace', { name: w.name })))}
+              ${renderHTML(w.groups.map((g) => scopeBox('group', g.id, t('corp.level.group', { name: g.name }))).join(''))}
+              ${renderHTML(w.devices.map((d) => scopeBox('device', d.id, d.name, d.wall_name ? t('corp.where.wall_member', { name: d.wall_name }) : '')).join(''))}
+            </details>`).join(''))}
         </div>
       </div>`,
-    footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button><button class="btn btn-primary" id="emSave" ${published.length ? '' : 'disabled'}>${esc(t('common.save'))}</button>`,
+    footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button><button class="btn btn-primary" id="emSave" ${published.length ? '' : 'disabled'}>${uiText(t('common.save'))}</button>`,
   });
   const mode = m.q('#emMode');
   const syncMode = () => {
@@ -689,7 +692,7 @@ async function emergencyEditor(a) {
     try {
       if (a) await api.updateEmergencyAlert(a.id, body); else await api.createEmergencyAlert(body);
       m.close(); showToast(t('corp.em.saved'), 'success'); reloadTab();
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   });
 }
 
@@ -698,12 +701,12 @@ async function emergencyEditor(a) {
 async function renderStore(container, s) {
   let data;
   try { data = await api.getCorporateStore(); } catch (e) {
-    container.innerHTML = pageShell(t('nav.head_office'), `<div class="corp-notice corp-notice-danger">${esc(e.message)}</div>`);
+    container.innerHTML = pageShell(t('nav.head_office'), `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`);
     return;
   }
   const mandates = data.mandates || [];
   if (!mandates.length) {
-    container.innerHTML = pageShell(t('nav.head_office'), `<div class="corp-empty">${esc(t('corp.store.none'))}</div>`);
+    container.innerHTML = pageShell(t('nav.head_office'), `<div class="corp-empty">${uiText(t('corp.store.none'))}</div>`);
     return;
   }
   const notices = [];
@@ -728,21 +731,21 @@ async function renderStore(container, s) {
     }
   }
   container.innerHTML = pageShell(t('nav.head_office'), `
-    ${notices.map((n) => `<div class="corp-notice">${esc(n)}</div>`).join('')}
-    ${slotNotices.map((n) => `<div class="corp-notice corp-notice-danger">${esc(n.text)} <a class="btn btn-secondary btn-sm" href="#/playlists/${esc(n.fill.fill_playlist_id)}">${esc(t('corp.store.fix'))}</a></div>`).join('')}
-    <h3 class="corp-h3">${esc(t('corp.store.heading'))}</h3>
-    ${mandates.map((p) => `
+    ${renderHTML(notices.map((n) => `<div class="corp-notice">${uiText(n)}</div>`).join(''))}
+    ${renderHTML(slotNotices.map((n) => `<div class="corp-notice corp-notice-danger">${uiText(n.text)} <a class="btn btn-secondary btn-sm" href="#/playlists/${esc(n.fill.fill_playlist_id)}">${uiText(t('corp.store.fix'))}</a></div>`).join(''))}
+    <h3 class="corp-h3">${uiText(t('corp.store.heading'))}</h3>
+    ${renderHTML(mandates.map((p) => `
       <div class="corp-card">
         <div class="corp-card-head">
-          <strong class="corp-card-title">${esc(p.dark ? t('corp.badge.dark') : p.playlist_name || '')}</strong>
-          ${cui.chip(t('corp.store.set_by'), 'hq', t('corp.tip.locked'), { lock: true })}
+          <strong class="corp-card-title">${uiText(p.dark ? t('corp.badge.dark') : p.playlist_name || '')}</strong>
+          ${renderHTML(cui.chip(t('corp.store.set_by'), 'hq', t('corp.tip.locked'), { lock: true }))}
         </div>
-        <div class="corp-card-meta">${esc(tn('corp.store.on_screens', p.screens))}</div>
-        ${(p.items || []).length ? `<div class="corp-strip">${p.items.map((it) => `<span class="corp-strip-item" title="${esc(it.filename || '')}">${cui.LOCK_SVG}${esc(it.filename || t('common.unknown'))}</span>`).join('')}</div>` : ''}
-      </div>`).join('')}
-    <h3 class="corp-h3">${esc(t('corp.store.slots'))}</h3>
-    ${(data.slots || []).length ? (data.slots || []).map((sl) => slotCardHtml(sl, data.workspace_id)).join('') : `<div class="corp-empty">${esc(t('corp.store.no_slots'))}</div>`}
-    <p class="corp-help">${esc(t('corp.store.can_still'))}</p>`);
+        <div class="corp-card-meta">${uiText(tn('corp.store.on_screens', p.screens))}</div>
+        ${renderHTML((p.items || []).length ? `<div class="corp-strip">${renderHTML(p.items.map((it) => `<span class="corp-strip-item" title="${esc(it.filename || '')}">${renderHTML(cui.LOCK_SVG)}${uiText(it.filename || t('common.unknown'))}</span>`).join(''))}</div>` : '')}
+      </div>`).join(''))}
+    <h3 class="corp-h3">${uiText(t('corp.store.slots'))}</h3>
+    ${renderHTML((data.slots || []).length ? (data.slots || []).map((sl) => slotCardHtml(sl, data.workspace_id)).join('') : `<div class="corp-empty">${uiText(t('corp.store.no_slots'))}</div>`)}
+    <p class="corp-help">${uiText(t('corp.store.can_still'))}</p>`);
   hydrateAuthImages(container);
 
   container.querySelectorAll('[data-fill-slot]').forEach((b) => b.addEventListener('click', () => {
@@ -758,7 +761,7 @@ async function renderStore(container, s) {
     });
     if (!ok) return;
     try { await api.deleteFill(f.id); showToast(t('corp.slot.level_removed'), 'success'); render(container); }
-    catch (e) { showToast(e.message, 'error'); }
+    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   }));
 }
 
@@ -768,22 +771,22 @@ function slotCardHtml(sl, wsId) {
   return `
     <div class="corp-card corp-slot-card">
       <div class="corp-card-head">
-        <strong class="corp-card-title">${esc(t('corp.store.slot_title', { slot: sl.name }))}</strong>
-        ${cui.chip(t('corp.badge.your_slot'), 'slot', t('corp.tip.your_slot', { slot: sl.name, playlist: sl.playlist_name || '' }))}
+        <strong class="corp-card-title">${uiText(t('corp.store.slot_title', { slot: sl.name }))}</strong>
+        ${renderHTML(cui.chip(t('corp.badge.your_slot'), 'slot', t('corp.tip.your_slot', { slot: sl.name, playlist: sl.playlist_name || '' })))}
       </div>
-      <div class="corp-card-meta">${esc(t('corp.store.in_playlist', { playlist: sl.playlist_name || '' }))} · ${esc(cui.limitsText(lim))}${lim.allow_video === 0 || lim.allow_video === false ? ' · ' + esc(t('corp.slot.no_video')) : ''}${lim.allow_widgets === 0 || lim.allow_widgets === false ? ' · ' + esc(t('corp.slot.no_widgets')) : ''}</div>
-      ${sl.help_text ? `<div class="corp-hq-note">${esc(t('corp.store.hq_says'))} ${esc(sl.help_text)}</div>` : ''}
-      ${fills.length ? `<ul class="corp-levels">${fills.map((f) => `
+      <div class="corp-card-meta">${uiText(t('corp.store.in_playlist', { playlist: sl.playlist_name || '' }))} · ${uiText(cui.limitsText(lim))}${renderHTML(lim.allow_video === 0 || lim.allow_video === false ? ' · ' + t('corp.slot.no_video') : '')}${renderHTML(lim.allow_widgets === 0 || lim.allow_widgets === false ? ' · ' + t('corp.slot.no_widgets') : '')}</div>
+      ${renderHTML(sl.help_text ? `<div class="corp-hq-note">${uiText(t('corp.store.hq_says'))} ${uiText(sl.help_text)}</div>` : '')}
+      ${renderHTML(fills.length ? `<ul class="corp-levels">${renderHTML(fills.map((f) => `
         <li>
-          <span class="corp-level-name">${esc(cui.levelLabel(f.scope_kind, f.scope_name))}</span>
-          <span class="corp-help">${esc(tn('corp.n_items', f.items))} · ${esc(cui.formatSec(f.seconds))} · ${esc(tn('corp.n_screens', f.screens))}</span>
-          ${f.fill_state === 'over_limit' ? cui.chip(t('corp.slots.over'), 'emergency', t('corp.slot.over_limit')) : ''}
-          ${f.status === 'draft' ? cui.chip(f.published ? t('corp.status.changes') : t('corp.status.never'), 'muted') : ''}
-          <a class="btn btn-secondary btn-sm" href="#/playlists/${esc(f.fill_playlist_id)}">${esc(t('common.edit'))}</a>
-          ${f.scope_kind !== 'workspace' || f.workspace_id === wsId ? `<button class="btn btn-secondary btn-sm" data-unfill="${esc(f.id)}" data-slot="${esc(sl.id)}">${esc(t('corp.slot.remove_level'))}</button>` : ''}
-        </li>`).join('')}</ul>`
-        : `<div class="corp-help">${esc(sl.fallback ? t('corp.store.empty_slot_fallback', { fallback: sl.fallback.name || '' }) : t('corp.store.empty_slot_skip'))}</div>`}
-      <div class="corp-card-actions"><button class="btn btn-primary btn-sm" data-fill-slot="${esc(sl.id)}">${esc(fills.length ? t('corp.slot.add_level') : t('corp.slot.fill'))}</button></div>
+          <span class="corp-level-name">${uiText(cui.levelLabel(f.scope_kind, f.scope_name))}</span>
+          <span class="corp-help">${uiText(tn('corp.n_items', f.items))} · ${uiText(cui.formatSec(f.seconds))} · ${uiText(tn('corp.n_screens', f.screens))}</span>
+          ${renderHTML(f.fill_state === 'over_limit' ? cui.chip(t('corp.slots.over'), 'emergency', t('corp.slot.over_limit')) : '')}
+          ${renderHTML(f.status === 'draft' ? cui.chip(f.published ? t('corp.status.changes') : t('corp.status.never'), 'muted') : '')}
+          <a class="btn btn-secondary btn-sm" href="#/playlists/${esc(f.fill_playlist_id)}">${uiText(t('common.edit'))}</a>
+          ${renderHTML(f.scope_kind !== 'workspace' || f.workspace_id === wsId ? `<button class="btn btn-secondary btn-sm" data-unfill="${esc(f.id)}" data-slot="${esc(sl.id)}">${uiText(t('corp.slot.remove_level'))}</button>` : '')}
+        </li>`).join(''))}</ul>`
+        : `<div class="corp-help">${uiText(sl.fallback ? t('corp.store.empty_slot_fallback', { fallback: sl.fallback.name || '' }) : t('corp.store.empty_slot_skip'))}</div>`)}
+      <div class="corp-card-actions"><button class="btn btn-primary btn-sm" data-fill-slot="${esc(sl.id)}">${uiText(fills.length ? t('corp.slot.add_level') : t('corp.slot.fill'))}</button></div>
     </div>`;
 }
 
@@ -793,25 +796,25 @@ async function fillLevelDialog(sl, wsId) {
   let walls = [];
   let devices = [];
   try { [groups, walls, devices] = await Promise.all([api.getGroups(), api.getWalls().catch(() => []), api.getDevices()]); }
-  catch (e) { showToast(e.message, 'error'); return; }
+  catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
   const cov = await cui.workspaceCoverage();
   const taken = new Set((sl.fills || []).map((f) => `${f.scope_kind}:${f.scope_id}`));
   const ws = (() => { try { const me = JSON.parse(localStorage.getItem('user') || 'null'); return (me.accessible_workspaces || []).find((w) => w.id === wsId) || { name: '' }; } catch { return { name: '' }; } })();
-  const opt = (kind, id, label) => `<option value="${esc(kind)}:${esc(id)}" ${taken.has(`${kind}:${id}`) ? 'disabled' : ''}>${esc(label)}${taken.has(`${kind}:${id}`) ? ' — ' + esc(t('corp.slot.has_content')) : ''}</option>`;
+  const opt = (kind, id, label) => `<option value="${esc(kind)}:${esc(id)}" ${taken.has(`${kind}:${id}`) ? 'disabled' : ''}>${uiText(label)}${renderHTML(taken.has(`${kind}:${id}`) ? ' — ' + t('corp.slot.has_content') : '')}</option>`;
   const mandatedDevices = devices.filter((d) => cov.devices[d.id] && !d.wall_id);
   const m = cui.openModal({
     title: t('corp.slot.fill_title', { slot: sl.name }),
     body: `
-      <div class="form-group"><label for="flLevel">${esc(t('corp.slot.which_level'))}</label>
+      <div class="form-group"><label for="flLevel">${uiText(t('corp.slot.which_level'))}</label>
         <select id="flLevel" class="input" style="width:100%">
-          ${opt('workspace', wsId, t('corp.level.workspace', { name: ws.name || '' }))}
-          ${groups.length ? `<optgroup label="${esc(t('corp.kind.group'))}">${groups.map((g) => opt('group', g.id, t('corp.level.group', { name: g.name }))).join('')}</optgroup>` : ''}
-          ${walls.length ? `<optgroup label="${esc(t('corp.kind.wall'))}">${walls.map((w) => opt('wall', w.id, t('corp.level.wall', { name: w.name }))).join('')}</optgroup>` : ''}
-          ${mandatedDevices.length ? `<optgroup label="${esc(t('corp.kind.device'))}">${mandatedDevices.map((d) => opt('device', d.id, t('corp.level.named_screen', { name: d.name }))).join('')}</optgroup>` : ''}
+          ${renderHTML(opt('workspace', wsId, t('corp.level.workspace', { name: ws.name || '' })))}
+          ${renderHTML(groups.length ? `<optgroup label="${esc(t('corp.kind.group'))}">${renderHTML(groups.map((g) => opt('group', g.id, t('corp.level.group', { name: g.name }))).join(''))}</optgroup>` : '')}
+          ${renderHTML(walls.length ? `<optgroup label="${esc(t('corp.kind.wall'))}">${renderHTML(walls.map((w) => opt('wall', w.id, t('corp.level.wall', { name: w.name }))).join(''))}</optgroup>` : '')}
+          ${renderHTML(mandatedDevices.length ? `<optgroup label="${esc(t('corp.kind.device'))}">${renderHTML(mandatedDevices.map((d) => opt('device', d.id, t('corp.level.named_screen', { name: d.name }))).join(''))}</optgroup>` : '')}
         </select>
-        <div class="corp-help">${esc(t('corp.slot.level_help'))}</div>
+        <div class="corp-help">${uiText(t('corp.slot.level_help'))}</div>
       </div>`,
-    footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button><button class="btn btn-primary" id="flGo">${esc(t('corp.slot.open_editor'))}</button>`,
+    footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button><button class="btn btn-primary" id="flGo">${uiText(t('corp.slot.open_editor'))}</button>`,
   });
   m.q('#flGo').addEventListener('click', async () => {
     const [scope_kind, ...rest] = m.q('#flLevel').value.split(':');
@@ -822,7 +825,7 @@ async function fillLevelDialog(sl, wsId) {
     } catch (e) {
       // Already has content at that level: open it rather than leave the person at an error.
       if (e.code === 'CORPORATE_FILL_EXISTS' && e.body && e.body.fill) { m.close(); window.location.hash = `#/playlists/${e.body.fill.fill_playlist_id}`; return; }
-      showToast(e.message, 'error');
+      showToast(e.uiMessage || e.message, 'error');
     }
   });
 }

@@ -20,9 +20,9 @@ const { db } = require('../db/database');
 const WS = 'ws-search';
 let server, base;
 
-function get(qs) {
+function get(qs, language) {
   return new Promise((resolve, reject) => {
-    http.get(`${base}/${qs}`, (res) => {
+    http.get(`${base}/${qs}`, { headers: language ? {'Accept-Language':language} : {} }, (res) => {
       let body = '';
       res.on('data', (c) => (body += c));
       res.on('end', () => resolve(JSON.parse(body)));
@@ -94,4 +94,23 @@ test('#tag search matches content.tags JSON', async () => {
   db.prepare("UPDATE content SET tags = ? WHERE filename = 'alpha-logo.png'").run(JSON.stringify(['promo']));
   const r = await get('?q=' + encodeURIComponent('#promo'));
   assert.deepEqual(names(r), ['alpha-logo.png']);
+});
+
+test('Turkish filename search distinguishes dotted/dotless I and locale sorting happens before pagination', async()=>{
+ const inserted=[];
+ try {
+  for(const name of ['fil-tr-locale-İZMİR.png','fil-tr-locale-IŞIK.png','fil-tr-locale-Çınar.png','fil-tr-locale-Cihaz 10.png','fil-tr-locale-Cihaz 2.png']){
+   const id=crypto.randomBytes(6).toString('hex');inserted.push(id);
+   db.prepare('INSERT INTO content(id,filename,mime_type,file_size) VALUES(?,?,?,?)').run(id,name,'image/png',1);
+  }
+  assert.deepEqual(names(await get('?q='+encodeURIComponent('fil-tr-locale-izmir'),'tr-TR')),['fil-tr-locale-İZMİR.png']);
+  assert.deepEqual(names(await get('?q='+encodeURIComponent('fil-tr-locale-ışık'),'tr-TR')),['fil-tr-locale-IŞIK.png']);
+  assert.deepEqual(names(await get('?q='+encodeURIComponent('fil-tr-locale-işik'),'tr-TR')),[]);
+  const all=await get('?q=fil-tr-locale-&sort=name','tr-TR');
+  const expected=['fil-tr-locale-Cihaz 2.png','fil-tr-locale-Cihaz 10.png','fil-tr-locale-Çınar.png','fil-tr-locale-IŞIK.png','fil-tr-locale-İZMİR.png'];
+  assert.deepEqual(names(all),expected);
+  assert.deepEqual(names(await get('?q=fil-tr-locale-&sort=name&limit=2&offset=2','tr-TR')),expected.slice(2,4));
+  assert.deepEqual(names(await get('?q=fil-tr-locale-&sort=name_desc&limit=2','tr-TR')),expected.slice().reverse().slice(0,2));
+  assert.equal(db.prepare('SELECT filename FROM content WHERE id=?').get(inserted[0]).filename,'fil-tr-locale-İZMİR.png','stored user names unchanged');
+ }finally{for(const id of inserted)db.prepare('DELETE FROM content WHERE id=?').run(id)}
 });

@@ -1,3 +1,5 @@
+import { uiText, renderHTML, attributeBinding } from '../lib/i18n-bindings.js';
+
 /*
  * A video wall as the audience sees it: every panel's latest screenshot laid out where the panel
  * hangs on the wall canvas, so a wall can be looked at the way a single screen is — on its page and
@@ -9,7 +11,7 @@
  * (by -rotation), exactly as the panel's own mount does in the room.
  */
 import { esc, screenshotUrl } from '../utils.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { on, off, requestScreenshot } from '../socket.js';
 
 const BASE_W = 320, BASE_H = 180;
@@ -45,14 +47,14 @@ export function mountWallLive(container, { wall, devices = [], live = false, ref
   const rects = wallPanelRects(wall);
   // No panels placed yet: say so, rather than drawing an empty black box that reads as "broken".
   if (!rects.length) {
-    container.innerHTML = `<div class="wall-live-empty">${esc(t('wall.live_empty'))}</div>`;
+    container.innerHTML = `<div class="wall-live-empty">${uiText(t('wall.live_empty'))}</div>`;
     return { refresh() {}, destroy() {} };
   }
   const b = bounds(rects);
   const byId = new Map(devices.map((d) => [d.id, d]));
   container.innerHTML = `
     <div class="wall-live" style="position:relative;${compact && b.w / b.h < 16 / 9 ? 'height:100%;width:auto' : 'width:100%'};aspect-ratio:${b.w} / ${b.h};background:#000;overflow:hidden;border-radius:6px">
-      ${rects.map((r) => {
+      ${renderHTML(rects.map((r) => {
         const d = byId.get(r.id) || {};
         const online = (d.status || '').toLowerCase() === 'online';
         const quarter = r.rotation === 90 || r.rotation === 270;
@@ -60,13 +62,13 @@ export function mountWallLive(container, { wall, devices = [], live = false, ref
         const iw = quarter ? (r.h / r.w * 100) : 100, ih = quarter ? (r.w / r.h * 100) : 100;
         const src = d.screenshot_path ? screenshotUrl(r.id, d.screenshot_at || '') : '';
         return `
-        <div class="wall-live-panel" data-device-id="${esc(r.id)}" title="${esc(r.name)}"
+        <div class="wall-live-panel" data-device-id="${esc(r.id)}" title="${esc(r.name)}"${attributeBinding("title", r.name)}
              style="position:absolute;overflow:hidden;background:#111;left:${(r.x - b.x) / b.w * 100}%;top:${(r.y - b.y) / b.h * 100}%;width:${r.w / b.w * 100}%;height:${r.h / b.h * 100}%;outline:1px solid rgba(255,255,255,0.08)">
           <img alt="" ${src ? `src="${src}"` : ''} style="position:absolute;left:50%;top:50%;width:${iw}%;height:${ih}%;object-fit:fill;transform:translate(-50%,-50%) rotate(${-r.rotation}deg);${src ? '' : 'display:none'}">
-          ${online ? '' : `<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#f87171;font-size:${compact ? 9 : 12}px;text-align:center;padding:4px">${compact ? '' : esc(r.name) + '<br>'}offline</div>`}
-          ${compact ? '' : `<span style="position:absolute;left:4px;bottom:3px;font-size:10px;color:rgba(255,255,255,0.75);text-shadow:0 1px 2px #000">${esc(r.name)}</span>`}
+          ${renderHTML(online ? '' : `<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#f87171;font-size:${compact ? 9 : 12}px;text-align:center;padding:4px">${renderHTML(compact ? '' : esc(r.name) + '<br>')}${renderHTML(t('ui.wall.offline'))}</div>`)}
+          ${renderHTML(compact ? '' : `<span style="position:absolute;left:4px;bottom:3px;font-size:10px;color:rgba(255,255,255,0.75);text-shadow:0 1px 2px #000">${uiText(r.name)}</span>`)}
         </div>`;
-      }).join('')}
+      }).join(''))}
     </div>`;
 
   const ids = new Set(rects.map((r) => r.id));

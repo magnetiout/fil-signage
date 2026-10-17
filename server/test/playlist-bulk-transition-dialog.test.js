@@ -57,7 +57,7 @@ test('the picker is the app dialog: a list of choices, keyboard first, Escape ca
   assert.match(fn, /e\.key === 'Enter'/, 'Enter applies the choice');
   assert.match(fn, /\.focus\(\)/, 'the first choice has focus, so the arrow keys work at once');
   assert.match(fn, /data-corp-close/, 'a Cancel button that closes the dialog');
-  assert.match(fn, /esc\(w\.name\)/, 'widget names are escaped');
+  assert.match(fn, /(?:esc|uiText)\(w\.name\)/, 'widget names are escaped');
   for (const k of ['playlist.bulk.transition_title', 'playlist.bulk.transition_pick', 'playlist.bulk.apply', 'common.cancel']) {
     assert.ok(fn.includes(`t('${k}')`), `the dialog renders ${k}`);
   }

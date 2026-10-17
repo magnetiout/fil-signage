@@ -1,4 +1,5 @@
 'use strict';
+const renderHelpers=require('./helpers/admin-render');
 
 /*
  * Freeze / Copy / Clear on the live debug panel, and the gap between the control row and the info
@@ -45,7 +46,8 @@ function harness() {
   const els = { debugLogPanel: panel, debugFreezeBtn: { textContent: '' }, debugLogStatus: { textContent: '' } };
   const src = DETAIL.slice(DETAIL.indexOf('const DEBUG_LEVEL_COLOR'), DETAIL.indexOf('async function copyToClipboard'));
   const state = { debugFrozen: false, debugHeld: [] };
-  const api = new Function('document', 't', 'state', `
+  const api = new Function('document', 't', 'state', 'renderHelpers', `
+    const {bindMessage,bindText,bindAttribute,uiText,renderHTML,displayValue,getLocale}=renderHelpers;
     const DEBUG_PANEL_MAX = 500;
     let debugFrozen = state.debugFrozen, debugHeld = state.debugHeld;
     ${src}
@@ -56,7 +58,7 @@ function harness() {
     };`)(
     { getElementById: (id) => els[id] || null, createElement: () => ({ textContent: '', style: {} }) },
     (k, v) => `${k}:${v ? v.n : ''}`,
-    state,
+    state, renderHelpers,
   );
   return { ...api, panel, els, text: () => rows.map((r) => r.textContent) };
 }

@@ -1,3 +1,4 @@
+import { bindText } from './lib/i18n-bindings.js';
 /*
  * 3.0 screen share — the meeting-room page at /share (frontend/share.html). No account: a guest
  * types the code the screen shows (or scans its QR, which opens /share?code=…) and presents.
@@ -35,7 +36,7 @@ const KNOWN_REASONS = new Set([
 const reasonText = (r) => t(KNOWN_REASONS.has(r) ? `screen_share.reason.${r}` : 'screen_share.reason.generic');
 
 document.title = t('screen_share.guest_page.title');
-document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.getAttribute('data-t')); });
+document.querySelectorAll('[data-t]').forEach((el) => { bindText(el, el.getAttribute('data-t'), undefined); });
 
 // The QR opens /share?code=… (older screens put it in the #fragment). Take it, then drop it from
 // the address bar and history, so it is not left in a shared link or a screenshot.
@@ -96,7 +97,7 @@ function showLive(screenName, state) {
   $('shareForm').hidden = true;
   $('shareLive').hidden = false;
   $('shareLive').classList.toggle('on', state === 'live');
-  $('shareLiveTitle').textContent = t('screen_share.bar.sharing_to', { name: screenName });
+  bindText($('shareLiveTitle'), 'screen_share.bar.sharing_to', { name: screenName });
   $('shareLiveState').textContent = state === 'live'
     ? t(mode === 'camera' ? 'screen_share.guest_page.live_camera' : 'screen_share.state.live')
     : t(state === 'negotiating' ? 'screen_share.state.negotiating' : 'screen_share.state.connecting');
@@ -125,7 +126,7 @@ function paintRoom() {
   const r = roomState;
   if (!r || !Array.isArray(r.presenters) || (r.presenters.length < 2 && !(r.slots > 1))) { box.hidden = true; return; }
   box.hidden = false;
-  $('shareRoomTitle').textContent = t('screen_share.room.count', { count: r.presenters.length, slots: r.slots || r.presenters.length });
+  bindText($('shareRoomTitle'), 'screen_share.room.count', { count: r.presenters.length, slots: r.slots || r.presenters.length });
   const ul = $('shareRoomList');
   ul.textContent = '';
   const anySpot = r.presenters.some((p) => p.spotlight);
@@ -137,21 +138,21 @@ function paintRoom() {
     li.appendChild(who);
     if (p.spotlight) {
       const tag = document.createElement('small');
-      tag.textContent = t('screen_share.room.full_screen');
+      bindText(tag, 'screen_share.room.full_screen', undefined);
       li.appendChild(tag);
     }
     if (r.can_control) {
       const spot = document.createElement('button');
       spot.type = 'button';
       spot.className = 'btn btn-secondary btn-sm';
-      spot.textContent = t(p.spotlight ? 'screen_share.room.unspotlight' : 'screen_share.room.spotlight');
+      bindText(spot, p.spotlight ? 'screen_share.room.unspotlight' : 'screen_share.room.spotlight', undefined);
       spot.addEventListener('click', () => sender && sender.roomAction(r.room, 'spotlight', p.spotlight ? null : p.id));
       li.appendChild(spot);
       if (!p.you) {
         const rm = document.createElement('button');
         rm.type = 'button';
         rm.className = 'btn btn-danger btn-sm';
-        rm.textContent = t('screen_share.room.remove');
+        bindText(rm, 'screen_share.room.remove', undefined);
         rm.addEventListener('click', () => sender && sender.roomAction(r.room, 'remove', p.id));
         li.appendChild(rm);
       }
@@ -161,7 +162,7 @@ function paintRoom() {
   if (anySpot && !r.can_control) {
     const li = document.createElement('li');
     const note = document.createElement('small');
-    note.textContent = t('screen_share.room.spotlight_note');
+    bindText(note, 'screen_share.room.spotlight_note', undefined);
     li.appendChild(note);
     ul.appendChild(li);
   }
@@ -227,12 +228,12 @@ async function join(kind) {
       legs: body.legs, wsPath: body.ws_path, stream,
       onState: (sum) => showLive(screenName, sum.state),
       onRoom: (r) => { roomState = r; paintRoom(); },
-      onRoomRefused: () => { $('shareLiveMsg').textContent = t('screen_share.room.refused'); },
+      onRoomRefused: () => { bindText($('shareLiveMsg'), 'screen_share.room.refused', undefined); },
       onLegSkipped: (leg) => {
-        if (leg.reason === 'single_presenter') $('shareLiveMsg').textContent = t('screen_share.multi.single', { name: leg.name || screenName });
+        if (leg.reason === 'single_presenter') bindText($('shareLiveMsg'), 'screen_share.multi.single', { name: leg.name || screenName });
       },
       onLegEnded: (leg, reason) => {
-        if (reason === 'spotlight_changed') $('shareLiveMsg').textContent = t('screen_share.multi.single', { name: leg.name || screenName });
+        if (reason === 'spotlight_changed') bindText($('shareLiveMsg'), 'screen_share.multi.single', { name: leg.name || screenName });
       },
       onEnded,
     });
@@ -259,7 +260,7 @@ $('shareFlip').addEventListener('click', async () => {
     const s = await pickCamera({ facing: next, audio: false });
     await sender.replaceVideo(s);
     facing = next;
-  } catch (_) { $('shareLiveMsg').textContent = t('screen_share.guest_page.camera_failed'); }
+  } catch (_) { bindText($('shareLiveMsg'), 'screen_share.guest_page.camera_failed', undefined); }
   $('shareFlip').disabled = false;
 });
 

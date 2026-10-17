@@ -104,7 +104,7 @@ test('⚠️ every frontend sink that puts a name into markup still escapes it',
       if (!/\$\{[^}]*\b(?:\w+\.)?(?:name|filename)\b[^}]*\}/.test(line)) continue;
       // escapeHtml() is the agency portal's own escaper — it is standalone and token-authed, so it
       // does not import the dashboard's utils. t() is one of our own translated strings.
-      if (/\besc\(|\bescAttr\(|\bescapeHtml\(|\bt\(/.test(line)) continue;
+      if (/\besc\(|\buiText\(|\bescAttr\(|\bescapeHtml\(|\bt\(/.test(line)) continue;
       /*
        * ⚠️ ONE JUSTIFIED EXEMPTION, NOT A BLANKET ONE. The language picker interpolates `l.name`
        * from getAvailableLanguages() — our own static list in i18n.js, not anything a user can set.

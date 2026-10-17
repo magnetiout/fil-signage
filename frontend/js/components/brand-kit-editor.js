@@ -1,3 +1,5 @@
+import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 The workspace brand kit editor: business name, logo, three colours, headline font.
  *
@@ -11,7 +13,7 @@
  * Values from the server reach the page through esc() or .value only.
  */
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { esc, hydrateAuthImages } from '../utils.js';
 import { showToast } from './toast.js';
 
@@ -25,9 +27,9 @@ function ensureFaces(fonts) {
   // Every value here is a server constant (lib/slide-fonts.js); filtered anyway so a surprise cannot
   // become CSS syntax.
   const safe = (s) => String(s || '').replace(/[^A-Za-z0-9 _-]/g, '');
-  style.textContent = (fonts || []).map((f) => `@font-face{font-family:'${safe(f.css)}';font-display:swap;`
+  bindMessage(style, (fonts || []).map((f) => `@font-face{font-family:'${safe(f.css)}';font-display:swap;`
     + `font-weight:${Number(f.weights && f.weights[0]) || 400} ${Number(f.weights && f.weights[1]) || 800};`
-    + `src:url(/fonts/${safe(f.file)}.woff2) format('woff2')}`).join('\n');
+    + `src:url(/fonts/${safe(f.file)}.woff2) format('woff2')}`).join('\n'));
   document.head.appendChild(style);
 }
 
@@ -44,10 +46,10 @@ function stackFor(fonts, id) {
  */
 export async function mountBrandKit(host, { onSaved } = {}) {
   if (!host) return;
-  host.innerHTML = `<p class="simple-muted">${esc(t('common.loading'))}</p>`;
+  host.innerHTML = `<p class="simple-muted">${uiText(t('common.loading'))}</p>`;
   let data;
   try { data = await api.getBrandKit(); } catch (err) {
-    host.innerHTML = `<p class="simple-muted">${esc((err && err.message) || t('signs.err.load'))}</p>`;
+    host.innerHTML = `<p class="simple-muted">${uiText((err && (err.uiMessage || err.message)) || t('signs.err.load'))}</p>`;
     return;
   }
   if (!document.contains(host)) return;
@@ -66,57 +68,57 @@ export async function mountBrandKit(host, { onSaved } = {}) {
 
   function draw(statusText = '') {
     host.innerHTML = `
-      ${ro ? `<p class="simple-muted bk-ro">${esc(t('signs.brand.read_only'))}</p>` : ''}
-      <label class="simple-label" for="bkName">${esc(t('signs.brand.name'))}</label>
+      ${renderHTML(ro ? `<p class="simple-muted bk-ro">${uiText(t('signs.brand.read_only'))}</p>` : '')}
+      <label class="simple-label" for="bkName">${uiText(t('signs.brand.name'))}</label>
       <input id="bkName" class="input sign-input" maxlength="80" autocomplete="organization" value="${esc(kit.business_name)}" ${dis}>
 
       <div class="bk-section">
-        <span class="simple-label">${esc(t('signs.brand.logo'))}</span>
+        <span class="simple-label">${uiText(t('signs.brand.logo'))}</span>
         <div class="bk-logo-row">
-          <div class="bk-logo">${kit.logo_content_id
+          <div class="bk-logo">${renderHTML(kit.logo_content_id
             ? (kit.logo_url && /^\/uploads\/content\//.test(kit.logo_url)
-              ? `<img src="${esc(kit.logo_url)}" alt="${esc(t('signs.brand.logo'))}">`
-              : `<img data-auth-src="/api/content/${esc(kit.logo_content_id)}/thumbnail" alt="${esc(t('signs.brand.logo'))}">`)
-            : `<span class="bk-logo-empty">${esc(t('signs.brand.no_logo'))}</span>`}</div>
-          ${ro ? '' : `<div class="bk-logo-actions">
-            <button type="button" class="btn btn-secondary btn-sm" data-logo-pick>${esc(t(kit.logo_content_id ? 'signs.brand.logo_change' : 'signs.brand.logo_upload'))}</button>
-            ${kit.logo_content_id ? `<button type="button" class="btn btn-secondary btn-sm" data-logo-remove>${esc(t('signs.brand.logo_remove'))}</button>` : ''}
+              ? `<img src="${esc(kit.logo_url)}" alt="${esc(t('signs.brand.logo'))}" data-fil-i18n-alt="${binding('signs.brand.logo', undefined)}">`
+              : `<img data-auth-src="/api/content/${esc(kit.logo_content_id)}/thumbnail" alt="${esc(t('signs.brand.logo'))}" data-fil-i18n-alt="${binding('signs.brand.logo', undefined)}">`)
+            : `<span class="bk-logo-empty">${uiText(t('signs.brand.no_logo'))}</span>`)}</div>
+          ${renderHTML(ro ? '' : `<div class="bk-logo-actions">
+            <button type="button" class="btn btn-secondary btn-sm" data-logo-pick>${uiText(t(kit.logo_content_id ? 'signs.brand.logo_change' : 'signs.brand.logo_upload'))}</button>
+            ${renderHTML(kit.logo_content_id ? `<button type="button" class="btn btn-secondary btn-sm" data-logo-remove>${uiText(t('signs.brand.logo_remove'))}</button>` : '')}
             <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden data-logo-file>
-          </div>`}
+          </div>`)}
         </div>
-        <small class="sign-hint">${esc(t('signs.brand.logo_hint'))}</small>
+        <small class="sign-hint">${uiText(t('signs.brand.logo_hint'))}</small>
       </div>
 
       <div class="bk-section">
-        <span class="simple-label">${esc(t('signs.brand.colors'))}</span>
-        <div class="bk-colors">${kit.colors.map((c, i) => `
+        <span class="simple-label">${uiText(t('signs.brand.colors'))}</span>
+        <div class="bk-colors">${renderHTML(kit.colors.map((c, i) => `
           <div class="bk-color">
-            <input type="color" id="bkColor${i}" data-color="${i}" value="${esc(c || '#FFFFFF')}" ${dis} aria-label="${esc(t(COLOR_KEYS[i]))}">
-            <label for="bkColor${i}"><strong>${esc(t(COLOR_KEYS[i]))}</strong><small>${c ? esc(c) : esc(t('signs.brand.color_none'))}</small></label>
-            ${!ro && c ? `<button type="button" class="bk-clear" data-clear="${i}" aria-label="${esc(t('signs.brand.color_clear'))}" title="${esc(t('signs.brand.color_clear'))}">&times;</button>` : ''}
-          </div>`).join('')}
+            <input type="color" id="bkColor${i}" data-color="${i}" value="${esc(c || '#FFFFFF')}" ${dis} aria-label="${esc(t(COLOR_KEYS[i]))}" data-fil-i18n-aria-label="${binding(COLOR_KEYS[i], undefined)}">
+            <label for="bkColor${i}"><strong>${uiText(t(COLOR_KEYS[i]))}</strong><small>${renderHTML(c ? esc(c) : t('signs.brand.color_none'))}</small></label>
+            ${renderHTML(!ro && c ? `<button type="button" class="bk-clear" data-clear="${i}" aria-label="${esc(t('signs.brand.color_clear'))}" data-fil-i18n-aria-label="${binding('signs.brand.color_clear', undefined)}" title="${esc(t('signs.brand.color_clear'))}" data-fil-i18n-title="${binding('signs.brand.color_clear', undefined)}">&times;</button>` : '')}
+          </div>`).join(''))}
         </div>
-        <small class="sign-hint">${esc(t('signs.brand.colors_hint'))}</small>
+        <small class="sign-hint">${uiText(t('signs.brand.colors_hint'))}</small>
       </div>
 
       <div class="bk-section">
-        <label class="simple-label" for="bkFont">${esc(t('signs.brand.font'))}</label>
+        <label class="simple-label" for="bkFont">${uiText(t('signs.brand.font'))}</label>
         <select id="bkFont" class="input sign-input" ${dis}>
-          <option value="">${esc(t('signs.brand.font_default'))}</option>
-          ${fonts.map((f) => `<option value="${esc(f.id)}" ${kit.font === f.id ? 'selected' : ''}>${esc(f.label)}</option>`).join('')}
+          <option value="">${uiText(t('signs.brand.font_default'))}</option>
+          ${renderHTML(fonts.map((f) => `<option value="${esc(f.id)}" ${kit.font === f.id ? 'selected' : ''}>${uiText(f.label)}</option>`).join(''))}
         </select>
-        <div class="bk-font-sample" data-font-sample style="font-family:${esc(stackFor(fonts, kit.font))}">${esc(kit.business_name || t('signs.brand.font_sample'))}</div>
+        <div class="bk-font-sample" data-font-sample style="font-family:${esc(stackFor(fonts, kit.font))}">${uiText(kit.business_name || t('signs.brand.font_sample'))}</div>
       </div>
 
-      ${ro ? '' : `<div class="bk-actions"><button type="button" class="btn btn-primary" data-bk-save>${esc(t('signs.brand.save'))}</button></div>`}
-      <p class="simple-status" data-bk-status role="status">${esc(statusText)}</p>`;
+      ${renderHTML(ro ? '' : `<div class="bk-actions"><button type="button" class="btn btn-primary" data-bk-save>${uiText(t('signs.brand.save'))}</button></div>`)}
+      <p class="simple-status" data-bk-status role="status">${uiText(statusText)}</p>`;
     hydrateAuthImages(host, { eager: true });
     if (ro) return;
 
     const status = host.querySelector('[data-bk-status]');
     host.querySelector('#bkName').addEventListener('input', (e) => {
       kit.business_name = e.target.value;
-      host.querySelector('[data-font-sample]').textContent = kit.business_name || t('signs.brand.font_sample');
+      bindMessage(host.querySelector('[data-font-sample]'), kit.business_name || t('signs.brand.font_sample'));
     });
     host.querySelector('#bkFont').addEventListener('change', (e) => {
       kit.font = e.target.value;
@@ -125,7 +127,7 @@ export async function mountBrandKit(host, { onSaved } = {}) {
     host.querySelectorAll('[data-color]').forEach((inp) => inp.addEventListener('input', () => {
       kit.colors[Number(inp.dataset.color)] = inp.value.toUpperCase();
       const small = inp.parentElement.querySelector('small');
-      if (small) small.textContent = inp.value.toUpperCase();
+      if (small) bindMessage(small, inp.value.toUpperCase());
     }));
     host.querySelectorAll('[data-color]').forEach((inp) => inp.addEventListener('change', () => draw()));
     host.querySelectorAll('[data-clear]').forEach((b) => b.addEventListener('click', () => {
@@ -139,7 +141,7 @@ export async function mountBrandKit(host, { onSaved } = {}) {
       const f = file.files && file.files[0];
       file.value = '';
       if (!f) return;
-      status.textContent = t('signs.brand.uploading');
+      bindText(status, 'signs.brand.uploading', undefined);
       try {
         const up = await api.uploadContent([f]);
         const item = (Array.isArray(up) ? up : [up]).find((c) => c && c.id);
@@ -148,12 +150,12 @@ export async function mountBrandKit(host, { onSaved } = {}) {
         kit.logo_url = item.filepath && !item.remote_url ? `/uploads/content/${encodeURIComponent(item.filepath)}` : null;
         draw(t('signs.brand.unsaved'));
       } catch (err) {
-        if (!(err && err.planPromptShown)) status.textContent = (err && err.message) || t('onboarding.toast.upload_failed');
+        if (!(err && err.planPromptShown)) bindMessage(status, (err && (err.uiMessage || err.message)) || t('onboarding.toast.upload_failed'));
       }
     });
     host.querySelector('[data-bk-save]').addEventListener('click', async (e) => {
       e.target.disabled = true;
-      status.textContent = t('simple.working');
+      bindText(status, 'simple.working', undefined);
       try {
         const r = await api.saveBrandKit({
           business_name: kit.business_name.trim(),
@@ -168,7 +170,7 @@ export async function mountBrandKit(host, { onSaved } = {}) {
         if (typeof onSaved === 'function') onSaved(r.kit);
       } catch (err) {
         e.target.disabled = false;
-        status.textContent = (err && err.message) || t('signs.err.save');
+        bindMessage(status, (err && (err.uiMessage || err.message)) || t('signs.err.save'));
       }
     });
   }

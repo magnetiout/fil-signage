@@ -4,7 +4,7 @@
  * browser create the credential, hand it back to be verified and stored.
  */
 import { api } from '../api.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { createPasskey, isUserCancel } from '../lib/passkeys.js';
 
 /**

@@ -214,7 +214,7 @@ test('the blob is stored raw and parsed on READ', () => {
 
 test('the card renders only when there is something to show', () => {
   const view = read('frontend', 'js', 'views', 'device-detail.js');
-  assert.match(view, /\$\{device\.edid \? `/, 'no EDID must mean no card, not an empty one');
+  assert.match(view, /\$\{(?:renderHTML\()?device\.edid \? `/, 'no EDID must mean no card, not an empty one');
   for (const k of ['device.info.edid', 'device.info.edid_preferred', 'device.info.edid_made']) {
     assert.ok(view.includes(k), `${k} must be rendered`);
     assert.ok(read('frontend', 'js', 'i18n', 'en.js').includes(`'${k}'`), `${k} must be defined in en.js`);

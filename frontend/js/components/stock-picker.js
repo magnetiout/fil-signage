@@ -1,3 +1,5 @@
+import { renderHTML, uiText, bindAttribute, bindMessage, attributeBinding, binding } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 Free stock photos and videos: one picker, used by the Simple view (Change and Upload), the
  * setup guide's upload step, and the content library's Add content dialog.
@@ -13,7 +15,7 @@
  * Every value from a provider reaches the page through esc() or textContent.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc, inManagerApp, isPlatformAdmin } from '../utils.js';
 
 // Quick searches: the English term goes to the provider (their catalogues are tagged in English),
@@ -82,7 +84,7 @@ export async function mountStockPicker(host, opts = {}) {
   if (!document.contains(host)) return false;
   if (!s.enabled || !s.can_add) {
     if (s.setup_hint && isPlatformAdmin(cachedUser())) {
-      host.innerHTML = `<p class="stock-hint">${esc(t('stock.setup_hint'))} <a href="#/platform/system">${esc(t('stock.setup_link'))}</a></p>`;
+      host.innerHTML = `<p class="stock-hint">${renderHTML(t('stock.setup_hint'))} <a href="#/platform/system">${uiText(t('stock.setup_link'))}</a></p>`;
       host.hidden = false;
     }
     return false;
@@ -109,7 +111,7 @@ export async function mountStockPicker(host, opts = {}) {
   if (opts.collapsed) {
     host.innerHTML = `<button type="button" class="stock-open" data-stock-open aria-expanded="false">
       <span class="stock-open-icon" aria-hidden="true">&#128444;</span>
-      <span><strong>${esc(t(types.includes('video') ? 'stock.open_title_media' : 'stock.open_title'))}</strong><small>${esc(t('stock.open_desc'))}</small></span>
+      <span><strong>${uiText(t(types.includes('video') ? 'stock.open_title_media' : 'stock.open_title'))}</strong><small>${uiText(t('stock.open_desc'))}</small></span>
     </button>`;
     host.querySelector('[data-stock-open]').addEventListener('click', () => { renderShell(); host.querySelector('[data-stock-q]')?.focus(); });
   } else {
@@ -122,30 +124,30 @@ export async function mountStockPicker(host, opts = {}) {
     host.innerHTML = `
       <div class="stock-picker">
         <div class="stock-bar">
-          ${types.length > 1 ? `<div class="stock-toggle" role="radiogroup" aria-label="${esc(t('stock.type_label'))}">
-            ${types.map((ty) => `<button type="button" role="radio" data-stock-type="${ty}" aria-checked="${ty === state.type}">${esc(t(ty === 'video' ? 'stock.type_video' : 'stock.type_photo'))}</button>`).join('')}
-          </div>` : ''}
-          ${providers.length > 1 ? `<label class="stock-select"><span class="stock-vh">${esc(t('stock.provider_label'))}</span>
-            <select class="input" data-stock-provider>${providers.map((p) => `<option value="${esc(p.id)}" ${p.id === state.provider ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>` : ''}
-          ${opts.orientation ? `<label class="stock-select"><span class="stock-vh">${esc(t('stock.orientation_label'))}</span>
+          ${renderHTML(types.length > 1 ? `<div class="stock-toggle" role="radiogroup" aria-label="${esc(t('stock.type_label'))}" data-fil-i18n-aria-label="${binding('stock.type_label', undefined)}">
+            ${renderHTML(types.map((ty) => `<button type="button" role="radio" data-stock-type="${ty}" aria-checked="${ty === state.type}">${uiText(t(ty === 'video' ? 'stock.type_video' : 'stock.type_photo'))}</button>`).join(''))}
+          </div>` : '')}
+          ${renderHTML(providers.length > 1 ? `<label class="stock-select"><span class="stock-vh">${uiText(t('stock.provider_label'))}</span>
+            <select class="input" data-stock-provider>${renderHTML(providers.map((p) => `<option value="${esc(p.id)}" ${p.id === state.provider ? 'selected' : ''}>${uiText(p.name)}</option>`).join(''))}</select></label>` : '')}
+          ${renderHTML(opts.orientation ? `<label class="stock-select"><span class="stock-vh">${uiText(t('stock.orientation_label'))}</span>
             <select class="input" data-stock-orient>
-              <option value="">${esc(t('stock.orientation_any'))}</option>
-              <option value="landscape">${esc(t('stock.orientation_landscape'))}</option>
-              <option value="portrait">${esc(t('stock.orientation_portrait'))}</option>
-            </select></label>` : ''}
+              <option value="">${uiText(t('stock.orientation_any'))}</option>
+              <option value="landscape">${uiText(t('stock.orientation_landscape'))}</option>
+              <option value="portrait">${uiText(t('stock.orientation_portrait'))}</option>
+            </select></label>` : '')}
         </div>
         <form class="stock-search" data-stock-form role="search">
-          <label class="stock-vh" for="stockQ-${uid}">${esc(t('stock.search_label'))}</label>
-          <input id="stockQ-${uid}" class="input" type="search" data-stock-q maxlength="100" enterkeyhint="search" placeholder="${esc(t(state.type === 'video' ? 'stock.search_ph_video' : 'stock.search_ph'))}" autocomplete="off">
-          <button type="submit" class="btn btn-primary">${esc(t('stock.search'))}</button>
+          <label class="stock-vh" for="stockQ-${uid}">${uiText(t('stock.search_label'))}</label>
+          <input id="stockQ-${uid}" class="input" type="search" data-stock-q maxlength="100" enterkeyhint="search" placeholder="${esc(t(state.type === 'video' ? 'stock.search_ph_video' : 'stock.search_ph'))}" data-fil-i18n-placeholder="${binding(state.type === 'video' ? 'stock.search_ph_video' : 'stock.search_ph', undefined)}" autocomplete="off">
+          <button type="submit" class="btn btn-primary">${uiText(t('stock.search'))}</button>
         </form>
-        <div class="stock-quick" aria-label="${esc(t('stock.quick_label'))}">
-          ${QUICK.map(([q, key]) => `<button type="button" class="stock-chip" data-stock-quick="${esc(q)}">${esc(t(key))}</button>`).join('')}
+        <div class="stock-quick" aria-label="${esc(t('stock.quick_label'))}" data-fil-i18n-aria-label="${binding('stock.quick_label', undefined)}">
+          ${renderHTML(QUICK.map(([q, key]) => `<button type="button" class="stock-chip" data-stock-quick="${esc(q)}">${uiText(t(key))}</button>`).join(''))}
         </div>
         <div class="stock-results" data-stock-results aria-live="polite"></div>
         <div class="stock-foot">
           <a class="stock-attrib" data-stock-attrib data-ext target="_blank" rel="noopener noreferrer" hidden></a>
-          <button type="button" class="btn btn-primary" data-stock-add disabled>${esc(addLabel(0))}</button>
+          <button type="button" class="btn btn-primary" data-stock-add disabled>${uiText(addLabel(0))}</button>
         </div>
         <p class="stock-status" data-stock-status role="status"></p>
       </div>`;
@@ -160,7 +162,7 @@ export async function mountStockPicker(host, opts = {}) {
       if (state.type === b.dataset.stockType || state.busy) return;
       state.type = b.dataset.stockType;
       host.querySelectorAll('[data-stock-type]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
-      qInput.placeholder = t(state.type === 'video' ? 'stock.search_ph_video' : 'stock.search_ph');
+      bindAttribute(qInput, "placeholder", t(state.type === 'video' ? 'stock.search_ph_video' : 'stock.search_ph'));
       if (state.q) runSearch(state.q, 1);
     }));
     host.querySelector('[data-stock-provider]')?.addEventListener('change', (e) => { state.provider = e.target.value; if (state.q) runSearch(state.q, 1); });
@@ -170,14 +172,14 @@ export async function mountStockPicker(host, opts = {}) {
     paintFoot();
   }
 
-  function setStatus(msg) { const el = host.querySelector('[data-stock-status]'); if (el) el.textContent = msg || ''; }
+  function setStatus(msg) { const el = host.querySelector('[data-stock-status]'); if (el) bindMessage(el, msg || ''); }
 
   async function runSearch(q, page) {
     q = String(q || '').trim();
     if (!q || state.busy) return;
     const results = host.querySelector('[data-stock-results]');
     state.busy = true;
-    if (page === 1) results.innerHTML = `<p class="stock-muted">${esc(t('stock.searching'))}</p>`;
+    if (page === 1) results.innerHTML = `<p class="stock-muted">${uiText(t('stock.searching'))}</p>`;
     setStatus('');
     try {
       const r = await api.stockSearch({ provider: state.provider, type: state.type, q, page, orientation: state.orientation });
@@ -199,22 +201,22 @@ export async function mountStockPicker(host, opts = {}) {
     const by = it.author ? t(it.type === 'video' ? 'stock.credit_video' : 'stock.credit_photo', { author: it.author, provider: providerName(it.provider) }) : providerName(it.provider);
     return `<div class="stock-tile" role="listitem">
       <button type="button" class="stock-item" data-stock-key="${esc(k)}" aria-pressed="${on}" aria-label="${esc(it.title || by)}" ${it.color ? `style="background-color:${esc(it.color)}"` : ''}>
-        ${it.thumb ? `<img src="${esc(it.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
-        ${it.type === 'video' && it.duration ? `<span class="stock-dur">${esc(fmtDur(it.duration))}</span>` : ''}
+        ${renderHTML(it.thumb ? `<img src="${esc(it.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '')}
+        ${renderHTML(it.type === 'video' && it.duration ? `<span class="stock-dur">${uiText(fmtDur(it.duration))}</span>` : '')}
         <span class="stock-check" aria-hidden="true">&#10003;</span>
       </button>
-      ${it.page_url ? `<a class="stock-credit" href="${esc(it.page_url)}" data-ext target="_blank" rel="noopener noreferrer" title="${esc(by)}">${esc(by)}</a>`
-        : `<span class="stock-credit">${esc(by)}</span>`}
+      ${renderHTML(it.page_url ? `<a class="stock-credit" href="${esc(it.page_url)}" data-ext target="_blank" rel="noopener noreferrer" title="${esc(by)}"${attributeBinding("title", by)}>${uiText(by)}</a>`
+        : `<span class="stock-credit">${uiText(by)}</span>`)}
     </div>`;
   }
 
   function renderResults() {
     const results = host.querySelector('[data-stock-results]');
     if (!state.items.length) {
-      results.innerHTML = `<p class="stock-muted">${esc(t('stock.no_results', { q: state.q }))}</p>`;
+      results.innerHTML = `<p class="stock-muted">${uiText(t('stock.no_results', { q: state.q }))}</p>`;
     } else {
-      results.innerHTML = `<div class="stock-grid" role="list">${state.items.map(tileHtml).join('')}</div>
-        ${state.hasMore ? `<div class="stock-more"><button type="button" class="btn btn-secondary btn-sm" data-stock-more>${esc(t('stock.more'))}</button></div>` : ''}`;
+      results.innerHTML = `<div class="stock-grid" role="list">${renderHTML(state.items.map(tileHtml).join(''))}</div>
+        ${renderHTML(state.hasMore ? `<div class="stock-more"><button type="button" class="btn btn-secondary btn-sm" data-stock-more>${uiText(t('stock.more'))}</button></div>` : '')}`;
       results.querySelector('[data-stock-more]')?.addEventListener('click', () => runSearch(state.q, state.page + 1));
     }
     paintFoot();
@@ -235,11 +237,11 @@ export async function mountStockPicker(host, opts = {}) {
 
   function paintFoot() {
     const btn = host.querySelector('[data-stock-add]');
-    if (btn) { btn.disabled = state.busy || !state.picked.length; btn.textContent = addLabel(state.picked.length); }
+    if (btn) { btn.disabled = state.busy || !state.picked.length; bindMessage(btn, addLabel(state.picked.length)); }
     const a = host.querySelector('[data-stock-attrib]');
     if (a) {
       const attr = state.attribution || (providers.find((p) => p.id === state.provider) ? { text: t('stock.provided_by', { provider: providerName(state.provider) }), url: providers.find((p) => p.id === state.provider).home } : null);
-      if (attr && attr.url) { a.textContent = attr.text; a.href = attr.url; a.hidden = false; } else a.hidden = true;
+      if (attr && attr.url) { bindMessage(a, attr.text); a.href = attr.url; a.hidden = false; } else a.hidden = true;
     }
   }
 

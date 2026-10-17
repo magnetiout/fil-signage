@@ -1,3 +1,10 @@
+import { renderHTML, uiText, bindAttribute, bindMessage, bindText, binding } from './lib/i18n-bindings.js';
+import { installLocalizedNumberInput } from './components/localized-number-input.js';
+
+import { message as translatedMessage, message as t } from './i18n.js';
+
+import { installAdminLanguage, applyAccountLanguage, getLanguageRevision } from './components/admin-language.js';
+
 import { connectSocket } from './socket.js';
 import * as dashboard from './views/dashboard.js';
 import * as deviceDetail from './views/device-detail.js';
@@ -53,7 +60,7 @@ import * as forcePasswordChange from './views/force-password-change.js';
 import * as noWorkspace from './views/no-workspace.js';
 import * as siteCaches from './views/site-caches.js';
 import { applyBranding } from './branding.js';
-import { t } from './i18n.js';
+
 import { isPlatformAdmin } from './utils.js';
 import { initNavGroups } from './components/nav-groups.js';
 import { applyUiMode, isSimpleMode, setUiMode } from './components/ui-mode.js';
@@ -97,18 +104,17 @@ function renderRemoteOrgBanner() {
     'padding:8px 12px;margin:0 0 12px;font-size:12px;border-radius:0 4px 4px 0';
   const name = String(org.name || '').replace(/[&<>"]/g, '');
   el.innerHTML = `
-    <span>Viewing <strong>${name}</strong> on another server${
-      org.stale ? ' — not currently reachable, showing last known state' : ''}.</span>
+    <span>${renderHTML(t('ui.remote.viewing',{name,note:org.stale?t('ui.remote.stale'):''}))}</span>
     <!-- ⚠️ Says what this operator may actually do, rather than a fixed "read-only for now" that
          stayed on the screen after write shipped. The flag is what the CHILD announced, so a
          customer who has granted nothing still reads as read-only — which is both true and the
          safe way for this to be wrong. Playlists only, and it says so: an operator who reads
          "you can make changes" and then cannot upload has been misled by a half-truth. -->
-    <span style="color:var(--text-muted)">${org.writable
-      ? 'You may change playlists here. Content and settings stay read-only.'
-      : 'Read-only — this customer has not granted changes from here.'}</span>
+    <span style="color:var(--text-muted)">${renderHTML(org.writable
+      ? t("ui.app.you_may_change_playlists_here_content_and_settings_stay_c30605")
+      : t("ui.app.read_only_this_customer_has_not_granted_changes_from_he_98ede8"))}</span>
     <button id="leaveRemoteOrg" class="btn btn-secondary btn-sm" style="margin-left:auto">
-      Back to this server</button>`;
+      ${renderHTML(t("ui.app.back_to_this_server"))}</button>`;
   if (!existing) host.appendChild(el);
   el.querySelector('#leaveRemoteOrg').onclick = () => { clearRemoteOrg(); window.location.reload(); };
 }
@@ -117,7 +123,7 @@ import { api, meshCapability, setErrorTranslator } from './api.js';
 import { esc } from './utils.js';
 
 // Head office (corporate) refusals arrive with a code; show them in the viewer's language.
-setErrorTranslator(t);
+setErrorTranslator(translatedMessage);
 
 const app = document.getElementById('app');
 const sidebar = document.querySelector('.sidebar');
@@ -297,7 +303,7 @@ function renderNavLabels() {
     const key = NAV_LABEL_KEYS[link.dataset.view];
     if (!key) return;
     const span = link.querySelector('span');
-    if (span) span.textContent = t(key);
+    if (span) bindText(span, key, undefined);
   });
 }
 
@@ -312,10 +318,11 @@ function renderNavLabels() {
 function translateStaticDom(root = document) {
   root.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.getAttribute('data-i18n');
-    el.textContent = t(key);
+    bindText(el, key, undefined);
   });
+  root.querySelectorAll('[data-i18n-aria-label]').forEach(el => bindAttribute(el, 'aria-label', t(el.dataset.i18nAriaLabel)));
   root.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
-    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+    bindAttribute(el, "placeholder", t(el.getAttribute('data-i18n-placeholder')));
   });
 }
 
@@ -349,10 +356,12 @@ async function refreshCurrentUser() {
   const token = localStorage.getItem('token');
   if (!token) return;
   try {
+    const languageRevisionBefore = getLanguageRevision();
     const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) return;
     const fresh = await res.json();
     localStorage.setItem('user', JSON.stringify(fresh));
+    await applyAccountLanguage(fresh, { fresh:true, requestRevision:languageRevisionBefore });
     // Re-render the workspace switcher on every /me refresh - cheap, and keeps
     // the dropdown in sync if a workspace was added/removed in another tab.
     //
@@ -393,7 +402,7 @@ function enableHelpTips() {
   document.querySelectorAll('.help-tip:not([tabindex])').forEach((el) => {
     el.setAttribute('tabindex', '0');
     el.setAttribute('role', 'button');
-    el.setAttribute('aria-label', el.dataset.tip || 'Help');
+    bindAttribute(el, 'aria-label', el.dataset.tip || t("ui.app.help_c47ae1"));
   });
   if (tipsBound) return;
   tipsBound = true;
@@ -423,7 +432,7 @@ function enableHelpTips() {
       document.querySelectorAll('.help-tip:not([tabindex])').forEach((el) => {
         el.setAttribute('tabindex', '0');
         el.setAttribute('role', 'button');
-        el.setAttribute('aria-label', el.dataset.tip || 'Help');
+        bindAttribute(el, 'aria-label', el.dataset.tip || t("ui.app.help_c47ae1"));
       });
     }, 50);
   }).observe(host, { childList: true, subtree: true });
@@ -441,6 +450,7 @@ function enableHelpTips() {
 }
 
 function route() {
+  if (isAuthenticated()) applyAccountLanguage(getCurrentUser());
   // Cleanup previous view
   if (currentView && currentView.cleanup) currentView.cleanup();
 
@@ -896,7 +906,7 @@ function syncCorporateNav() {
     const show = !!s && ((s.corporate_enabled && (hqFace || s.active_workspace_mandated)) || (s.is_admin && !!s.hq_workspace_id));
     li.style.display = show ? '' : 'none';
     const span = li.querySelector('span');
-    if (span) span.textContent = hqFace ? t('nav.corporate') : t('nav.head_office');
+    if (span) bindMessage(span, hqFace ? t('nav.corporate') : t('nav.head_office'));
     renderHqContextBar(s);
   });
 }
@@ -990,13 +1000,13 @@ function updateSidebarUser() {
   }
 
   userEl.innerHTML = `
-    ${user.avatar_url ? `<img src="${user.avatar_url}" style="width:28px;height:28px;border-radius:50%">` :
-      `<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:white">${esc(((user.name || user.email || '?')[0] || '?').toUpperCase())}</div>`}
+    ${renderHTML(user.avatar_url ? `<img src="${user.avatar_url}" style="width:28px;height:28px;border-radius:50%">` :
+      `<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:white">${uiText(((user.name || user.email || '?')[0] || '?').toUpperCase())}</div>`)}
     <div style="flex:1;min-width:0">
-      <div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(user.name || user.email || '')}</div>
-      <div style="font-size:10px;color:var(--text-muted)">${user.role}</div>
+      <div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${uiText(user.name || user.email || '')}</div>
+      <div style="font-size:10px;color:var(--text-muted)">${uiText(t(({user:'ui.roles.user',platform_operator:'admin.role.platform_operator',platform_admin:'admin.role.platform_admin'})[user.role]||'common.unknown'))}</div>
     </div>
-    <button id="logoutBtn" class="btn-icon" title="${t('auth.sign_out')}" style="flex-shrink:0">
+    <button id="logoutBtn" class="btn-icon" title="${t('auth.sign_out')}" data-fil-i18n-title="${binding('auth.sign_out', undefined)}" style="flex-shrink:0">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
         <polyline points="16 17 21 12 16 7"/>
@@ -1008,7 +1018,7 @@ function updateSidebarUser() {
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.hash = '#/login';
+    history.replaceState(null, '', window.location.pathname + '#/login');
     window.location.reload();
   });
 }
@@ -1027,11 +1037,11 @@ function updateVerifyBanner(user) {
   const b = document.createElement('div');
   b.id = 'verifyBanner';
   b.style.cssText = 'background:var(--warning,#f59e0b);color:#1a1200;padding:9px 16px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap';
-  b.innerHTML = `<span>✉️ ${t('auth.verify_banner')}</span>`;
+  b.innerHTML = `<span>✉️ ${renderHTML(t('auth.verify_banner'))}</span>`;
   const btn = document.createElement('button');
   btn.className = 'btn btn-sm';
   btn.style.cssText = 'background:#1a1200;color:#fff;padding:4px 12px';
-  btn.textContent = t('auth.verify_banner_resend');
+  bindText(btn, 'auth.verify_banner_resend', undefined);
   btn.addEventListener('click', async () => {
     try { await api.resendVerification(user.email); showToast(t('auth.verify_resent'), 'success'); }
     catch { showToast(t('auth.verify_resend_failed'), 'error'); }
@@ -1063,11 +1073,11 @@ function updateBillingBanner(user) {
   b.id = 'billingBanner';
   b.dataset.state = state;
   b.style.cssText = `background:${lapsed ? 'var(--danger,#ef4444)' : 'var(--warning,#f59e0b)'};color:${lapsed ? '#fff' : '#1a1200'};padding:9px 16px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap`;
-  b.innerHTML = `<span>${lapsed ? '⚠️' : '💳'} ${esc(t(lapsed ? 'billing.banner.lapsed' : 'billing.banner.past_due'))}</span>`;
+  b.innerHTML = `<span>${renderHTML(lapsed ? '⚠️' : '💳')} ${uiText(t(lapsed ? 'billing.banner.lapsed' : 'billing.banner.past_due'))}</span>`;
   const btn = document.createElement('button');
   btn.className = 'btn btn-sm';
   btn.style.cssText = `background:${lapsed ? '#7f1d1d' : '#1a1200'};color:#fff;padding:4px 12px`;
-  btn.textContent = t('billing.banner.update_card');
+  bindText(btn, 'billing.banner.update_card', undefined);
   btn.addEventListener('click', () => { window.location.hash = '#/billing'; });
   b.appendChild(btn);
   bannersEl.appendChild(b);
@@ -1085,10 +1095,10 @@ function updateWidgetSandboxWarningBanner(user) {
   b.style.cssText = 'background:var(--danger,#dc2626);color:#fff;padding:10px 16px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-weight:600';
   const text = document.createElement('span');
   text.style.whiteSpace = 'pre-line';
-  text.textContent = 'Widget sandbox isolation is DISABLED. Widget code in this organization runs\nwith full access to user sessions. Re-enable in Settings > Security.';
+  bindText(text, "ui.app.widget_sandbox_isolation_is_disabled_widget_code");
   const link = document.createElement('a');
   link.href = '#/settings';
-  link.textContent = 'Open Settings';
+  bindText(link, "ui.app.open_settings");
   link.style.cssText = 'color:#fff;text-decoration:underline;font-weight:700';
   b.appendChild(text);
   b.appendChild(link);
@@ -1103,7 +1113,7 @@ async function refreshReviewsBadge() {
   try {
     const s = await api.getApprovalSettings();
     const n = s && s.require_approval ? Number(s.pending_submissions || 0) : 0;
-    badge.textContent = String(n);
+    bindMessage(badge, String(n));
     badge.style.display = n > 0 ? '' : 'none';
   } catch { badge.style.display = 'none'; }
 }
@@ -1117,7 +1127,7 @@ async function refreshRequestsBadge() {
   try {
     const rows = await api.get('/content-requests/requests?status=pending');
     const n = Array.isArray(rows) ? rows.length : 0;
-    badge.textContent = String(n);
+    bindMessage(badge, String(n));
     badge.style.display = n > 0 ? '' : 'none';
   } catch { badge.style.display = 'none'; }
 }
@@ -1151,8 +1161,11 @@ async function maybeStartFirstRun(user) {
 }
 
 // Initialize
+installAdminLanguage();
+installLocalizedNumberInput();
 renderNavLabels();
 translateStaticDom();
+document.documentElement.classList.remove('fil-i18n-pending');
 initNavGroups();
 installPlanNudges();
 window.addEventListener('user-refreshed', (e) => {
@@ -1213,13 +1226,13 @@ export function updateVersionIndicator({ version, latest_version, update_availab
   try { if (version) window.__ST_VERSION = version; } catch (_) { /* non-fatal */ }
   const label = document.getElementById('versionLabel');
   const badge = document.getElementById('versionBadge');
-  if (label) label.textContent = version ? 'v' + version : '-';
+  if (label) bindMessage(label, version ? 'v' + version : '-');
   if (badge) badge.hidden = !update_available;
 }
 
 // Show loading state while first poll resolves
 const verLabel = document.getElementById('versionLabel');
-if (verLabel) verLabel.textContent = t('common.checking');
+if (verLabel) bindText(verLabel, 'common.checking', undefined);
 
 async function checkVersion() {
   try {
@@ -1233,9 +1246,9 @@ async function checkVersion() {
         const notice = document.createElement('div');
         notice.className = 'toast info';
         const span = document.createElement('span');
-        span.textContent = 'Dashboard updated. ';
+        bindText(span, "ui.app.dashboard_updated");
         const link = document.createElement('a');
-        link.textContent = 'Reload now';
+        bindText(link, "ui.app.reload_now");
         link.href = '#';
         link.style.cssText = 'color:var(--accent);text-decoration:underline;font-weight:600';
         // The dashboard CSP is `script-src 'self'` (no 'unsafe-inline'), which blocks
@@ -1274,7 +1287,7 @@ if (isAuthenticated()) {
         if (toast && !toast.querySelector('.session-warn')) {
           const warn = document.createElement('div');
           warn.className = 'toast info session-warn';
-          warn.innerHTML = `<span>Session expires in ${minutesLeft} minutes. <a href="#/login" style="color:var(--accent);text-decoration:underline" onclick="localStorage.removeItem('token');localStorage.removeItem('user')">Re-login</a></span>`;
+          warn.innerHTML = `<span>${renderHTML(t('ui.session.expires',{n:minutesLeft}))} <a href="#/login" style="color:var(--accent);text-decoration:underline" onclick="localStorage.removeItem('token');localStorage.removeItem('user')">${renderHTML(t("ui.app.re_login"))}</a></span>`;
           toast.appendChild(warn);
           setTimeout(() => warn.remove(), 10000);
         }

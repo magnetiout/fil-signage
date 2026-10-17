@@ -1,3 +1,5 @@
+import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
+
 /*
  * The weekly display-power editor, shared by the device page and the group page.
  *
@@ -10,7 +12,7 @@
  * blanks the panel and leaves the player running. Someone who believes this reboots their screens
  * will use it wrong, and the one-line note under the heading is load-bearing for that reason.
  */
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 
 // 0=Sunday, matching shared/power-window-vectors.json and JS Date.getDay(). The UI renders Monday
 // first because that is how a shop week reads; the VALUES are unchanged.
@@ -41,7 +43,7 @@ function windowRow(w, i) {
   const dayBoxes = DAY_ORDER.map((d) => `
     <label class="power-day">
       <input type="checkbox" data-win="${i}" data-day="${d}" ${(w.days || []).includes(d) ? 'checked' : ''}>
-      <span>${esc(t(`power.day.${DAY_KEY[d]}`))}</span>
+      <span>${uiText(t(`power.day.${DAY_KEY[d]}`))}</span>
     </label>`).join('');
 
   /*
@@ -55,21 +57,21 @@ function windowRow(w, i) {
   return `
     <div class="power-window" data-win="${i}">
       <div class="power-window-times">
-        <label class="power-allday-label"><input type="checkbox" class="power-allday" data-win="${i}" ${allDay ? 'checked' : ''}> ${esc(t('power.all_day'))}</label>
+        <label class="power-allday-label"><input type="checkbox" class="power-allday" data-win="${i}" ${allDay ? 'checked' : ''}> ${uiText(t('power.all_day'))}</label>
         <span class="power-times"${allDay ? ' hidden' : ''}>
-          <label>${esc(t('power.off_from'))}
+          <label>${uiText(t('power.off_from'))}
             <input type="time" class="power-start" data-win="${i}" value="${esc(allDay ? '22:00' : (w.start || '22:00'))}">
           </label>
-          <label>${esc(t('power.on_at'))}
+          <label>${uiText(t('power.on_at'))}
             <input type="time" class="power-end" data-win="${i}" value="${esc(allDay ? '06:00' : endShown)}">
           </label>
         </span>
         <button type="button" class="btn btn-secondary btn-sm power-remove" data-win="${i}"
-                aria-label="${esc(t('power.remove_window'))}">✕</button>
+                aria-label="${esc(t('power.remove_window'))}" data-fil-i18n-aria-label="${binding('power.remove_window', undefined)}">✕</button>
       </div>
-      <div class="power-days">${dayBoxes}</div>
-      ${(!allDay && w.start && w.end && w.end !== '24:00' && w.start > w.end)
-        ? `<div class="power-hint">${esc(t('power.crosses_midnight'))}</div>` : ''}
+      <div class="power-days">${renderHTML(dayBoxes)}</div>
+      ${renderHTML((!allDay && w.start && w.end && w.end !== '24:00' && w.start > w.end)
+        ? `<div class="power-hint">${uiText(t('power.crosses_midnight'))}</div>` : '')}
     </div>`;
 }
 
@@ -93,12 +95,12 @@ export function renderPowerScheduleEditor(schedule, ctx = {}) {
    */
   const unsupported = ctx.supported === false;
   const warn = unsupported
-    ? `<div class="power-warning" role="note">${esc(ctx.playerVersion
+    ? `<div class="power-warning" role="note">${uiText(ctx.playerVersion
       ? t('power.pending_device_version', { version: ctx.playerVersion })
       : t('power.pending_device'))}</div>` : '';
 
   const inherited = ctx.inherited
-    ? `<div class="power-hint">${esc(t('power.inherited_from_group'))}</div>` : '';
+    ? `<div class="power-hint">${uiText(t('power.inherited_from_group'))}</div>` : '';
 
   /*
    * ⚠️ Two or more group schedules on one screen. The resolver picks a stable winner (lowest group
@@ -106,22 +108,17 @@ export function renderPowerScheduleEditor(schedule, ctx = {}) {
    * correct on their own. The only symptom otherwise is a screen going dark at the wrong time.
    */
   const conflicts = Array.isArray(ctx.groupSchedules) && ctx.groupSchedules.length > 1
-    ? `<div class="power-warning">${esc(
-        t('power.group_conflict').replace('{n}', String(ctx.groupSchedules.length))
-      )}<ul>${ctx.groupSchedules.map((g, i) => `<li>${esc(g.group_name || g.group_id)}${
-        i === 0 ? ` — ${esc(t('power.group_conflict_winner'))}` : ''}</li>`).join('')}</ul></div>`
+    ? `<div class="power-warning">${uiText(t('power.group_conflict', {n: String(ctx.groupSchedules.length)}))}<ul>${renderHTML(ctx.groupSchedules.map((g, i) => `<li>${uiText(g.group_name || g.group_id)}${renderHTML(i === 0 ? ` — ${esc(t('power.group_conflict_winner'))}` : '')}</li>`).join(''))}</ul></div>`
     : '';
 
   const status = ctx.state
-    ? `<span class="power-state power-state-${esc(ctx.state)}">${esc(
-        ctx.state === 'scheduled_off' ? t('power.state.scheduled_off') : t('power.state.on'))}</span>`
+    ? `<span class="power-state power-state-${esc(ctx.state)}">${uiText(ctx.state === 'scheduled_off' ? t('power.state.scheduled_off') : t('power.state.on'))}</span>`
     : '';
 
   const next = ctx.nextEdge
-    ? `<div class="power-hint">${esc(
-        ctx.nextEdge.to === 'scheduled_off'
-          ? t('power.next_off').replace('{time}', ctx.nextEdge.at)
-          : t('power.next_on').replace('{time}', ctx.nextEdge.at))}</div>`
+    ? `<div class="power-hint">${uiText(ctx.nextEdge.to === 'scheduled_off'
+          ? t('power.next_off', {time: ctx.nextEdge.at})
+          : t('power.next_on', {time: ctx.nextEdge.at}))}</div>`
     : '';
 
   return `
@@ -129,19 +126,19 @@ export function renderPowerScheduleEditor(schedule, ctx = {}) {
       <div class="power-head">
         <label class="power-enable">
           <input type="checkbox" id="powerEnabled" ${enabled ? 'checked' : ''}>
-          <span>${esc(t('power.enable'))}</span>
+          <span>${uiText(t('power.enable'))}</span>
         </label>
-        ${status}
+        ${renderHTML(status)}
       </div>
       <!-- Load-bearing: someone who thinks this powers the device off will use it wrong. -->
-      <p class="power-explainer">${esc(t('power.explainer'))}</p>
-      ${warn}${conflicts}${inherited}${next}
-      <div id="powerWindows">${windows.map(windowRow).join('') || `<div class="power-empty">${esc(t('power.no_windows'))}</div>`}</div>
+      <p class="power-explainer">${uiText(t('power.explainer'))}</p>
+      ${renderHTML(warn)}${renderHTML(conflicts)}${renderHTML(inherited)}${renderHTML(next)}
+      <div id="powerWindows">${renderHTML(windows.map(windowRow).join('') || `<div class="power-empty">${uiText(t('power.no_windows'))}</div>`)}</div>
       <div class="power-actions">
-        <button type="button" class="btn btn-secondary btn-sm" id="powerAddWindow">+ ${esc(t('power.add_window'))}</button>
-        ${PRESETS.map((p) => `<button type="button" class="btn btn-secondary btn-sm power-preset" data-preset="${p.key}">${esc(t(`power.preset.${p.key}`))}</button>`).join('')}
-        <button type="button" class="btn btn-primary btn-sm" id="powerSave">${esc(t('power.save'))}</button>
-        ${schedule?.id ? `<button type="button" class="btn btn-secondary btn-sm" id="powerDelete">${esc(t('power.remove_schedule'))}</button>` : ''}
+        <button type="button" class="btn btn-secondary btn-sm" id="powerAddWindow">+ ${uiText(t('power.add_window'))}</button>
+        ${renderHTML(PRESETS.map((p) => `<button type="button" class="btn btn-secondary btn-sm power-preset" data-preset="${p.key}">${uiText(t(`power.preset.${p.key}`))}</button>`).join(''))}
+        <button type="button" class="btn btn-primary btn-sm" id="powerSave">${uiText(t('power.save'))}</button>
+        ${renderHTML(schedule?.id ? `<button type="button" class="btn btn-secondary btn-sm" id="powerDelete">${uiText(t('power.remove_schedule'))}</button>` : '')}
       </div>
     </div>`;
 }

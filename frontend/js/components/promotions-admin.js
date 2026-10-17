@@ -1,3 +1,7 @@
+import { uiText, renderHTML, bindMessage, binding } from '../lib/i18n-bindings.js';
+
+import { displayValue, message as t } from '../i18n.js';
+
 /*
  * Admin → Sales & discounts (server: lib/promotions.js, routes/admin.js /promotions).
  *
@@ -8,17 +12,17 @@
  * anything; a finished one keeps its terms (they are a record of what customers were offered) unless
  * it is given new dates, which runs it again. Delete is for sales that are not running.
  */
-import { api } from '../api.js';
+import { api, localizeServerError } from '../api.js';
 import { esc } from '../utils.js';
-import { t } from '../i18n.js';
+
 import { showToast } from './toast.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 // <input type="datetime-local"> speaks local wall time without a zone.
 const toLocalInput = (sec) => { const d = new Date(sec * 1000); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const fromLocalInput = (v) => (v ? Math.floor(new Date(v).getTime() / 1000) : null);
-const when = (sec) => (sec ? new Date(sec * 1000).toLocaleString() : '—');
-const money = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+const when = (sec) => (sec ? displayValue(new Date(sec * 1000), "toLocaleString", undefined) : '—');
+const money = (n) => '$' + displayValue(Number(n), "toLocaleString", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const sale = (price, pct) => Math.round(Number(price) * (100 - pct)) / 100;
 
 function statusOf(p, now) {
@@ -40,7 +44,7 @@ export async function mountPromotionsAdmin(el, editId = null) {
   try {
     [data, { plans }] = await Promise.all([api.adminListPromotions(), api.adminListPlans()]);
   } catch (err) {
-    el.innerHTML = `<p style="color:var(--danger)">${esc(err.message)}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`;
     return;
   }
   const paid = plans.filter((p) => p.active && p.price_monthly > 0);
@@ -53,55 +57,55 @@ export async function mountPromotionsAdmin(el, editId = null) {
   const planOn = (id) => !f.plan_ids.length || f.plan_ids.includes(id);
 
   el.innerHTML = `
-    ${data.unavailable_reason ? `<p class="promo-warn">${esc(data.unavailable_reason)}</p>` : ''}
+    ${renderHTML(data.unavailable_reason ? `<p class="promo-warn">${uiText(localizeServerError(data.unavailable_reason))}</p>` : '')}
     <div class="promo-list">
-      ${data.promotions.length ? data.promotions.map((p) => {
+      ${renderHTML(data.promotions.length ? data.promotions.map((p) => {
         const [cls, label] = statusOf(p, now);
         return `<div class="promo-row">
-          <span class="promo-status promo-${cls}">${esc(label)}</span>
+          <span class="promo-status promo-${cls}">${uiText(label)}</span>
           <div class="promo-main">
-            <strong>${esc(p.name)}</strong> · ${p.percent_off}% ${esc(t('admin.promo.off'))} · ${esc(durationText(p))}
-            <div class="promo-sub">“${esc(p.headline)}” · ${esc(p.plan_ids.length ? p.plan_ids.map(planName).join(', ') : t('admin.promo.all_plans'))} · ${esc(t(`admin.promo.cycle_${p.cycles}`))}</div>
-            <div class="promo-sub">${esc(when(p.starts_at))} → ${esc(p.ends_at ? when(p.ends_at) : t('admin.promo.no_end'))}${p.ended_at ? ` · ${esc(t('admin.promo.ended_at', { at: when(p.ended_at) }))}` : ''}</div>
+            <strong>${uiText(p.name)}</strong> · ${renderHTML(p.percent_off)}% ${renderHTML(t('admin.promo.off'))} · ${uiText(durationText(p))}
+            <div class="promo-sub">“${uiText(p.headline)}” · ${uiText(p.plan_ids.length ? p.plan_ids.map(planName).join(', ') : t('admin.promo.all_plans'))} · ${uiText(t(`admin.promo.cycle_${p.cycles}`))}</div>
+            <div class="promo-sub">${uiText(when(p.starts_at))} → ${uiText(p.ends_at ? when(p.ends_at) : t('admin.promo.no_end'))}${renderHTML(p.ended_at ? ` · ${esc(t('admin.promo.ended_at', { at: when(p.ended_at) }))}` : '')}</div>
           </div>
           <div class="promo-actions">
-            <button class="btn btn-sm btn-secondary" data-edit="${esc(p.id)}">${esc(t('admin.promo.edit'))}</button>
-            ${cls === 'live'
-              ? `<button class="btn btn-sm btn-danger" data-end="${esc(p.id)}">${esc(t('admin.promo.end_now'))}</button>`
-              : `<button class="btn btn-sm btn-danger" data-delete="${esc(p.id)}" data-name="${esc(p.name)}">${esc(t('admin.promo.delete'))}</button>`}
+            <button class="btn btn-sm btn-secondary" data-edit="${esc(p.id)}">${uiText(t('admin.promo.edit'))}</button>
+            ${renderHTML(cls === 'live'
+              ? `<button class="btn btn-sm btn-danger" data-end="${esc(p.id)}">${uiText(t('admin.promo.end_now'))}</button>`
+              : `<button class="btn btn-sm btn-danger" data-delete="${esc(p.id)}" data-name="${esc(p.name)}">${uiText(t('admin.promo.delete'))}</button>`)}
           </div>
         </div>`;
-      }).join('') : `<p style="color:var(--text-muted);font-size:13px">${esc(t('admin.promo.none'))}</p>`}
+      }).join('') : `<p style="color:var(--text-muted);font-size:13px">${uiText(t('admin.promo.none'))}</p>`)}
     </div>
     <details class="promo-new" ${data.promotions.length && !editing ? '' : 'open'}>
-      <summary>${esc(editing ? t('admin.promo.editing', { name: editing.name }) : t('admin.promo.new'))}</summary>
+      <summary>${uiText(editing ? t('admin.promo.editing', { name: editing.name }) : t('admin.promo.new'))}</summary>
       <div class="promo-form">
-        ${finished ? `<p class="promo-warn">${esc(t('admin.promo.edit_finished'))}</p>` : ''}
-        ${editing && !finished ? `<p class="promo-note">${esc(t('admin.promo.edit_note'))}</p>` : ''}
-        <label>${esc(t('admin.promo.name'))}<input class="input" id="pmName" maxlength="80" placeholder="${esc(t('admin.promo.name_ph'))}" value="${esc(f.name || '')}"></label>
-        <label>${esc(t('admin.promo.headline'))}<input class="input" id="pmHeadline" maxlength="120" placeholder="${esc(t('admin.promo.headline_ph'))}" value="${esc(f.headline || '')}"></label>
+        ${renderHTML(finished ? `<p class="promo-warn">${uiText(t('admin.promo.edit_finished'))}</p>` : '')}
+        ${renderHTML(editing && !finished ? `<p class="promo-note">${uiText(t('admin.promo.edit_note'))}</p>` : '')}
+        <label>${uiText(t('admin.promo.name'))}<input class="input" id="pmName" maxlength="80" placeholder="${esc(t('admin.promo.name_ph'))}" data-fil-i18n-placeholder="${binding('admin.promo.name_ph', undefined)}" value="${esc(f.name || '')}"></label>
+        <label>${uiText(t('admin.promo.headline'))}<input class="input" id="pmHeadline" maxlength="120" placeholder="${esc(t('admin.promo.headline_ph'))}" data-fil-i18n-placeholder="${binding('admin.promo.headline_ph', undefined)}" value="${esc(f.headline || '')}"></label>
         <div class="promo-grid">
-          <label>${esc(t('admin.promo.percent'))}<input class="input" id="pmPct" type="number" min="1" max="90" step="1" value="${f.percent_off}"></label>
-          <label>${esc(t('admin.promo.cycles'))}<select class="input" id="pmCycles">
-            <option value="both"${sel('both', f.cycles)}>${esc(t('admin.promo.cycle_both'))}</option>
-            <option value="yearly"${sel('yearly', f.cycles)}>${esc(t('admin.promo.cycle_yearly'))}</option>
-            <option value="monthly"${sel('monthly', f.cycles)}>${esc(t('admin.promo.cycle_monthly'))}</option></select></label>
-          <label>${esc(t('admin.promo.duration'))}<select class="input" id="pmDuration">
-            <option value="once"${sel('once', f.duration)}>${esc(t('admin.promo.dur_once'))}</option>
-            <option value="repeating"${sel('repeating', f.duration)}>${esc(t('admin.promo.dur_repeating_pick'))}</option>
-            <option value="forever"${sel('forever', f.duration)}>${esc(t('admin.promo.dur_forever'))}</option></select></label>
-          <label id="pmMonthsWrap" hidden>${esc(t('admin.promo.months'))}<input class="input" id="pmMonths" type="number" min="1" max="36" value="${f.duration_in_months || 3}"></label>
-          <label>${esc(t('admin.promo.starts'))}<input class="input" id="pmStarts" type="datetime-local" value="${toLocalInput(f.starts_at)}"></label>
-          <label>${esc(t('admin.promo.ends'))}<input class="input" id="pmEnds" type="datetime-local" value="${f.ends_at ? toLocalInput(f.ends_at) : ''}"></label>
+          <label>${uiText(t('admin.promo.percent'))}<input class="input" id="pmPct" type="number" min="1" max="90" step="1" value="${f.percent_off}"></label>
+          <label>${uiText(t('admin.promo.cycles'))}<select class="input" id="pmCycles">
+            <option value="both"${sel('both', f.cycles)}>${uiText(t('admin.promo.cycle_both'))}</option>
+            <option value="yearly"${sel('yearly', f.cycles)}>${uiText(t('admin.promo.cycle_yearly'))}</option>
+            <option value="monthly"${sel('monthly', f.cycles)}>${uiText(t('admin.promo.cycle_monthly'))}</option></select></label>
+          <label>${uiText(t('admin.promo.duration'))}<select class="input" id="pmDuration">
+            <option value="once"${sel('once', f.duration)}>${uiText(t('admin.promo.dur_once'))}</option>
+            <option value="repeating"${sel('repeating', f.duration)}>${uiText(t('admin.promo.dur_repeating_pick'))}</option>
+            <option value="forever"${sel('forever', f.duration)}>${uiText(t('admin.promo.dur_forever'))}</option></select></label>
+          <label id="pmMonthsWrap" hidden>${uiText(t('admin.promo.months'))}<input class="input" id="pmMonths" type="number" min="1" max="36" value="${f.duration_in_months || 3}"></label>
+          <label>${uiText(t('admin.promo.starts'))}<input class="input" id="pmStarts" type="datetime-local" value="${toLocalInput(f.starts_at)}"></label>
+          <label>${uiText(t('admin.promo.ends'))}<input class="input" id="pmEnds" type="datetime-local" value="${f.ends_at ? toLocalInput(f.ends_at) : ''}"></label>
         </div>
-        <fieldset class="promo-plans"><legend>${esc(t('admin.promo.plans'))}</legend>
-          ${paid.map((p) => `<label><input type="checkbox" value="${esc(p.id)}"${planOn(p.id) ? ' checked' : ''}> ${esc(p.display_name)}</label>`).join('')}
+        <fieldset class="promo-plans"><legend>${uiText(t('admin.promo.plans'))}</legend>
+          ${renderHTML(paid.map((p) => `<label><input type="checkbox" value="${esc(p.id)}"${planOn(p.id) ? ' checked' : ''}> ${uiText(p.display_name)}</label>`).join(''))}
         </fieldset>
         <div class="promo-preview" id="pmPreview" aria-live="polite"></div>
-        <p class="promo-note">${esc(t('admin.promo.note'))}</p>
+        <p class="promo-note">${uiText(t('admin.promo.note'))}</p>
         <div class="promo-actions">
-          <button class="btn btn-primary" id="pmCreate" ${data.unavailable_reason && !editing ? 'disabled' : ''}>${esc(editing ? t('admin.promo.save') : t('admin.promo.create'))}</button>
-          ${editing ? `<button class="btn btn-secondary" id="pmStopEdit">${esc(t('admin.promo.stop_edit'))}</button>` : ''}
+          <button class="btn btn-primary" id="pmCreate" ${data.unavailable_reason && !editing ? 'disabled' : ''}>${uiText(editing ? t('admin.promo.save') : t('admin.promo.create'))}</button>
+          ${renderHTML(editing ? `<button class="btn btn-secondary" id="pmStopEdit">${uiText(t('admin.promo.stop_edit'))}</button>` : '')}
         </div>
       </div>
     </details>`;
@@ -129,14 +133,14 @@ export async function mountPromotionsAdmin(el, editId = null) {
     $('#pmMonthsWrap').hidden = $('#pmDuration').value !== 'repeating';
     const { body, planIds } = read();
     const pct = body.percent_off;
-    if (!(pct >= 1 && pct <= 90)) { $('#pmPreview').textContent = ''; return; }
+    if (!(pct >= 1 && pct <= 90)) { bindMessage($('#pmPreview'), ''); return; }
     const rows = paid.filter((p) => planIds.includes(p.id)).map((p) => {
       const parts = [];
-      if (body.cycles !== 'yearly') parts.push(`${money(p.price_monthly)} → <b>${money(sale(p.price_monthly, pct))}</b>/mo`);
-      if (body.cycles !== 'monthly' && p.price_yearly > 0) parts.push(`${money(p.price_yearly)} → <b>${money(sale(p.price_yearly, pct))}</b>/yr`);
-      return `<div><span>${esc(p.display_name)}</span> ${parts.join(' · ')}</div>`;
+      if (body.cycles !== 'yearly') parts.push(`${renderHTML(money(p.price_monthly))} → <b>${renderHTML(money(sale(p.price_monthly, pct)))}</b>${renderHTML(t('ui.common.per_month'))}`);
+      if (body.cycles !== 'monthly' && p.price_yearly > 0) parts.push(`${renderHTML(money(p.price_yearly))} → <b>${renderHTML(money(sale(p.price_yearly, pct)))}</b>${renderHTML(t('ui.common.per_year'))}`);
+      return `<div><span>${uiText(p.display_name)}</span> ${renderHTML(parts.join(' · '))}</div>`;
     });
-    $('#pmPreview').innerHTML = rows.length ? `<div class="promo-preview-h">${esc(t('admin.promo.preview'))}</div>${rows.join('')}` : '';
+    $('#pmPreview').innerHTML = rows.length ? `<div class="promo-preview-h">${uiText(t('admin.promo.preview'))}</div>${renderHTML(rows.join(''))}` : '';
   };
   el.querySelectorAll('.promo-form input, .promo-form select').forEach((i) => { i.oninput = preview; i.onchange = preview; });
   preview();
@@ -154,7 +158,7 @@ export async function mountPromotionsAdmin(el, editId = null) {
       }
       await mountPromotionsAdmin(el);
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.uiMessage || err.message, 'error');
       btn.disabled = false;
     }
   };
@@ -174,7 +178,7 @@ export async function mountPromotionsAdmin(el, editId = null) {
         showToast(r.stripe_warning ? t('admin.promo.deleted_warn', { w: r.stripe_warning }) : t('admin.promo.deleted'), r.stripe_warning ? 'warning' : 'success');
         await mountPromotionsAdmin(el, editId === b.dataset.delete ? null : editId);
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
         b.disabled = false;
       }
     };
@@ -188,7 +192,7 @@ export async function mountPromotionsAdmin(el, editId = null) {
         showToast(r.stripe_warning ? t('admin.promo.ended_warn', { w: r.stripe_warning }) : t('admin.promo.ended'), r.stripe_warning ? 'warning' : 'success');
         await mountPromotionsAdmin(el);
       } catch (err) {
-        showToast(err.message, 'error');
+        showToast(err.uiMessage || err.message, 'error');
         b.disabled = false;
       }
     };

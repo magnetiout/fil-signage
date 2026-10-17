@@ -617,10 +617,10 @@ class Restorer {
         }
         const id = uuid();
         const role = isPlatformRole(r.role) || r.role === 'user' ? r.role : 'user';
-        this.db.prepare(`INSERT INTO users (id, email, name, password_hash, auth_provider, role, plan_id, email_verified, created_at, disabled_at, ui_mode)
-                         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, 'advanced')`)
+        this.db.prepare(`INSERT INTO users (id, email, name, password_hash, auth_provider, role, plan_id, email_verified, created_at, disabled_at, ui_mode, ui_language)
+                         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, 'advanced', ?)`)
           .run(id, email, String(r.name || email.split('@')[0]), ['local', 'google', 'microsoft', 'oidc', 'saml'].includes(r.auth_provider) ? r.auth_provider : 'local',
-            role, plans.has(r.plan_id) ? r.plan_id : 'free', r.email_verified ? 1 : 0, r.created_at || now(), r.disabled_at || null);
+            role, plans.has(r.plan_id) ? r.plan_id : 'free', r.email_verified ? 1 : 0, r.created_at || now(), r.disabled_at || null, ['tr','en'].includes(r.ui_language) ? r.ui_language : null);
         this.userMap.set(r.id, id);
         this.persist('users', [[r.id, id]]);
         this.persist('created:users', [[id, id]]);

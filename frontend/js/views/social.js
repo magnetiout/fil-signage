@@ -1,7 +1,10 @@
+import { uiText, renderHTML, translatedAttribute, bindMessage, binding } from '../lib/i18n-bindings.js';
+
+import { displayValue, message as t, messageCount as tn } from '../i18n.js';
+
 import { api, getAuthHeaders } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
-import { t, tn } from '../i18n.js';
 
 /*
  * Social feeds (server: routes/social.js, lib/social/*). A feed collects posts from up to 10
@@ -34,14 +37,14 @@ export function cleanup() { releaseBlobs(); }
 
 export async function render(app) {
   releaseBlobs();
-  app.innerHTML = `<div class="page-header"><div><h1>${esc(t('nav.social'))}</h1><div class="subtitle">${esc(t('social.intro'))}</div></div></div><div id="socBody"></div>`;
+  app.innerHTML = `<div class="page-header"><div><h1>${uiText(t('nav.social'))}</h1><div class="subtitle">${uiText(t('social.intro'))}</div></div></div><div id="socBody"></div>`;
   const body = document.getElementById('socBody');
   try {
     const [f, c] = await Promise.all([api.get('/social/feeds'), api.get('/social/connections')]);
     state.feeds = f.feeds || []; state.kinds = f.networks || {}; state.canEdit = !!f.can_edit; state.connections = c.connections || [];
-  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${esc(e.message)}</p>`; return; }
-  body.innerHTML = `${state.canEdit ? `<div class="corp-toolbar"><button class="btn btn-primary" id="socNew">${esc(t('social.new_feed'))}</button></div>` : ''}
-    ${state.feeds.length ? state.feeds.map(feedCard).join('') : `<div class="corp-empty">${esc(t('social.no_feeds'))}</div>`}`;
+  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  body.innerHTML = `${state.canEdit ? `<div class="corp-toolbar"><button class="btn btn-primary" id="socNew">${uiText(t('social.new_feed'))}</button></div>` : ''}
+    ${state.feeds.length ? state.feeds.map(feedCard).join('') : `<div class="corp-empty">${uiText(t('social.no_feeds'))}</div>`}`;
   document.getElementById('socNew')?.addEventListener('click', () => openForm(app, null));
   body.querySelectorAll('[data-feed]').forEach((el) => {
     const feed = state.feeds.find((x) => x.id === el.dataset.feed);
@@ -60,13 +63,13 @@ export async function render(app) {
         } else showToast(t('social.refreshed', { n: r.added || 0 }), 'success');
         render(app);
       }
-      catch (e) { showToast(e.message, 'error'); ev.target.disabled = false; }
+      catch (e) { showToast(e.uiMessage || e.message, 'error'); ev.target.disabled = false; }
     });
     el.querySelector('[data-act="del"]')?.addEventListener('click', async () => {
       if (!confirm(t('social.confirm_delete_feed'))) return;
       try { await api.delete(`/social/feeds/${feed.id}`); }
       catch (e) {
-        if (e.status !== 409 || !confirm(e.message)) { if (e.status !== 409) showToast(e.message, 'error'); return; }
+        if (e.status !== 409 || !confirm(e.message)) { if (e.status !== 409) showToast(e.uiMessage || e.message, 'error'); return; }
         try { await api.delete(`/social/feeds/${feed.id}?force=1`); } catch (e2) { showToast(e2.message, 'error'); return; }
       }
       render(app);
@@ -91,22 +94,22 @@ function feedCard(f) {
   return `<div class="corp-card" data-feed="${esc(f.id)}" style="margin-bottom:12px;padding:16px">
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div style="min-width:0">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>${esc(f.name)}</strong>
-          <span class="corp-help" style="font-size:12px">${esc(f.moderation === 'approve' ? t('social.mode_approve') : t('social.mode_auto'))}</span>
-          ${f.enabled ? '' : `<span class="corp-help" style="font-size:12px">${esc(t('social.off'))}</span>`}</div>
-        <div class="corp-help" style="font-size:12px;margin-top:4px">${f.sources.map((s) => esc(sourceLine(s))).join('<br>')}</div>
-        <div style="font-size:13px;margin-top:6px">${esc(tn('social.n_shown', f.counts.approved))}${f.counts.pending ? ` · <strong>${esc(tn('social.n_pending', f.counts.pending))}</strong>` : ''}${f.counts.hidden ? ` · ${esc(tn('social.n_hidden', f.counts.hidden))}` : ''}
-          ${f.last_fetch_at ? `<span class="corp-help"> · ${esc(t('social.fetched', { time: new Date(f.last_fetch_at * 1000).toLocaleTimeString() }))}</span>` : ''}</div>
-        ${errs.map((e) => `<div style="font-size:12px;color:var(--danger,#b91c1c);margin-top:2px;overflow-wrap:anywhere">${esc(NETWORK_LABELS[e.network] ? NETWORK_LABELS[e.network]() : e.network)}${e.value ? ` (${esc(e.value)})` : ''}: ${esc(e.error)}</div>`).join('')}
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>${uiText(f.name)}</strong>
+          <span class="corp-help" style="font-size:12px">${uiText(f.moderation === 'approve' ? t('social.mode_approve') : t('social.mode_auto'))}</span>
+          ${renderHTML(f.enabled ? '' : `<span class="corp-help" style="font-size:12px">${uiText(t('social.off'))}</span>`)}</div>
+        <div class="corp-help" style="font-size:12px;margin-top:4px">${renderHTML(f.sources.map((s) => esc(sourceLine(s))).join('<br>'))}</div>
+        <div style="font-size:13px;margin-top:6px">${renderHTML(tn('social.n_shown', f.counts.approved))}${renderHTML(f.counts.pending ? ` · <strong>${uiText(tn('social.n_pending', f.counts.pending))}</strong>` : '')}${renderHTML(f.counts.hidden ? ` · ${esc(tn('social.n_hidden', f.counts.hidden))}` : '')}
+          ${renderHTML(f.last_fetch_at ? `<span class="corp-help"> · ${renderHTML(t('social.fetched', { time: displayValue(new Date(f.last_fetch_at * 1000), "toLocaleTimeString", undefined) }))}</span>` : '')}</div>
+        ${renderHTML(errs.map((e) => `<div style="font-size:12px;color:var(--danger,#b91c1c);margin-top:2px;overflow-wrap:anywhere">${uiText(NETWORK_LABELS[e.network] ? NETWORK_LABELS[e.network]() : e.network)}${renderHTML(e.value ? ` (${esc(e.value)})` : '')}: ${uiText(e.error)}</div>`).join(''))}
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
-        <button class="btn btn-secondary btn-sm" data-act="queue">${esc(t('social.posts'))}</button>
-        ${state.canEdit ? `<button class="btn btn-secondary btn-sm" data-act="refresh">${esc(t('social.refresh'))}</button>
-        <button class="btn btn-secondary btn-sm" data-act="edit">${esc(t('common.edit'))}</button>
-        <button class="btn btn-secondary btn-sm" data-act="del" style="color:var(--danger)">${esc(t('common.delete'))}</button>` : ''}
+        <button class="btn btn-secondary btn-sm" data-act="queue">${uiText(t('social.posts'))}</button>
+        ${renderHTML(state.canEdit ? `<button class="btn btn-secondary btn-sm" data-act="refresh">${uiText(t('social.refresh'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="edit">${uiText(t('common.edit'))}</button>
+        <button class="btn btn-secondary btn-sm" data-act="del" style="color:var(--danger)">${uiText(t('common.delete'))}</button>` : '')}
       </div>
     </div>
-    ${state.open === f.id ? '<div class="soc-queue" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px"></div>' : ''}
+    ${renderHTML(state.open === f.id ? `<div class="soc-queue" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px"></div>` : '')}
   </div>`;
 }
 
@@ -124,28 +127,28 @@ async function loadQueue(app, feed, box) {
   if (!box) return;
   const tabs = ['pending', 'approved', 'hidden'];
   const tabLabel = { pending: t('social.tab_pending'), approved: t('social.tab_approved'), hidden: t('social.tab_hidden') };
-  box.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs.map((k) =>
-    `<button class="btn btn-sm ${state.tab === k ? 'btn-primary' : 'btn-secondary'}" data-tab="${k}">${esc(tabLabel[k])} (${feed.counts[k] || 0})</button>`).join('')}</div>
-    <div class="soc-posts corp-help" style="font-size:13px">${esc(t('social.loading'))}</div>`;
+  box.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${renderHTML(tabs.map((k) =>
+    `<button class="btn btn-sm ${state.tab === k ? 'btn-primary' : 'btn-secondary'}" data-tab="${k}">${uiText(tabLabel[k])} (${renderHTML(feed.counts[k] || 0)})</button>`).join(''))}</div>
+    <div class="soc-posts corp-help" style="font-size:13px">${uiText(t('social.loading'))}</div>`;
   box.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { state.tab = b.dataset.tab; loadQueue(app, feed, box); }));
   let posts = [];
   try { posts = (await api.get(`/social/feeds/${feed.id}/posts?status=${state.tab}`)).posts || []; }
-  catch (e) { box.querySelector('.soc-posts').textContent = e.message; return; }
+  catch (e) { bindMessage(box.querySelector('.soc-posts'), (e.uiMessage || e.message)); return; }
   const list = box.querySelector('.soc-posts');
   list.classList.remove('corp-help');
-  if (!posts.length) { list.innerHTML = `<p class="corp-help">${esc(t('social.queue_empty'))}</p>`; return; }
+  if (!posts.length) { list.innerHTML = `<p class="corp-help">${uiText(t('social.queue_empty'))}</p>`; return; }
   list.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px';
   list.innerHTML = posts.map((p) => `<div data-key="${esc(p.key)}" style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;min-width:0">
-      ${p.media.length ? `<div style="aspect-ratio:16/10;background:#000"><img data-hash="${esc(p.media[0])}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>` : ''}
+      ${renderHTML(p.media.length ? `<div style="aspect-ratio:16/10;background:#000"><img data-hash="${esc(p.media[0])}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>` : '')}
       <div style="padding:8px;font-size:12px;flex:1;min-width:0">
-        <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.author_name || p.author_handle || '')} <span class="corp-help">· ${esc(NETWORK_LABELS[p.network] ? NETWORK_LABELS[p.network]() : p.network)}</span></div>
-        <div style="margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:7.5em;overflow:hidden">${esc(p.text || (p.hidden_reason === 'blocklist' ? t('social.blocked_text') : ''))}</div>
-        <div class="corp-help" style="margin-top:4px">${esc(new Date(p.posted_at * 1000).toLocaleString())}${p.permalink ? ` · <a href="${esc(p.permalink)}" target="_blank" rel="noopener noreferrer">${esc(t('social.open_post'))}</a>` : ''}</div>
+        <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(p.author_name || p.author_handle || '')} <span class="corp-help">· ${uiText(NETWORK_LABELS[p.network] ? NETWORK_LABELS[p.network]() : p.network)}</span></div>
+        <div style="margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:7.5em;overflow:hidden">${uiText(p.text || (p.hidden_reason === 'blocklist' ? t('social.blocked_text') : ''))}</div>
+        <div class="corp-help" style="margin-top:4px">${uiText(displayValue(new Date(p.posted_at * 1000), "toLocaleString", undefined))}${renderHTML(p.permalink ? ` · <a href="${esc(p.permalink)}" target="_blank" rel="noopener noreferrer">${uiText(t('social.open_post'))}</a>` : '')}</div>
       </div>
-      ${state.canEdit ? `<div style="display:flex;gap:6px;padding:8px;border-top:1px solid var(--border)">
-        ${p.status !== 'approved' ? `<button class="btn btn-primary btn-sm" data-mod="${p.status === 'hidden' ? 'unhide' : 'approve'}">${esc(p.status === 'hidden' ? t('social.unhide') : t('social.approve'))}</button>` : ''}
-        ${p.status !== 'hidden' ? `<button class="btn btn-secondary btn-sm" data-mod="hide">${esc(t('social.hide'))}</button>` : ''}
-      </div>` : ''}
+      ${renderHTML(state.canEdit ? `<div style="display:flex;gap:6px;padding:8px;border-top:1px solid var(--border)">
+        ${renderHTML(p.status !== 'approved' ? `<button class="btn btn-primary btn-sm" data-mod="${p.status === 'hidden' ? 'unhide' : 'approve'}">${uiText(p.status === 'hidden' ? t('social.unhide') : t('social.approve'))}</button>` : '')}
+        ${renderHTML(p.status !== 'hidden' ? `<button class="btn btn-secondary btn-sm" data-mod="hide">${uiText(t('social.hide'))}</button>` : '')}
+      </div>` : '')}
     </div>`).join('');
   list.querySelectorAll('img[data-hash]').forEach(async (img) => { const u = await imageUrl(img.dataset.hash); if (u) img.src = u; });
   list.querySelectorAll('[data-mod]').forEach((b) => b.addEventListener('click', async () => {
@@ -154,7 +157,7 @@ async function loadQueue(app, feed, box) {
       const r = await api.post(`/social/feeds/${feed.id}/posts/moderate`, { key, action: b.dataset.mod });
       if (r.refetch) showToast(t('social.refetch_note'), 'info');
       render(app);
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   }));
 }
 
@@ -165,16 +168,16 @@ function sourceRow(s, i) {
   const showValue = !(net === 'instagram' && s.kind === 'own');
   return `<div data-src="${i}" style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;display:grid;gap:8px">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
-      <select class="input" data-s="network">${Object.keys(NETWORK_LABELS).map((k) => `<option value="${k}" ${k === net ? 'selected' : ''}>${esc(NETWORK_LABELS[k]())}</option>`).join('')}</select>
-      <select class="input" data-s="kind">${kinds.map((k) => `<option value="${k}" ${k === s.kind ? 'selected' : ''}>${esc(KIND_LABELS[k] ? KIND_LABELS[k]() : k)}</option>`).join('')}</select>
-      ${NEEDS_CONN.includes(net) ? `<select class="input" data-s="connection_id">${conns.length ? conns.map((c) => `<option value="${esc(c.id)}" ${c.id === s.connection_id ? 'selected' : ''}>${esc(c.name)}</option>`).join('') : `<option value="">${esc(t('social.no_connection'))}</option>`}</select>` : ''}
-      ${net === 'mastodon' ? `<input class="input" data-s="instance" value="${esc(s.instance || '')}" placeholder="mastodon.social">` : ''}
+      <select class="input" data-s="network">${renderHTML(Object.keys(NETWORK_LABELS).map((k) => `<option value="${k}" ${k === net ? 'selected' : ''}>${uiText(NETWORK_LABELS[k]())}</option>`).join(''))}</select>
+      <select class="input" data-s="kind">${renderHTML(kinds.map((k) => `<option value="${k}" ${k === s.kind ? 'selected' : ''}>${uiText(KIND_LABELS[k] ? KIND_LABELS[k]() : k)}</option>`).join(''))}</select>
+      ${renderHTML(NEEDS_CONN.includes(net) ? `<select class="input" data-s="connection_id">${renderHTML(conns.length ? conns.map((c) => `<option value="${esc(c.id)}" ${c.id === s.connection_id ? 'selected' : ''}>${uiText(c.name)}</option>`).join('') : `<option value="">${uiText(t('social.no_connection'))}</option>`)}</select>` : '')}
+      ${renderHTML(net === 'mastodon' ? `<input class="input" data-s="instance" value="${esc(s.instance || '')}" ${translatedAttribute("placeholder", "ui.social.placeholder_mastodon_social_26aefa")}>` : '')}
     </div>
     <div style="display:flex;gap:8px">
-      ${showValue ? `<input class="input" data-s="value" style="flex:1;min-width:0" value="${esc(s.value || '')}" placeholder="${esc(VALUE_PH[`${net}:${s.kind || kinds[0]}`] || '')}">` : `<div class="corp-help" style="flex:1;font-size:12px;align-self:center">${esc(t('social.own_posts_hint'))}</div>`}
-      <button class="btn btn-secondary btn-sm" data-s="remove" title="${esc(t('common.delete'))}">✕</button>
+      ${renderHTML(showValue ? `<input class="input" data-s="value" style="flex:1;min-width:0" value="${esc(s.value || '')}" placeholder="${esc(VALUE_PH[`${net}:${s.kind || kinds[0]}`] || '')}">` : `<div class="corp-help" style="flex:1;font-size:12px;align-self:center">${uiText(t('social.own_posts_hint'))}</div>`)}
+      <button class="btn btn-secondary btn-sm" data-s="remove" title="${esc(t('common.delete'))}" data-fil-i18n-title="${binding('common.delete', undefined)}">✕</button>
     </div>
-    ${NEEDS_CONN.includes(net) && !conns.length ? `<div style="font-size:12px;color:var(--warning,#b45309)">${esc(t('social.needs_connection'))}</div>` : ''}
+    ${renderHTML(NEEDS_CONN.includes(net) && !conns.length ? `<div style="font-size:12px;color:var(--warning,#b45309)">${uiText(t('social.needs_connection'))}</div>` : '')}
   </div>`;
 }
 
@@ -183,26 +186,26 @@ function openForm(app, f) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px';
   overlay.innerHTML = `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:640px;max-width:100%;max-height:92vh;overflow:auto">
-    <h3 style="margin-bottom:12px">${esc(f ? t('social.edit_feed') : t('social.new_feed'))}</h3>
-    <div class="form-group"><label>${esc(t('social.f_name'))}</label><input id="sfName" class="input" value="${esc(f ? f.name : '')}" placeholder="${esc(t('social.f_name_ph'))}"></div>
-    <label style="display:block;font-size:13px;font-weight:600;margin:6px 0">${esc(t('social.f_sources'))}</label>
+    <h3 style="margin-bottom:12px">${uiText(f ? t('social.edit_feed') : t('social.new_feed'))}</h3>
+    <div class="form-group"><label>${uiText(t('social.f_name'))}</label><input id="sfName" class="input" value="${esc(f ? f.name : '')}" placeholder="${esc(t('social.f_name_ph'))}" data-fil-i18n-placeholder="${binding('social.f_name_ph', undefined)}"></div>
+    <label style="display:block;font-size:13px;font-weight:600;margin:6px 0">${uiText(t('social.f_sources'))}</label>
     <div id="sfSources" style="display:grid;gap:8px"></div>
-    <button class="btn btn-secondary btn-sm" id="sfAdd" style="margin-top:8px">${esc(t('social.add_source'))}</button>
+    <button class="btn btn-secondary btn-sm" id="sfAdd" style="margin-top:8px">${uiText(t('social.add_source'))}</button>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px">
-      <div class="form-group"><label>${esc(t('social.f_moderation'))}</label><select id="sfMode" class="input">
-        <option value="auto" ${!f || f.moderation === 'auto' ? 'selected' : ''}>${esc(t('social.mode_auto'))}</option>
-        <option value="approve" ${f && f.moderation === 'approve' ? 'selected' : ''}>${esc(t('social.mode_approve'))}</option></select></div>
-      <div class="form-group"><label>${esc(t('social.f_max_posts'))}</label><input id="sfMax" type="number" min="1" max="50" class="input" value="${esc(f ? f.max_posts : 20)}"></div>
-      <div class="form-group"><label>${esc(t('social.f_max_age'))}</label><input id="sfAge" type="number" min="0" max="3650" class="input" value="${esc(f ? f.max_age_days : 0)}"></div>
-      <div class="form-group"><label>${esc(t('social.f_refresh'))}</label><input id="sfRefresh" type="number" min="5" max="1440" class="input" value="${esc(f ? f.refresh_min : 10)}"></div>
+      <div class="form-group"><label>${uiText(t('social.f_moderation'))}</label><select id="sfMode" class="input">
+        <option value="auto" ${!f || f.moderation === 'auto' ? 'selected' : ''}>${uiText(t('social.mode_auto'))}</option>
+        <option value="approve" ${f && f.moderation === 'approve' ? 'selected' : ''}>${uiText(t('social.mode_approve'))}</option></select></div>
+      <div class="form-group"><label>${uiText(t('social.f_max_posts'))}</label><input id="sfMax" type="number" min="1" max="50" class="input" value="${esc(f ? f.max_posts : 20)}"></div>
+      <div class="form-group"><label>${uiText(t('social.f_max_age'))}</label><input id="sfAge" type="number" min="0" max="3650" class="input" value="${esc(f ? f.max_age_days : 0)}"></div>
+      <div class="form-group"><label>${uiText(t('social.f_refresh'))}</label><input id="sfRefresh" type="number" min="5" max="1440" class="input" value="${esc(f ? f.refresh_min : 10)}"></div>
     </div>
-    <div class="form-group"><label>${esc(t('social.f_blocklist'))}</label><textarea id="sfBlock" class="input" rows="2" placeholder="${esc(t('social.f_blocklist_ph'))}">${esc(f ? f.blocklist.join(', ') : '')}</textarea></div>
-    <label style="display:flex;gap:8px;font-size:13px"><input type="checkbox" id="sfMedia" ${f && f.require_media ? 'checked' : ''}> ${esc(t('social.f_require_media'))}</label>
-    ${f ? `<label style="display:flex;gap:8px;font-size:13px;margin-top:6px"><input type="checkbox" id="sfEnabled" ${f.enabled ? 'checked' : ''}> ${esc(t('social.f_enabled'))}</label>` : ''}
+    <div class="form-group"><label>${uiText(t('social.f_blocklist'))}</label><textarea id="sfBlock" class="input" rows="2" placeholder="${esc(t('social.f_blocklist_ph'))}" data-fil-i18n-placeholder="${binding('social.f_blocklist_ph', undefined)}">${uiText(f ? f.blocklist.join(', ') : '')}</textarea></div>
+    <label style="display:flex;gap:8px;font-size:13px"><input type="checkbox" id="sfMedia" ${f && f.require_media ? 'checked' : ''}> ${uiText(t('social.f_require_media'))}</label>
+    ${renderHTML(f ? `<label style="display:flex;gap:8px;font-size:13px;margin-top:6px"><input type="checkbox" id="sfEnabled" ${f.enabled ? 'checked' : ''}> ${uiText(t('social.f_enabled'))}</label>` : '')}
     <div id="sfError" style="color:var(--danger);font-size:13px;min-height:18px;margin-top:8px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-      <button class="btn btn-secondary" id="sfCancel">${esc(t('common.cancel'))}</button>
-      <button class="btn btn-primary" id="sfSave">${esc(t('common.save'))}</button></div></div>`;
+      <button class="btn btn-secondary" id="sfCancel">${uiText(t('common.cancel'))}</button>
+      <button class="btn btn-primary" id="sfSave">${uiText(t('common.save'))}</button></div></div>`;
   document.body.appendChild(overlay);
   const $ = (id) => overlay.querySelector('#' + id);
   const box = $('sfSources');
@@ -240,6 +243,6 @@ function openForm(app, f) {
     try {
       if (f) await api.put(`/social/feeds/${f.id}`, body); else await api.post('/social/feeds', body);
       overlay.remove(); render(app);
-    } catch (e) { $('sfError').textContent = e.message; }
+    } catch (e) { bindMessage($('sfError'), (e.uiMessage || e.message)); }
   });
 }

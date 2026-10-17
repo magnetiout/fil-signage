@@ -10,6 +10,7 @@
     "build:legacy-player": "node scripts/build-legacy-player.js",
     "build:certified-hardware": "node scripts/build-certified-hardware.js",
     "test": "node --test --test-concurrency=2",
+    "check:admin": "node scripts/check-admin.js",
     "smoke": "node smoke-ui.js"
   },
   "engines": {

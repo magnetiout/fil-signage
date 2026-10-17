@@ -1,3 +1,4 @@
+import {bindText} from './lib/i18n-bindings.js';
 let dashboardSocket = null;
 const listeners = new Map();
 let refusalRetryMs = 2000;
@@ -145,10 +146,12 @@ function updateConnectionStatus(connected) {
   const text = el.querySelector('span:last-child');
   if (connected) {
     dot.className = 'status-dot online';
-    text.textContent = 'Connected';
+    text.setAttribute('data-i18n','ui.connection.connected');
+    bindText(text,'ui.connection.connected');
   } else {
     dot.className = 'status-dot offline';
-    text.textContent = 'Disconnected';
+    text.setAttribute('data-i18n','ui.connection.disconnected');
+    bindText(text,'ui.connection.disconnected');
   }
 }
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,7 +27,7 @@
   <!-- OAuth providers loaded on-demand by login.js when needed -->
 </head>
 <body>
-  <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebar">
+  <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Gezinme menüsünü aç/kapat" data-i18n-aria-label="locale.toggle_navigation" aria-expanded="false" aria-controls="sidebar">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
@@ -50,7 +50,7 @@
       <!-- 3.0: Simple / Advanced view (components/ui-mode.js). Simple hides the power-user menu
            items (data-advanced) and page controls (data-advanced-ui); nothing is removed, and every
            page still opens from a link or bookmark. Saved per account. -->
-      <div class="ui-mode-switch" id="uiModeSwitch" role="radiogroup" aria-label="View" hidden>
+      <div class="ui-mode-switch" id="uiModeSwitch" role="radiogroup" aria-label="Görünüm" data-i18n-aria-label="ui.view" hidden>
         <button type="button" role="radio" aria-checked="false" data-ui-mode="simple" data-i18n="nav.view_simple">Simple</button>
         <button type="button" role="radio" aria-checked="false" data-ui-mode="advanced" data-i18n="nav.view_advanced">Advanced</button>
       </div>
@@ -408,7 +408,7 @@
 
       <div class="connection-status" id="connectionStatus">
         <span class="status-dot offline"></span>
-        <span>Disconnected</span>
+        <span data-i18n="ui.connection.disconnected">Bağlantı yok</span>
       </div>
       <div class="version-status" id="versionStatus">
         <span id="versionLabel"></span>
@@ -418,6 +418,11 @@
   </nav>
 
   <div class="main-wrapper">
+    <div class="admin-language-bar">
+      <label for="adminLanguage" id="adminLanguageLabel">Dil</label>
+      <select id="adminLanguage" aria-label="Dil"><option value="tr" lang="tr">Türkçe</option><option value="en" lang="en">English</option></select>
+      <span id="adminLanguageStatus" class="sr-only" role="status" aria-live="polite"></span>
+    </div>
     <div id="banners"></div>
 
     <main class="content" id="app">

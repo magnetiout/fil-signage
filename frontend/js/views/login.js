@@ -1,10 +1,15 @@
+import { renderHTML, uiText, bindAttribute, attributeBinding, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
+import { applyAccountLanguage } from '../components/admin-language.js';
+
+import { localizeServerError } from '../api.js';
+
 import { showToast } from '../components/toast.js';
 import { loginFormState } from '../lib/login-form-state.js';
-import { t } from '../i18n.js';
+import { message as t } from '../i18n.js';
 import { esc, inManagerApp } from '../utils.js';
 import { applyAccent } from '../branding.js';
 import { passkeysUsableHere, conditionalMediationAvailable, getPasskey, isUserCancel } from '../lib/passkeys.js';
-
 
 /*
  * A recognisable mark for the providers people expect to see, and an honest generic one for
@@ -65,19 +70,23 @@ function applyLoginBrandingDoc(b) {
   const root = document.documentElement;
   applyAccent(root, b.primary_color);
   if (b.bg_color) root.style.setProperty('--bg-primary', b.bg_color);
-  if (b.brand_name) document.title = b.brand_name;
+  if (b.brand_name) bindAttribute(document, "title", b.brand_name);
   if (b.favicon_url) {
     document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').forEach(l => l.setAttribute('href', b.favicon_url));
   }
   if (b.custom_css) {
     let style = document.getElementById('wl-custom-css');
     if (!style) { style = document.createElement('style'); style.id = 'wl-custom-css'; document.head.appendChild(style); }
-    style.textContent = b.custom_css;
+    bindMessage(style, b.custom_css);
   }
 }
 
+let renderGeneration = 0;
 export async function render(container) {
+  const generation = ++renderGeneration;
   const [config, branding] = await Promise.all([loadAuthConfig(), loadLoginBranding()]);
+  // A slow signed-out configuration response must not replace a newer authenticated view.
+  if (generation !== renderGeneration || !container.isConnected) return;
   const isSetup = config.needsSetup;
   // registration_enabled may be absent on older servers — treat as enabled for back-compat
   const canRegister = config.registration_enabled !== false;
@@ -88,7 +97,7 @@ export async function render(container) {
   const brandName = branding.brand_name || 'ScreenTinker';
   // Branded logo if set, else the default ScreenTinker glyph.
   const logoHtml = branding.logo_url
-    ? `<img src="${brandEsc(branding.logo_url)}" alt="${brandEsc(brandName)}" style="max-height:48px;max-width:200px;margin:0 auto 12px;display:block">`
+    ? `<img src="${brandEsc(branding.logo_url)}" alt="${brandEsc(brandName)}"${attributeBinding("alt", brandName)} style="max-height:48px;max-width:200px;margin:0 auto 12px;display:block">`
     : `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="margin:0 auto 12px">
             <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
             <line x1="8" y1="21" x2="16" y2="21"/>
@@ -99,24 +108,24 @@ export async function render(container) {
     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px">
       <div style="width:400px;max-width:100%">
         <div style="text-align:center;margin-bottom:32px">
-          ${logoHtml}
-          <h1 style="font-size:24px;font-weight:700;color:var(--accent)">${brandEsc(brandName)}</h1>
+          ${renderHTML(logoHtml)}
+          <h1 style="font-size:24px;font-weight:700;color:var(--accent)">${uiText(brandName)}</h1>
           <p style="color:var(--text-secondary);font-size:13px;margin-top:4px">
-            ${isSetup ? t('auth.subtitle_setup') : t('auth.subtitle_signin')}
+            ${renderHTML(isSetup ? t('auth.subtitle_setup') : t('auth.subtitle_signin'))}
           </p>
-          ${!isSetup && canRegister && config.trial_offered !== false && !inManagerApp() ? `<p style="color:var(--warning);font-size:12px;margin-top:8px">${t('auth.trial_notice')}</p>` : ''}
+          ${renderHTML(!isSetup && canRegister && config.trial_offered !== false && !inManagerApp() ? `<p style="color:var(--warning);font-size:12px;margin-top:8px">${renderHTML(t('auth.trial_notice'))}</p>` : '')}
         </div>
 
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px">
           <!-- Local Auth Form -->
           <div id="localAuthForm">
             <div class="form-group">
-              <label>${t('auth.email')}</label>
-              <input type="email" id="loginEmail" class="input" placeholder="${t('auth.placeholder_email')}" autocomplete="${passkeyUsable ? 'email webauthn' : 'email'}">
+              <label>${renderHTML(t('auth.email'))}</label>
+              <input type="email" id="loginEmail" class="input" placeholder="${t('auth.placeholder_email')}" data-fil-i18n-placeholder="${binding('auth.placeholder_email', undefined)}" autocomplete="${passkeyUsable ? 'email webauthn' : 'email'}">
             </div>
             <div class="form-group">
-              <label id="loginPasswordLabel" for="loginPassword">${t('auth.password')}</label>
-              <input type="password" id="loginPassword" class="input" placeholder="${t('auth.placeholder_password')}" autocomplete="current-password">
+              <label id="loginPasswordLabel" for="loginPassword">${renderHTML(t('auth.password'))}</label>
+              <input type="password" id="loginPassword" class="input" placeholder="${t('auth.placeholder_password')}" data-fil-i18n-placeholder="${binding('auth.placeholder_password', undefined)}" autocomplete="current-password">
             <!-- Filled in only when the typed email belongs to an organization that has configured
                  its own identity provider. A customer's IdP is never listed to everyone: the button
                  appears for the people it belongs to and nobody else, which also keeps the customer
@@ -129,89 +138,89 @@ export async function render(container) {
                  exactly why setPasswordVisible() hides the FIELD, never the container. -->
             <div id="orgSsoSlot" style="display:none;margin-top:12px"></div>
             </div>
-            ${isSetup ? `
+            ${renderHTML(isSetup ? `
             <div class="form-group">
-              <label>${t('auth.name')}</label>
-              <input type="text" id="loginName" class="input" placeholder="${t('auth.placeholder_name')}">
+              <label>${renderHTML(t('auth.name'))}</label>
+              <input type="text" id="loginName" class="input" placeholder="${t('auth.placeholder_name')}" data-fil-i18n-placeholder="${binding('auth.placeholder_name', undefined)}">
             </div>
-            ` : ''}
+            ` : '')}
             <button class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;padding:10px">
-              ${isSetup ? t('auth.create_admin_account') : t('auth.sign_in')}
+              ${renderHTML(isSetup ? t('auth.create_admin_account') : t('auth.sign_in'))}
             </button>
-            ${passkeyUsable ? `
+            ${renderHTML(passkeyUsable ? `
             <!-- 3.0: no address needed - the browser asks which passkey, and the passkey names the account. -->
             <button type="button" class="btn btn-secondary" id="passkeyLoginBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px;gap:8px">
-              ${PASSKEY_ICON} ${esc(t('passkey.signin'))}
+              ${renderHTML(PASSKEY_ICON)} ${uiText(t('passkey.signin'))}
             </button>
-            ` : ''}
-            ${!isSetup ? `
+            ` : '')}
+            ${renderHTML(!isSetup ? `
             <p style="text-align:center;margin-top:10px">
-              <a href="#" id="forgotLink" style="color:var(--text-secondary);font-size:12px;text-decoration:none">${t('auth.forgot_password')}</a>
+              <a href="#" id="forgotLink" style="color:var(--text-secondary);font-size:12px;text-decoration:none">${renderHTML(t('auth.forgot_password'))}</a>
             </p>
-            ` : ''}
-            ${!isSetup && canRegister ? `
+            ` : '')}
+            ${renderHTML(!isSetup && canRegister ? `
             <button class="btn btn-secondary" id="showRegisterBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">
-              ${t('auth.create_account')}
+              ${renderHTML(t('auth.create_account'))}
             </button>
-            ` : ''}
+            ` : '')}
           </div>
 
           <!-- Register form (hidden by default) -->
           <div id="registerForm" style="display:none">
             <div class="form-group">
-              <label>${t('auth.name')}</label>
-              <input type="text" id="regName" class="input" placeholder="${t('auth.placeholder_name')}">
+              <label>${renderHTML(t('auth.name'))}</label>
+              <input type="text" id="regName" class="input" placeholder="${t('auth.placeholder_name')}" data-fil-i18n-placeholder="${binding('auth.placeholder_name', undefined)}">
             </div>
             <div class="form-group">
-              <label>${t('auth.email')}</label>
-              <input type="email" id="regEmail" class="input" placeholder="${t('auth.placeholder_email')}">
+              <label>${renderHTML(t('auth.email'))}</label>
+              <input type="email" id="regEmail" class="input" placeholder="${t('auth.placeholder_email')}" data-fil-i18n-placeholder="${binding('auth.placeholder_email', undefined)}">
             </div>
             <div class="form-group">
-              <label>${t('auth.password')}</label>
-              <input type="password" id="regPassword" class="input" placeholder="${t('auth.placeholder_register_password')}">
+              <label>${renderHTML(t('auth.password'))}</label>
+              <input type="password" id="regPassword" class="input" placeholder="${t('auth.placeholder_register_password')}" data-fil-i18n-placeholder="${binding('auth.placeholder_register_password', undefined)}">
             </div>
             <button class="btn btn-primary" id="registerBtn" style="width:100%;justify-content:center;padding:10px">
-              ${t('auth.create_account')}
+              ${renderHTML(t('auth.create_account'))}
             </button>
             <button class="btn btn-secondary" id="showLoginBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">
-              ${t('auth.back_to_signin')}
+              ${renderHTML(t('auth.back_to_signin'))}
             </button>
           </div>
 
           <!-- TOTP 2FA challenge (hidden until /login returns mfa_required) -->
           <div id="mfaForm" style="display:none">
-            <h2 style="font-size:16px;font-weight:600;margin-bottom:6px">${t('auth.mfa_title')}</h2>
-            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:14px">${t('auth.mfa_prompt')}</p>
+            <h2 style="font-size:16px;font-weight:600;margin-bottom:6px">${renderHTML(t('auth.mfa_title'))}</h2>
+            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:14px">${renderHTML(t('auth.mfa_prompt'))}</p>
             <div class="form-group">
-              <label>${t('auth.mfa_code_label')}</label>
+              <label>${renderHTML(t('auth.mfa_code_label'))}</label>
               <input type="text" id="mfaCode" class="input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false"
                      placeholder="123456" maxlength="40" style="letter-spacing:6px;text-align:center;font-family:monospace;font-size:18px">
             </div>
-            <button class="btn btn-primary" id="mfaVerifyBtn" style="width:100%;justify-content:center;padding:10px">${t('auth.mfa_verify')}</button>
+            <button class="btn btn-primary" id="mfaVerifyBtn" style="width:100%;justify-content:center;padding:10px">${renderHTML(t('auth.mfa_verify'))}</button>
             <!-- 3.0: shown by showMfaChallenge() when the account has a passkey and this page can use it. -->
-            <button type="button" class="btn btn-secondary" id="mfaPasskeyBtn" style="display:none;width:100%;justify-content:center;padding:10px;margin-top:8px;gap:8px">${PASSKEY_ICON} ${esc(t('passkey.mfa_use'))}</button>
-            <button class="btn btn-secondary" id="mfaBackBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">${t('auth.back_to_signin')}</button>
-            <p style="color:var(--text-muted);font-size:11px;text-align:center;margin-top:12px">${t('auth.mfa_recovery_hint')}</p>
+            <button type="button" class="btn btn-secondary" id="mfaPasskeyBtn" style="display:none;width:100%;justify-content:center;padding:10px;margin-top:8px;gap:8px">${renderHTML(PASSKEY_ICON)} ${uiText(t('passkey.mfa_use'))}</button>
+            <button class="btn btn-secondary" id="mfaBackBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">${renderHTML(t('auth.back_to_signin'))}</button>
+            <p style="color:var(--text-muted);font-size:11px;text-align:center;margin-top:12px">${renderHTML(t('auth.mfa_recovery_hint'))}</p>
           </div>
 
           <!-- Email-verification notice (hidden until a verification_required response) -->
           <div id="verifyNotice" style="display:none;text-align:center">
             <div style="font-size:42px;line-height:1;margin-bottom:10px">✉️</div>
-            <h2 style="font-size:18px;font-weight:600;margin-bottom:8px">${t('auth.verify_title')}</h2>
-            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:6px">${t('auth.verify_body')}</p>
+            <h2 style="font-size:18px;font-weight:600;margin-bottom:8px">${renderHTML(t('auth.verify_title'))}</h2>
+            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:6px">${renderHTML(t('auth.verify_body'))}</p>
             <p style="font-weight:600;font-size:14px;margin-bottom:16px"><span id="verifyEmail"></span></p>
-            <button class="btn btn-secondary" id="verifyResendBtn" style="width:100%;justify-content:center;padding:10px">${t('auth.verify_resend')}</button>
-            <button class="btn btn-secondary" id="verifyBackBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">${t('auth.back_to_signin')}</button>
+            <button class="btn btn-secondary" id="verifyResendBtn" style="width:100%;justify-content:center;padding:10px">${renderHTML(t('auth.verify_resend'))}</button>
+            <button class="btn btn-secondary" id="verifyBackBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">${renderHTML(t('auth.back_to_signin'))}</button>
           </div>
 
           <div id="ssoBlock">
-          ${(config.providers || []).length ? `
+          ${renderHTML((config.providers || []).length ? `
           <div id="ssoDivider" style="display:flex;align-items:center;gap:12px;margin:20px 0">
             <hr style="flex:1;border-color:var(--border)">
-            <span style="color:var(--text-muted);font-size:12px">${t('auth.divider_or')}</span>
+            <span style="color:var(--text-muted);font-size:12px">${renderHTML(t('auth.divider_or'))}</span>
             <hr style="flex:1;border-color:var(--border)">
           </div>
-          ` : ''}
+          ` : '')}
 
           <!-- One button per configured provider, and each is a plain LINK to a server endpoint.
                There is no provider SDK on this page: the browser never speaks to the identity
@@ -222,49 +231,49 @@ export async function render(container) {
           <!-- Wrapped so the whole set can be hidden at once: an organization that REQUIRES its own
                identity provider must not be shown the operator's, which are not domain-confined. -->
           <div id="instanceProviders">
-          ${(config.providers || []).map((p) => `
+          ${renderHTML((config.providers || []).map((p) => `
           <a class="btn btn-secondary" href="/api/auth/oidc/${encodeURIComponent(p.slug)}/start"
              id="sso-${esc(p.slug)}"
              style="width:100%;justify-content:center;padding:10px;gap:8px;margin-top:8px;text-decoration:none">
-            ${providerIcon(p.slug)}
-            ${esc(t('auth.signin_with', { provider: p.name }))}
+            ${renderHTML(providerIcon(p.slug))}
+            ${uiText(t('auth.signin_with', { provider: p.name }))}
           </a>
-          `).join('')}
+          `).join(''))}
           </div>
           </div>
         </div>
 
         <!-- Support Access (collapsible) -->
         <details id="supportDetails" style="margin-top:16px">
-          <summary style="font-size:11px;color:var(--text-muted);cursor:pointer;text-align:center">${t('auth.support_access')}</summary>
+          <summary style="font-size:11px;color:var(--text-muted);cursor:pointer;text-align:center">${renderHTML(t('auth.support_access'))}</summary>
           <div style="margin-top:8px">
-            <input type="text" id="supportToken" class="input" placeholder="${t('auth.support_token_placeholder')}" style="font-family:monospace">
-            <button class="btn btn-secondary" id="supportLoginBtn" style="width:100%;justify-content:center;padding:8px;margin-top:6px;font-size:12px">${t('auth.support_authenticate')}</button>
+            <input type="text" id="supportToken" class="input" placeholder="${t('auth.support_token_placeholder')}" data-fil-i18n-placeholder="${binding('auth.support_token_placeholder', undefined)}" style="font-family:monospace">
+            <button class="btn btn-secondary" id="supportLoginBtn" style="width:100%;justify-content:center;padding:8px;margin-top:6px;font-size:12px">${renderHTML(t('auth.support_authenticate'))}</button>
           </div>
         </details>
 
         <div id="forgotForm" style="display:none">
           <div class="form-group">
-            <label>${t('auth.email')}</label>
-            <input type="email" id="forgotEmail" class="input" placeholder="${t('auth.placeholder_email')}" autocomplete="email">
+            <label>${renderHTML(t('auth.email'))}</label>
+            <input type="email" id="forgotEmail" class="input" placeholder="${t('auth.placeholder_email')}" data-fil-i18n-placeholder="${binding('auth.placeholder_email', undefined)}" autocomplete="email">
           </div>
-          <button class="btn btn-primary" id="forgotSendBtn" style="width:100%;justify-content:center;padding:10px">${t('auth.forgot_send')}</button>
-          <button class="btn btn-secondary" id="forgotBackBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">${t('auth.back_to_signin')}</button>
-          <p id="forgotNotice" style="color:var(--text-secondary);font-size:12px;text-align:center;margin-top:12px;display:none">${t('auth.forgot_sent')}</p>
+          <button class="btn btn-primary" id="forgotSendBtn" style="width:100%;justify-content:center;padding:10px">${renderHTML(t('auth.forgot_send'))}</button>
+          <button class="btn btn-secondary" id="forgotBackBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">${renderHTML(t('auth.back_to_signin'))}</button>
+          <p id="forgotNotice" style="color:var(--text-secondary);font-size:12px;text-align:center;margin-top:12px;display:none">${renderHTML(t('auth.forgot_sent'))}</p>
         </div>
         <div id="resetForm" style="display:none">
           <div class="form-group">
-            <label>${t('auth.new_password')}</label>
-            <input type="password" id="resetPassword" class="input" placeholder="${t('auth.placeholder_register_password')}" autocomplete="new-password">
+            <label>${renderHTML(t('auth.new_password'))}</label>
+            <input type="password" id="resetPassword" class="input" placeholder="${t('auth.placeholder_register_password')}" data-fil-i18n-placeholder="${binding('auth.placeholder_register_password', undefined)}" autocomplete="new-password">
           </div>
-          <button class="btn btn-primary" id="resetSubmitBtn" style="width:100%;justify-content:center;padding:10px">${t('auth.reset_submit')}</button>
-          <button class="btn btn-secondary" id="resetBackBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">${t('auth.back_to_signin')}</button>
+          <button class="btn btn-primary" id="resetSubmitBtn" style="width:100%;justify-content:center;padding:10px">${renderHTML(t('auth.reset_submit'))}</button>
+          <button class="btn btn-secondary" id="resetBackBtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px">${renderHTML(t('auth.back_to_signin'))}</button>
         </div>
         <p id="loginError" style="color:var(--danger);font-size:12px;text-align:center;margin-top:12px;display:none"></p>
         <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--text-muted)">
-          <a href="/legal/terms.html" target="_blank" style="color:var(--text-muted);text-decoration:underline">${t('auth.terms')}</a>
+          <a href="/legal/terms.html" target="_blank" style="color:var(--text-muted);text-decoration:underline">${renderHTML(t('auth.terms'))}</a>
           &nbsp;&middot;&nbsp;
-          <a href="/legal/privacy.html" target="_blank" style="color:var(--text-muted);text-decoration:underline">${t('auth.privacy')}</a>
+          <a href="/legal/privacy.html" target="_blank" style="color:var(--text-muted);text-decoration:underline">${renderHTML(t('auth.privacy'))}</a>
         </p>
       </div>
     </div>
@@ -276,7 +285,7 @@ export async function render(container) {
 function setupHandlers(container, config, isSetup, passkeyUsable = false) {
   const showError = (msg) => {
     const el = document.getElementById('loginError');
-    el.textContent = msg;
+    bindMessage(el, msg);
     el.style.display = 'block';
   };
 
@@ -296,7 +305,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
         body: JSON.stringify({ token })
       });
       const data = await res.json();
-      if (!res.ok) { showError(data.error); return; }
+      if (!res.ok) { showError(localizeServerError(data.error, res.status)); return; }
       onAuthSuccess(data);
     } catch (err) { showError(t('auth.error_support_failed')); }
   });
@@ -418,7 +427,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
        * never work again. Point them at the control that does work.
        */
       if (!res.ok && data.code === 'sso_required') { showError(t('auth.sso_required')); return; }
-      if (!res.ok) { showError(data.error); return; }
+      if (!res.ok) { showError(localizeServerError(data.error, res.status)); return; }
       // Unverified account (hosted hard-gate): no session — prompt to check email.
       if (data.verification_required) { showVerifyNotice(data.email || email); return; }
       // #100: TOTP-enabled accounts get no session yet — a second step verifies a code.
@@ -492,7 +501,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
         body: JSON.stringify({ token: pendingResetToken, password }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { showError(data.error || t('auth.reset_failed')); resetSubmitBtn.disabled = false; return; }
+      if (!res.ok) { showError(localizeServerError(data.error) ? localizeServerError(data.error) : t('auth.reset_failed')); resetSubmitBtn.disabled = false; return; }
       // No session is issued by design, so send them through a normal sign-in — which is
       // what keeps TOTP in the loop for accounts that have it.
       showToast(t('auth.reset_done'), 'success');
@@ -513,7 +522,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
     document.getElementById('verifyNotice').style.display = 'block';
-    document.getElementById('verifyEmail').textContent = email || '';
+    bindMessage(document.getElementById('verifyEmail'), email || '');
     const errEl = document.getElementById('loginError'); if (errEl) errEl.style.display = 'none';
     document.getElementById('verifyBackBtn').addEventListener('click', () => window.location.reload());
     document.getElementById('verifyResendBtn').addEventListener('click', async () => {
@@ -552,7 +561,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
           body: JSON.stringify({ mfa_token: mfaToken, code })
         });
         const data = await res.json();
-        if (!res.ok) { showError(data.error || t('auth.mfa_invalid')); codeEl.select(); return; }
+        if (!res.ok) { showError(localizeServerError(data.error) ? localizeServerError(data.error) : t('auth.mfa_invalid')); codeEl.select(); return; }
         onAuthSuccess(data);
       } catch (err) {
         showError(t('auth.error_login_failed'));
@@ -570,7 +579,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
         pkBtn.disabled = true;
         try {
           const opts = await postJson('/api/auth/passkeys/mfa/options', { mfa_token: mfaToken });
-          if (!opts.ok) { showError(opts.data.error || t('passkey.err_signin')); return; }
+          if (!opts.ok) { showError(localizeServerError(opts.data.error) ? localizeServerError(opts.data.error) : t('passkey.err_signin')); return; }
           let response;
           try { response = await getPasskey(opts.data.options); }
           catch (err) { if (!isUserCancel(err)) showError(t('passkey.err_signin')); return; }
@@ -588,7 +597,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
     const password = document.getElementById(isFirstUser ? 'loginPassword' : 'regPassword').value;
     const name = document.getElementById(isFirstUser ? 'loginName' : 'regName')?.value.trim() || '';
     if (!email || !password) { showError(t('auth.error_email_password_required')); return; }
-    if (password.length < 6) { showError(t('auth.error_password_min_6')); return; }
+    if (password.length < 8) { showError(t('auth.error_password_min_6')); return; }
 
     try {
       const res = await fetch('/api/auth/register', {
@@ -597,7 +606,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
         body: JSON.stringify({ email, password, name })
       });
       const data = await res.json();
-      if (!res.ok) { showError(data.error); return; }
+      if (!res.ok) { showError(localizeServerError(data.error, res.status)); return; }
       // Hosted signup requires confirming the email before a session is issued.
       if (data.verification_required) { showVerifyNotice(data.email || email); return; }
       onAuthSuccess(data);
@@ -618,7 +627,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
     if (!r.ok) {
       if (r.data.code === 'sso_required') showError(t('auth.sso_required'));
       else if (r.data.code === 'challenge_expired') showError(t('passkey.err_expired'));
-      else if (r.status === 429) showError(r.data.error || t('passkey.err_signin'));
+      else if (r.status === 429) showError(localizeServerError(r.data.error) ? localizeServerError(r.data.error) : t('passkey.err_signin'));
       else showError(t('passkey.err_signin'));
       return false;
     }
@@ -639,7 +648,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
     try {
       const opts = await postJson('/api/auth/passkeys/login/options', {});
       if (conditional && ctrl.signal.aborted) return;   // the button was pressed meanwhile
-      if (!opts.ok) { if (!conditional) showError(opts.data.error || t('passkey.err_signin')); return; }
+      if (!opts.ok) { if (!conditional) showError(localizeServerError(opts.data.error) ? localizeServerError(opts.data.error) : t('passkey.err_signin')); return; }
       let response;
       try {
         response = await getPasskey(opts.data.options, conditional ? { mediation: 'conditional', signal: ctrl.signal } : {});
@@ -752,7 +761,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
      * rather than two, so there is never a choice about which to press.
      */
     const btn = document.getElementById('loginBtn');
-    if (btn) btn.textContent = t(state.buttonKey);
+    if (btn) bindText(btn, state.buttonKey, undefined);
     if (btn) btn.style.display = state.showButton ? '' : 'none';
 
     /*
@@ -843,10 +852,10 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
       slot.innerHTML = `
         <button type="button" id="orgSsoBtn" class="btn ${data.required ? 'btn-primary' : 'btn-secondary'}"
                 style="width:100%;justify-content:center;padding:10px">
-          ${t('auth.signin_sso')}
+          ${renderHTML(t('auth.signin_sso'))}
         </button>
         <div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center">
-          ${t('auth.sso_org_hint')}
+          ${renderHTML(t('auth.sso_org_hint'))}
         </div>`;
       slot.style.display = '';
 
@@ -860,7 +869,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
             body: JSON.stringify({ email }),
           });
           const body = await r.json().catch(() => ({}));
-          if (!r.ok || !body.start_url) throw new Error(body.error || `start ${r.status}`);
+          if (!r.ok || !body.start_url) throw new Error(localizeServerError(body.error) || `start ${r.status}`);
           startSso(body.start_url);
         } catch {
           btn.disabled = false;
@@ -962,16 +971,20 @@ function startSso(startUrl) {
   window.location.assign(startUrl);
 }
 
-function onAuthSuccess(data) {
+async function onAuthSuccess(data) {
   // Defensive: only a response that actually carries a session token logs the user in. A
   // tokenless response (e.g. verification_required / mfa_required) must never be stored as a
   // session — otherwise isAuthenticated() would pass on the string "undefined" and the router
   // would bounce an un-authenticated browser into the app / setup wizard.
   if (!data || !data.token) return;
   localStorage.setItem('token', data.token);
-  localStorage.setItem('user', JSON.stringify(data.user));
-  window.location.hash = '#/';
+  localStorage.setItem('user', JSON.stringify(data.user || null));
+  let user=data.user;
+  try { const response=await fetch('/api/auth/me',{headers:{Authorization:'Bearer '+data.token}});if(response.ok)user=await response.json(); } catch { /* the cached account still opens */ }
+  localStorage.setItem('user', JSON.stringify(user));
+  await applyAccountLanguage(user, {fresh:true});
+  history.replaceState(null, '', window.location.pathname + '#/');
   window.location.reload();
 }
 
-export function cleanup() {}
+export function cleanup() { renderGeneration++; }

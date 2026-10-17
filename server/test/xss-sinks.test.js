@@ -1,4 +1,5 @@
 'use strict';
+const {runInViewContext}=require('./helpers/admin-render');
 
 /*
  * Values from a URL, a form field or the server that used to reach an HTML or URL sink unescaped.
@@ -33,7 +34,7 @@ function runOffline(search) {
     fetch: (url) => { fetched.push(url); return Promise.resolve({ ok: true, status: 200 }); },
     setTimeout: () => 0,
   };
-  vm.runInNewContext(src, ctx);
+  runInViewContext(src, ctx);
   return { els, fetched, location };
 }
 
@@ -74,17 +75,17 @@ test('dashboard no longer parses translations as markup', () => {
 
 test('content library escapes option values and the YouTube frame source', () => {
   const s = read('frontend/js/views/content-library.js');
-  assert.match(s, /<option value="\$\{esc\(v\)\}"/);
-  assert.match(s, /<option value="\$\{esc\(state\.sort\)\}"/);
-  assert.match(s, /<option value="\$\{esc\(f\.id\)\}"/);
-  assert.match(s, /lib-nav-count">\$\{esc\(count\)\}/);
-  assert.match(s, /src="\$\{esc\(\(\(\) => \{/);
+  assert.match(s, /<option value="\$\{(?:esc|uiText)\(v\)\}"/);
+  assert.match(s, /<option value="\$\{(?:esc|uiText)\(state\.sort\)\}"/);
+  assert.match(s, /<option value="\$\{(?:esc|uiText)\(f\.id\)\}"/);
+  assert.match(s, /lib-nav-count">\$\{(?:esc|uiText)\(count\)\}/);
+  assert.match(s, /src="\$\{(?:esc|uiText)\(\(\(\) => \{/);
   assert.match(s, /u\.protocol !== 'https:' && u\.protocol !== 'http:'\) return 'about:blank'/);
 });
 
 test('Tizen info overlay escapes its values', () => {
   const s = read('tizen/js/app.js');
-  assert.match(s, /\(val == null \|\| val === '' \? '—' : esc\(val\)\)/);
+  assert.match(s, /\(val == null \|\| val === '' \? '—' : (?:esc|uiText)\(val\)\)/);
 });
 
 test('radar example builds its legend from text nodes', () => {

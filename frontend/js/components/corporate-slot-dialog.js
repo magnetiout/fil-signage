@@ -1,3 +1,5 @@
+import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
+
 /*
  * "Add local slot" / "Slot settings" for a head office (corporate) playlist (spec §7.3).
  *
@@ -8,7 +10,7 @@
  * After you publish: up to 3 · 2 stores have more than that" — before anyone saves.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
 import { openModal, limitsText } from './corporate-ui.js';
@@ -43,34 +45,34 @@ export async function openSlotDialog(playlist, slot, onSaved) {
     wide: true,
     body: `
       <div class="corp-grid2">
-        <div class="form-group"><label for="slName">${esc(t('corp.form.name'))}</label>
-          <input id="slName" class="input" maxlength="80" value="${esc(slot ? slot.name : '')}" placeholder="${esc(t('corp.hq.slot_name_ph'))}"></div>
-        <div class="form-group"><label for="slHelp">${esc(t('corp.hq.slot_help_label'))}</label>
-          <input id="slHelp" class="input" maxlength="500" value="${esc(slot && slot.help_text ? slot.help_text : '')}" placeholder="${esc(t('corp.hq.slot_help_ph'))}"></div>
-        <div class="form-group"><label for="slMaxItems">${esc(t('corp.hq.slot_max_items'))}</label>
-          <input id="slMaxItems" class="input" type="number" min="1" max="100" value="${esc(lim.max_items == null ? '' : String(lim.max_items))}" placeholder="${esc(t('corp.hq.no_limit'))}"></div>
-        <div class="form-group"><label for="slMaxSec">${esc(t('corp.hq.slot_max_sec'))}</label>
-          <input id="slMaxSec" class="input" type="number" min="5" max="3600" value="${esc(lim.max_total_sec == null ? '' : String(lim.max_total_sec))}" placeholder="${esc(t('corp.hq.no_limit'))}"></div>
+        <div class="form-group"><label for="slName">${uiText(t('corp.form.name'))}</label>
+          <input id="slName" class="input" maxlength="80" value="${esc(slot ? slot.name : '')}" placeholder="${esc(t('corp.hq.slot_name_ph'))}" data-fil-i18n-placeholder="${binding('corp.hq.slot_name_ph', undefined)}"></div>
+        <div class="form-group"><label for="slHelp">${uiText(t('corp.hq.slot_help_label'))}</label>
+          <input id="slHelp" class="input" maxlength="500" value="${esc(slot && slot.help_text ? slot.help_text : '')}" placeholder="${esc(t('corp.hq.slot_help_ph'))}" data-fil-i18n-placeholder="${binding('corp.hq.slot_help_ph', undefined)}"></div>
+        <div class="form-group"><label for="slMaxItems">${uiText(t('corp.hq.slot_max_items'))}</label>
+          <input id="slMaxItems" class="input" type="number" min="1" max="100" value="${esc(lim.max_items == null ? '' : String(lim.max_items))}" placeholder="${esc(t('corp.hq.no_limit'))}" data-fil-i18n-placeholder="${binding('corp.hq.no_limit', undefined)}"></div>
+        <div class="form-group"><label for="slMaxSec">${uiText(t('corp.hq.slot_max_sec'))}</label>
+          <input id="slMaxSec" class="input" type="number" min="5" max="3600" value="${esc(lim.max_total_sec == null ? '' : String(lim.max_total_sec))}" placeholder="${esc(t('corp.hq.no_limit'))}" data-fil-i18n-placeholder="${binding('corp.hq.no_limit', undefined)}"></div>
       </div>
-      <label class="corp-check"><input type="checkbox" id="slVideo" ${lim.allow_video === 0 || lim.allow_video === false ? '' : 'checked'}> ${esc(t('corp.hq.slot_allow_video'))}</label>
-      <label class="corp-check"><input type="checkbox" id="slWidgets" ${lim.allow_widgets === 0 || lim.allow_widgets === false ? '' : 'checked'}> ${esc(t('corp.hq.slot_allow_widgets'))}</label>
+      <label class="corp-check"><input type="checkbox" id="slVideo" ${lim.allow_video === 0 || lim.allow_video === false ? '' : 'checked'}> ${uiText(t('corp.hq.slot_allow_video'))}</label>
+      <label class="corp-check"><input type="checkbox" id="slWidgets" ${lim.allow_widgets === 0 || lim.allow_widgets === false ? '' : 'checked'}> ${uiText(t('corp.hq.slot_allow_widgets'))}</label>
       <div class="corp-grid2" style="margin-top:12px">
-        <div class="form-group"><label for="slFallback">${esc(t('corp.hq.slot_fallback'))}</label>
+        <div class="form-group"><label for="slFallback">${uiText(t('corp.hq.slot_fallback'))}</label>
           <select id="slFallback" class="input">
-            <option value="">${esc(t('corp.hq.slot_fallback_none'))}</option>
-            ${content.length ? `<optgroup label="${esc(t('playlist.tab_content'))}">${content.map((c) => `<option value="content:${esc(c.id)}" ${fb === `content:${c.id}` ? 'selected' : ''}>${esc(c.filename)}</option>`).join('')}</optgroup>` : ''}
-            ${widgets.length ? `<optgroup label="${esc(t('playlist.tab_widgets'))}">${widgets.map((w) => `<option value="widget:${esc(w.id)}" ${fb === `widget:${w.id}` ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</optgroup>` : ''}
+            <option value="">${uiText(t('corp.hq.slot_fallback_none'))}</option>
+            ${renderHTML(content.length ? `<optgroup label="${esc(t('playlist.tab_content'))}">${renderHTML(content.map((c) => `<option value="content:${esc(c.id)}" ${fb === `content:${c.id}` ? 'selected' : ''}>${uiText(c.filename)}</option>`).join(''))}</optgroup>` : '')}
+            ${renderHTML(widgets.length ? `<optgroup label="${esc(t('playlist.tab_widgets'))}">${renderHTML(widgets.map((w) => `<option value="widget:${esc(w.id)}" ${fb === `widget:${w.id}` ? 'selected' : ''}>${uiText(w.name)}</option>`).join(''))}</optgroup>` : '')}
           </select></div>
-        <div class="form-group"><label for="slFbDur">${esc(t('corp.hq.slot_fallback_sec'))}</label>
+        <div class="form-group"><label for="slFbDur">${uiText(t('corp.hq.slot_fallback_sec'))}</label>
           <input id="slFbDur" class="input" type="number" min="1" max="3600" value="${esc(slot && slot.fallback && slot.fallback.duration_sec ? String(slot.fallback.duration_sec) : '')}" placeholder="10"></div>
-        ${!slot && zones.length ? `<div class="form-group"><label for="slZone">${esc(t('corp.hq.slot_zone'))}</label>
-          <select id="slZone" class="input"><option value="">${esc(t('device.assign.zone_default'))}</option>
-            ${zones.map((z) => `<option value="${esc(z.id)}" ${zoneId === z.id ? 'selected' : ''}>${esc(z.name)}</option>`).join('')}</select></div>` : ''}
+        ${renderHTML(!slot && zones.length ? `<div class="form-group"><label for="slZone">${uiText(t('corp.hq.slot_zone'))}</label>
+          <select id="slZone" class="input"><option value="">${uiText(t('device.assign.zone_default'))}</option>
+            ${renderHTML(zones.map((z) => `<option value="${esc(z.id)}" ${zoneId === z.id ? 'selected' : ''}>${uiText(z.name)}</option>`).join(''))}</select></div>` : '')}
       </div>
-      <p class="corp-help">${esc(t('corp.hq.slot_video_note'))} ${esc(t('corp.slot.no_live'))}</p>
-      <p class="corp-help"><strong>${esc(t('corp.hq.slot_apply_note'))}</strong></p>
+      <p class="corp-help">${uiText(t('corp.hq.slot_video_note'))} ${uiText(t('corp.slot.no_live'))}</p>
+      <p class="corp-help"><strong>${uiText(t('corp.hq.slot_apply_note'))}</strong></p>
       <div id="slImpact" class="corp-help"></div>`,
-    footer: `<button class="btn btn-secondary" data-corp-close>${esc(t('common.cancel'))}</button><button class="btn btn-primary" id="slSave">${esc(t('common.save'))}</button>`,
+    footer: `<button class="btn btn-secondary" data-corp-close>${uiText(t('common.cancel'))}</button><button class="btn btn-primary" id="slSave">${uiText(t('common.save'))}</button>`,
   });
   const q = m.q;
   q('#slName').focus();
@@ -83,9 +85,9 @@ export async function openSlotDialog(playlist, slot, onSaved) {
     try {
       const r = await api.getSlotImpact(slot.id, params);
       if (mine !== seq) return;
-      q('#slImpact').innerHTML = `<div class="corp-notice ${r.stores ? 'corp-notice-warn' : ''}">${esc(t('corp.hq.slot_impact', {
+      q('#slImpact').innerHTML = `<div class="corp-notice ${r.stores ? 'corp-notice-warn' : ''}">${renderHTML(t('corp.hq.slot_impact', {
         live: r.live ? limitsText(r.live) : t('corp.hq.slot_not_live'), next: limitsText(r.next), k: r.stores,
-      }))}${r.over && r.over.length ? `<ul class="corp-list">${r.over.map((o) => `<li>${esc(o.workspace_name)} — ${esc(o.scope_label || '')}: ${esc(tn('corp.n_items', o.items))}, ${esc(t('corp.sec', { n: o.seconds }))}</li>`).join('')}</ul>` : ''}</div>`;
+      }))}${renderHTML(r.over && r.over.length ? `<ul class="corp-list">${renderHTML(r.over.map((o) => `<li>${uiText(o.workspace_name)} — ${uiText(o.scope_label || '')}: ${uiText(tn('corp.n_items', o.items))}, ${uiText(t('corp.sec', { n: o.seconds }))}</li>`).join(''))}</ul>` : '')}</div>`;
     } catch (_) { /* advisory only */ }
   }
   ['#slMaxItems', '#slMaxSec', '#slVideo', '#slWidgets'].forEach((sel) => q(sel).addEventListener('change', impact));
@@ -109,6 +111,6 @@ export async function openSlotDialog(playlist, slot, onSaved) {
       m.close();
       showToast(t('corp.hq.slot_saved'), 'success');
       if (typeof onSaved === 'function') onSaved();
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
   });
 }

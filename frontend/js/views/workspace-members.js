@@ -1,3 +1,6 @@
+import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
+import { displayValue, getLocale, message as t, messageCount as tn } from '../i18n.js';
+
 // Workspace members view. Slice 2A established the read-only listing;
 // slice 2B adds the mutation surface (invite modal + per-row role change /
 // remove / cancel-invite) gated by can_admin from /me.
@@ -9,7 +12,7 @@
 // Server enforces all three boundaries; UI must match.
 
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+
 import { showToast } from '../components/toast.js';
 import { openInviteMemberModal } from '../components/workspace-members-invite-modal.js';
 import { openAddUserModal } from '../components/workspace-members-add-user-modal.js';
@@ -20,11 +23,11 @@ import { renderScreenShareSettings } from '../components/screen-share.js';   // 
 export async function render(container, workspaceId) {
   container.innerHTML = `
     <div class="page-header">
-      <h1>${t('members.title')}</h1>
+      <h1>${renderHTML(t('members.title'))}</h1>
       <div id="membersHeaderActions"></div>
     </div>
     <div class="members-tabs" id="membersTabs" role="tablist" hidden></div>
-    <div id="workspaceMembersContent" style="color:var(--text-muted)">${t('members.loading')}</div>
+    <div id="workspaceMembersContent" style="color:var(--text-muted)">${uiText(t('members.loading'))}</div>
     <div id="orgMembersContent" hidden></div>
   `;
   const content = document.getElementById('workspaceMembersContent');
@@ -75,8 +78,8 @@ export async function render(container, workspaceId) {
   if (canAdmin) {
     headerActions.innerHTML = `
       <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" id="addUserBtn">${t('members.button.add_user')}</button>
-        <button class="btn btn-primary" id="inviteMemberBtn">${t('members.button.invite')}</button>
+        <button class="btn btn-secondary" id="addUserBtn">${renderHTML(t('members.button.add_user'))}</button>
+        <button class="btn btn-primary" id="inviteMemberBtn">${renderHTML(t('members.button.invite'))}</button>
       </div>
     `;
     document.getElementById('inviteMemberBtn').addEventListener('click', () => {
@@ -103,24 +106,24 @@ export async function render(container, workspaceId) {
   const viaOrg = members.filter(m => m.via_org);
 
   content.innerHTML = `
-    ${renderSection({
+    ${renderHTML(renderSection({
       titleKey: 'members.section.direct',
       count: direct.length,
       emptyKey: 'members.empty.members',
       rows: direct.map(m => renderMemberRow(m, { showJoined: true, canAdmin })).join(''),
-    })}
-    ${viaOrg.length > 0 ? renderSection({
+    }))}
+    ${renderHTML(viaOrg.length > 0 ? renderSection({
       titleKey: 'members.section.via_org',
       count: viaOrg.length,
       emptyKey: null,
       rows: viaOrg.map(m => renderMemberRow(m, { showJoined: false, viaOrg: true, canAdmin })).join(''),
-    }) : ''}
-    ${invites !== null ? renderSection({
+    }) : '')}
+    ${renderHTML(invites !== null ? renderSection({
       titleKey: 'members.section.pending',
       count: invites.length,
       emptyKey: 'members.empty.invites',
       rows: invites.map(inv => renderInviteRow(inv, { canAdmin })).join(''),
-    }) : ''}
+    }) : '')}
     <div id="approvalSettingsCard"></div>
     <div id="liveVideoSettingsCard"></div>
     <div id="screenShareSettingsCard"></div>
@@ -134,15 +137,15 @@ export async function render(container, workspaceId) {
 
 function renderSection({ titleKey, count, emptyKey, rows }) {
   const countLabel = count > 0
-    ? `<span style="color:var(--text-muted);font-weight:400;font-size:13px"> (${count})</span>`
+    ? `<span style="color:var(--text-muted);font-weight:400;font-size:13px"> (${renderHTML(count)})</span>`
     : '';
   const body = (count === 0 && emptyKey)
-    ? `<p style="color:var(--text-muted);font-size:13px">${t(emptyKey)}</p>`
-    : `<div class="members-list">${rows}</div>`;
+    ? `<p style="color:var(--text-muted);font-size:13px">${renderHTML(t(emptyKey))}</p>`
+    : `<div class="members-list">${renderHTML(rows)}</div>`;
   return `
     <div class="settings-section" style="margin-bottom:24px">
-      <h3 style="font-size:15px;margin-bottom:12px">${t(titleKey)}${countLabel}</h3>
-      ${body}
+      <h3 style="font-size:15px;margin-bottom:12px">${renderHTML(t(titleKey))}${renderHTML(countLabel)}</h3>
+      ${renderHTML(body)}
     </div>
   `;
 }
@@ -151,15 +154,15 @@ function renderMemberRow(m, opts = {}) {
   const { showJoined = false, viaOrg = false, canAdmin = false } = opts;
   const initial = ((m.name || m.email || '?')[0] || '?').toUpperCase();
   const rightCell = viaOrg
-    ? `<span class="member-via-org">${t('members.via_org_label')}</span>`
+    ? `<span class="member-via-org">${renderHTML(t('members.via_org_label'))}</span>`
     : (showJoined ? esc(formatDate(m.joined_at)) : '');
 
   // Role cell: select for direct-member rows when canAdmin, plain text otherwise.
   const roleCell = (canAdmin && !viaOrg)
-    ? `<select class="member-role-select" data-member-id="${esc(m.user_id)}" aria-label="${esc(t('members.col.role'))}">
-         ${WORKSPACE_ROLES.map(r => `<option value="${r}"${r === m.role ? ' selected' : ''}>${esc(t('members.role.' + r))}</option>`).join('')}
+    ? `<select class="member-role-select" data-member-id="${esc(m.user_id)}" aria-label="${esc(t('members.col.role'))}" data-fil-i18n-aria-label="${binding('members.col.role', undefined)}">
+         ${renderHTML(WORKSPACE_ROLES.map(r => `<option value="${r}"${r === m.role ? ' selected' : ''}>${uiText(t('members.role.' + r))}</option>`).join(''))}
        </select>`
-    : `<div class="member-role">${esc(t('members.role.' + m.role))}</div>`;
+    : `<div class="member-role">${uiText(t('members.role.' + m.role))}</div>`;
 
   // Actions cell: remove on direct-member rows only when canAdmin.
   const actionsCell = (canAdmin && !viaOrg)
@@ -167,21 +170,21 @@ function renderMemberRow(m, opts = {}) {
          <button class="member-action-btn member-action-btn--danger" type="button"
                  data-remove-member="${esc(m.user_id)}"
                  data-member-name="${esc(m.name || m.email)}"
-                 aria-label="${esc(t('members.button.remove'))}"
-                 title="${esc(t('members.button.remove'))}">${REMOVE_ICON}</button>
+                 aria-label="${esc(t('members.button.remove'))}" data-fil-i18n-aria-label="${binding('members.button.remove', undefined)}"
+                 title="${esc(t('members.button.remove'))}" data-fil-i18n-title="${binding('members.button.remove', undefined)}">${renderHTML(REMOVE_ICON)}</button>
        </div>`
     : '';
 
   return `
     <div class="member-row${viaOrg ? ' member-row--via-org' : ''}">
-      <div class="member-avatar">${esc(initial)}</div>
+      <div class="member-avatar">${uiText(initial)}</div>
       <div class="member-meta">
-        <div class="member-name">${esc(m.name || m.email)}</div>
-        <div class="member-email">${esc(m.email)}</div>
+        <div class="member-name">${uiText(m.name || m.email)}</div>
+        <div class="member-email">${uiText(m.email)}</div>
       </div>
-      ${roleCell}
-      <div class="member-detail">${rightCell}</div>
-      ${actionsCell}
+      ${renderHTML(roleCell)}
+      <div class="member-detail">${renderHTML(rightCell)}</div>
+      ${renderHTML(actionsCell)}
     </div>
   `;
 }
@@ -200,24 +203,24 @@ function renderInviteRow(inv, opts = {}) {
          <button class="member-action-btn member-action-btn--danger" type="button"
                  data-cancel-invite="${esc(inv.id)}"
                  data-invite-email="${esc(inv.email)}"
-                 aria-label="${esc(t('members.button.cancel_invite'))}"
-                 title="${esc(t('members.button.cancel_invite'))}">${REMOVE_ICON}</button>
+                 aria-label="${esc(t('members.button.cancel_invite'))}" data-fil-i18n-aria-label="${binding('members.button.cancel_invite', undefined)}"
+                 title="${esc(t('members.button.cancel_invite'))}" data-fil-i18n-title="${binding('members.button.cancel_invite', undefined)}">${renderHTML(REMOVE_ICON)}</button>
        </div>`
     : '';
 
   return `
     <div class="member-row member-row--invited">
-      <div class="member-avatar member-avatar--muted">${esc(initial)}</div>
+      <div class="member-avatar member-avatar--muted">${uiText(initial)}</div>
       <div class="member-meta">
         <div class="member-name">
-          ${esc(inv.email)}
-          <span class="member-badge">${t('members.invited_label')}</span>
+          ${uiText(inv.email)}
+          <span class="member-badge">${renderHTML(t('members.invited_label'))}</span>
         </div>
-        <div class="member-email">${esc(invitedBy)}</div>
+        <div class="member-email">${uiText(invitedBy)}</div>
       </div>
-      <div class="member-role">${esc(t('members.role.' + inv.role))}</div>
-      <div class="member-detail">${esc(expires)}</div>
-      ${actionsCell}
+      <div class="member-role">${uiText(t('members.role.' + inv.role))}</div>
+      <div class="member-detail">${uiText(expires)}</div>
+      ${renderHTML(actionsCell)}
     </div>
   `;
 }
@@ -301,12 +304,12 @@ export function mapMutationError(err) {
 }
 
 function renderError(message) {
-  return `<div style="color:var(--danger);font-size:14px;padding:16px;background:var(--bg-input);border-radius:6px">${esc(message)}</div>`;
+  return `<div style="color:var(--danger);font-size:14px;padding:16px;background:var(--bg-input);border-radius:6px">${uiText(message)}</div>`;
 }
 
 function formatDate(ts) {
   if (!ts) return '';
-  return new Date(ts * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return displayValue(new Date(ts * 1000), "toLocaleDateString", { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function esc(s) {
@@ -315,7 +318,6 @@ function esc(s) {
 
 const WORKSPACE_ROLES = ['workspace_admin', 'workspace_editor', 'workspace_viewer'];
 const REMOVE_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-
 
 /*
  * "This workspace" | "Whole organization".
@@ -335,8 +337,8 @@ function mountOrgTab(workspaceId, meWorkspace, headerActions) {
   const orgName = meWorkspace?.organization_name || '';
   tabs.hidden = false;
   tabs.innerHTML = `
-    <button type="button" role="tab" class="members-tab active" aria-selected="true" data-pane="ws">${esc(t('members.tab.workspace', { name: meWorkspace?.name || '' }))}</button>
-    <button type="button" role="tab" class="members-tab" aria-selected="false" data-pane="org">${esc(t('members.tab.org', { name: orgName }))}</button>`;
+    <button type="button" role="tab" class="members-tab active" aria-selected="true" data-pane="ws">${uiText(t('members.tab.workspace', { name: meWorkspace?.name || '' }))}</button>
+    <button type="button" role="tab" class="members-tab" aria-selected="false" data-pane="org">${uiText(t('members.tab.org', { name: orgName }))}</button>`;
   let loaded = false;
   tabs.querySelectorAll('.members-tab').forEach((b) => {
     b.onclick = async () => {
@@ -353,31 +355,31 @@ function mountOrgTab(workspaceId, meWorkspace, headerActions) {
 }
 
 async function renderOrgMembers(el, workspaceId) {
-  el.innerHTML = `<p style="color:var(--text-muted)">${esc(t('members.loading'))}</p>`;
+  el.innerHTML = `<p style="color:var(--text-muted)">${uiText(t('members.loading'))}</p>`;
   let data;
   try {
     data = await api.getOrganizationMembers(workspaceId);
   } catch (err) {
-    el.innerHTML = renderError(t('members.load_error', { error: esc(err.message || '') }));
+    el.innerHTML = renderError(t('members.load_error', { error: err.uiMessage || err.message || '' }));
     return;
   }
   const roleLabel = (r) => esc(t('members.role.' + String(r || '')));
   const rows = data.members.map((m) => `
-    <tr data-filter-text="${esc([m.name, m.email, ...m.workspaces.map((w) => w.name)].filter(Boolean).join(' ').toLowerCase())}">
-      <td><div style="font-weight:500">${esc(m.name || m.email)}</div><div style="font-size:11px;color:var(--text-muted)">${esc(m.email)}</div></td>
-      <td>${m.org_role ? `<span class="org-role-pill">${roleLabel(m.org_role)}</span>` : `<span style="color:var(--text-muted);font-size:12px">${esc(t('members.org.no_org_role'))}</span>`}</td>
-      <td>${m.org_role === 'org_owner' || m.org_role === 'org_admin'
-        ? `<span style="color:var(--text-secondary);font-size:12px">${esc(tn('members.org.all_workspaces', data.workspaces.length))}</span>`
-        : m.workspaces.map((w) => `<span class="ws-chip">${esc(w.name)} <em>${roleLabel(w.role)}</em></span>`).join(' ') || `<span style="color:var(--text-muted);font-size:12px">—</span>`}</td>
+    <tr data-filter-text="${esc([m.name, m.email, ...m.workspaces.map((w) => w.name)].filter(Boolean).join(' '))}">
+      <td><div style="font-weight:500">${uiText(m.name || m.email)}</div><div style="font-size:11px;color:var(--text-muted)">${uiText(m.email)}</div></td>
+      <td>${renderHTML(m.org_role ? `<span class="org-role-pill">${renderHTML(roleLabel(m.org_role))}</span>` : `<span style="color:var(--text-muted);font-size:12px">${uiText(t('members.org.no_org_role'))}</span>`)}</td>
+      <td>${renderHTML(m.org_role === 'org_owner' || m.org_role === 'org_admin'
+        ? `<span style="color:var(--text-secondary);font-size:12px">${uiText(tn('members.org.all_workspaces', data.workspaces.length))}</span>`
+        : m.workspaces.map((w) => `<span class="ws-chip">${uiText(w.name)} <em>${renderHTML(roleLabel(w.role))}</em></span>`).join(' ') || `<span style="color:var(--text-muted);font-size:12px">—</span>`)}</td>
     </tr>`).join('');
   el.innerHTML = `
-    <p class="org-members-intro">${esc(tn('members.org.people', data.members.length, { org: data.organization.name }))} ${esc(tn('members.org.across', data.workspaces.length))} ${esc(t('members.org.intro_rule'))}</p>
-    <div class="platform-filters"><input type="search" class="input" id="orgMemberSearch" placeholder="${esc(t('members.org.search'))}" aria-label="${esc(t('members.org.search'))}"></div>
+    <p class="org-members-intro">${uiText(tn('members.org.people', data.members.length, { org: data.organization.name }))} ${uiText(tn('members.org.across', data.workspaces.length))} ${uiText(t('members.org.intro_rule'))}</p>
+    <div class="platform-filters"><input type="search" class="input" id="orgMemberSearch" placeholder="${esc(t('members.org.search'))}" data-fil-i18n-placeholder="${binding('members.org.search', undefined)}" aria-label="${esc(t('members.org.search'))}" data-fil-i18n-aria-label="${binding('members.org.search', undefined)}"></div>
     <div class="table-wrap"><table class="org-members-table">
-      <thead><tr><th>${esc(t('members.org.col_person'))}</th><th>${esc(t('members.org.col_org_role'))}</th><th>${esc(t('members.org.col_access'))}</th></tr></thead>
-      <tbody>${rows}</tbody>
+      <thead><tr><th>${uiText(t('members.org.col_person'))}</th><th>${uiText(t('members.org.col_org_role'))}</th><th>${uiText(t('members.org.col_access'))}</th></tr></thead>
+      <tbody>${renderHTML(rows)}</tbody>
     </table></div>`;
   const search = el.querySelector('#orgMemberSearch');
   const trs = [...el.querySelectorAll('tr[data-filter-text]')];
-  search.oninput = () => { const q = search.value.trim().toLowerCase(); trs.forEach((r) => { r.hidden = !!q && !r.dataset.filterText.includes(q); }); };
+  search.oninput = () => { const q = search.value.trim().toLocaleLowerCase(getLocale()); trs.forEach((r) => { r.hidden = !!q && !r.dataset.filterText.toLocaleLowerCase(getLocale()).includes(q); }); };
 }

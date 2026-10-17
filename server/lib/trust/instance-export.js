@@ -295,10 +295,10 @@ async function restoreAccounts(db, arch) {
       for (const r of rows) {
         const email = String(r.email || '').trim().toLowerCase();
         if (!email || db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) continue;
-        db.prepare(`INSERT INTO users (id, email, name, password_hash, auth_provider, role, plan_id, email_verified, created_at, disabled_at, ui_mode)
-                    VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, 'advanced')`)
+        db.prepare(`INSERT INTO users (id, email, name, password_hash, auth_provider, role, plan_id, email_verified, created_at, disabled_at, ui_mode, ui_language)
+                    VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, 'advanced', ?)`)
           .run(crypto.randomUUID(), email, String(r.name || email.split('@')[0]), ['local', 'google', 'microsoft', 'oidc', 'saml'].includes(r.auth_provider) ? r.auth_provider : 'local',
-            isPlatformRole(r.role) || r.role === 'user' ? r.role : 'user', plans.has(r.plan_id) ? r.plan_id : 'free', r.email_verified ? 1 : 0, r.created_at || now(), r.disabled_at || null);
+            isPlatformRole(r.role) || r.role === 'user' ? r.role : 'user', plans.has(r.plan_id) ? r.plan_id : 'free', r.email_verified ? 1 : 0, r.created_at || now(), r.disabled_at || null, ['tr','en'].includes(r.ui_language) ? r.ui_language : null);
         n += 1;
       }
     })();

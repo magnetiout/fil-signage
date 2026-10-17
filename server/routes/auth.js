@@ -232,12 +232,13 @@ router.post('/register', (req, res) => {
  * Any failure degrades to the 2.x shape rather than failing /me.
  */
 function accountSummary(userId) {
-  const out = { self_hosted: config.selfHosted, ui_mode: 'advanced', onboarded_at: null,
+  const out = { self_hosted: config.selfHosted, ui_mode: 'advanced', ui_language: null, onboarded_at: null,
     sponsor_prompt: false };
   try {
-    const row = db.prepare('SELECT ui_mode, onboarded_at, subscription_status, created_at FROM users WHERE id = ?').get(userId);
+    const row = db.prepare('SELECT ui_mode, ui_language, onboarded_at, subscription_status, created_at FROM users WHERE id = ?').get(userId);
     if (!row) return out; // support / recovery identities: full menu, no guide, no billing facts
     out.ui_mode = row.ui_mode === 'simple' ? 'simple' : 'advanced';
+    out.ui_language = ['tr','en'].includes(row.ui_language) ? row.ui_language : null;
     out.onboarded_at = row.onboarded_at || null;
     out.sponsor_prompt = sponsorEligible(row.created_at);
     out.subscription_status = row.subscription_status || null;
@@ -989,7 +990,10 @@ router.post('/switch-workspace', requireAuth, (req, res) => {
 
 // Update current user
 router.put('/me', requireAuth, (req, res) => {
-  const { name, password, current_password, email_alerts, ui_mode, onboarded } = req.body;
+  const { name, password, current_password, email_alerts, ui_mode, ui_language, onboarded } = req.body;
+  if (ui_language === 'tr' || ui_language === 'en') {
+    db.prepare("UPDATE users SET ui_language = ?, updated_at = strftime('%s','now') WHERE id = ?").run(ui_language, req.user.id);
+  }
   // 3.0 preferences. Validated narrowly: anything else is ignored, not stored.
   if (ui_mode === 'simple' || ui_mode === 'advanced') {
     db.prepare("UPDATE users SET ui_mode = ?, updated_at = strftime('%s','now') WHERE id = ?").run(ui_mode, req.user.id);
@@ -1030,7 +1034,7 @@ router.put('/me', requireAuth, (req, res) => {
   }
   // ui_mode / onboarded_at are read back through GET /me (accountSummary), not here, so this keeps
   // the 2.x column list and works on any users table that has them.
-  const user = db.prepare('SELECT id, email, name, role, auth_provider, avatar_url, plan_id, email_alerts, must_change_password FROM users WHERE id = ?').get(req.user.id);
+  const user = db.prepare('SELECT id, email, name, role, auth_provider, avatar_url, plan_id, email_alerts, ui_language, must_change_password FROM users WHERE id = ?').get(req.user.id);
   res.json(freshToken ? { ...user, token: freshToken } : user);
 });
 

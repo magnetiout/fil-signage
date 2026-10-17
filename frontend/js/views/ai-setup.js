@@ -1,3 +1,5 @@
+import { renderHTML, uiText, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 "Set up my screens with AI" (docs/private-ai.md).
  *
@@ -15,7 +17,7 @@
  * With no AI set up the page explains that and, for an admin, opens AI settings — never an error.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { shell, guideFrame, simpleCanChange } from './simple-home.js';
 import { renderSign, cleanup as cleanupSign } from './make-sign.js';
@@ -31,16 +33,16 @@ export async function renderAiSetup(container, { simple = false, hash = '' } = {
   const home = simple ? '#/' : '#/slides';
   const paint = (inner) => {
     if (simple) shell(container, inner);
-    else container.innerHTML = `<div class="sign-page">${inner}</div>`;
+    else container.innerHTML = `<div class="sign-page">${renderHTML(inner)}</div>`;
   };
   const frame = (o) => paint(guideFrame({ cancelHref: home, ...o }));
 
   if (!simpleCanChange()) {
     frame({ step: 0, total: 1, icon: '&#128065;', title: t('ai_setup.title'), back: false,
-      body: `<p class="simple-lead">${esc(t('simple.home.viewer_note'))}</p>` });
+      body: `<p class="simple-lead">${uiText(t('simple.home.viewer_note'))}</p>` });
     return;
   }
-  paint(`<p class="simple-muted" style="text-align:center">${esc(t('common.loading'))}</p>`);
+  paint(`<p class="simple-muted" style="text-align:center">${uiText(t('common.loading'))}</p>`);
   const st = await getPrivateAiStatus(true);
   if (run !== alive) return;
   if (!st.configured) {
@@ -58,15 +60,15 @@ export async function renderAiSetup(container, { simple = false, hash = '' } = {
     let aspect = (last && last.aspect) || '16:9';
     frame({ step: 0, total: 2, icon: '&#10024;', title: t('ai_setup.title'), back: false, next: true, nextLabel: t('ai_setup.suggest'),
       body: `
-        <p class="simple-lead">${esc(t('ai_setup.lead'))}</p>
-        <div data-badge>${privateBadge(st)}</div>
-        <label class="simple-label" for="aiDescribe">${esc(t('ai_setup.describe_label'))}</label>
-        <textarea id="aiDescribe" class="input sign-input" rows="3" maxlength="400" placeholder="${esc(t('ai_setup.describe_ph'))}">${esc(prev || (last && last.description) || '')}</textarea>
-        <div class="sign-aspect" role="group" aria-label="${esc(t('signs.shape'))}">
-          <button type="button" data-aspect-pick="16:9" aria-pressed="${aspect === '16:9'}"><span class="ico ico-land" aria-hidden="true"></span>${esc(t('signs.landscape'))}</button>
-          <button type="button" data-aspect-pick="9:16" aria-pressed="${aspect === '9:16'}"><span class="ico ico-port" aria-hidden="true"></span>${esc(t('signs.portrait'))}</button>
+        <p class="simple-lead">${uiText(t('ai_setup.lead'))}</p>
+        <div data-badge>${renderHTML(privateBadge(st))}</div>
+        <label class="simple-label" for="aiDescribe">${uiText(t('ai_setup.describe_label'))}</label>
+        <textarea id="aiDescribe" class="input sign-input" rows="3" maxlength="400" placeholder="${esc(t('ai_setup.describe_ph'))}" data-fil-i18n-placeholder="${binding('ai_setup.describe_ph', undefined)}">${uiText(prev || (last && last.description) || '')}</textarea>
+        <div class="sign-aspect" role="group" aria-label="${esc(t('signs.shape'))}" data-fil-i18n-aria-label="${binding('signs.shape', undefined)}">
+          <button type="button" data-aspect-pick="16:9" aria-pressed="${aspect === '16:9'}"><span class="ico ico-land" aria-hidden="true"></span>${uiText(t('signs.landscape'))}</button>
+          <button type="button" data-aspect-pick="9:16" aria-pressed="${aspect === '9:16'}"><span class="ico ico-port" aria-hidden="true"></span>${uiText(t('signs.portrait'))}</button>
         </div>
-        <p class="simple-muted">${esc(t(st.kind === 'local' ? 'ai_setup.slow_local' : 'ai_setup.privacy_cloud'))}</p>
+        <p class="simple-muted">${uiText(t(st.kind === 'local' ? 'ai_setup.slow_local' : 'ai_setup.privacy_cloud'))}</p>
         <p class="simple-status" data-status role="status"></p>` });
     container.querySelectorAll('[data-aspect-pick]').forEach((b) => b.addEventListener('click', () => {
       aspect = b.dataset.aspectPick;
@@ -76,9 +78,9 @@ export async function renderAiSetup(container, { simple = false, hash = '' } = {
     const status = container.querySelector('[data-status]');
     next.addEventListener('click', async () => {
       const description = container.querySelector('#aiDescribe').value.trim();
-      if (!description) { status.textContent = t('ai_setup.need_description'); return; }
+      if (!description) { bindText(status, 'ai_setup.need_description', undefined); return; }
       next.disabled = true;
-      status.textContent = t('ai_setup.thinking');
+      bindText(status, 'ai_setup.thinking', undefined);
       try {
         const r = await api.aiStarterSet(description);
         if (run !== alive) return;
@@ -87,7 +89,7 @@ export async function renderAiSetup(container, { simple = false, hash = '' } = {
       } catch (err) {
         if (run !== alive) return;
         next.disabled = false;
-        status.textContent = (err && err.message) || t('ai_setup.failed');
+        bindMessage(status, (err && (err.uiMessage || err.message)) || t('ai_setup.failed'));
       }
     });
   }
@@ -98,16 +100,16 @@ export async function renderAiSetup(container, { simple = false, hash = '' } = {
     let names = {};
     frame({ step: 1, total: 2, icon: '&#127991;&#65039;', title: t('ai_setup.pick_title'), next: true, nextLabel: t('ai_setup.check_each'), wide: true,
       body: `
-        <p class="simple-lead">${esc(tn('ai_setup.pick_lead', proposals.length))}</p>
+        <p class="simple-lead">${uiText(tn('ai_setup.pick_lead', proposals.length))}</p>
         <div class="sign-grid ${aspect === '9:16' ? 'is-portrait' : ''}">
-          ${proposals.map((p, i) => `
+          ${renderHTML(proposals.map((p, i) => `
             <label class="sign-card ai-setup-card">
               <span class="sign-frame" data-aspect="${esc(aspect)}"><iframe sandbox="" referrerpolicy="no-referrer" loading="lazy" tabindex="-1" data-prev="${i}"></iframe></span>
-              <span class="ai-setup-pick"><input type="checkbox" data-pick="${i}" ${picked.has(i) ? 'checked' : ''}> <span data-name="${i}">${esc(p.template)}</span></span>
-            </label>`).join('')}
+              <span class="ai-setup-pick"><input type="checkbox" data-pick="${i}" ${picked.has(i) ? 'checked' : ''}> <span data-name="${i}">${uiText(p.template)}</span></span>
+            </label>`).join(''))}
         </div>
-        <div data-badge>${privateBadge(st)}</div>
-        <p class="simple-muted">${esc(t('ai_setup.pick_hint'))}</p>
+        <div data-badge>${renderHTML(privateBadge(st))}</div>
+        <p class="simple-muted">${uiText(t('ai_setup.pick_hint'))}</p>
         <p class="simple-status" data-status role="status"></p>` });
     container.querySelector('[data-guide-back]')?.addEventListener('click', () => describeStep(last.description));
     container.querySelectorAll('[data-pick]').forEach((c) => c.addEventListener('change', () => {
@@ -116,7 +118,7 @@ export async function renderAiSetup(container, { simple = false, hash = '' } = {
     }));
     container.querySelector('[data-guide-next]').addEventListener('click', () => {
       const batch = proposals.filter((_, i) => picked.has(i)).map((p) => ({ template: p.template, values: p.values }));
-      if (!batch.length) { container.querySelector('[data-status]').textContent = t('ai_setup.pick_one'); return; }
+      if (!batch.length) { bindText(container.querySelector('[data-status]'), 'ai_setup.pick_one', undefined); return; }
       renderSign(container, { simple, batch, aspect, from: 'ai', onBack: () => renderAiSetup(container, { simple, hash: `${base}?step=pick` }) });
     });
     // Template names in the person's language, and live previews from the slide renderer.
@@ -127,7 +129,7 @@ export async function renderAiSetup(container, { simple = false, hash = '' } = {
         const id = proposals[Number(el.dataset.name)].template;
         const key = `signs.tpl.${id}.name`;
         const tr = t(key);
-        el.textContent = tr === key ? (names[id] || id) : tr;
+        bindMessage(el, tr === key ? (names[id] || id) : tr);
       });
     }).catch(() => {});
     api.previewSigns({ aspect, items: proposals.map((p) => ({ template: p.template, aspect, values: p.values })) }).then((r) => {

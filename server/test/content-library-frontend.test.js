@@ -1,4 +1,5 @@
 'use strict';
+const {runInViewContext}=require('./helpers/admin-render');
 
 // The Content Library page's frontend rules, without a browser: the pure helpers are evaluated from
 // the real module sources (imports stripped, the few they use stubbed), and the page-level rules are
@@ -20,7 +21,7 @@ function load(file, names, ctx = {}) {
     .replace(/^export (const|function|async function|let) /gm, '$1 ')
     .replace(/^export \{[^}]*\};?$/gm, '');
   const box = { module: {}, URL, console, ...ctx };
-  vm.runInNewContext(`${src}\nmodule.exports = { ${names.join(', ')} };`, box);
+  runInViewContext(`${src}\nmodule.exports = { ${names.join(', ')} };`, box);
   return box.module.exports;
 }
 const plain = (v) => JSON.parse(JSON.stringify(v));   // objects made in the vm realm
@@ -33,7 +34,7 @@ test('YouTube: the form accepts exactly what the server accepts', () => {
   // routes/content.js extractYoutubeId, copied from the source so a change there fails here.
   const route = fs.readFileSync(path.join(__dirname, '..', 'routes', 'content.js'), 'utf8');
   const body = route.slice(route.indexOf('function extractYoutubeId'), route.indexOf('\n}\n', route.indexOf('function extractYoutubeId')) + 2);
-  const server = vm.runInNewContext(`${body}; extractYoutubeId`);
+  const server = runInViewContext(`${body}; extractYoutubeId`);
   const cases = ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'https://youtu.be/dQw4w9WgXcQ', 'https://www.youtube.com/shorts/abcdefghijk',
     'https://www.youtube.com/embed/abcdefghijk?start=3', 'dQw4w9WgXcQ', 'https://www.youtube.com/watch?feature=share&v=dQw4w9WgXcQ',
     'https://vimeo.com/123', 'https://www.youtube.com/live/abcdefghijk', 'not a link', ''];
@@ -165,8 +166,8 @@ test('cards and rows carry no Edit or red Delete button: those live in the overf
   const lib = read('views/content-library.js');
   const cards = lib.slice(lib.indexOf('function gridHtml()'), lib.indexOf('function wireResults('));
   assert.doesNotMatch(cards, /btn-danger|data-delete-content|data-edit-content/);
-  assert.match(cards, /\$\{moreBtn\(c\)\}/, 'an overflow menu per card');
-  assert.match(cards, /<td class="lib-col-actions">\$\{moreBtn\(c\)\}/, 'and per row');
+  assert.match(cards, /\$\{renderHTML\(moreBtn\(c\)\)\}/, 'an overflow menu per card');
+  assert.match(cards, /<td class="lib-col-actions">\$\{renderHTML\(moreBtn\(c\)\)\}/, 'and per row');
   assert.match(lib, /const moreBtn = [^\n]*aria-haspopup="menu" aria-expanded="false" aria-label="\$\{esc\(t\('library\.actions_for'/);
   assert.match(lib, /const checkbox = [^\n]*aria-label="\$\{esc\(t\('library\.select_item'/, 'every checkbox has an accessible name');
   assert.match(lib, /label: t\('library\.menu\.delete'\), danger: true/);

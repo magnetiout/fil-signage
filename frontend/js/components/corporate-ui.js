@@ -1,3 +1,5 @@
+import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
+
 /*
  * Head office (corporate) playlists — the pieces every view shares (spec §7).
  *
@@ -15,7 +17,7 @@
  * here", and every caller can treat that like an install that never heard of head office.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc, hydrateAuthImages } from '../utils.js';
 import { showToast } from './toast.js';
 
@@ -67,7 +69,7 @@ export const LOCK_SVG = '<svg class="corp-lock-icon" width="12" height="12" view
  * 'emergency' (red), 'muted'. Text and title are escaped here.
  */
 export function chip(text, tone = 'hq', title = '', { lock = false } = {}) {
-  return `<span class="corp-chip corp-chip-${esc(tone)}"${title ? ` title="${esc(title)}"` : ''}>${lock ? LOCK_SVG : ''}${esc(text)}</span>`;
+  return `<span class="corp-chip corp-chip-${esc(tone)}"${title ? ` title="${esc(title)}"` : ''}>${renderHTML(lock ? LOCK_SVG : '')}${uiText(text)}</span>`;
 }
 
 /* ── dialogs ────────────────────────────────────────────────────────────────────────────────── */
@@ -83,13 +85,13 @@ export function openModal({ title, body, footer = '', wide = false, onClose = nu
   overlay.innerHTML = `
     <div class="modal" style="${wide ? 'width:760px;max-width:95vw' : 'width:520px;max-width:95vw'}" role="dialog" aria-modal="true">
       <div class="modal-header">
-        <h3>${esc(title)}</h3>
-        <button class="btn-icon" type="button" data-corp-close aria-label="${esc(t('common.close'))}">
+        <h3>${uiText(title)}</h3>
+        <button class="btn-icon" type="button" data-corp-close aria-label="${esc(t('common.close'))}" data-fil-i18n-aria-label="${binding('common.close', undefined)}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div class="modal-body">${body}</div>
-      ${footer ? `<div class="modal-footer">${footer}</div>` : ''}
+      <div class="modal-body">${renderHTML(body)}</div>
+      ${renderHTML(footer ? `<div class="modal-footer">${renderHTML(footer)}</div>` : '')}
     </div>`;
   document.body.appendChild(overlay);
   let closed = false;
@@ -115,9 +117,9 @@ export function openModal({ title, body, footer = '', wide = false, onClose = nu
 export function explainLocked({ title, text, actions = [] }) {
   const m = openModal({
     title: title || t('corp.locked.title'),
-    body: `<p class="corp-explain">${esc(text)}</p>`,
-    footer: `${actions.map((a, i) => `<button type="button" class="btn ${a.primary ? 'btn-primary' : 'btn-secondary'}" data-corp-action="${i}">${esc(a.label)}</button>`).join('')}
-             <button type="button" class="btn btn-secondary" data-corp-close>${esc(t('common.ok'))}</button>`,
+    body: `<p class="corp-explain">${uiText(text)}</p>`,
+    footer: `${renderHTML(actions.map((a, i) => `<button type="button" class="btn ${a.primary ? 'btn-primary' : 'btn-secondary'}" data-corp-action="${i}">${uiText(a.label)}</button>`).join(''))}
+             <button type="button" class="btn btn-secondary" data-corp-close>${uiText(t('common.ok'))}</button>`,
   });
   m.overlay.querySelectorAll('[data-corp-action]').forEach((b) => b.addEventListener('click', () => {
     const a = actions[Number(b.dataset.corpAction)];
@@ -133,9 +135,9 @@ export function ask({ title, text, confirmLabel, cancelLabel, danger = false, ex
     let answered = false;
     const m = openModal({
       title,
-      body: `<p class="corp-explain">${esc(text)}</p>${extraHtml}`,
-      footer: `<button type="button" class="btn btn-secondary" data-corp-no>${esc(cancelLabel || t('common.cancel'))}</button>
-               <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-corp-yes>${esc(confirmLabel || t('common.ok'))}</button>`,
+      body: `<p class="corp-explain">${uiText(text)}</p>${renderHTML(extraHtml)}`,
+      footer: `<button type="button" class="btn btn-secondary" data-corp-no>${uiText(cancelLabel || t('common.cancel'))}</button>
+               <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-corp-yes>${uiText(confirmLabel || t('common.ok'))}</button>`,
       onClose: () => { if (!answered) resolve(null); },
     });
     m.q('[data-corp-no]').addEventListener('click', () => { answered = true; m.close(); resolve(null); });
@@ -157,15 +159,15 @@ export function storeTriggerImpactHtml(impact, policy, { ackId = 'corpTrigAck' }
   // screen moves to another workspace and leaves the old store's triggers behind.
   const left = impact.filter((i) => i.reason === 'left_store');
   const hidden = impact.filter((i) => i.reason !== 'left_store');
-  const line = (i) => `<li>${esc(t('corp.where.triggers_line', {
+  const line = (i) => `<li>${uiText(t('corp.where.triggers_line', {
     ws: i.workspace_name || '', name: i.name || '', screens: tn('corp.n_screens', i.screens || 0),
   }))}</li>`;
-  const block = (head, list) => `<div>${esc(head)}</div><ul class="corp-list">${list.map(line).join('')}</ul>`;
+  const block = (head, list) => `<div>${uiText(head)}</div><ul class="corp-list">${renderHTML(list.map(line).join(''))}</ul>`;
   return `<div class="corp-notice corp-notice-warn">
-    ${hidden.length ? block(tn(policy === 'leased' ? 'corp.where.triggers_limited' : 'corp.where.triggers_hidden', hidden.length), hidden) : ''}
-    ${left.length ? block(tn('corp.move.triggers_left', left.length), left) : ''}
-    ${hidden.length ? `<div class="corp-help">${esc(t('corp.where.triggers_change_policy'))}</div>` : ''}
-    <label class="corp-check"><input type="checkbox" id="${esc(ackId)}"> ${esc(t('corp.settings.impact_ack'))}</label>
+    ${renderHTML(hidden.length ? block(tn(policy === 'leased' ? 'corp.where.triggers_limited' : 'corp.where.triggers_hidden', hidden.length), hidden) : '')}
+    ${renderHTML(left.length ? block(tn('corp.move.triggers_left', left.length), left) : '')}
+    ${renderHTML(hidden.length ? `<div class="corp-help">${uiText(t('corp.where.triggers_change_policy'))}</div>` : '')}
+    <label class="corp-check"><input type="checkbox" id="${esc(ackId)}"> ${uiText(t('corp.settings.impact_ack'))}</label>
   </div>`;
 }
 
@@ -285,8 +287,8 @@ export function renderHqContextBar(settings) {
   el.id = 'corpHqBar';
   el.className = 'corp-hq-bar';
   el.innerHTML = `
-    <span>${LOCK_SVG} ${esc(t('corp.ctx.bar', { name: settings.hq_workspace_name || '' }))}</span>
-    ${back && back.id !== settings.hq_workspace_id ? `<button type="button" class="btn btn-secondary btn-sm" id="corpHqBack">${esc(t('corp.ctx.back', { name: back.name || '' }))}</button>` : ''}`;
+    <span>${renderHTML(LOCK_SVG)} ${uiText(t('corp.ctx.bar', { name: settings.hq_workspace_name || '' }))}</span>
+    ${renderHTML(back && back.id !== settings.hq_workspace_id ? `<button type="button" class="btn btn-secondary btn-sm" id="corpHqBack">${uiText(t('corp.ctx.back', { name: back.name || '' }))}</button>` : '')}`;
   if (!existing) host.appendChild(el);
   el.querySelector('#corpHqBack')?.addEventListener('click', async () => {
     forgetReturnWorkspace();
@@ -298,8 +300,7 @@ export function renderHqContextBar(settings) {
 
 export const thumb = (it) => (it.content_id && it.thumbnail_path
   ? `<img class="corp-thumb" data-auth-src="/api/content/${esc(it.content_id)}/thumbnail" alt="">`
-  : `<span class="corp-thumb corp-thumb-icon">${it.widget_id ? '&#9881;' : '&#9634;'}</span>`);
-
+  : `<span class="corp-thumb corp-thumb-icon">${renderHTML(it.widget_id ? '&#9881;' : '&#9634;')}</span>`);
 
 /**
  * The loop one screen plays (or would play after the corporate draft is published), every item
@@ -309,21 +310,21 @@ export const thumb = (it) => (it.content_id && it.thumbnail_path
 export async function openScreenPreview(opts = {}) {
   let targets = null;
   if (!opts.deviceId) {
-    try { targets = await api.getCorporateTargets(); } catch (e) { showToast(e.message, 'error'); return; }
+    try { targets = await api.getCorporateTargets(); } catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
   }
   const screens = targets ? targets.workspaces.flatMap((w) => w.devices.map((d) => ({ ...d, workspace: w.name }))) : [];
   const m = openModal({
     title: t('corp.hq.preview'),
     wide: true,
     body: `
-      ${targets ? `<div class="corp-row">
+      ${renderHTML(targets ? `<div class="corp-row">
         <select id="corpPvScreen" class="input" style="flex:1">
-          <option value="">${esc(t('corp.preview.pick'))}</option>
-          ${targets.workspaces.map((w) => `<optgroup label="${esc(w.name)}">${w.devices.map((d) => `<option value="${esc(d.id)}">${esc(d.name)}${d.wall_name ? ' — ' + esc(t('corp.where.wall_member', { name: d.wall_name })) : ''}</option>`).join('')}</optgroup>`).join('')}
+          <option value="">${uiText(t('corp.preview.pick'))}</option>
+          ${renderHTML(targets.workspaces.map((w) => `<optgroup label="${esc(w.name)}">${renderHTML(w.devices.map((d) => `<option value="${esc(d.id)}">${uiText(d.name)}${renderHTML(d.wall_name ? ' — ' + t('corp.where.wall_member', { name: d.wall_name }) : '')}</option>`).join(''))}</optgroup>`).join(''))}
         </select>
-        ${opts.canDraft ? `<label class="corp-check"><input type="checkbox" id="corpPvDraft"> ${esc(t('corp.preview.draft'))}</label>` : ''}
-      </div>` : ''}
-      <div id="corpPvOut" class="corp-preview">${targets && !screens.length ? esc(t('corp.preview.no_screens')) : ''}</div>`,
+        ${renderHTML(opts.canDraft ? `<label class="corp-check"><input type="checkbox" id="corpPvDraft"> ${uiText(t('corp.preview.draft'))}</label>` : '')}
+      </div>` : '')}
+      <div id="corpPvOut" class="corp-preview">${renderHTML(targets && !screens.length ? t('corp.preview.no_screens') : '')}</div>`,
   });
   const out = m.q('#corpPvOut');
   async function show(deviceId) {
@@ -333,7 +334,7 @@ export async function openScreenPreview(opts = {}) {
       const r = await api.previewCorporateScreen(deviceId, !!m.q('#corpPvDraft')?.checked);
       out.innerHTML = previewHtml(r);
       hydrateAuthImages(out);
-    } catch (e) { out.innerHTML = `<div class="corp-notice corp-notice-danger">${esc(e.message)}</div>`; }
+    } catch (e) { out.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
   }
   m.q('#corpPvScreen')?.addEventListener('change', (e) => show(e.target.value));
   m.q('#corpPvDraft')?.addEventListener('change', () => show(m.q('#corpPvScreen').value));
@@ -352,12 +353,12 @@ export function previewHtml(r) {
     : t('corp.preview.not_mandated');
   const skipped = (r.slots || []).filter((x) => x.outcome === 'skipped');
   return `
-    <div class="corp-help">${esc(head)}${r.layout ? ' · ' + esc(t('corp.preview.layout', { name: r.layout.name })) : ''}${r.draft ? ' · ' + esc(t('corp.preview.draft_note')) : ''}</div>
-    ${(r.items || []).length ? `<ol class="corp-loop">${r.items.map((it) => `
-      <li>${thumb(it)}<span class="corp-loop-name">${esc(it.filename || t('common.unknown'))}</span>${tagOf(it)}<span class="corp-loop-sec">${esc(formatSec(it.seconds != null ? it.seconds : it.duration_sec))}</span></li>`).join('')}</ol>`
-      : `<div class="corp-empty">${esc(t('corp.preview.empty'))}</div>`}
-    ${skipped.map((x) => `<div class="corp-help">${chip(t('corp.preview.tag_skipped'), 'muted')} ${esc(x.name || '')}</div>`).join('')}
-    <div class="corp-help"><strong>${esc(t('corp.preview.total', { len: formatSec(r.total_sec) }))}</strong>
-      ${(r.slots || []).filter((x) => x.outcome !== 'skipped').map((x) => ` · ${esc(t('corp.preview.slot_sec', { slot: x.name || '', len: formatSec(x.seconds) }))}`).join('')}</div>`;
+    <div class="corp-help">${uiText(head)}${renderHTML(r.layout ? ' · ' + t('corp.preview.layout', { name: r.layout.name }) : '')}${renderHTML(r.draft ? ' · ' + t('corp.preview.draft_note') : '')}</div>
+    ${renderHTML((r.items || []).length ? `<ol class="corp-loop">${renderHTML(r.items.map((it) => `
+      <li>${renderHTML(thumb(it))}<span class="corp-loop-name">${uiText(it.filename || t('common.unknown'))}</span>${renderHTML(tagOf(it))}<span class="corp-loop-sec">${uiText(formatSec(it.seconds != null ? it.seconds : it.duration_sec))}</span></li>`).join(''))}</ol>`
+      : `<div class="corp-empty">${uiText(t('corp.preview.empty'))}</div>`)}
+    ${renderHTML(skipped.map((x) => `<div class="corp-help">${renderHTML(chip(t('corp.preview.tag_skipped'), 'muted'))} ${uiText(x.name || '')}</div>`).join(''))}
+    <div class="corp-help"><strong>${uiText(t('corp.preview.total', { len: formatSec(r.total_sec) }))}</strong>
+      ${renderHTML((r.slots || []).filter((x) => x.outcome !== 'skipped').map((x) => ` · ${esc(t('corp.preview.slot_sec', { slot: x.name || '', len: formatSec(x.seconds) }))}`).join(''))}</div>`;
 }
 

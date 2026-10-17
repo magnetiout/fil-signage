@@ -1,3 +1,5 @@
+import { uiText, renderHTML, translatedAttribute, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
+
 /*
  * 3.0 Simple view: everything is a guided task, in the style of the setup guide.
  *
@@ -23,7 +25,7 @@
  * Values from the server reach the page through esc() or textContent only.
  */
 import { api } from '../api.js';
-import { t, tn } from '../i18n.js';
+import { message as t, messageCount as tn } from '../i18n.js';
 import { esc, screenshotUrl, hydrateAuthImages } from '../utils.js';
 import { showToast } from '../components/toast.js';
 import { setUiMode } from '../components/ui-mode.js';
@@ -65,41 +67,41 @@ export function shell(container, inner) {
   const showPlan = plansVisible(u);
   container.innerHTML = `
     <div class="simple-topbar">
-      <a href="#/" class="simple-brand">${esc(brandName())}</a>
+      <a href="#/" class="simple-brand">${uiText(brandName())}</a>
       <div class="simple-topbar-right">
-        <div class="ui-mode-switch simple-switch" role="radiogroup" aria-label="${esc(t('simple.view_label'))}">
-          <button type="button" role="radio" aria-checked="true" data-simple-mode="simple">${esc(t('nav.view_simple'))}</button>
-          <button type="button" role="radio" aria-checked="false" data-simple-mode="advanced">${esc(t('nav.view_advanced'))}</button>
+        <div class="ui-mode-switch simple-switch" role="radiogroup" aria-label="${esc(t('simple.view_label'))}" data-fil-i18n-aria-label="${binding('simple.view_label', undefined)}">
+          <button type="button" role="radio" aria-checked="true" data-simple-mode="simple">${uiText(t('nav.view_simple'))}</button>
+          <button type="button" role="radio" aria-checked="false" data-simple-mode="advanced">${uiText(t('nav.view_advanced'))}</button>
         </div>
         <details class="simple-account">
-          <summary>${esc(u.name || u.email || '')}</summary>
+          <summary>${uiText(u.name || u.email || '')}</summary>
           <div class="simple-account-menu">
-            ${workspaceMenu(u)}
-            ${isPlatformAdmin(u) ? (inManagerApp()
-              ? `<button type="button" data-outside="/app#/platform/overview">${esc(t('simple.menu.admin'))} &#8599;</button>`
-              : `<a href="#/platform/overview">${esc(t('simple.menu.admin'))}</a>`) : ''}
-            <a href="#/simple/brand">${esc(t('signs.brand.menu'))}</a>
-            ${showPlan ? `<a href="#/billing">${esc(t('simple.menu.plan'))}</a>` : ''}
-            ${inManagerApp()
-              ? `<button type="button" data-outside="/app#/settings">${esc(t('simple.menu.settings'))} &#8599;</button>`
-              : `<a href="#/settings">${esc(t('simple.menu.settings'))}</a>`}
-            ${inManagerApp() && window.STManager ? `<button type="button" data-change-server>${esc(t('simple.menu.change_server'))}</button>` : ''}
-            ${passkeyMenuShown(u) ? `<a href="#/simple/passkey">${esc(t('passkey.simple_menu'))}</a>` : ''}
-            <a href="#/simple/help">${esc(t('simple.menu.help'))}</a>
-            <a href="#/delete-account">${esc(t('account_delete.menu'))}</a>
-            <button type="button" data-simple-signout>${esc(t('auth.sign_out'))}</button>
+            ${renderHTML(workspaceMenu(u))}
+            ${renderHTML(isPlatformAdmin(u) ? (inManagerApp()
+              ? `<button type="button" data-outside="/app#/platform/overview">${uiText(t('simple.menu.admin'))} ↗</button>`
+              : `<a href="#/platform/overview">${uiText(t('simple.menu.admin'))}</a>`) : '')}
+            <a href="#/simple/brand">${uiText(t('signs.brand.menu'))}</a>
+            ${renderHTML(showPlan ? `<a href="#/billing">${uiText(t('simple.menu.plan'))}</a>` : '')}
+            ${renderHTML(inManagerApp()
+              ? `<button type="button" data-outside="/app#/settings">${uiText(t('simple.menu.settings'))} ↗</button>`
+              : `<a href="#/settings">${uiText(t('simple.menu.settings'))}</a>`)}
+            ${renderHTML(inManagerApp() && window.STManager ? `<button type="button" data-change-server>${uiText(t('simple.menu.change_server'))}</button>` : '')}
+            ${renderHTML(passkeyMenuShown(u) ? `<a href="#/simple/passkey">${uiText(t('passkey.simple_menu'))}</a>` : '')}
+            <a href="#/simple/help">${uiText(t('simple.menu.help'))}</a>
+            <a href="#/delete-account">${uiText(t('account_delete.menu'))}</a>
+            <button type="button" data-simple-signout>${uiText(t('auth.sign_out'))}</button>
           </div>
         </details>
       </div>
     </div>
-    <div class="simple-page">${inner}</div>`;
+    <div class="simple-page">${renderHTML(inner)}</div>`;
   container.querySelector('[data-simple-mode="advanced"]').addEventListener('click', () => setUiMode('advanced'));
   container.querySelectorAll('[data-outside]').forEach((b) => b.addEventListener('click', () => openOutsideApp(b.dataset.outside)));
   container.querySelector('[data-change-server]')?.addEventListener('click', () => window.STManager.changeServer());
   container.querySelectorAll('[data-switch-ws]').forEach((b) => b.addEventListener('click', async () => {
     b.disabled = true;
     try { await switchWorkspaceTo(b.dataset.switchWs, '#/'); }
-    catch (err) { b.disabled = false; showToast(err.message, 'error'); }
+    catch (err) { b.disabled = false; showToast(err.uiMessage || err.message, 'error'); }
   }));
   container.querySelector('[data-simple-signout]').addEventListener('click', () => {
     localStorage.removeItem('token');
@@ -122,10 +124,10 @@ function workspaceMenu(u) {
   const label = workspaceLabel;
   const shown = others.slice(0, SWITCH_MAX);
   return `
-    <div class="simple-menu-label">${esc(t('simple.menu.workspace'))}</div>
-    ${cur ? `<div class="simple-menu-current">&#10003; ${esc(label(cur))}</div>` : ''}
-    ${shown.map((w) => `<button type="button" data-switch-ws="${esc(w.id)}">${esc(label(w))}</button>`).join('')}
-    ${others.length > shown.length ? `<div class="simple-menu-note">${esc(t('simple.menu.more_workspaces', { n: others.length - shown.length }))}</div>` : ''}
+    <div class="simple-menu-label">${uiText(t('simple.menu.workspace'))}</div>
+    ${renderHTML(cur ? `<div class="simple-menu-current">✓ ${uiText(label(cur))}</div>` : '')}
+    ${renderHTML(shown.map((w) => `<button type="button" data-switch-ws="${esc(w.id)}">${uiText(label(w))}</button>`).join(''))}
+    ${renderHTML(others.length > shown.length ? `<div class="simple-menu-note">${uiText(t('simple.menu.more_workspaces', { n: others.length - shown.length }))}</div>` : '')}
     <hr class="simple-menu-sep">`;
 }
 
@@ -134,14 +136,14 @@ function workspaceMenu(u) {
 export function guideFrame({ step, total, icon, title, body, back = true, next = null, nextLabel = '', cancelHref = '#/', wide = false }) {
   return `
     <div class="simple-guide${wide ? ' simple-guide--wide' : ''}">
-      <div class="simple-progress">${Array.from({ length: total }, (_, i) => `<span class="${i <= step ? 'on' : ''}"></span>`).join('')}</div>
-      <div class="simple-guide-head"><div class="simple-guide-icon">${icon}</div><h2>${esc(title)}</h2></div>
-      <div class="simple-card">${body}</div>
+      <div class="simple-progress">${renderHTML(Array.from({ length: total }, (_, i) => `<span class="${i <= step ? 'on' : ''}"></span>`).join(''))}</div>
+      <div class="simple-guide-head"><div class="simple-guide-icon">${renderHTML(icon)}</div><h2>${uiText(title)}</h2></div>
+      <div class="simple-card">${renderHTML(body)}</div>
       <div class="simple-guide-foot">
-        ${back ? `<button type="button" class="btn btn-secondary" data-guide-back>${esc(t('onboarding.back'))}</button>` : '<span></span>'}
+        ${renderHTML(back ? `<button type="button" class="btn btn-secondary" data-guide-back>${uiText(t('onboarding.back'))}</button>` : `<span></span>`)}
         <div style="display:flex;gap:8px">
-          <a href="${esc(cancelHref)}" class="btn btn-secondary" style="color:var(--text-muted)">${esc(t('common.cancel'))}</a>
-          ${next ? `<button type="button" class="btn btn-primary" data-guide-next>${esc(nextLabel)}</button>` : ''}
+          <a href="${esc(cancelHref)}" class="btn btn-secondary" style="color:var(--text-muted)">${uiText(t('common.cancel'))}</a>
+          ${renderHTML(next ? `<button type="button" class="btn btn-primary" data-guide-next>${uiText(nextLabel)}</button>` : '')}
         </div>
       </div>
     </div>`;
@@ -156,23 +158,23 @@ async function renderHome(container) {
   const multiWs = switchableWorkspaces(cachedUser()).length > 0;
   shell(container, `
     <div id="simpleAdminNotices"></div>
-    <h1 class="simple-h1">${esc(t(canChange ? 'simple.home.title' : 'simple.home.title_viewer'))}</h1>
-    ${multiWs && currentWorkspace() ? `<p class="simple-where">${esc(t('simple.home.in_workspace', { name: workspaceLabel(currentWorkspace()) }))}</p>` : ''}
-    ${canChange ? '' : `<p class="simple-muted simple-viewer-note">${esc(t('simple.home.viewer_note'))}</p>`}
+    <h1 class="simple-h1">${uiText(t(canChange ? 'simple.home.title' : 'simple.home.title_viewer'))}</h1>
+    ${renderHTML(multiWs && currentWorkspace() ? `<p class="simple-where">${uiText(t('simple.home.in_workspace', { name: workspaceLabel(currentWorkspace()) }))}</p>` : '')}
+    ${renderHTML(canChange ? '' : `<p class="simple-muted simple-viewer-note">${uiText(t('simple.home.viewer_note'))}</p>`)}
     <div id="simpleFreshness"></div>
     <div id="simpleEnergy"></div>
     <div class="simple-tasks">
-      ${canChange ? `<a class="simple-task" href="#/add-screen"><span class="simple-task-icon">&#10133;</span><span><strong>${esc(t('simple.task.add'))}</strong><small>${esc(t('simple.task.add_desc'))}</small></span></a>
-      <a class="simple-task" href="#/simple/change"><span class="simple-task-icon">&#9998;</span><span><strong>${esc(t('simple.task.change'))}</strong><small>${esc(t('simple.task.change_desc'))}</small></span></a>
-      <a class="simple-task" href="#/simple/upload"><span class="simple-task-icon">&#128247;</span><span><strong>${esc(t('simple.task.upload'))}</strong><small>${esc(t('simple.task.upload_desc'))}</small></span></a>
-      <a class="simple-task" href="#/simple/sign"><span class="simple-task-icon">&#127991;&#65039;</span><span><strong>${esc(t('signs.task'))}</strong><small>${esc(t('signs.task_desc'))}</small></span></a>
-      <a class="simple-task" href="#/simple/news"><span class="simple-task-icon">&#128240;</span><span><strong>${esc(t('news.simple.task'))}</strong><small>${esc(t('news.simple.task_desc'))}</small></span></a>` : ''}
-      ${canChange ? `<a class="simple-task" href="#/simple/requests"><span class="simple-task-icon">&#128229;</span><span><strong>${esc(t('simple.task.requests'))}</strong><small>${esc(t('simple.task.requests_desc'))}</small></span></a>` : ''}
-      ${canManageTeam() ? `<a class="simple-task" href="#/simple/team"><span class="simple-task-icon">&#128101;</span><span><strong>${esc(t('simple.task.team'))}</strong><small>${esc(t('simple.task.team_desc'))}</small></span></a>` : ''}
-      <a class="simple-task" href="#/simple/help"><span class="simple-task-icon">&#10067;</span><span><strong>${esc(t('simple.task.help'))}</strong><small>${esc(t('simple.task.help_desc'))}</small></span></a>
+      ${renderHTML(canChange ? `<a class="simple-task" href="#/add-screen"><span class="simple-task-icon">&#10133;</span><span><strong>${uiText(t('simple.task.add'))}</strong><small>${uiText(t('simple.task.add_desc'))}</small></span></a>
+      <a class="simple-task" href="#/simple/change"><span class="simple-task-icon">&#9998;</span><span><strong>${uiText(t('simple.task.change'))}</strong><small>${uiText(t('simple.task.change_desc'))}</small></span></a>
+      <a class="simple-task" href="#/simple/upload"><span class="simple-task-icon">&#128247;</span><span><strong>${uiText(t('simple.task.upload'))}</strong><small>${uiText(t('simple.task.upload_desc'))}</small></span></a>
+      <a class="simple-task" href="#/simple/sign"><span class="simple-task-icon">&#127991;&#65039;</span><span><strong>${uiText(t('signs.task'))}</strong><small>${uiText(t('signs.task_desc'))}</small></span></a>
+      <a class="simple-task" href="#/simple/news"><span class="simple-task-icon">&#128240;</span><span><strong>${uiText(t('news.simple.task'))}</strong><small>${uiText(t('news.simple.task_desc'))}</small></span></a>` : '')}
+      ${renderHTML(canChange ? `<a class="simple-task" href="#/simple/requests"><span class="simple-task-icon">&#128229;</span><span><strong>${uiText(t('simple.task.requests'))}</strong><small>${uiText(t('simple.task.requests_desc'))}</small></span></a>` : '')}
+      ${renderHTML(canManageTeam() ? `<a class="simple-task" href="#/simple/team"><span class="simple-task-icon">&#128101;</span><span><strong>${uiText(t('simple.task.team'))}</strong><small>${uiText(t('simple.task.team_desc'))}</small></span></a>` : '')}
+      <a class="simple-task" href="#/simple/help"><span class="simple-task-icon">&#10067;</span><span><strong>${uiText(t('simple.task.help'))}</strong><small>${uiText(t('simple.task.help_desc'))}</small></span></a>
     </div>
-    <h2 class="simple-h2">${esc(t('simple.home.your_screens'))}</h2>
-    <div id="simpleScreens" class="simple-screens"><p class="simple-muted">${esc(t('common.loading'))}</p></div>`);
+    <h2 class="simple-h2">${uiText(t('simple.home.your_screens'))}</h2>
+    <div id="simpleScreens" class="simple-screens"><p class="simple-muted">${uiText(t('common.loading'))}</p></div>`);
 
   adminNotices(document.getElementById('simpleAdminNotices'));
   if (canChange) freshnessLine(document.getElementById('simpleFreshness'));
@@ -185,9 +187,9 @@ async function renderHome(container) {
   if (!devices.length) {
     // 3.0: a workspace with no screens yet is new, and may be moving from another app. Once it has a
     // screen this offer is gone; the import stays in Advanced (Content → Add content).
-    host.innerHTML = `<div class="simple-empty"><p>${esc(t(canChange ? 'simple.home.no_screens' : 'simple.home.no_screens_viewer'))}</p>
-      ${canChange ? `<a class="btn btn-primary" href="#/add-screen">${esc(t('simple.task.add'))}</a>
-      <p class="simple-muted simple-import-offer">${esc(t('migrate.simple.offer'))} <a href="#/simple/import">${esc(t('migrate.simple.offer_link'))}</a></p>` : ''}</div>`;
+    host.innerHTML = `<div class="simple-empty"><p>${uiText(t(canChange ? 'simple.home.no_screens' : 'simple.home.no_screens_viewer'))}</p>
+      ${renderHTML(canChange ? `<a class="btn btn-primary" href="#/add-screen">${uiText(t('simple.task.add'))}</a>
+      <p class="simple-muted simple-import-offer">${renderHTML(t('migrate.simple.offer'))} <a href="#/simple/import">${uiText(t('migrate.simple.offer_link'))}</a></p>` : '')}</div>`;
     return;
   }
   // A view-only member gets the same cards, without the link into Change.
@@ -210,23 +212,23 @@ async function renderHome(container) {
   const mirrorLines = (d) => {
     const list = mirrorsByOriginal.get(d.id) || [];
     if (!list.length) return '';
-    return `<div class="simple-mirrors"><p class="simple-muted">${esc(tn('simple.mirrors.title', list.length))}</p>${list.map((m) => `
-      <div class="simple-mirror"><span class="simple-screen-name">${esc(m.name)}</span>
-        <span class="simple-muted">${esc(m.mirror_location || '')}</span>
-        <span class="simple-screen-status ${online(m) ? 'on' : 'off'}">${esc(online(m) ? t('simple.status.online') : t('simple.status.offline'))}</span></div>`).join('')}</div>`;
+    return `<div class="simple-mirrors"><p class="simple-muted">${uiText(tn('simple.mirrors.title', list.length))}</p>${renderHTML(list.map((m) => `
+      <div class="simple-mirror"><span class="simple-screen-name">${uiText(m.name)}</span>
+        <span class="simple-muted">${uiText(m.mirror_location || '')}</span>
+        <span class="simple-screen-status ${online(m) ? 'on' : 'off'}">${uiText(online(m) ? t('simple.status.online') : t('simple.status.offline'))}</span></div>`).join(''))}</div>`;
   };
   host.innerHTML = devices.filter((d) => !(d.mirror_of && originals.has(d.mirror_of))).map((d) => {
     const card = `
-    <${tag} class="simple-screen" ${canChange ? `href="#/simple/change?device=${encodeURIComponent(d.id)}" title="${esc(t('simple.task.change'))}"` : ''}>
-      <span class="simple-screen-shot" data-shot="${esc(d.id)}">${d.screenshot_path ? `<img src="${screenshotUrl(d.id, d.screenshot_at || '')}" alt="">` : '&#128250;'}</span>
-      <span class="simple-screen-name">${esc(d.name)}</span>
-      <span class="simple-screen-status ${online(d) ? 'on' : 'off'}" data-sv-plain="${esc(d.id)}">${esc(d.plan_paused ? t('simple.status.paused') : online(d) ? t('simple.status.online') : t('simple.status.offline'))}</span>
+    <${renderHTML(tag)} class="simple-screen" ${renderHTML(canChange ? `href="#/simple/change?device=${encodeURIComponent(d.id)}" title="${esc(t('simple.task.change'))}"` : '')}>
+      <span class="simple-screen-shot" data-shot="${esc(d.id)}">${renderHTML(d.screenshot_path ? `<img src="${screenshotUrl(d.id, d.screenshot_at || '')}" alt="">` : '&#128250;')}</span>
+      <span class="simple-screen-name">${uiText(d.name)}</span>
+      <span class="simple-screen-status ${online(d) ? 'on' : 'off'}" data-sv-plain="${esc(d.id)}">${uiText(d.plan_paused ? t('simple.status.paused') : online(d) ? t('simple.status.online') : t('simple.status.offline'))}</span>
     </${tag}>`;
     // Screen share (an editor, on a screen that can show one) and "What's coming up" under each card.
     const share = sharing && canShareTo(d) ? `
-      <a class="btn btn-secondary btn-sm simple-screen-share" href="#/simple/share?device=${encodeURIComponent(d.id)}">&#128421;&#65039; ${esc(t('screen_share.start'))}</a>` : '';
-    return `<div class="simple-screen-wrap">${card}${mirrorLines(d)}${share}
-    <details class="simple-coming" data-coming="${esc(d.id)}"><summary>${esc(t('simple.coming.title'))}</summary><div class="simple-coming-body"></div></details>
+      <a class="btn btn-secondary btn-sm simple-screen-share" href="#/simple/share?device=${encodeURIComponent(d.id)}">🖥️ ${uiText(t('screen_share.start'))}</a>` : '';
+    return `<div class="simple-screen-wrap">${renderHTML(card)}${renderHTML(mirrorLines(d))}${renderHTML(share)}
+    <details class="simple-coming" data-coming="${esc(d.id)}"><summary>${uiText(t('simple.coming.title'))}</summary><div class="simple-coming-body"></div></details>
     </div>`;
   }).join('');
   // 3.0.1: a screenshot that arrives while the page is open replaces the card's picture — the server
@@ -241,7 +243,7 @@ async function renderHome(container) {
   if (sharing && devices.some(canShareTo)) {
     const tasks = container.querySelector('.simple-tasks');
     const help = tasks && tasks.querySelector('a[href="#/simple/help"]');
-    if (help) help.insertAdjacentHTML('beforebegin', `<a class="simple-task" href="#/simple/share"><span class="simple-task-icon">&#128421;&#65039;</span><span><strong>${esc(t('screen_share.start'))}</strong><small>${esc(t('screen_share.simple.task_desc'))}</small></span></a>`);
+    if (help) help.insertAdjacentHTML('beforebegin', `<a class="simple-task" href="#/simple/share"><span class="simple-task-icon">&#128421;&#65039;</span><span><strong>${uiText(t('screen_share.start'))}</strong><small>${uiText(t('screen_share.simple.task_desc'))}</small></span></a>`);
   }
   // Screen verification, in plain words: a screen that is online but showing a blank or frozen
   // picture says so here instead of "Playing". Silent when there is nothing to say.
@@ -250,7 +252,7 @@ async function renderHome(container) {
   for (const d of devices) {
     const words = online(d) && !d.plan_paused ? plainStatus(states.get(d.id)) : null;
     const el = host.querySelector(`[data-sv-plain="${CSS.escape(d.id)}"]`);
-    if (el && words) { el.textContent = words; el.classList.remove('on'); el.classList.add('warn'); }
+    if (el && words) { bindMessage(el, words); el.classList.remove('on'); el.classList.add('warn'); }
   }
 }
 
@@ -265,7 +267,7 @@ export function applyScreenshot(host, data) {
   host.querySelectorAll(`[data-shot="${CSS.escape(data.device_id)}"]`).forEach((el) => {
     let img = el.querySelector('img');
     if (!img) {
-      el.textContent = '';
+      bindMessage(el, '');
       img = document.createElement('img');
       img.alt = '';
       el.appendChild(img);
@@ -286,7 +288,7 @@ async function aiSetupTask(container) {
   const tasks = container.querySelector('.simple-tasks');
   if (!st || !st.configured || !st.can_use || !tasks || !document.contains(tasks)) return;
   const sign = tasks.querySelector('a[href="#/simple/sign"]');
-  const html = `<a class="simple-task" href="#/simple/ai-setup"><span class="simple-task-icon">&#10024;</span><span><strong>${esc(t('ai_setup.task'))}</strong><small>${esc(t(st.private ? 'ai_setup.task_desc_private' : 'ai_setup.task_desc'))}</small></span></a>`;
+  const html = `<a class="simple-task" href="#/simple/ai-setup"><span class="simple-task-icon">&#10024;</span><span><strong>${uiText(t('ai_setup.task'))}</strong><small>${uiText(t(st.private ? 'ai_setup.task_desc_private' : 'ai_setup.task_desc'))}</small></span></a>`;
   if (sign) sign.insertAdjacentHTML('afterend', html);
 }
 
@@ -312,12 +314,12 @@ async function renderShare(container, presetId) {
     let note = t('screen_share.reason.unsupported');
     try { const st = await api.getScreenShare(presetId); if (st && !st.supported) note = screenShareUnsupportedNote(st.platform); } catch { /* generic words */ }
     shell(container, guideFrame({ step: 0, total: 1, icon: '&#128421;&#65039;', title: t('screen_share.simple.none_title'), back: false,
-      body: `<p class="simple-lead">${esc(note)}</p><div class="simple-done-actions"><a class="btn btn-primary" href="#/">${esc(t('screen_share.simple.home'))}</a></div>` }));
+      body: `<p class="simple-lead">${uiText(note)}</p><div class="simple-done-actions"><a class="btn btn-primary" href="#/">${uiText(t('screen_share.simple.home'))}</a></div>` }));
     return;
   }
   if (!on || !devices.length) {
     shell(container, guideFrame({ step: 0, total: 1, icon: '&#128421;&#65039;', title: t('screen_share.simple.none_title'), back: false,
-      body: `<p class="simple-lead">${esc(t(on ? 'screen_share.simple.none' : 'screen_share.reason.disabled'))}</p><div class="simple-done-actions"><a class="btn btn-primary" href="#/">${esc(t('screen_share.simple.home'))}</a></div>` }));
+      body: `<p class="simple-lead">${uiText(t(on ? 'screen_share.simple.none' : 'screen_share.reason.disabled'))}</p><div class="simple-done-actions"><a class="btn btn-primary" href="#/">${uiText(t('screen_share.simple.home'))}</a></div>` }));
     return;
   }
   // 3.0 multi share: the person can pick several screens (up to the server's limit).
@@ -334,15 +336,15 @@ async function renderShare(container, presetId) {
 
   function pickStep() {
     shell(container, guideFrame({ step: 0, total, icon: '&#128250;', title: t('screen_share.simple.pick_many_title'), back: false,
-      body: `<p class="simple-lead">${esc(t('screen_share.simple.pick_many_lead', { max: maxTargets }))}</p>
-        <div class="simple-pick">${devices.map((d) => `
+      body: `<p class="simple-lead">${uiText(t('screen_share.simple.pick_many_lead', { max: maxTargets }))}</p>
+        <div class="simple-pick">${renderHTML(devices.map((d) => `
         <button type="button" class="simple-screen${picked.has(d.id) ? ' is-picked' : ''}" data-pick="${esc(d.id)}" aria-pressed="${picked.has(d.id) ? 'true' : 'false'}" ${online(d) ? '' : 'disabled'}
           style="${picked.has(d.id) ? 'outline:3px solid var(--accent, #3b82f6);outline-offset:2px' : ''}">
-          <span class="simple-screen-shot">${d.screenshot_path ? `<img src="${screenshotUrl(d.id, d.screenshot_at || '')}" alt="">` : '&#128250;'}</span>
-          <span class="simple-screen-name">${picked.has(d.id) ? '&#10003; ' : ''}${esc(d.name)}</span>
-          <span class="simple-screen-status ${online(d) ? 'on' : 'off'}">${esc(online(d) ? t('simple.status.online') : t('simple.status.offline'))}</span>
-        </button>`).join('')}</div>
-        <div class="simple-done-actions"><button type="button" class="btn btn-primary simple-share-go" data-pick-next ${picked.size ? '' : 'disabled'}>${esc(t('screen_share.simple.next'))}</button></div>` }));
+          <span class="simple-screen-shot">${renderHTML(d.screenshot_path ? `<img src="${screenshotUrl(d.id, d.screenshot_at || '')}" alt="">` : '&#128250;')}</span>
+          <span class="simple-screen-name">${renderHTML(picked.has(d.id) ? '&#10003; ' : '')}${uiText(d.name)}</span>
+          <span class="simple-screen-status ${online(d) ? 'on' : 'off'}">${uiText(online(d) ? t('simple.status.online') : t('simple.status.offline'))}</span>
+        </button>`).join(''))}</div>
+        <div class="simple-done-actions"><button type="button" class="btn btn-primary simple-share-go" data-pick-next ${picked.size ? '' : 'disabled'}>${uiText(t('screen_share.simple.next'))}</button></div>` }));
     container.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => {
       const id = b.dataset.pick;
       if (picked.has(id)) picked.delete(id);
@@ -367,11 +369,11 @@ async function renderShare(container, presetId) {
     shell(container, guideFrame({ step: skipPick ? 0 : 1, total, icon: '&#128421;&#65039;',
       title: one ? t('screen_share.simple.choose_title', { name: one.name }) : t('screen_share.simple.choose_title_n', { count: chosen.length }), back: !skipPick,
       body: `
-        <p class="simple-lead">${esc(t(viaApp ? 'screen_share.simple.app_lead' : 'screen_share.simple.choose_lead'))}</p>
-        ${why ? `<p class="simple-status" style="color:var(--danger)">${esc(why)}</p>` : `
-        ${viaApp ? '' : `<label class="simple-share-audio"><input type="checkbox" data-share-audio> ${esc(t('screen_share.include_audio'))}</label>`}
-        <div class="simple-done-actions"><button type="button" class="btn btn-primary simple-share-go" data-share-go ${allOnline ? '' : 'disabled'}>${esc(t('screen_share.simple.choose_btn'))}</button></div>
-        ${allOnline ? '' : `<p class="simple-status">${esc(t('screen_share.card.offline'))}</p>`}`}` }));
+        <p class="simple-lead">${uiText(t(viaApp ? 'screen_share.simple.app_lead' : 'screen_share.simple.choose_lead'))}</p>
+        ${renderHTML(why ? `<p class="simple-status" style="color:var(--danger)">${uiText(why)}</p>` : `
+        ${renderHTML(viaApp ? '' : `<label class="simple-share-audio"><input type="checkbox" data-share-audio> ${uiText(t('screen_share.include_audio'))}</label>`)}
+        <div class="simple-done-actions"><button type="button" class="btn btn-primary simple-share-go" data-share-go ${allOnline ? '' : 'disabled'}>${uiText(t('screen_share.simple.choose_btn'))}</button></div>
+        ${renderHTML(allOnline ? '' : `<p class="simple-status">${uiText(t('screen_share.card.offline'))}</p>`)}`)}` }));
     wireBack(() => { chosen = []; draw(); });
     container.querySelector('[data-share-go]')?.addEventListener('click', async (e) => {
       if (viaApp) {
@@ -397,9 +399,9 @@ async function renderShare(container, presetId) {
     shell(container, guideFrame({ step: total - 1, total, icon: live ? '&#128308;' : '&#9203;',
       title: many ? t('screen_share.simple.live_title_n', { count: a.screens }) : t('screen_share.simple.live_title', { name: a.deviceName }), back: false,
       body: `
-        <p class="simple-lead">${esc(lead)}</p>
-        <p class="simple-muted">${esc(t('screen_share.simple.live_hint'))}</p>
-        <div class="simple-done-actions"><button type="button" class="btn btn-danger simple-share-go" data-share-stop>${esc(t('screen_share.stop'))}</button></div>` }));
+        <p class="simple-lead">${uiText(lead)}</p>
+        <p class="simple-muted">${uiText(t('screen_share.simple.live_hint'))}</p>
+        <div class="simple-done-actions"><button type="button" class="btn btn-danger simple-share-go" data-share-stop>${uiText(t('screen_share.stop'))}</button></div>` }));
     container.querySelector('[data-share-stop]')?.addEventListener('click', () => stopScreenShare());
   }
 
@@ -410,9 +412,9 @@ async function renderShare(container, presetId) {
     if (wasSharing) {
       wasSharing = false;
       shell(container, guideFrame({ step: total - 1, total, icon: '&#10003;', title: t('screen_share.simple.done_title'), back: false,
-        body: `<p class="simple-lead">${esc(t('screen_share.simple.done'))}</p>
-          <div class="simple-done-actions"><a class="btn btn-primary" href="#/">${esc(t('screen_share.simple.home'))}</a>
-          <button type="button" class="btn btn-secondary" data-share-again>${esc(t('screen_share.simple.again'))}</button></div>` }));
+        body: `<p class="simple-lead">${uiText(t('screen_share.simple.done'))}</p>
+          <div class="simple-done-actions"><a class="btn btn-primary" href="#/">${uiText(t('screen_share.simple.home'))}</a>
+          <button type="button" class="btn btn-secondary" data-share-again>${uiText(t('screen_share.simple.again'))}</button></div>` }));
       container.querySelector('[data-share-again]')?.addEventListener('click', () => { if (!skipPick) chosen = []; draw(); });
       return;
     }
@@ -447,10 +449,10 @@ async function freshnessLine(host) {
     : tn('simple.fresh.line_days', n, { days: minDays });
   const href = n === 1 ? `#/simple/change?device=${encodeURIComponent(stale[0][0])}` : '#/simple/change';
   host.innerHTML = `<div class="simple-notice simple-fresh">
-    <span>&#127807; ${esc(text)}</span>
+    <span>🌿 ${uiText(text)}</span>
     <span style="display:flex;gap:8px">
-      <button type="button" class="btn btn-secondary btn-sm" data-fresh-later>${esc(t('simple.fresh.later'))}</button>
-      <a class="btn btn-primary btn-sm" href="${href}">${esc(tn('simple.fresh.cta', n))}</a>
+      <button type="button" class="btn btn-secondary btn-sm" data-fresh-later>${uiText(t('simple.fresh.later'))}</button>
+      <a class="btn btn-primary btn-sm" href="${href}">${uiText(tn('simple.fresh.cta', n))}</a>
     </span>
   </div>`;
   host.querySelector('[data-fresh-later]').addEventListener('click', () => {
@@ -473,8 +475,8 @@ async function energyLine(host) {
   const saved = Math.round(g.saved_kwh || 0);
   const text = saved >= 1 ? t('simple.energy.line_saved', { kwh: used, saved }) : t('simple.energy.line', { kwh: used });
   host.innerHTML = `<div class="simple-notice simple-energy">
-    <span>&#9889; ${esc(text)}</span>
-    <a class="btn btn-secondary btn-sm" href="#/energy">${esc(t('simple.energy.more'))}</a>
+    <span>⚡ ${uiText(text)}</span>
+    <a class="btn btn-secondary btn-sm" href="#/energy">${uiText(t('simple.energy.more'))}</a>
   </div>`;
 }
 
@@ -483,20 +485,20 @@ async function energyLine(host) {
  * everyday words (docs/preview-at-time.md). Asked only when someone opens it.
  */
 async function showComing(body, deviceId) {
-  body.textContent = t('common.loading');
+  bindText(body, 'common.loading', undefined);
   let r;
-  try { r = await upcomingChanges(deviceId); } catch { body.textContent = t('simple.coming.failed'); return; }
-  body.textContent = '';
+  try { r = await upcomingChanges(deviceId); } catch { bindText(body, 'simple.coming.failed', undefined); return; }
+  bindMessage(body, '');
   if (r.now) {
     const p = document.createElement('p');
     p.className = 'simple-coming-now';
-    p.textContent = t('simple.coming.now', { what: r.now });
+    bindText(p, 'simple.coming.now', { what: r.now });
     body.appendChild(p);
   }
   if (!r.changes.length) {
     const p = document.createElement('p');
     p.className = 'simple-muted';
-    p.textContent = t('simple.coming.none');
+    bindText(p, 'simple.coming.none', undefined);
     body.appendChild(p);
     return;
   }
@@ -504,7 +506,7 @@ async function showComing(body, deviceId) {
   for (const c of r.changes) {
     const li = document.createElement('li');
     const when = document.createElement('strong');
-    when.textContent = c.when;
+    bindMessage(when, c.when);
     li.append(when, ' ', c.text);
     ul.appendChild(li);
   }
@@ -526,11 +528,11 @@ async function adminNotices(host) {
       const card = document.createElement('div');
       card.className = 'simple-notice';
       const text = document.createElement('span');
-      text.textContent = t('simple.admin.update', { latest: v.latest_version || '', current: v.version || '' });
+      bindText(text, 'simple.admin.update', { latest: v.latest_version || '', current: v.version || '' });
       const link = document.createElement('a');
       link.className = 'btn btn-primary btn-sm';
       link.href = '#/platform/system';
-      link.textContent = t('simple.admin.update_how');
+      bindText(link, 'simple.admin.update_how', undefined);
       card.append(text, link);
       host.appendChild(card);
     }
@@ -580,21 +582,21 @@ async function renderTeam(container) {
   const ws = currentWorkspace();
   if (!ws || !ws.can_admin) { window.location.hash = '#/'; return; }
   shell(container, `
-    <div class="simple-help-top"><a href="#/" class="btn btn-secondary btn-sm">&larr; ${esc(t('simple.done.home'))}</a></div>
-    <h1 class="simple-h1">${esc(t('simple.team.title'))}</h1>
+    <div class="simple-help-top"><a href="#/" class="btn btn-secondary btn-sm">← ${uiText(t('simple.done.home'))}</a></div>
+    <h1 class="simple-h1">${uiText(t('simple.team.title'))}</h1>
     <div class="simple-card">
-      <h3 class="simple-card-title">${esc(t('simple.team.invite_title'))}</h3>
-      <label class="simple-label" for="teamEmail">${esc(t('simple.team.email'))}</label>
-      <input id="teamEmail" class="input" type="email" autocomplete="off" inputmode="email" placeholder="name@example.com">
-      <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.team.can'))}" style="margin-top:12px">
-        ${['workspace_editor', 'workspace_viewer', 'workspace_admin'].map((r, i) => `
-          <label><input type="radio" name="teamRole" value="${r}" ${i === 0 ? 'checked' : ''}> <span><strong>${esc(t(ROLE_KEYS[r]))}</strong><small>${esc(t(ROLE_KEYS[r] + '_desc'))}</small></span></label>`).join('')}
+      <h3 class="simple-card-title">${uiText(t('simple.team.invite_title'))}</h3>
+      <label class="simple-label" for="teamEmail">${uiText(t('simple.team.email'))}</label>
+      <input id="teamEmail" class="input" type="email" autocomplete="off" inputmode="email" ${translatedAttribute("placeholder", "ui.simple_home.placeholder_name_example_com_7b17fb")}>
+      <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.team.can'))}" data-fil-i18n-aria-label="${binding('simple.team.can', undefined)}" style="margin-top:12px">
+        ${renderHTML(['workspace_editor', 'workspace_viewer', 'workspace_admin'].map((r, i) => `
+          <label><input type="radio" name="teamRole" value="${r}" ${i === 0 ? 'checked' : ''}> <span><strong>${uiText(t(ROLE_KEYS[r]))}</strong><small>${uiText(t(ROLE_KEYS[r] + '_desc'))}</small></span></label>`).join(''))}
       </div>
-      <button type="button" class="btn btn-primary" data-invite>${esc(t('simple.team.invite_btn'))}</button>
+      <button type="button" class="btn btn-primary" data-invite>${uiText(t('simple.team.invite_btn'))}</button>
       <div class="simple-status" data-status></div>
     </div>
-    <h2 class="simple-h2">${esc(t('simple.team.people'))}</h2>
-    <div class="simple-card simple-people" data-people><p class="simple-muted">${esc(t('common.loading'))}</p></div>`);
+    <h2 class="simple-h2">${uiText(t('simple.team.people'))}</h2>
+    <div class="simple-card simple-people" data-people><p class="simple-muted">${uiText(t('common.loading'))}</p></div>`);
 
   const status = container.querySelector('[data-status]');
   const people = container.querySelector('[data-people]');
@@ -606,46 +608,46 @@ async function renderTeam(container) {
     const rows = [
       ...members.map((m) => `
         <div class="simple-person">
-          <span><strong>${esc(m.name || m.email)}</strong><small>${esc(m.email)}${m.user_id === me ? ` · ${esc(t('simple.team.you'))}` : ''}</small></span>
-          <span class="simple-person-role">${esc(t(ROLE_KEYS[m.role] || 'simple.team.role_viewer'))}</span>
-          ${!m.via_org && m.user_id !== me ? `<button type="button" class="btn btn-secondary btn-sm" data-remove="${esc(m.user_id)}" data-name="${esc(m.name || m.email)}">${esc(t('simple.team.remove'))}</button>` : '<span></span>'}
+          <span><strong>${uiText(m.name || m.email)}</strong><small>${uiText(m.email)}${renderHTML(m.user_id === me ? ` · ${esc(t('simple.team.you'))}` : '')}</small></span>
+          <span class="simple-person-role">${uiText(t(ROLE_KEYS[m.role] || 'simple.team.role_viewer'))}</span>
+          ${renderHTML(!m.via_org && m.user_id !== me ? `<button type="button" class="btn btn-secondary btn-sm" data-remove="${esc(m.user_id)}" data-name="${esc(m.name || m.email)}">${uiText(t('simple.team.remove'))}</button>` : `<span></span>`)}
         </div>`),
       ...(invites || []).map((i) => `
         <div class="simple-person is-pending">
-          <span><strong>${esc(i.email)}</strong><small>${esc(t('simple.team.invited'))}</small></span>
-          <span class="simple-person-role">${esc(t(ROLE_KEYS[i.role] || 'simple.team.role_viewer'))}</span>
-          <button type="button" class="btn btn-secondary btn-sm" data-cancel="${esc(i.id)}">${esc(t('simple.team.cancel_invite'))}</button>
+          <span><strong>${uiText(i.email)}</strong><small>${uiText(t('simple.team.invited'))}</small></span>
+          <span class="simple-person-role">${uiText(t(ROLE_KEYS[i.role] || 'simple.team.role_viewer'))}</span>
+          <button type="button" class="btn btn-secondary btn-sm" data-cancel="${esc(i.id)}">${uiText(t('simple.team.cancel_invite'))}</button>
         </div>`),
     ];
-    people.innerHTML = rows.join('') || `<p class="simple-muted">${esc(t('simple.team.nobody'))}</p>`;
+    people.innerHTML = rows.join('') || `<p class="simple-muted">${uiText(t('simple.team.nobody'))}</p>`;
     people.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', async () => {
-      try { await api.cancelWorkspaceInvite(ws.id, b.dataset.cancel); loadPeople(); } catch (err) { showToast(err.message, 'error'); }
+      try { await api.cancelWorkspaceInvite(ws.id, b.dataset.cancel); loadPeople(); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     }));
     people.querySelectorAll('[data-remove]').forEach((b) => b.addEventListener('click', async () => {
       if (!window.confirm(t('simple.team.remove_confirm', { name: b.dataset.name }))) return;
-      try { await api.removeWorkspaceMember(ws.id, b.dataset.remove); loadPeople(); } catch (err) { showToast(err.message, 'error'); }
+      try { await api.removeWorkspaceMember(ws.id, b.dataset.remove); loadPeople(); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
     }));
   }
 
   container.querySelector('[data-invite]').addEventListener('click', async (e) => {
     const email = container.querySelector('#teamEmail').value.trim();
     const role = container.querySelector('input[name="teamRole"]:checked').value;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { status.textContent = t('simple.team.bad_email'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { bindText(status, 'simple.team.bad_email', undefined); return; }
     e.target.disabled = true;
-    status.textContent = t('simple.working_invite');
+    bindText(status, 'simple.working_invite', undefined);
     try {
       const r = await api.inviteWorkspaceMember(ws.id, { email, role });
       container.querySelector('#teamEmail').value = '';
       status.innerHTML = '';
       const msg = document.createElement('p');
-      msg.textContent = r.email_sent ? t('simple.team.sent', { email }) : t('simple.team.not_emailed', { email });
+      bindMessage(msg, r.email_sent ? t('simple.team.sent', { email }) : t('simple.team.not_emailed', { email }));
       status.appendChild(msg);
       if (r.accept_url) {
         const share = document.createElement('button');
         share.type = 'button';
         share.className = 'btn btn-secondary btn-sm';
         share.style.marginTop = '8px';
-        share.textContent = t(inManagerApp() || navigator.share ? 'simple.team.share_link' : 'simple.team.copy_link');
+        bindText(share, inManagerApp() || navigator.share ? 'simple.team.share_link' : 'simple.team.copy_link', undefined);
         share.addEventListener('click', async () => {
           const res = await passOn(t('simple.team.share_text', { name: ws.name, url: r.accept_url }));
           if (res === 'copied') showToast(t('simple.team.copied'), 'success');
@@ -654,7 +656,7 @@ async function renderTeam(container) {
       }
       loadPeople();
     } catch (err) {
-      status.textContent = err.message || t('simple.team.failed');
+      bindMessage(status, (err.uiMessage || err.message) || t('simple.team.failed'));
     } finally { e.target.disabled = false; }
   });
   loadPeople();
@@ -758,15 +760,15 @@ async function loadLibrary(container, onUse) {
   const picked = [];
   grid.innerHTML = items.map((c) => `
     <button type="button" class="simple-lib-item" data-lib-id="${esc(c.id)}" aria-pressed="false" title="${esc(c.filename || '')}">
-      ${c.thumbnail_path ? `<img data-auth-src="/api/content/${esc(c.id)}/thumbnail" alt="">` : `<span class="simple-lib-icon">${String(c.mime_type).startsWith('video/') ? '&#127909;' : '&#128444;'}</span>`}
+      ${renderHTML(c.thumbnail_path ? `<img data-auth-src="/api/content/${esc(c.id)}/thumbnail" alt="">` : `<span class="simple-lib-icon">${renderHTML(String(c.mime_type).startsWith('video/') ? '&#127909;' : '&#128444;')}</span>`)}
       <span class="simple-lib-check" aria-hidden="true">&#10003;</span>
-      <span class="simple-lib-name">${esc(c.filename || '')}</span>
+      <span class="simple-lib-name">${uiText(c.filename || '')}</span>
     </button>`).join('');
   block.hidden = false;
   hydrateAuthImages(grid, { eager: true });
   const paint = () => {
     useBtn.disabled = picked.length === 0;
-    useBtn.textContent = picked.length ? tn('simple.library.use_n', picked.length) : t('simple.library.use', { n: 0 });
+    bindMessage(useBtn, picked.length ? tn('simple.library.use_n', picked.length) : t('simple.library.use', { n: 0 }));
   };
   grid.addEventListener('click', (e) => {
     const b = e.target.closest('[data-lib-id]');
@@ -783,10 +785,10 @@ async function loadLibrary(container, onUse) {
 }
 
 function doneBody(lines) {
-  return `<p class="simple-lead">${esc(lines[0])}</p>${lines[1] ? `<p class="simple-muted">${esc(lines[1])}</p>` : ''}
+  return `<p class="simple-lead">${uiText(lines[0])}</p>${renderHTML(lines[1] ? `<p class="simple-muted">${uiText(lines[1])}</p>` : '')}
     <div class="simple-done-actions">
-      <a class="btn btn-primary" href="#/">${esc(t('simple.done.home'))}</a>
-      <a class="btn btn-secondary" href="#/simple/change">${esc(t('simple.task.change'))}</a>
+      <a class="btn btn-primary" href="#/">${uiText(t('simple.done.home'))}</a>
+      <a class="btn btn-secondary" href="#/simple/change">${uiText(t('simple.task.change'))}</a>
     </div>`;
 }
 
@@ -800,7 +802,7 @@ async function renderChange(container, presetId) {
   try { [devices, playlists] = await Promise.all([api.getDevices(), api.getPlaylists()]); } catch { /* shown below */ }
   if (!devices.length) {
     shell(container, guideFrame({ step: 0, total: 1, icon: '&#128250;', title: t('simple.change.no_screens_title'), back: false,
-      body: `<p class="simple-lead">${esc(t('simple.home.no_screens'))}</p><div class="simple-done-actions"><a class="btn btn-primary" href="#/add-screen">${esc(t('simple.task.add'))}</a></div>` }));
+      body: `<p class="simple-lead">${uiText(t('simple.home.no_screens'))}</p><div class="simple-done-actions"><a class="btn btn-primary" href="#/add-screen">${uiText(t('simple.task.add'))}</a></div>` }));
     return;
   }
   let device = devices.find((d) => d.id === presetId) || (devices.length === 1 ? devices[0] : null);
@@ -812,12 +814,12 @@ async function renderChange(container, presetId) {
 
   function pickStep() {
     shell(container, guideFrame({ step: 0, total, icon: '&#128250;', title: t('simple.change.pick_title'), back: false,
-      body: `<div class="simple-pick">${devices.map((d) => `
+      body: `<div class="simple-pick">${renderHTML(devices.map((d) => `
         <button type="button" class="simple-screen" data-pick="${esc(d.id)}">
-          <span class="simple-screen-shot">${d.screenshot_path ? `<img src="${screenshotUrl(d.id, d.screenshot_at || '')}" alt="">` : '&#128250;'}</span>
-          <span class="simple-screen-name">${esc(d.name)}</span>
-          <span class="simple-screen-status ${online(d) ? 'on' : 'off'}">${esc(online(d) ? t('simple.status.online') : t('simple.status.offline'))}</span>
-        </button>`).join('')}</div>` }));
+          <span class="simple-screen-shot">${renderHTML(d.screenshot_path ? `<img src="${screenshotUrl(d.id, d.screenshot_at || '')}" alt="">` : '&#128250;')}</span>
+          <span class="simple-screen-name">${uiText(d.name)}</span>
+          <span class="simple-screen-status ${online(d) ? 'on' : 'off'}">${uiText(online(d) ? t('simple.status.online') : t('simple.status.offline'))}</span>
+        </button>`).join(''))}</div>` }));
     container.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => {
       device = devices.find((d) => d.id === b.dataset.pick);
       contentStep();
@@ -830,44 +832,44 @@ async function renderChange(container, presetId) {
     const others = playlists.filter((p) => (p.item_count || 0) > 0 && p.id !== device.playlist_id);
     shell(container, guideFrame({ step, total, icon: '&#127912;', title: t('simple.change.what_title', { name: device.name }), back: !skipPick,
       body: `
-        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.change.how_label'))}">
-          <label><input type="radio" name="simpleHow" value="replace" ${how === 'replace' ? 'checked' : ''}> <span><strong>${esc(t('simple.change.replace'))}</strong><small>${esc(t('simple.change.replace_desc'))}</small></span></label>
-          <label><input type="radio" name="simpleHow" value="add" ${how === 'add' ? 'checked' : ''}> <span><strong>${esc(t('simple.change.add'))}</strong><small>${esc(sharedWith.length ? t('simple.change.add_shared', { names: sharedWith.join(', ') }) : t('simple.change.add_desc'))}</small></span></label>
+        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.change.how_label'))}" data-fil-i18n-aria-label="${binding('simple.change.how_label', undefined)}">
+          <label><input type="radio" name="simpleHow" value="replace" ${how === 'replace' ? 'checked' : ''}> <span><strong>${uiText(t('simple.change.replace'))}</strong><small>${uiText(t('simple.change.replace_desc'))}</small></span></label>
+          <label><input type="radio" name="simpleHow" value="add" ${how === 'add' ? 'checked' : ''}> <span><strong>${uiText(t('simple.change.add'))}</strong><small>${uiText(sharedWith.length ? t('simple.change.add_shared', { names: sharedWith.join(', ') }) : t('simple.change.add_desc'))}</small></span></label>
         </div>
         <div class="simple-drop" data-drop>
           <div class="simple-drop-icon">&#128193;</div>
-          <p>${esc(t(isTouchFirst() ? 'onboarding.step.upload.tap_to_select' : 'onboarding.step.upload.click_to_select'))}</p>
+          <p>${uiText(t(isTouchFirst() ? 'onboarding.step.upload.tap_to_select' : 'onboarding.step.upload.click_to_select'))}</p>
           <input type="file" data-file multiple accept="${ACCEPT}" hidden>
         </div>
-        <div class="simple-or"><span>${esc(t('onboarding.step.upload.or'))}</span> <button type="button" class="btn btn-secondary btn-sm" data-sample>${esc(t('onboarding.step.upload.use_sample'))}</button></div>
+        <div class="simple-or"><span>${uiText(t('onboarding.step.upload.or'))}</span> <button type="button" class="btn btn-secondary btn-sm" data-sample>${uiText(t('onboarding.step.upload.use_sample'))}</button></div>
         <!-- Photos and videos already in this workspace's library: pick instead of uploading again. -->
         <div class="simple-library" data-library hidden>
           <div class="simple-library-head">
-            <span>${esc(t('simple.library.title'))}</span>
-            <button type="button" class="btn btn-primary btn-sm" data-library-use disabled>${esc(t('simple.library.use', { n: 0 }))}</button>
+            <span>${uiText(t('simple.library.title'))}</span>
+            <button type="button" class="btn btn-primary btn-sm" data-library-use disabled>${uiText(t('simple.library.use', { n: 0 }))}</button>
           </div>
           <div class="simple-library-grid" data-library-grid></div>
         </div>
         <!-- Free stock photos (components/stock-picker.js): hidden when the server has no provider key. -->
         <div class="simple-stock" data-stock hidden></div>
-        ${others.length ? `
+        ${renderHTML(others.length ? `
         <div class="simple-sameas">
-          <label for="simpleSameAs">${esc(t('onboarding.step.upload.same_as_label'))}</label>
-          <div><select id="simpleSameAs" class="input">${others.map((p) => `<option value="${esc(p.id)}">${esc(p.name)} (${p.item_count || 0})</option>`).join('')}</select>
-          <button type="button" class="btn btn-primary btn-sm" data-sameas>${esc(t('onboarding.step.upload.same_as_btn'))}</button></div>
-        </div>` : ''}
+          <label for="simpleSameAs">${uiText(t('onboarding.step.upload.same_as_label'))}</label>
+          <div><select id="simpleSameAs" class="input">${renderHTML(others.map((p) => `<option value="${esc(p.id)}">${uiText(p.name)} (${renderHTML(p.item_count || 0)})</option>`).join(''))}</select>
+          <button type="button" class="btn btn-primary btn-sm" data-sameas>${uiText(t('onboarding.step.upload.same_as_btn'))}</button></div>
+        </div>` : '')}
         <p class="simple-status" data-status></p>` }));
     wireBack(pickStep);
     container.querySelectorAll('input[name="simpleHow"]').forEach((r) => r.addEventListener('change', () => { how = r.value; }));
     const status = container.querySelector('[data-status]');
-    const busy = (msg) => { status.textContent = msg; container.querySelectorAll('button, input').forEach((e) => { e.disabled = true; }); };
+    const busy = (msg) => { bindMessage(status, msg); container.querySelectorAll('button, input').forEach((e) => { e.disabled = true; }); };
     // At a storage limit the upgrade prompt (plan-nudges.js) says it; the status line does not repeat it.
-    const fail = (err) => { status.textContent = err && err.planPromptShown ? '' : ((err && err.message) || t('onboarding.toast.upload_failed')); container.querySelectorAll('button, input').forEach((e) => { e.disabled = false; }); };
+    const fail = (err) => { bindMessage(status, err && err.planPromptShown ? '' : ((err && (err.uiMessage || err.message)) || t('onboarding.toast.upload_failed'))); container.querySelectorAll('button, input').forEach((e) => { e.disabled = false; }); };
 
     const go = async (files) => {
       busy(tn('simple.uploading', files.length));
       try {
-        const up = await api.uploadContent(files, (pct) => { status.textContent = `${tn('simple.uploading', files.length)} ${pct}%`; });
+        const up = await api.uploadContent(files, (pct) => { bindMessage(status, `${tn('simple.uploading', files.length)} ${pct}%`); });
         const items = (Array.isArray(up) ? up : [up]).filter((c) => c && c.id);
         const r = await showOnScreen(device, items.map((c) => c.id), how, { devices, playlists });
         doneStep(r.review ? t('simple.done.review', { name: device.name }) : tn('simple.done.shown', items.length, { name: device.name }), r.review);
@@ -935,7 +937,7 @@ async function renderUpload(container, presetIds = []) {
       body: `
         <div class="simple-drop" data-drop>
           <div class="simple-drop-icon">&#128193;</div>
-          <p>${esc(t(isTouchFirst() ? 'onboarding.step.upload.tap_to_select' : 'onboarding.step.upload.click_to_select'))}</p>
+          <p>${uiText(t(isTouchFirst() ? 'onboarding.step.upload.tap_to_select' : 'onboarding.step.upload.click_to_select'))}</p>
           <input type="file" data-file multiple accept="${ACCEPT}" hidden>
         </div>
         <div class="simple-stock" data-stock hidden></div>
@@ -951,13 +953,13 @@ async function renderUpload(container, presetIds = []) {
       },
     });
     wireDrop(container.querySelector('[data-drop]'), container.querySelector('[data-file]'), async (files) => {
-      status.textContent = tn('simple.uploading', files.length);
+      bindText(status, 'simple.uploading', undefined, files.length);
       try {
-        const up = await api.uploadContent(files, (pct) => { status.textContent = `${tn('simple.uploading', files.length)} ${pct}%`; });
+        const up = await api.uploadContent(files, (pct) => { bindMessage(status, `${tn('simple.uploading', files.length)} ${pct}%`); });
         uploaded = (Array.isArray(up) ? up : [up]).filter((c) => c && c.id);
         if (devices.length) screensStep();
         else doneOnly(tn('simple.upload.saved', uploaded.length));
-      } catch (err) { status.textContent = err.planPromptShown ? '' : (err.message || t('onboarding.toast.upload_failed')); }
+      } catch (err) { bindMessage(status, err.planPromptShown ? '' : ((err.uiMessage || err.message) || t('onboarding.toast.upload_failed'))); }
     });
   }
 
@@ -965,14 +967,14 @@ async function renderUpload(container, presetIds = []) {
     shell(container, guideFrame({ step: 1, total, icon: '&#128250;', title: tn('simple.upload.where_title', uploaded.length), back: false,
       next: true, nextLabel: t('simple.upload.show_btn'),
       body: `
-        <div class="simple-checks">${devices.map((d) => `
-          <label><input type="checkbox" value="${esc(d.id)}" checked> <span>${esc(d.name)}</span>
-          <small class="simple-screen-status ${online(d) ? 'on' : 'off'}">${esc(online(d) ? t('simple.status.online') : t('simple.status.offline'))}</small></label>`).join('')}</div>
-        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.change.how_label'))}">
-          <label><input type="radio" name="simpleHow" value="add" checked> <span><strong>${esc(t('simple.change.add'))}</strong><small>${esc(t('simple.change.add_desc'))}</small></span></label>
-          <label><input type="radio" name="simpleHow" value="replace"> <span><strong>${esc(t('simple.change.replace'))}</strong><small>${esc(t('simple.change.replace_desc'))}</small></span></label>
+        <div class="simple-checks">${renderHTML(devices.map((d) => `
+          <label><input type="checkbox" value="${esc(d.id)}" checked> <span>${uiText(d.name)}</span>
+          <small class="simple-screen-status ${online(d) ? 'on' : 'off'}">${uiText(online(d) ? t('simple.status.online') : t('simple.status.offline'))}</small></label>`).join(''))}</div>
+        <div class="simple-choice" role="radiogroup" aria-label="${esc(t('simple.change.how_label'))}" data-fil-i18n-aria-label="${binding('simple.change.how_label', undefined)}">
+          <label><input type="radio" name="simpleHow" value="add" checked> <span><strong>${uiText(t('simple.change.add'))}</strong><small>${uiText(t('simple.change.add_desc'))}</small></span></label>
+          <label><input type="radio" name="simpleHow" value="replace"> <span><strong>${uiText(t('simple.change.replace'))}</strong><small>${uiText(t('simple.change.replace_desc'))}</small></span></label>
         </div>
-        <p class="simple-muted">${esc(t('simple.upload.later_hint'))}</p>
+        <p class="simple-muted">${uiText(t('simple.upload.later_hint'))}</p>
         <p class="simple-status" data-status></p>` }));
     container.querySelectorAll('input[name="simpleHow"]').forEach((r) => r.addEventListener('change', () => { how = r.value; }));
     container.querySelector('[data-guide-next]').addEventListener('click', async (e) => {
@@ -980,7 +982,7 @@ async function renderUpload(container, presetIds = []) {
       const status = container.querySelector('[data-status]');
       if (!ids.length) { doneOnly(tn('simple.upload.saved', uploaded.length)); return; }
       e.target.disabled = true;
-      status.textContent = t('simple.working');
+      bindText(status, 'simple.working', undefined);
       let review = false;
       try {
         // Screens that share one list are updated once, not once per screen.
@@ -998,7 +1000,7 @@ async function renderUpload(container, presetIds = []) {
           body: doneBody([review ? tn('simple.upload.review_on', ids.length) : tn('simple.upload.shown_on', ids.length),
             t(review ? 'simple.done.review_hint' : 'simple.done.seconds')]) }));
       } catch (err) {
-        status.textContent = err.message || t('onboarding.toast.assign_failed');
+        bindMessage(status, (err.uiMessage || err.message) || t('onboarding.toast.assign_failed'));
         e.target.disabled = false;
       }
     });
@@ -1006,9 +1008,9 @@ async function renderUpload(container, presetIds = []) {
 
   function doneOnly(line) {
     shell(container, guideFrame({ step: total - 1, total, icon: '&#9989;', title: t('simple.upload.saved_title'), back: false,
-      body: `<p class="simple-lead">${esc(line)}</p><div class="simple-done-actions">
-        <a class="btn btn-primary" href="#/">${esc(t('simple.done.home'))}</a>
-        ${devices.length ? '' : `<a class="btn btn-secondary" href="#/add-screen">${esc(t('simple.task.add'))}</a>`}</div>` }));
+      body: `<p class="simple-lead">${uiText(line)}</p><div class="simple-done-actions">
+        <a class="btn btn-primary" href="#/">${uiText(t('simple.done.home'))}</a>
+        ${renderHTML(devices.length ? '' : `<a class="btn btn-secondary" href="#/add-screen">${uiText(t('simple.task.add'))}</a>`)}</div>` }));
   }
 
   // Shared from the phone's Gallery (Manager app): the files are already uploaded; go straight to
@@ -1036,7 +1038,7 @@ function passkeyMenuShown(u) {
 async function renderPasskey(container) {
   const u = cachedUser() || {};
   if (!passkeyMenuShown(u)) { window.location.replace('#/'); return; }
-  shell(container, `<p class="simple-muted">${esc(t('common.loading'))}</p>`);
+  shell(container, `<p class="simple-muted">${uiText(t('common.loading'))}</p>`);
   const page = container.querySelector('.simple-page');
   let st;
   try { st = await api.passkeysList(); } catch (err) { st = { error: err.message }; }
@@ -1051,13 +1053,13 @@ async function renderPasskey(container) {
   else if (st.passkeys.length >= st.max) blocker = t('passkey.limit', { n: st.max });
 
   const body = blocker
-    ? `<p>${esc(blocker)}</p>`
-    : `<p>${esc(t('passkey.simple_intro'))}</p>
-       ${st.passkeys.length ? `<p class="simple-muted">${esc(t('passkey.simple_have', { n: st.passkeys.length }))}</p>` : ''}
-       <label class="simple-label" for="pkPassword">${esc(t('passkey.simple_password'))}</label>
+    ? `<p>${uiText(blocker)}</p>`
+    : `<p>${uiText(t('passkey.simple_intro'))}</p>
+       ${renderHTML(st.passkeys.length ? `<p class="simple-muted">${uiText(t('passkey.simple_have', { n: st.passkeys.length }))}</p>` : '')}
+       <label class="simple-label" for="pkPassword">${uiText(t('passkey.simple_password'))}</label>
        <input id="pkPassword" class="input" type="password" autocomplete="current-password">
-       ${st.totp_enabled ? `<label class="simple-label" for="pkCode" style="margin-top:10px">${esc(t('auth.mfa_code_label'))}</label>
-       <input id="pkCode" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6">` : ''}
+       ${renderHTML(st.totp_enabled ? `<label class="simple-label" for="pkCode" style="margin-top:10px">${uiText(t('auth.mfa_code_label'))}</label>
+       <input id="pkCode" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6">` : '')}
        <div class="simple-status" data-status></div>`;
   page.innerHTML = guideFrame({
     step: 0, total: 2, icon: '&#128273;', title: t('passkey.simple_title'), body, back: false,
@@ -1069,20 +1071,20 @@ async function renderPasskey(container) {
   const status = page.querySelector('[data-status]');
   next.addEventListener('click', async () => {
     const password = page.querySelector('#pkPassword').value;
-    if (!password) { status.textContent = t('passkey.password_required'); return; }
+    if (!password) { bindText(status, 'passkey.password_required', undefined); return; }
     next.disabled = true;
-    status.textContent = t('passkey.simple_follow_browser');
+    bindText(status, 'passkey.simple_follow_browser', undefined);
     try {
       await addPasskey({ password, code: page.querySelector('#pkCode')?.value.trim(), name: suggestedPasskeyName() });
     } catch (err) {
-      status.textContent = err.cancelled ? '' : err.message;
+      bindMessage(status, err.cancelled ? '' : (err.uiMessage || err.message));
       next.disabled = false;
       return;
     }
     page.innerHTML = guideFrame({
       step: 1, total: 2, icon: '&#10004;', title: t('passkey.simple_done_title'), back: false,
-      body: `<p>${esc(t('passkey.simple_done_body'))}</p>
-             <a href="#/" class="btn btn-primary">${esc(t('simple.done.home'))}</a>`,
+      body: `<p>${uiText(t('passkey.simple_done_body'))}</p>
+             <a href="#/" class="btn btn-primary">${uiText(t('simple.done.home'))}</a>`,
     });
   });
 }
@@ -1097,35 +1099,35 @@ async function renderPasskey(container) {
 
 async function renderRequests(container) {
   shell(container, `
-    <div class="simple-help-top"><a href="#/" class="btn btn-secondary btn-sm">&larr; ${esc(t('simple.done.home'))}</a></div>
-    <h1 class="simple-h1">${esc(t('simple.req.title'))}</h1>
-    <p class="simple-muted">${esc(t('simple.req.intro'))}</p>
-    <h2 class="simple-h2">${esc(t('simple.req.waiting'))}</h2>
-    <div data-waiting><p class="simple-muted">${esc(t('common.loading'))}</p></div>
-    <h2 class="simple-h2">${esc(t('simple.req.links'))}</h2>
-    <div data-links><p class="simple-muted">${esc(t('common.loading'))}</p></div>
-    <a class="btn btn-primary" href="#/simple/requests/new" style="margin-top:12px">${esc(t('simple.req.new'))}</a>`);
+    <div class="simple-help-top"><a href="#/" class="btn btn-secondary btn-sm">← ${uiText(t('simple.done.home'))}</a></div>
+    <h1 class="simple-h1">${uiText(t('simple.req.title'))}</h1>
+    <p class="simple-muted">${uiText(t('simple.req.intro'))}</p>
+    <h2 class="simple-h2">${uiText(t('simple.req.waiting'))}</h2>
+    <div data-waiting><p class="simple-muted">${uiText(t('common.loading'))}</p></div>
+    <h2 class="simple-h2">${uiText(t('simple.req.links'))}</h2>
+    <div data-links><p class="simple-muted">${uiText(t('common.loading'))}</p></div>
+    <a class="btn btn-primary" href="#/simple/requests/new" style="margin-top:12px">${uiText(t('simple.req.new'))}</a>`);
   const waiting = container.querySelector('[data-waiting]');
   const links = container.querySelector('[data-links]');
 
   async function loadWaiting() {
     let rows = [];
-    try { rows = await api.get('/content-requests/requests?status=pending'); } catch (e) { waiting.innerHTML = `<p class="simple-status">${esc(e.message)}</p>`; return; }
-    if (!rows.length) { waiting.innerHTML = `<div class="simple-card"><p class="simple-muted" style="margin:0">${esc(t('simple.req.none'))}</p></div>`; return; }
+    try { rows = await api.get('/content-requests/requests?status=pending'); } catch (e) { waiting.innerHTML = `<p class="simple-status">${uiText((e.uiMessage || e.message))}</p>`; return; }
+    if (!rows.length) { waiting.innerHTML = `<div class="simple-card"><p class="simple-muted" style="margin:0">${uiText(t('simple.req.none'))}</p></div>`; return; }
     waiting.innerHTML = rows.map((r) => `
       <div class="simple-card" data-req="${esc(r.id)}" style="margin-bottom:12px">
         <img data-auth-src="/api/content/${esc(r.content_id)}/thumbnail" alt="" style="width:100%;max-height:220px;object-fit:contain;border-radius:8px;background:#000">
-        <h3 class="simple-card-title" style="margin-top:12px">${esc(r.title)}</h3>
-        <p class="simple-lead">${esc(t('creq.from', { name: r.requester_name, email: r.requester_email }))}</p>
-        <p class="simple-muted">${esc(t('simple.req.when_where', { start: r.start_date, end: r.end_date, where: r.targets.map((x) => x.label).join(', ') }))}</p>
+        <h3 class="simple-card-title" style="margin-top:12px">${uiText(r.title)}</h3>
+        <p class="simple-lead">${uiText(t('creq.from', { name: r.requester_name, email: r.requester_email }))}</p>
+        <p class="simple-muted">${uiText(t('simple.req.when_where', { start: r.start_date, end: r.end_date, where: r.targets.map((x) => x.label).join(', ') }))}</p>
         <div class="simple-done-actions">
-          <button type="button" class="btn btn-primary" data-approve>${esc(t('simple.req.approve'))}</button>
-          <button type="button" class="btn btn-secondary" data-decline>${esc(t('simple.req.decline'))}</button>
+          <button type="button" class="btn btn-primary" data-approve>${uiText(t('simple.req.approve'))}</button>
+          <button type="button" class="btn btn-secondary" data-decline>${uiText(t('simple.req.decline'))}</button>
         </div>
         <div data-why hidden style="margin-top:12px">
-          <label class="simple-label">${esc(t('simple.req.why'))}</label>
+          <label class="simple-label">${uiText(t('simple.req.why'))}</label>
           <textarea class="input" rows="3" maxlength="1000"></textarea>
-          <button type="button" class="btn btn-primary" data-send style="margin-top:8px">${esc(t('simple.req.send_decline'))}</button>
+          <button type="button" class="btn btn-primary" data-send style="margin-top:8px">${uiText(t('simple.req.send_decline'))}</button>
         </div>
         <p class="simple-status" data-status></p>
       </div>`).join('');
@@ -1134,46 +1136,46 @@ async function renderRequests(container) {
       const id = el.dataset.req;
       const status = el.querySelector('[data-status]');
       el.querySelector('[data-approve]').addEventListener('click', async (e) => {
-        e.target.disabled = true; status.textContent = t('simple.working');
+        e.target.disabled = true; bindText(status, 'simple.working', undefined);
         try {
           const out = await api.post(`/content-requests/requests/${encodeURIComponent(id)}/approve`, {});
-          status.textContent = t(out.all_published ? 'simple.req.approved' : 'creq.toast.partial');
+          bindText(status, out.all_published ? 'simple.req.approved' : 'creq.toast.partial', undefined);
           el.querySelectorAll('button').forEach((b) => { b.disabled = true; });
-        } catch (err) { status.textContent = err.message; e.target.disabled = false; }
+        } catch (err) { bindMessage(status, (err.uiMessage || err.message)); e.target.disabled = false; }
       });
       el.querySelector('[data-decline]').addEventListener('click', () => { el.querySelector('[data-why]').hidden = false; el.querySelector('textarea').focus(); });
       el.querySelector('[data-send]').addEventListener('click', async (e) => {
         const reason = el.querySelector('textarea').value.trim();
-        if (!reason) { status.textContent = t('simple.req.why'); return; }
+        if (!reason) { bindText(status, 'simple.req.why', undefined); return; }
         e.target.disabled = true;
         try {
           await api.post(`/content-requests/requests/${encodeURIComponent(id)}/reject`, { reason });
-          status.textContent = t('simple.req.declined');
+          bindText(status, 'simple.req.declined', undefined);
           el.querySelectorAll('button').forEach((b) => { b.disabled = true; });
-        } catch (err) { status.textContent = err.message; e.target.disabled = false; }
+        } catch (err) { bindMessage(status, (err.uiMessage || err.message)); e.target.disabled = false; }
       });
     });
   }
 
   async function loadLinks() {
     let forms = [];
-    try { forms = await api.get('/content-requests/forms'); } catch (e) { links.innerHTML = `<p class="simple-status">${esc(e.message)}</p>`; return; }
+    try { forms = await api.get('/content-requests/forms'); } catch (e) { links.innerHTML = `<p class="simple-status">${uiText((e.uiMessage || e.message))}</p>`; return; }
     const open = forms.filter((f) => f.status === 'open');
-    if (!open.length) { links.innerHTML = `<div class="simple-card"><p class="simple-muted" style="margin:0">${esc(t('simple.req.no_links'))}</p></div>`; return; }
+    if (!open.length) { links.innerHTML = `<div class="simple-card"><p class="simple-muted" style="margin:0">${uiText(t('simple.req.no_links'))}</p></div>`; return; }
     links.innerHTML = open.map((f) => `
       <div class="simple-card" data-form="${esc(f.id)}" style="margin-bottom:12px">
-        <h3 class="simple-card-title">${esc(f.title)}</h3>
+        <h3 class="simple-card-title">${uiText(f.title)}</h3>
         <p class="simple-muted" style="word-break:break-all" data-url></p>
-        <button type="button" class="btn btn-primary" data-share>${esc(t('simple.req.share'))}</button>
+        <button type="button" class="btn btn-primary" data-share>${uiText(t('simple.req.share'))}</button>
         <p class="simple-status" data-status></p>
       </div>`).join('');
     links.querySelectorAll('[data-form]').forEach((el) => {
       const f = open.find((x) => x.id === el.dataset.form);
       const url = `${location.origin}${f.path}`;
-      el.querySelector('[data-url]').textContent = url;
+      bindMessage(el.querySelector('[data-url]'), url);
       el.querySelector('[data-share]').addEventListener('click', async () => {
         const how = await passOn(url);
-        el.querySelector('[data-status]').textContent = t(how === 'failed' ? 'simple.req.copy_failed' : 'simple.req.shared');
+        bindText(el.querySelector('[data-status]'), how === 'failed' ? 'simple.req.copy_failed' : 'simple.req.shared', undefined);
       });
     });
   }
@@ -1188,53 +1190,52 @@ async function renderRequestNew(container) {
 
   function nameStep() {
     shell(container, guideFrame({ step: 0, total, icon: '&#128229;', title: t('simple.req.new_q1'), back: false, next: true, nextLabel: t('simple.req.next'),
-      body: `<label class="simple-label" for="reqTitle">${esc(t('simple.req.new_q1_label'))}</label>
-        <input id="reqTitle" class="input" maxlength="120" placeholder="${esc(t('simple.req.new_q1_placeholder'))}" value="${esc(title)}">
+      body: `<label class="simple-label" for="reqTitle">${uiText(t('simple.req.new_q1_label'))}</label>
+        <input id="reqTitle" class="input" maxlength="120" placeholder="${esc(t('simple.req.new_q1_placeholder'))}" data-fil-i18n-placeholder="${binding('simple.req.new_q1_placeholder', undefined)}" value="${esc(title)}">
         <p class="simple-status" data-status></p>` }));
     container.querySelector('[data-guide-next]').addEventListener('click', () => {
       title = container.querySelector('#reqTitle').value.trim();
-      if (!title) { container.querySelector('[data-status]').textContent = t('simple.req.new_q1_label'); return; }
+      if (!title) { bindText(container.querySelector('[data-status]'), 'simple.req.new_q1_label', undefined); return; }
       screensStep();
     });
   }
 
   function screensStep() {
     shell(container, guideFrame({ step: 1, total, icon: '&#128250;', title: t('simple.req.new_q2'), next: !!devices.length, nextLabel: t('simple.req.make_link'),
-      body: devices.length ? `<div class="simple-checks">${devices.map((d) => `<label><input type="checkbox" value="${esc(d.id)}"> <span>${esc(d.name)}</span></label>`).join('')}</div>
-        <p class="simple-muted">${esc(t('simple.req.new_q2_hint'))}</p><p class="simple-status" data-status></p>`
-        : `<p class="simple-lead">${esc(t('simple.req.no_screens'))}</p>` }));
+      body: devices.length ? `<div class="simple-checks">${renderHTML(devices.map((d) => `<label><input type="checkbox" value="${esc(d.id)}"> <span>${uiText(d.name)}</span></label>`).join(''))}</div>
+        <p class="simple-muted">${uiText(t('simple.req.new_q2_hint'))}</p><p class="simple-status" data-status></p>`
+        : `<p class="simple-lead">${uiText(t('simple.req.no_screens'))}</p>` }));
     container.querySelector('[data-guide-back]')?.addEventListener('click', nameStep);
     container.querySelector('[data-guide-next]')?.addEventListener('click', async (e) => {
       const ids = [...container.querySelectorAll('.simple-checks input:checked')].map((i) => i.value);
       const status = container.querySelector('[data-status]');
-      if (!ids.length) { status.textContent = t('simple.req.new_q2_hint'); return; }
+      if (!ids.length) { bindText(status, 'simple.req.new_q2_hint', undefined); return; }
       e.target.disabled = true;
       try {
         const f = await api.post('/content-requests/forms', {
           title, targets: ids.map((id) => ({ label: (devices.find((d) => d.id === id) || {}).name || id, device_id: id })),
         });
         doneStep(f);
-      } catch (err) { status.textContent = err.message; e.target.disabled = false; }
+      } catch (err) { bindMessage(status, (err.uiMessage || err.message)); e.target.disabled = false; }
     });
   }
 
   function doneStep(f) {
     const url = `${location.origin}${f.path}`;
     shell(container, guideFrame({ step: 2, total, icon: '&#127881;', title: t('simple.req.new_done'), back: false,
-      body: `<p class="simple-lead">${esc(t('simple.req.new_done_body'))}</p>
+      body: `<p class="simple-lead">${uiText(t('simple.req.new_done_body'))}</p>
         <p class="simple-muted" style="word-break:break-all" data-url></p>
-        <div class="simple-done-actions"><button type="button" class="btn btn-primary" data-share>${esc(t('simple.req.share'))}</button>
-          <a class="btn btn-secondary" href="#/simple/requests">${esc(t('simple.req.title'))}</a></div>
+        <div class="simple-done-actions"><button type="button" class="btn btn-primary" data-share>${uiText(t('simple.req.share'))}</button>
+          <a class="btn btn-secondary" href="#/simple/requests">${uiText(t('simple.req.title'))}</a></div>
         <p class="simple-status" data-status></p>` }));
-    container.querySelector('[data-url]').textContent = url;
+    bindMessage(container.querySelector('[data-url]'), url);
     container.querySelector('[data-share]').addEventListener('click', async () => {
       const how = await passOn(url);
-      container.querySelector('[data-status]').textContent = t(how === 'failed' ? 'simple.req.copy_failed' : 'simple.req.shared');
+      bindText(container.querySelector('[data-status]'), how === 'failed' ? 'simple.req.copy_failed' : 'simple.req.shared', undefined);
     });
   }
   nameStep();
 }
-
 
 // ---------------------------------------------------------------------------------------------
 // Help, inside Simple view. The full Help page is about the whole product (widgets, layouts,
@@ -1270,30 +1271,30 @@ function renderHelp(container) {
     ? [{ q: t('simple.help.trial_q'), a: t('simple.help.trial_a') }]
     : [];
   shell(container, `
-    <div class="simple-help-top"><a href="#/" class="btn btn-secondary btn-sm">&larr; ${esc(t('simple.done.home'))}</a></div>
-    <h1 class="simple-h1">${esc(t('simple.help.title'))}</h1>
-    <div class="simple-help-guides">${SIMPLE_GUIDES.map((g) => `
+    <div class="simple-help-top"><a href="#/" class="btn btn-secondary btn-sm">← ${uiText(t('simple.done.home'))}</a></div>
+    <h1 class="simple-h1">${uiText(t('simple.help.title'))}</h1>
+    <div class="simple-help-guides">${renderHTML(SIMPLE_GUIDES.map((g) => `
       <div class="simple-card">
-        <h3>${g.icon} ${esc(t(`${g.key}.title`))}</h3>
-        <ol>${Array.from({ length: g.steps }, (_, i) => `<li>${esc(t(`${g.key}.s${i + 1}`))}</li>`).join('')}</ol>
-      </div>`).join('')}
+        <h3>${renderHTML(g.icon)} ${uiText(t(`${g.key}.title`))}</h3>
+        <ol>${renderHTML(Array.from({ length: g.steps }, (_, i) => `<li>${uiText(t(`${g.key}.s${i + 1}`))}</li>`).join(''))}</ol>
+      </div>`).join(''))}
     </div>
-    <h2 class="simple-h2">${esc(t('simple.help.faq'))}</h2>
-    <div class="simple-card simple-faq">${[...SIMPLE_FAQ.map((n) => ({ q: t(`simple.help.q${n}`), a: t(`simple.help.a${n}`) })), ...trial].map((f) => `
-      <details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}
+    <h2 class="simple-h2">${uiText(t('simple.help.faq'))}</h2>
+    <div class="simple-card simple-faq">${renderHTML([...SIMPLE_FAQ.map((n) => ({ q: t(`simple.help.q${n}`), a: t(`simple.help.a${n}`) })), ...trial].map((f) => `
+      <details><summary>${uiText(f.q)}</summary><p>${uiText(f.a)}</p></details>`).join(''))}
     </div>
     <div id="simpleHelpImport"></div>
     <div class="simple-card simple-help-more">
-      <p>${esc(t('simple.help.more'))}</p>
-      <button type="button" class="btn btn-secondary" data-help-advanced>${esc(t('simple.help.more_btn'))}</button>
+      <p>${uiText(t('simple.help.more'))}</p>
+      <button type="button" class="btn btn-secondary" data-help-advanced>${uiText(t('simple.help.more_btn'))}</button>
     </div>`);
   // 3.0: the import from another app, while the workspace is still new (no screens).
   if (simpleCanChange()) {
     api.getDevices().then((devices) => {
       const el = document.getElementById('simpleHelpImport');
       if (!el || (Array.isArray(devices) && devices.length)) return;
-      el.innerHTML = `<div class="simple-card"><h3>&#128230; ${esc(t('migrate.simple.help_title'))}</h3><p>${esc(t('migrate.simple.help_body'))}</p>
-        <a class="btn btn-primary" href="#/simple/import">${esc(t('migrate.simple.offer_link'))}</a></div>`;
+      el.innerHTML = `<div class="simple-card"><h3>📦 ${uiText(t('migrate.simple.help_title'))}</h3><p>${uiText(t('migrate.simple.help_body'))}</p>
+        <a class="btn btn-primary" href="#/simple/import">${uiText(t('migrate.simple.offer_link'))}</a></div>`;
     }).catch(() => { /* no offer */ });
   }
   container.querySelector('[data-help-advanced]').addEventListener('click', async () => {
@@ -1317,10 +1318,10 @@ export function mountBackBar() {
   bar.id = 'simpleBackBar';
   bar.className = 'simple-backbar';
   bar.innerHTML = `
-    <a href="#/" class="btn btn-secondary btn-sm">&larr; ${esc(t('simple.done.home'))}</a>
-    <div class="ui-mode-switch simple-switch" role="radiogroup" aria-label="${esc(t('simple.view_label'))}">
-      <button type="button" role="radio" aria-checked="true">${esc(t('nav.view_simple'))}</button>
-      <button type="button" role="radio" aria-checked="false" data-simple-mode="advanced">${esc(t('nav.view_advanced'))}</button>
+    <a href="#/" class="btn btn-secondary btn-sm">← ${uiText(t('simple.done.home'))}</a>
+    <div class="ui-mode-switch simple-switch" role="radiogroup" aria-label="${esc(t('simple.view_label'))}" data-fil-i18n-aria-label="${binding('simple.view_label', undefined)}">
+      <button type="button" role="radio" aria-checked="true">${uiText(t('nav.view_simple'))}</button>
+      <button type="button" role="radio" aria-checked="false" data-simple-mode="advanced">${uiText(t('nav.view_advanced'))}</button>
     </div>`;
   bar.querySelector('[data-simple-mode="advanced"]').addEventListener('click', () => setUiMode('advanced'));
   app.parentNode.insertBefore(bar, app);

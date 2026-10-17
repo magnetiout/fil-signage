@@ -99,6 +99,7 @@ test('the main picker accepts PDFs and the replace-file picker does not', () => 
 /** Evaluate the module's pure exports without a DOM. */
 function pureExports() {
   const src = fs.readFileSync(MODULE, 'utf8')
+    .replace(/^import [^\n]+;\n/gm, '')
     .replace(/^export (const|function|async function) /gm, '$1 ')
     .replace(/^export \{[^}]*\};?$/m, '');
   const ctx = { module: {}, document: undefined };
