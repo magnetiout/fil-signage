@@ -80,7 +80,7 @@ export async function render(container) {
         <button class="btn btn-primary btn-sm" id="changePwBtn">${renderHTML(t('settings.change_password'))}</button>
       </div>
       ` : `
-      <p style="color:var(--text-muted);font-size:12px;margin-top:16px">${renderHTML(t('settings.sso_note', { provider: esc(user.auth_provider || 'SSO') }))}</p>
+      <p style="color:var(--text-muted);font-size:12px;margin-top:16px">${renderHTML(t('settings.sso_note', { provider: (user.auth_provider || 'SSO') }))}</p>
       `)}
 
       <!--
@@ -592,7 +592,7 @@ export async function render(container) {
       if (isZip) {
         // For ZIP, show basic info and skip preview parsing
         data = { format: 'screentinker-export-v1', _isZip: true };
-        statusEl.innerHTML = `${renderHTML(t('settings.import.zip_detected', { name: esc(file.name), size: displayValue(file.size / 1048576,'toLocaleString',{minimumFractionDigits:1,maximumFractionDigits:1}) }))}<br><br><button class="btn btn-primary btn-sm" id="confirmImportBtn">${renderHTML(t('settings.import.confirm'))}</button> <button class="btn btn-secondary btn-sm" id="cancelImportBtn">${renderHTML(t('common.cancel'))}</button>`;
+        statusEl.innerHTML = `${renderHTML(t('settings.import.zip_detected', { name: (file.name), size: displayValue(file.size / 1048576,'toLocaleString',{minimumFractionDigits:1,maximumFractionDigits:1}) }))}<br><br><button class="btn btn-primary btn-sm" id="confirmImportBtn">${renderHTML(t('settings.import.confirm'))}</button> <button class="btn btn-secondary btn-sm" id="cancelImportBtn">${renderHTML(t('common.cancel'))}</button>`;
       } else {
         const text = await file.text();
         data = JSON.parse(text);
@@ -610,7 +610,7 @@ export async function render(container) {
           data.video_walls?.length ? t('settings.import.summary_walls', { n: data.video_walls.length }) : null,
           data.kiosk_pages?.length ? t('settings.import.summary_kiosk', { n: data.kiosk_pages.length }) : null,
         ].filter(Boolean).join(', ');
-        statusEl.innerHTML = `${renderHTML(t('settings.import.found_summary', { summary: esc(summary) || t('settings.import.empty_export'), email: esc(data.user?.email) || t('common.unknown'), date: esc(data.exported_at?.split('T')[0]) || t('common.unknown') }))}<br><br><button class="btn btn-primary btn-sm" id="confirmImportBtn">${renderHTML(t('settings.import.confirm'))}</button> <button class="btn btn-secondary btn-sm" id="cancelImportBtn">${renderHTML(t('common.cancel'))}</button>`;
+        statusEl.innerHTML = `${renderHTML(t('settings.import.found_summary', { summary: (summary) || t('settings.import.empty_export'), email: (data.user?.email) || t('common.unknown'), date: (data.exported_at?.split('T')[0]) || t('common.unknown') }))}<br><br><button class="btn btn-primary btn-sm" id="confirmImportBtn">${renderHTML(t('settings.import.confirm'))}</button> <button class="btn btn-secondary btn-sm" id="cancelImportBtn">${renderHTML(t('common.cancel'))}</button>`;
       }
       document.getElementById('cancelImportBtn').onclick = () => { statusEl.style.display = 'none'; e.target.value = ''; };
       document.getElementById('confirmImportBtn').onclick = async () => {
@@ -911,7 +911,7 @@ export async function render(container) {
     if (me.auth_provider && me.auth_provider !== 'local') {
       const name = providers.find((p) => p.slug === me.auth_provider)?.name || me.auth_provider;
       paint(`
-        <p style="${muted};margin-bottom:12px">${renderHTML(t('settings.signin_linked', { provider: esc(name) }))}</p>
+        <p style="${muted};margin-bottom:12px">${renderHTML(t('settings.signin_linked', { provider: (name) }))}</p>
         <div id="unlinkForm" style="display:none;margin-bottom:12px">
           <p style="${muted};margin-bottom:8px">${renderHTML(t('settings.signin_unlink_desc'))}</p>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
@@ -920,7 +920,7 @@ export async function render(container) {
           </div>
           <button class="btn btn-primary btn-sm" id="unlinkConfirmBtn">${renderHTML(t('settings.signin_unlink_confirm'))}</button>
         </div>
-        <button class="btn btn-secondary btn-sm" id="unlinkBtn">${renderHTML(t('settings.signin_unlink', { provider: esc(name) }))}</button>
+        <button class="btn btn-secondary btn-sm" id="unlinkBtn">${renderHTML(t('settings.signin_unlink', { provider: (name) }))}</button>
       `);
       document.getElementById('unlinkBtn').onclick = () => {
         document.getElementById('unlinkForm').style.display = '';
@@ -947,7 +947,7 @@ export async function render(container) {
     paint(`
       <p style="${muted};margin-bottom:12px">${renderHTML(t('settings.signin_password_now'))}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${renderHTML(providers.map((p) => `<button class="btn btn-secondary btn-sm" data-link-slug="${esc(p.slug)}">${renderHTML(t('settings.signin_link', { provider: esc(p.name) }))}</button>`).join(''))}
+        ${renderHTML(providers.map((p) => `<button class="btn btn-secondary btn-sm" data-link-slug="${esc(p.slug)}">${renderHTML(t('settings.signin_link', { provider: (p.name) }))}</button>`).join(''))}
       </div>
     `);
     block.querySelectorAll('[data-link-slug]').forEach((btn) => {
@@ -985,7 +985,7 @@ export async function render(container) {
 
     if (!status.eligible) {
       const provider = (JSON.parse(localStorage.getItem('user') || '{}').auth_provider) || 'SSO';
-      paint(`<p style="${muted}">${renderHTML(t('settings.2fa_sso_note', { provider: esc(provider) }))}</p>`);
+      paint(`<p style="${muted}">${renderHTML(t('settings.2fa_sso_note', { provider: (provider) }))}</p>`);
       return;
     }
     if (status.enabled) return showEnabled(status.recovery_codes_remaining);

@@ -830,7 +830,7 @@ async function loadDevice(deviceId, activeTab = null) {
         <div class="device-header-left">
           <h1 id="deviceName">${uiText(device.name)}</h1>
           ${renderHTML((() => { const b = livenessBadge(device); return `<span class="device-status-badge ${b.state}"${b.title ? ` title="${esc(b.title)}"` : ''}>${uiText(b.label)}</span>`; })())}
-          ${renderHTML(device.owner_name || device.owner_email ? `<span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('device.owner_label', { owner: esc(device.owner_name || device.owner_email) }))}</span>` : '')}
+          ${renderHTML(device.owner_name || device.owner_email ? `<span style="font-size:12px;color:var(--text-muted)">${renderHTML(t('device.owner_label', { owner: (device.owner_name || device.owner_email) }))}</span>` : '')}
         </div>
         <div class="device-header-actions">
           <button class="btn btn-secondary btn-sm" id="devicePreviewBtn">${renderHTML(t('device.preview_btn'))}</button>
@@ -2719,7 +2719,7 @@ async function showReAdoptModal(device) {
         </button>
       </div>
       <div class="modal-body">
-        <p style="color:var(--text-muted);font-size:13px;margin-top:0">${renderHTML(t('device.readopt.help', { name: esc(device.name || '') }))}</p>
+        <p style="color:var(--text-muted);font-size:13px;margin-top:0">${renderHTML(t('device.readopt.help', { name: (device.name || '') }))}</p>
         ${renderHTML((snapshots && snapshots.length) ? rowsHtml : emptyHtml)}
       </div>
     </div>`;
@@ -4085,7 +4085,7 @@ function renderDiagPanel(w) {
   return `
     <div class="info-card" id="diagCard" style="grid-column:1/-1;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
-        <div class="info-card-label">${renderHTML(t("ui.device_detail.frame_rate_diagnostic_bc5fab", {value0: w.widget_name ? ' · ' + esc(w.widget_name) : ''}))}</div>
+        <div class="info-card-label">${renderHTML(t("ui.device_detail.frame_rate_diagnostic_bc5fab", {value0: w.widget_name ? ' · ' + (w.widget_name) : ''}))}</div>
         <span id="diagVerdict" style="font-weight:700;font-size:15px;color:var(--text-muted)">${renderHTML(t("ui.device_detail.waiting_for_panel"))}</span>
       </div>
       <div class="info-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">

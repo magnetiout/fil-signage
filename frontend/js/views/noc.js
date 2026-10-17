@@ -279,7 +279,7 @@ function draw(data) {
         ${renderHTML(parents.map((n) => listItem(n, t("ui.noc.parent_a311ec") + (n.roles || []).map(roleLabel).join(', '))).join(''))}
         ${renderHTML(children.map((n) => listItem(n, t("ui.noc.child_c88849") + (n.capabilitiesHere || []).map(roleLabel).join(', '))).join(''))}
         ${renderHTML(indirect.map((n) => listItem(n, t("ui.noc.value0_hop_s_via_value1_fbbaa1", {value0: n.hops, value1: short(n.via)}))).join(''))}
-        ${renderHTML(data.links.map((l) => `<li>${renderHTML(t("ui.noc.link_f8a830", {value0: short(l.from), value1: short(l.to), value2: edgeCaption(l), value3: l.lastError ? `, ${esc(l.lastError)}` : ''}))}</li>`).join(''))}
+        ${renderHTML(data.links.map((l) => `<li>${renderHTML(t("ui.noc.link_f8a830", {value0: short(l.from), value1: short(l.to), value2: edgeCaption(l), value3: l.lastError ? `, ${(l.lastError)}` : ''}))}</li>`).join(''))}
       </ul>
     </details>`;
 
@@ -370,7 +370,7 @@ function detailHtml(data) {
     : (sd ? `<p style="font-size:12px;color:var(--text-muted)">${renderHTML(sd.error ? esc(sd.error) : t("ui.noc.no_screens_on_this_node_054188"))}</p>` : `<p style="font-size:12px;color:var(--text-muted)">${renderHTML(t('devices.loading'))}</p>`);
   const alertRows = sd && sd.alerts && sd.alerts.length ? `
     <h4 style="margin:12px 0 4px;font-size:13px">${renderHTML(t("ui.noc.last_alerts"))}</h4>
-    <ul style="font-size:12px;margin:0;padding-left:18px">${renderHTML(sd.alerts.map((a) => `<li>${uiText(a.metric)} <span style="color:var(--text-muted)">${renderHTML(t("ui.noc.ago_bb62e4", {value1: a.severity || '', value2: a.device ? `, ${esc(a.device)}` : '', value3: ageLabel(Math.max(0, Math.floor(Date.now() / 1000) - (a.opened_at || 0))), value4: a.closed_at ? t("ui.noc.closed_2cc035") : ''}))}</span></li>`).join(''))}</ul>` : '';
+    <ul style="font-size:12px;margin:0;padding-left:18px">${renderHTML(sd.alerts.map((a) => `<li>${uiText(a.metric)} <span style="color:var(--text-muted)">${renderHTML(t("ui.noc.ago_bb62e4", {value1: a.severity || '', value2: a.device ? `, ${(a.device)}` : '', value3: ageLabel(Math.max(0, Math.floor(Date.now() / 1000) - (a.opened_at || 0))), value4: a.closed_at ? t("ui.noc.closed_2cc035") : ''}))}</span></li>`).join(''))}</ul>` : '';
   return `
     <h3 style="margin-top:0">${uiText(n.name || short(n.id))} <span style="color:var(--text-muted);font-size:12px;font-weight:normal">${uiText(n.id)} · ${uiText(n === data.self && (n.roles || []).length ? n.roles.join(' · ') : roleOf(n, n === data.self ? 'self' : n.kind, data))}</span></h3>
     ${renderHTML(counts)}

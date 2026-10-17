@@ -49,7 +49,7 @@ export async function render(container, workspaceId) {
     if (/Workspace access required|Workspace not found/.test(msg)) {
       content.innerHTML = renderError(t('members.workspace_not_found'));
     } else {
-      content.innerHTML = renderError(t('members.load_error', { error: esc(msg) }));
+      content.innerHTML = renderError(t('members.load_error', { error: (msg) }));
     }
     return;
   }

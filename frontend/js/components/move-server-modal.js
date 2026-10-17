@@ -29,14 +29,14 @@ export function openMoveServerModal(opts = {}) {
       </div>
       <div class="modal-body">
         <div style="font-size:13px;line-height:1.5;margin-bottom:14px;padding:12px;border-radius:8px;background:var(--danger-bg,rgba(220,38,38,.08));border:1px solid var(--danger,#dc2626)">
-          ${renderHTML(t('moveserver.warning', { n: esc(String(deviceCount)), workspace: esc(workspaceName) }))}
+          ${renderHTML(t('moveserver.warning', { n: (String(deviceCount)), workspace: (workspaceName) }))}
         </div>
         <div class="form-group">
           <label for="msUrl">${uiText(t('moveserver.url_label'))}</label>
           <input id="msUrl" type="url" inputmode="url" class="input" autocomplete="off" placeholder="https://" style="width:100%" value="${esc(suggestedUrl)}">
         </div>
         <div class="form-group">
-          <label for="msConfirm">${renderHTML(t('moveserver.type_label', { name: esc(workspaceName) }))}</label>
+          <label for="msConfirm">${renderHTML(t('moveserver.type_label', { name: (workspaceName) }))}</label>
           <input id="msConfirm" type="text" class="input" autocomplete="off" style="width:100%">
         </div>
         <div id="msError" style="display:none;color:var(--danger);font-size:13px;margin-top:8px"></div>

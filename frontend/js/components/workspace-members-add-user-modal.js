@@ -45,7 +45,7 @@ export function openAddUserModal(workspace, opts = {}) {
 
   const title = pickerMode
     ? t('members.modal.add_user_title_generic')
-    : t('members.modal.add_user_title', { workspace: esc(workspace.name) });
+    : t('members.modal.add_user_title', { workspace: (workspace.name) });
 
   const roleOptions = WORKSPACE_ROLES
     .map(r => `<option value="${r}">${uiText(t('members.role.' + r))}</option>`)

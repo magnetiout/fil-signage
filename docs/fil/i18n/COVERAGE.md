@@ -82,6 +82,7 @@ tarafından yayımlanabilen veri olarak korunur; panel etiketleri ile karıştı
 | Çalışma alanı yöneticisi/editörü/izleyicisi, kuruluş sahibi/yöneticisi, platform operatörü | PASS | fil-admin-role-e2e |
 | İzleyicinin yazma isteğinin 403 ile reddi, Türkçe erişim reddi | PASS | fil-admin-role-e2e |
 | Zorunlu parola ekranı, kaydedilmemiş parola alanı; çalışma alanı olmayan hesap ve çıkış | PASS | fil-admin-conditional-e2e |
+| Özel karakterli adlarla silme onayı: aynı ad, tam eşleşme şartı, HTML çalıştırmama | PASS | fil-admin-language-e2e |
 | Bağlantı durumu iki dilde doğru; bilinmeyen sunucu hatası ve XSS sınırları | PASS | fil-admin-language-e2e; fil-admin-catalog |
 | Türkçe İ/i I/ı arama/sıralama, tarih/sayı/yüzde, virgüllü sayı girişi | PASS | fil-admin-locale; content-search-filter-sort; fil-admin-language-e2e |
 | Gerçek Chrome %200 yakınlaştırma, dar ekran, klavye/diyalog odağı | PASS | fil-admin-zoom-e2e |

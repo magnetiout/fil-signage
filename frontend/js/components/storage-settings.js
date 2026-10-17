@@ -76,7 +76,7 @@ export async function mountStorageSettings(host) {
 
       ${renderHTML(ws ? `
       <div class="form-group">
-        <label for="stWsDefault">${renderHTML(t("ui.storage_settings.this_workspace_new_uploads_go_to_ce7b76", {value0: ws.name ? ` (${esc(ws.name)})` : ''}))}</label>
+        <label for="stWsDefault">${renderHTML(t("ui.storage_settings.this_workspace_new_uploads_go_to_ce7b76", {value0: ws.name ? ` (${(ws.name)})` : ''}))}</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <select id="stWsDefault" class="input" style="min-width:240px" ${locked ? 'disabled' : ''}>
             <option value="">${renderHTML(t("ui.storage_settings.follow_the_organization_df4112", {value2: nameOf(settings.default_profile_id)}))}</option>

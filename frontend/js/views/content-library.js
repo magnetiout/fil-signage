@@ -1583,7 +1583,7 @@ async function showPreview(content) {
         <iframe sandbox="allow-scripts" src="${esc(session.url)}" style="width:80vw;height:45vw;max-height:80vh;display:block;border:none;background:#000"></iframe>
         <div style="padding:12px 16px;border-top:1px solid var(--border)">
           <div style="font-weight:500">${uiText(content.filename)}</div>
-          <div style="font-size:12px;color:var(--text-muted)">${renderHTML(t('content.type_bundle'))} — ${renderHTML(t('content.bundle_entry', { entry: esc(content.bundle_entry || 'index.html') }))}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${renderHTML(t('content.type_bundle'))} — ${renderHTML(t('content.bundle_entry', { entry: (content.bundle_entry || 'index.html') }))}</div>
           ${renderHTML((session.skipped && session.skipped.length)
             ? `<div style="font-size:12px;color:#f59e0b;margin-top:6px">${renderHTML(t('content.bundle_skipped', { n: session.skipped.length }))}</div>`
             : '')}

@@ -81,3 +81,8 @@ CI ayrıca modül grafiği, tüm sunucu testleri ve bağımlılık güvenlik kon
 Tarayıcı bulunmayan CI koşusundaki SKIP, Minix'te çalıştırılan tarayıcı kabulünün
 karşılığı sayılmaz. Ekran/durum matrisi [COVERAGE.md](COVERAGE.md), terimler
 [GLOSSARY.md](GLOSSARY.md) belgesindedir.
+
+Çeviri değişkenlerine ham değer verilir; `esc()` uygulanmış metin verilmez. HTML kaçışı
+`uiText`/`renderHTML` çeviri sınırında bir kez yapılır. Böylece ad içindeki `&` ve
+`<` doğru görünürken HTML olarak çalışmaz; silme onayında yazılması gereken gerçek
+ad değişmez. Bu sınır gerçek onay penceresiyle regresyon testine dahildir.

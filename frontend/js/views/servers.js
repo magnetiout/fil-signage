@@ -1237,7 +1237,7 @@ async function renderConnect(panel, caps) {
               // opposite of what null means.
               ? `<strong>${renderHTML(t("ui.servers.all_including_any_created_later_0e45bb"))}</strong>`
               : esc(String(u.sharedWorkspaces.length)) + ' selected')}<br>
-            ${renderHTML(t("ui.servers.last_synced_2dcca9", {value6: u.lastSyncAt ? esc(hhmm(Math.floor(u.lastSyncAt / 1000))) : 'never'}))}
+            ${renderHTML(t("ui.servers.last_synced_2dcca9", {value6: u.lastSyncAt ? (hhmm(Math.floor(u.lastSyncAt / 1000))) : 'never'}))}
           </div>
           ${renderHTML(u.revoked ? '' : writeGrantBlock(u, caps))}
           ${renderHTML(u.revoked ? '' :

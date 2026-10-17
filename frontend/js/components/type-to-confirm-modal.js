@@ -24,7 +24,7 @@ export function openTypeToConfirmModal(opts = {}) {
       <div class="modal-body">
         <div style="font-size:13px;line-height:1.5;margin-bottom:12px">${renderHTML(body)}</div>
         <div class="form-group">
-          <label for="ttcInput">${renderHTML(t('confirm_delete.type_label', { name: esc(expected) }))}</label>
+          <label for="ttcInput">${renderHTML(t('confirm_delete.type_label', { name: (expected) }))}</label>
           <input id="ttcInput" type="text" class="input" autocomplete="off" style="width:100%">
         </div>
         <div id="ttcError" style="display:none;color:var(--danger);font-size:13px;margin-top:8px"></div>

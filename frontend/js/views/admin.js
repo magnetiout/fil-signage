@@ -671,7 +671,7 @@ async function loadOrgs() {
     const id = btn.dataset.delOrg, name = btn.dataset.orgName;
     openTypeToConfirmModal({
       title: t('admin.orgs.delete_org_title'),
-      body: t('admin.orgs.delete_org_body', { name: esc(name) }),
+      body: t('admin.orgs.delete_org_body', { name: (name) }),
       expected: name,
       confirmLabel: t('admin.orgs.delete_org'),
       onConfirm: async () => {
@@ -685,7 +685,7 @@ async function loadOrgs() {
     const id = btn.dataset.delWs, name = btn.dataset.wsName;
     openTypeToConfirmModal({
       title: t('admin.orgs.delete_ws_title'),
-      body: t('admin.orgs.delete_ws_body', { name: esc(name) }),
+      body: t('admin.orgs.delete_ws_body', { name: (name) }),
       expected: name,
       confirmLabel: t('admin.orgs.delete_ws'),
       onConfirm: async () => {

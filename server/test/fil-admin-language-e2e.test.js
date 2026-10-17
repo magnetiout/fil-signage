@@ -37,6 +37,21 @@ test('admin language switch preserves DOM identity, unsaved login fields and key
   assert.equal(await page.$eval('#fixtureDate',e=>e.textContent),'17.10.2026');
   assert.equal(await page.$eval('#fixtureCount',e=>e.textContent),'1.234 dk önce');
   assert.equal(await page.$eval('#fixturePercent',e=>e.textContent),'%25');
+  // Exercise the production destructive dialog, not a synthetic translation template.
+  const expected='İÇERİK & <img src=x onerror=window.translationXSS=1>';
+  await page.evaluate(async expected=>{const {openTypeToConfirmModal}=await import('/js/components/type-to-confirm-modal.js');openTypeToConfirmModal({title:'İzole onay',expected,onConfirm:()=>{window.confirmedIsolated=1}})},expected);
+  await page.waitForSelector('#ttcInput');
+  assert((await page.$eval('label[for=ttcInput]',e=>e.textContent)).includes(expected));
+  assert.equal(await page.$('label[for=ttcInput] img'),null);
+  assert.equal(await page.$eval('#ttcConfirm',e=>e.disabled),true);
+  await page.type('#ttcInput',expected);
+  await page.waitForSelector('.modal-overlay [data-admin-language]');
+  await page.select('.modal-overlay [data-admin-language]','en');
+  assert((await page.$eval('label[for=ttcInput]',e=>e.textContent)).includes(expected));
+  assert.equal(await page.$eval('#ttcInput',e=>e.value),expected);
+  assert.equal(await page.$eval('#ttcConfirm',e=>e.disabled),false);
+  assert.equal(await page.evaluate(()=>window.translationXSS),undefined);
+  await page.click('#ttcConfirm');assert.equal(await page.evaluate(()=>window.confirmedIsolated),1);
   assert.deepEqual(errors,[]);
  } finally {await browser?.close();s.stop()}
 });

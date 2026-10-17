@@ -168,7 +168,7 @@ async function loadPlaylists() {
     renderPlaylistGrid(cachedPlaylists);
   } catch (err) {
     const grid = document.getElementById('playlistGrid');
-    if (grid) grid.innerHTML = `<div style="grid-column:1/-1;color:var(--text-muted);padding:40px;text-align:center">${renderHTML(t('playlist.load_failed', { error: esc((err.uiMessage || err.message)) }))}</div>`;
+    if (grid) grid.innerHTML = `<div style="grid-column:1/-1;color:var(--text-muted);padding:40px;text-align:center">${renderHTML(t('playlist.load_failed', { error: (err.uiMessage || err.message) }))}</div>`;
   }
 
   // #313/checklist: creating a playlist ticks a step, and every create reloads this list.
@@ -308,7 +308,7 @@ async function renderDetail(container, playlistId) {
   } catch (err) {
     container.innerHTML = `
       <div style="padding:40px;text-align:center;color:var(--text-muted)">
-        <p>${renderHTML(t('playlist.load_failed', { error: esc((err.uiMessage || err.message)) }))}</p>
+        <p>${renderHTML(t('playlist.load_failed', { error: (err.uiMessage || err.message) }))}</p>
         <a href="#/playlists" class="btn btn-secondary" style="margin-top:16px">${renderHTML(t('playlist.back_to_playlists'))}</a>
       </div>
     `;
