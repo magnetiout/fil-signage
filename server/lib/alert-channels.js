@@ -238,7 +238,7 @@ function describe(event, device, { minutes, dashboardUrl, check, reason }) {
   if (event === 'device_online') {
     return { title: `Back online: ${name}`, text: `The screen "${name}" is back online${minutes ? ` after ${minutes} minute${minutes === 1 ? '' : 's'}` : ''}.`, severity: 'info' };
   }
-  return { title: "FILSign test alert", text: 'This is a test from ScreenTinker. Alerts for this channel will look like this.', severity: 'info' };
+  return { title: "FILSign test alert", text: 'This is a test from FILSign. Alerts for this channel will look like this.', severity: 'info' };
 }
 
 /**

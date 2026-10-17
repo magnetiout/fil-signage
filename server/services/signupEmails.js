@@ -49,7 +49,7 @@ function htmlEscape(s) {
 function welcomeText(name) {
   return `Hi ${name},
 
-Thanks for signing up for ScreenTinker. Glad you're here.
+Thanks for signing up for FILSign. Glad you're here.
 
 One thing worth knowing up front. FILSign is run by one person, me.
 There's no support queue or ticket robot. If you hit reply to this email,
@@ -80,7 +80,7 @@ FILSign`;
 function welcomeHtml(name) {
   return `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.6;color:#222;max-width:560px">
 <p>Hi ${htmlEscape(name)},</p>
-<p>Thanks for signing up for ScreenTinker. Glad you're here.</p>
+<p>Thanks for signing up for FILSign. Glad you're here.</p>
 <p>One thing worth knowing up front. FILSign is run by one person, me. There's no support queue or ticket robot. If you hit reply to this email, it comes straight to me and I'll answer.</p>
 <p>The fastest way to see it work is to put something on a screen. You can turn any browser into a display in about a minute with the web player:</p>
 <p><a href="${LINKS.player}" style="font-weight:600">Open the web player</a></p>

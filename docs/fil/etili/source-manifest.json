@@ -96,7 +96,8 @@
       "downloaded_at": "2026-10-17T16:03:48.059088+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Renk"
       ],
       "images": [
         {
@@ -7475,7 +7476,8 @@
       "downloaded_at": "2026-10-17T16:05:59.284317+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7519,7 +7521,8 @@
       "downloaded_at": "2026-10-17T16:06:00.081966+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7653,7 +7656,8 @@
       "downloaded_at": "2026-10-17T16:06:02.999624+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7697,7 +7701,8 @@
       "downloaded_at": "2026-10-17T16:06:03.314814+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7741,7 +7746,8 @@
       "downloaded_at": "2026-10-17T16:06:04.094760+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7785,7 +7791,8 @@
       "downloaded_at": "2026-10-17T16:06:05.239057+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7829,7 +7836,8 @@
       "downloaded_at": "2026-10-17T16:06:05.971495+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7873,7 +7881,8 @@
       "downloaded_at": "2026-10-17T16:06:06.498627+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7917,7 +7926,8 @@
       "downloaded_at": "2026-10-17T16:06:07.303243+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -7961,7 +7971,8 @@
       "downloaded_at": "2026-10-17T16:06:08.475758+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -10615,7 +10626,8 @@
       "downloaded_at": "2026-10-17T16:06:55.306729+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -10659,7 +10671,8 @@
       "downloaded_at": "2026-10-17T16:06:56.105333+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -12908,7 +12921,8 @@
       "downloaded_at": "2026-10-17T16:07:36.101012+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -13807,7 +13821,8 @@
       "downloaded_at": "2026-10-17T16:07:52.095568+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -13851,7 +13866,8 @@
       "downloaded_at": "2026-10-17T16:07:52.901528+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -13895,7 +13911,8 @@
       "downloaded_at": "2026-10-17T16:07:53.704822+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -13939,7 +13956,8 @@
       "downloaded_at": "2026-10-17T16:07:54.502244+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -14208,7 +14226,8 @@
       "downloaded_at": "2026-10-17T16:07:59.314789+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -14611,7 +14630,9 @@
       "downloaded_at": "2026-10-17T16:08:06.513357+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Renk",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -14654,7 +14675,9 @@
       "downloaded_at": "2026-10-17T16:08:07.315638+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Renk",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -14697,7 +14720,9 @@
       "downloaded_at": "2026-10-17T16:08:08.111396+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Renk",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -17261,7 +17286,8 @@
       "downloaded_at": "2026-10-17T16:08:53.718642+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -17305,7 +17331,8 @@
       "downloaded_at": "2026-10-17T16:08:54.525081+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -18339,7 +18366,8 @@
       "downloaded_at": "2026-10-17T16:09:12.927916+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -21803,7 +21831,8 @@
       "downloaded_at": "2026-10-17T16:10:14.524438+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -21847,7 +21876,8 @@
       "downloaded_at": "2026-10-17T16:10:15.345823+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -21891,7 +21921,8 @@
       "downloaded_at": "2026-10-17T16:10:16.134658+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -21935,7 +21966,8 @@
       "downloaded_at": "2026-10-17T16:10:16.931923+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -21979,7 +22011,8 @@
       "downloaded_at": "2026-10-17T16:10:17.742298+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -22023,7 +22056,8 @@
       "downloaded_at": "2026-10-17T16:10:18.528515+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -22067,7 +22101,8 @@
       "downloaded_at": "2026-10-17T16:10:19.674937+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -22921,7 +22956,8 @@
       "downloaded_at": "2026-10-17T16:10:34.883115+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -22965,7 +23001,8 @@
       "downloaded_at": "2026-10-17T16:10:35.345876+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -24314,7 +24351,8 @@
       "downloaded_at": "2026-10-17T16:10:59.626332+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -24358,7 +24396,8 @@
       "downloaded_at": "2026-10-17T16:11:00.461537+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -24402,7 +24441,8 @@
       "downloaded_at": "2026-10-17T16:11:01.195356+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -25346,7 +25386,8 @@
       "downloaded_at": "2026-10-17T16:11:17.743703+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -25435,7 +25476,8 @@
       "downloaded_at": "2026-10-17T16:11:19.329089+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -25479,7 +25521,8 @@
       "downloaded_at": "2026-10-17T16:11:20.150172+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -27278,7 +27321,8 @@
       "downloaded_at": "2026-10-17T16:11:52.154806+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -28762,7 +28806,8 @@
       "downloaded_at": "2026-10-17T16:12:18.819835+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -28806,7 +28851,8 @@
       "downloaded_at": "2026-10-17T16:12:19.349108+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -28850,7 +28896,8 @@
       "downloaded_at": "2026-10-17T16:12:20.566695+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -28894,7 +28941,8 @@
       "downloaded_at": "2026-10-17T16:12:21.250044+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -28938,7 +28986,8 @@
       "downloaded_at": "2026-10-17T16:12:22.034439+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -28982,7 +29031,8 @@
       "downloaded_at": "2026-10-17T16:12:22.824879+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -29026,7 +29076,8 @@
       "downloaded_at": "2026-10-17T16:12:23.661782+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -29070,7 +29121,8 @@
       "downloaded_at": "2026-10-17T16:12:24.446053+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -29114,7 +29166,8 @@
       "downloaded_at": "2026-10-17T16:12:24.959823+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -29158,7 +29211,8 @@
       "downloaded_at": "2026-10-17T16:12:25.762627+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -29202,7 +29256,8 @@
       "downloaded_at": "2026-10-17T16:12:26.857319+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -29246,7 +29301,8 @@
       "downloaded_at": "2026-10-17T16:12:27.361120+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -30685,7 +30741,8 @@
       "downloaded_at": "2026-10-17T16:12:53.262861+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -30729,7 +30786,8 @@
       "downloaded_at": "2026-10-17T16:12:54.066502+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -30953,7 +31011,8 @@
       "downloaded_at": "2026-10-17T16:12:58.076526+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -30997,7 +31056,8 @@
       "downloaded_at": "2026-10-17T16:12:58.568387+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -31716,7 +31776,8 @@
       "downloaded_at": "2026-10-17T16:13:11.366987+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -31760,7 +31821,8 @@
       "downloaded_at": "2026-10-17T16:13:12.193791+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -31804,7 +31866,8 @@
       "downloaded_at": "2026-10-17T16:13:13.317580+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -31848,7 +31911,8 @@
       "downloaded_at": "2026-10-17T16:13:13.765061+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -32657,7 +32721,8 @@
       "downloaded_at": "2026-10-17T16:13:28.446935+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -32701,7 +32766,8 @@
       "downloaded_at": "2026-10-17T16:13:28.973806+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -32925,7 +32991,8 @@
       "downloaded_at": "2026-10-17T16:13:33.256751+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -32969,7 +33036,8 @@
       "downloaded_at": "2026-10-17T16:13:33.759474+00:00",
       "missing_fields": [
         "sku",
-        "description"
+        "description",
+        "specifications.Doku"
       ],
       "images": [
         {
@@ -54875,8 +54943,321 @@
       "cms_id": "fab78fbf-444c-4816-b51c-77d9a90700c2"
     }
   ],
-  "source_video_files": [],
-  "source_video_discovery": "No video file/embedded video found in home/about/catalog pages, browser network or public WP video media endpoint; official YouTube channel is a channel link only.",
+  "source_video_files": [
+    {
+      "source_id": "RyLMG6KhfZo",
+      "url": "https://www.youtube.com/watch?v=RyLMG6KhfZo",
+      "title": "Bir Memleket Hikayesi - Etili Seramik",
+      "channel": "Etili Seramik ",
+      "channel_url": "https://www.youtube.com/@EtiliSeramikFabrika",
+      "upload_date": "20260116",
+      "original_sha256": "f4cdeca19f6a6ae3e0f81858eba28f905d0e38fb6bcc7b604f591e807e1f732a",
+      "original_bytes": 13361409,
+      "downloaded_at": "2026-10-17T17:25:24.337Z",
+      "source_video": {
+        "codec": "av1",
+        "width": 3840,
+        "height": 2160,
+        "fps": "25/1",
+        "color_space": "bt709",
+        "duration": 14.028
+      },
+      "source_audio": [
+        {
+          "codec": "opus",
+          "channels": 2
+        }
+      ],
+      "audio_policy": "Original company-video audio retained as AAC; playlists default muted. No new music added. Original music licensing not independently verified; keep muted unless owner confirms use.",
+      "derivatives": [
+        {
+          "format": "portrait",
+          "sha256": "6042aea39600aeebfc59b601a89fb6f1ca8202223b4073f00eb8801674fc3bd9",
+          "bytes": 2111987,
+          "ffprobe": {
+            "programs": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "codec_type": "video",
+                "width": 1080,
+                "height": 1920,
+                "pix_fmt": "yuv420p",
+                "r_frame_rate": "25/1"
+              },
+              {
+                "codec_name": "aac",
+                "codec_type": "audio",
+                "r_frame_rate": "0/0"
+              }
+            ],
+            "format": {
+              "duration": "14.020000",
+              "size": "2111987"
+            }
+          },
+          "filename": "RyLMG6KhfZo-portrait.mp4",
+          "cms": {
+            "id": "fe49b1c8-a1d3-42b9-8912-b0ff5c3cc404",
+            "source_id": "RyLMG6KhfZo",
+            "source_url": "https://www.youtube.com/watch?v=RyLMG6KhfZo",
+            "title": "Bir Memleket Hikayesi - Etili Seramik",
+            "format": "portrait",
+            "sha256": "6042aea39600aeebfc59b601a89fb6f1ca8202223b4073f00eb8801674fc3bd9",
+            "bytes": 2111987,
+            "duration": 14.02
+          }
+        },
+        {
+          "format": "landscape",
+          "sha256": "374e3946682f557c56b8e6755202ab143ab53e1a7bd3d81d48013427c12c8501",
+          "bytes": 4517373,
+          "ffprobe": {
+            "programs": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "codec_type": "video",
+                "width": 1920,
+                "height": 1080,
+                "pix_fmt": "yuv420p",
+                "r_frame_rate": "25/1"
+              },
+              {
+                "codec_name": "aac",
+                "codec_type": "audio",
+                "r_frame_rate": "0/0"
+              }
+            ],
+            "format": {
+              "duration": "14.020000",
+              "size": "4517373"
+            }
+          },
+          "filename": "RyLMG6KhfZo-landscape.mp4",
+          "cms": {
+            "id": "20988cc1-0180-4d65-a4b2-2f8b600f3844",
+            "source_id": "RyLMG6KhfZo",
+            "source_url": "https://www.youtube.com/watch?v=RyLMG6KhfZo",
+            "title": "Bir Memleket Hikayesi - Etili Seramik",
+            "format": "landscape",
+            "sha256": "374e3946682f557c56b8e6755202ab143ab53e1a7bd3d81d48013427c12c8501",
+            "bytes": 4517373,
+            "duration": 14.02
+          }
+        }
+      ]
+    },
+    {
+      "source_id": "sZXs46XHNj8",
+      "url": "https://www.youtube.com/watch?v=sZXs46XHNj8",
+      "title": "Bir Memleket Hikayesi - Etili Seramik",
+      "channel": "Etili Seramik ",
+      "channel_url": "https://www.youtube.com/@EtiliSeramikFabrika",
+      "upload_date": "20260116",
+      "original_sha256": "e9669fe5e137455d56bbf37352d84e4abf71e2fed2ad85cbb264c3b6f296bc8a",
+      "original_bytes": 50461879,
+      "downloaded_at": "2026-10-17T17:25:29.555Z",
+      "source_video": {
+        "codec": "av1",
+        "width": 3840,
+        "height": 2026,
+        "fps": "25/1",
+        "color_space": "bt709",
+        "duration": 59.228
+      },
+      "source_audio": [
+        {
+          "codec": "opus",
+          "channels": 2
+        }
+      ],
+      "audio_policy": "Original company-video audio retained as AAC; playlists default muted. No new music added. Original music licensing not independently verified; keep muted unless owner confirms use.",
+      "derivatives": [
+        {
+          "format": "portrait",
+          "sha256": "1317e5696ece528ea3fe3ab44f8badc120aacd929c0a3b24d4942dc145830933",
+          "bytes": 9841837,
+          "ffprobe": {
+            "programs": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "codec_type": "video",
+                "width": 1080,
+                "height": 1920,
+                "pix_fmt": "yuv420p",
+                "r_frame_rate": "25/1"
+              },
+              {
+                "codec_name": "aac",
+                "codec_type": "audio",
+                "r_frame_rate": "0/0"
+              }
+            ],
+            "format": {
+              "duration": "59.218000",
+              "size": "9841837"
+            }
+          },
+          "filename": "sZXs46XHNj8-portrait.mp4",
+          "cms": {
+            "id": "40a6a685-19fe-43ce-a874-6b6ac6cb6f13",
+            "source_id": "sZXs46XHNj8",
+            "source_url": "https://www.youtube.com/watch?v=sZXs46XHNj8",
+            "title": "Bir Memleket Hikayesi - Etili Seramik",
+            "format": "portrait",
+            "sha256": "1317e5696ece528ea3fe3ab44f8badc120aacd929c0a3b24d4942dc145830933",
+            "bytes": 9841837,
+            "duration": 59.218
+          }
+        },
+        {
+          "format": "landscape",
+          "sha256": "db78f22e1abcc82d1bea25733e50ccba0f89f068d7f5c102034a5aaf8e49a2ba",
+          "bytes": 19752841,
+          "ffprobe": {
+            "programs": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "codec_type": "video",
+                "width": 1920,
+                "height": 1080,
+                "pix_fmt": "yuv420p",
+                "r_frame_rate": "25/1"
+              },
+              {
+                "codec_name": "aac",
+                "codec_type": "audio",
+                "r_frame_rate": "0/0"
+              }
+            ],
+            "format": {
+              "duration": "59.218000",
+              "size": "19752841"
+            }
+          },
+          "filename": "sZXs46XHNj8-landscape.mp4",
+          "cms": {
+            "id": "a9dd9e0f-aebb-4eab-8555-d3faaafe9959",
+            "source_id": "sZXs46XHNj8",
+            "source_url": "https://www.youtube.com/watch?v=sZXs46XHNj8",
+            "title": "Bir Memleket Hikayesi - Etili Seramik",
+            "format": "landscape",
+            "sha256": "db78f22e1abcc82d1bea25733e50ccba0f89f068d7f5c102034a5aaf8e49a2ba",
+            "bytes": 19752841,
+            "duration": 59.218
+          }
+        }
+      ]
+    },
+    {
+      "source_id": "GePrzEQoofw",
+      "url": "https://www.youtube.com/watch?v=GePrzEQoofw",
+      "title": "Etili Seramik Fabrika Tanıtım Filmi (2024)",
+      "channel": "Etili Seramik ",
+      "channel_url": "https://www.youtube.com/@EtiliSeramikFabrika",
+      "upload_date": "20241024",
+      "original_sha256": "0eee271e59b9cf01a91904fbb32250700884c9f312d9bbfe4bd4b6562c76f162",
+      "original_bytes": 219035057,
+      "downloaded_at": "2026-10-17T17:24:43.632Z",
+      "source_video": {
+        "codec": "vp9",
+        "width": 3840,
+        "height": 2160,
+        "fps": "25/1",
+        "color_space": "bt709",
+        "duration": 171.268
+      },
+      "source_audio": [
+        {
+          "codec": "opus",
+          "channels": 2
+        }
+      ],
+      "audio_policy": "Original company-video audio retained as AAC; playlists default muted. No new music added. Original music licensing not independently verified; keep muted unless owner confirms use.",
+      "derivatives": [
+        {
+          "format": "portrait",
+          "sha256": "b5184501fcd5ebeb40240aaa61ef55118b74d75b918dc79fd9bd527b964ab480",
+          "bytes": 30661786,
+          "ffprobe": {
+            "programs": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "codec_type": "video",
+                "width": 1080,
+                "height": 1920,
+                "pix_fmt": "yuv420p",
+                "r_frame_rate": "25/1"
+              },
+              {
+                "codec_name": "aac",
+                "codec_type": "audio",
+                "r_frame_rate": "0/0"
+              }
+            ],
+            "format": {
+              "duration": "171.249000",
+              "size": "30661786"
+            }
+          },
+          "filename": "GePrzEQoofw-portrait.mp4",
+          "cms": {
+            "id": "9a3627dd-861f-454f-beef-081ed5794efd",
+            "source_id": "GePrzEQoofw",
+            "source_url": "https://www.youtube.com/watch?v=GePrzEQoofw",
+            "title": "Etili Seramik Fabrika Tanıtım Filmi (2024)",
+            "format": "portrait",
+            "sha256": "b5184501fcd5ebeb40240aaa61ef55118b74d75b918dc79fd9bd527b964ab480",
+            "bytes": 30661786,
+            "duration": 171.249
+          }
+        },
+        {
+          "format": "landscape",
+          "sha256": "f7a57243ce7a3770562513b558054257fa4a9226410dec948d902c622a0df269",
+          "bytes": 62639839,
+          "ffprobe": {
+            "programs": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "codec_type": "video",
+                "width": 1920,
+                "height": 1080,
+                "pix_fmt": "yuv420p",
+                "r_frame_rate": "25/1"
+              },
+              {
+                "codec_name": "aac",
+                "codec_type": "audio",
+                "r_frame_rate": "0/0"
+              }
+            ],
+            "format": {
+              "duration": "171.249000",
+              "size": "62639839"
+            }
+          },
+          "filename": "GePrzEQoofw-landscape.mp4",
+          "cms": {
+            "id": "4e33eb26-ea11-46b3-8a29-bf8ede13a74e",
+            "source_id": "GePrzEQoofw",
+            "source_url": "https://www.youtube.com/watch?v=GePrzEQoofw",
+            "title": "Etili Seramik Fabrika Tanıtım Filmi (2024)",
+            "format": "landscape",
+            "sha256": "f7a57243ce7a3770562513b558054257fa4a9226410dec948d902c622a0df269",
+            "bytes": 62639839,
+            "duration": 171.249
+          }
+        }
+      ]
+    }
+  ],
+  "source_video_discovery": "No embedded/direct video in home/about/catalog/network/WP video endpoint. Official company channel linked by site lists 3 public videos; channel ownership metadata and source IDs were checked separately.",
   "catalog_documents": [
     {
       "url": "https://etiliseramik.com/media/ETILI_SERAMIK_KURUMSAL_KIMLIK_KILAVUZU_18082025.pdf",
@@ -55135,7 +55516,11 @@
     "source_image_urls": 928,
     "unique_original_hashes": 920,
     "unique_optimized_hashes": 842,
-    "unique_optimized_bytes": 18228842
+    "unique_optimized_bytes": 18228842,
+    "original_company_videos": 3,
+    "company_video_derivatives": 6,
+    "generated_movies": 2,
+    "presentation_cards": 11
   },
   "limits": [
     "Missing source SKU/description fields remain absent; no price/stock assertions.",

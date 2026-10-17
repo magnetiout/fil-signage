@@ -185,7 +185,7 @@ function entries(state = {}) {
       file: null,
       // Not a download: an iOS app installs only through Apple (TestFlight, the App Store, or an
       // MDM/enterprise distribution) — a link to a file here could never install.
-      what: "Not a download. The FILSign app is distributed by your organisation through TestFlight or device management; it shows this instance’s player full screen.",
+      what: "Not a download. The upstream ScreenTinker app is distributed by your organisation through TestFlight or device management; it shows this instance’s player full screen.",
       url: null,
       guide: '/guides/mac-ipad-digital-signage.html',
       available: false,
@@ -227,7 +227,7 @@ function entries(state = {}) {
       // Not a download: a Roku app installs from the Roku Channel Store, so the row links to the
       // store's add-to-account page rather than to a file on this instance. A sideloaded zip needs
       // developer mode on every Roku, which is not how a sign should be set up.
-      what: "Not a download: add the FILSign app to your Roku account and it installs on your Rokus. Needs Roku OS 15.1 or later. Read the guide first: a Roku cannot start itself after a power cut.",
+      what: "Not a download: add the upstream ScreenTinker app to your Roku account and it installs on your Rokus. Needs Roku OS 15.1 or later. Read the guide first: a Roku cannot start itself after a power cut.",
       url: ROKU_STORE_URL,
       external: true,
       action_label: 'Add to your Roku',

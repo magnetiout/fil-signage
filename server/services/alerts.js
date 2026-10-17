@@ -124,7 +124,7 @@ function buildAlertHtml(recipientName, subject, body) {
       <strong>${escapeHtml(subject)}</strong><br><br>
       ${escapeHtml(body).replace(/\n/g, '<br>')}
     </div>
-    <p style="color:#94a3b8;font-size:12px">You're receiving this because you have email alerts enabled in ScreenTinker.</p>
+    <p style="color:#94a3b8;font-size:12px">You're receiving this because you have email alerts enabled in FILSign.</p>
   </div>`;
 }
 

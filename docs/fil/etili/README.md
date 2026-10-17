@@ -11,7 +11,7 @@ Kaynak https://etiliseramik.com/; izin: firma sitesini yapan proje sahibinin bu 
 - Kaynak kayıtların tamamı WooCommerce `simple`; parent/variation boş. Sunumda seri kimliği + doğrulanmış ebattan önceki ad bölümüyle 501 gezinme grubu oluşturulur. Bunlar **üreticinin ayrı ürün/seri/SKU sayısı değildir**. 761 kaynak kimliği ve seçenek hiçbir zaman birleştirilip kaybedilmez.
 - 928 görsel adresi, 920 özgün dosya hash'i, 842 optimize dosya hash'i. Görsel türleri ayrı görsel incelemesiyle işaretlenir; belirsiz kapak türü açıkça belirtilir.
 - Ürün sayfalarının tamamında teknik alanlar bulundu. Yayımlanmayan açıklama/SKU alanları boş kalır. Store API'deki sıfır fiyat ve varsayılan stok değeri ticari veri kabul edilmez. Teknik alanların anlamı, olumsuzluklar ve kaynak yazımı korunur.
-- Ana sayfa, kurumsal sayfa, katalog sayfası, gerçek tarayıcı ağı ve açık WP video uç noktası incelendi: indirilebilir/yerleşik firma videosu bulunmadı. Yalnızca şirket YouTube kanal bağlantısı var; somut bir video dosyası gibi raporlanmaz. İki film gerçek fotoğraflardan üretilir.
+- Ana sayfa, kurumsal/katalog sayfaları, gerçek tarayıcı ağı ve açık WP video uç noktası doğrudan veya yerleşik video vermiyor. Sitenin bağladığı resmî Etili Seramik kanalının yeni `lockupViewModel` listesinde ayrıca 3 video doğrulandı:14 ve 59 saniyelik “Bir Memleket Hikayesi”,171 saniyelik “Etili Seramik Fabrika Tanıtım Filmi (2024)”. Üçünün de herkese açık kaynak kopyası Minix’e indirildi; oturum, çerez, DRM veya erişim kısıtı aşma kullanılmadı. Bunlar kaynaktan edinilen YouTube dağıtım kopyalarıdır, stüdyo ham dosyası olarak tanımlanmaz. Üç kaynak için portre/yatay 6 H.264/AAC türev hazırlanır. Ayrıca fotoğraflardan 2 özgün 72 saniyelik tanıtım filmi üretilir.
 - Kurumsal kılavuz: Pantone 124 / RGB235,169,0 (#EBA900); Pantone 419 / RGB33,35,34 (#212322). Resmî logo oranı korunur. Kılavuz Mulish, web sitesi Montserrat kullanıyor; demo ek font indirmeden sistem sans-serif ailesini kullanır. Fotoğraf, renk/desen veya mekân üretimi yapılmaz.
 
 Kaynak kayıtları, görsel hash’leri, eksik alanlar ve CMS eşleştirmeleri: [source-manifest.json](source-manifest.json).
@@ -37,16 +37,19 @@ python3 scripts/fil/etili/crawl.py --cache /home/kado/filsign/private/etili-sour
 python3 scripts/fil/etili/download.py --cache /home/kado/filsign/private/etili-source
 node scripts/fil/etili/optimize.cjs /home/kado/filsign/private/etili-source
 node scripts/fil/etili/films.cjs /home/kado/filsign/private/etili-source
-node scripts/fil/etili/import.cjs /home/kado/filsign/private/etili-source --media --organize --films --playlists --publish
+node scripts/fil/etili/source-videos.cjs /home/kado/filsign/private/etili-source
+node scripts/fil/etili/import.cjs /home/kado/filsign/private/etili-source --media --organize --films --site-videos --playlists --publish
 node scripts/fil/etili/catalog.cjs /home/kado/filsign/private/etili-source
 node scripts/fil/etili/import.cjs /home/kado/filsign/private/etili-source --configure --publish
 ```
 
 Bu komutlar çalışan kurulumun yeniden kurulması değildir. `crawl/download` önbelleği kullanır; yeniden kaynak güncellemesi için önce manifest sürümü ve kaynak değişikliği değerlendirilir. `image-sources.json` keşfedilmiş gerçek URL envanteridir. Araçlar mevcut Node22/Sharp/QRCode ve FFmpeg kullanır. `brand-ui/brand-surfaces.cjs` tek seferlik kaynak geçiş araçlarıdır; normal içerik güncellemesinde çalıştırılmaz; gerekiyorsa Acorn modülü `FIL_ACORN` ile sağlanır. Uygulama bağımlılıkları değişmez.
 
-Yayın listeleri için aynı kaynaklardan 11 yüksek çözünürlüklü sunum kartı da hazırlanır: portre6, yatay5. Kartlar gerçek 1080×1920/1920×1080 sahne çıktılarından JPEG90/4:4:4 olarak üretilir; katalogdaki küçük önizlemeler TV yayını yerine kullanılmaz. Kartların kaynak ilişkisi storyboard sahne numarasıyla manifestte korunur.
+Yayın listeleri için aynı kaynaklardan 11 yüksek çözünürlüklü sunum kartı da hazırlanır: portre 6, yatay 5. Kartlar gerçek 1080×1920/1920×1080 sahne çıktılarından JPEG90/4:4:4 olarak üretilir; katalogdaki küçük önizlemeler TV yayını yerine kullanılmaz. Kartların kaynak ilişkisi storyboard sahne numarasıyla manifestte korunur.
 
-Filmler: 12×6s=72s, 1080×1920 ve1920×1080, 24fps, MP4/H.264/yuv420p, ses akışı yok; hafif yakınlaşma ve krem zemin geçişi. Yatayda oranı korunan seri mekânı ve gerçek ürün yüzeyi yan yana; portrede dokunma çağrısı, TV sürümünde dokunma çağrısı yok. `films/storyboard.json` kaynak ilişkileri, `commands.jsonl` gerçek üretim komutlarıdır. Başlangıç/orta/son/geçiş kareleri ve tam decode ayrıca doğrulanır.
+Filmler: 12 × 6 sn = 72 sn, 1080×1920 ve1920×1080, 24fps, MP4/H.264/yuv420p, ses akışı yok; hafif yakınlaşma ve krem zemin geçişi. Yatayda oranı korunan seri mekânı ve gerçek ürün yüzeyi yan yana; portrede dokunma çağrısı, TV sürümünde dokunma çağrısı yok. `films/storyboard.json` kaynak ilişkileri, `commands.jsonl` gerçek üretim komutlarıdır. Başlangıç/orta/son/geçiş kareleri ve tam decode ayrıca doğrulanır.
+
+Resmî kaynak videoları `private/etili-source/source-videos/` altında tutulur. Video kimlikleri: `RyLMG6KhfZo`, `sZXs46XHNj8`, `GePrzEQoofw`. `yt-dlp` yalnızca Minix’te özel araç ortamında kullanılır; gerçek indirme URL’leri/tokenları içeren ham sağlayıcı JSON’u özel önbellekten çıkarılmaz. Yeniden edinme gerekiyorsa mevcut yt-dlp ile bu herkese açık izleme URL’lerine `--no-playlist --retries 0 -f 'bv*+ba/b' --merge-output-format mkv` uygulanır. Derleme ve FFmpeg komutları kaynak önbelleğinde saklanır. Türevler H.264/yuv420p ve AAC'dir; kaynak oranı korunur, portrede kurumsal zemin ve dokunma çağrısı kullanılır. Listelerde tüm öğeler `muted=true`, `fit_mode=contain` olarak yayımlanır. Kaynağın mevcut sesi korunur ve panelden açılabilir; yeni müzik eklenmez. Kaynak müziğinin lisansı bağımsız doğrulanmadığı için sunum sessiz tutulmalıdır; ses açılması operatörün ayrıca doğruladığı haklara bağlıdır. Liste yeniden içe aktarıldığında güvenli varsayılan sessiz durum uygulanır.
 
 ## Marka ve uyumluluk sınırları
 

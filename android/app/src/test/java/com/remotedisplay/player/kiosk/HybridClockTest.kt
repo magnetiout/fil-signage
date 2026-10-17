@@ -38,4 +38,15 @@ class HybridClockTest {
             c.end()
         }
     }
+    @Test fun `continuous interaction keeps the presentation alive and idle starts at the last interaction`() {
+        val c=HybridClock(20000,5000)
+        c.touch(0)
+        for (t in 100L..120000L step 100L) {
+            c.touch(t)
+            assertEquals(KioskIdle.Action.None,c.tick(t))
+        }
+        assertEquals(KioskIdle.Action.None,c.tick(139999))
+        assertEquals(KioskIdle.Action.Warn(5),c.tick(140000))
+        assertEquals(KioskIdle.Action.Reset,c.tick(145000))
+    }
 }

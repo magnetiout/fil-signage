@@ -134,8 +134,15 @@ class HybridKiosk(
     }
     fun dispatch(event: MotionEvent): Boolean {
         if(swallow) {if(event.actionMasked==MotionEvent.ACTION_UP||event.actionMasked==MotionEvent.ACTION_CANCEL)swallow=false;return true}
+        if(sessionActive) {
+            // A long scroll/drag is ongoing use too; idle starts after the last touch,
+            // while the first signage gesture remains completely swallowed above.
+            if(event.actionMasked==MotionEvent.ACTION_DOWN || event.actionMasked==MotionEvent.ACTION_MOVE || event.actionMasked==MotionEvent.ACTION_UP) {
+                clock?.touch(SystemClock.elapsedRealtime());warning?.visibility=android.view.View.GONE
+            }
+            return false
+        }
         if(event.actionMasked!=MotionEvent.ACTION_DOWN) return false
-        if(sessionActive) {clock?.touch(SystemClock.elapsedRealtime());warning?.visibility=android.view.View.GONE;return false}
         val p=active ?: return false
         if(p.optString("mode")!="hybrid_kiosk")return false
         swallow=true

@@ -1,5 +1,14 @@
 // Exact owned server sentences to stable UI keys. API bodies/codes and user data are unchanged.
 export default {
+  "Geçersiz katalog; en fazla 2000 öğe.": "api.message.fil_catalog_max_items",
+  "Geçersiz sunum türü.": "api.message.fil_catalog_presentation",
+  "Katalog yalnızca çevrimdışı yerel içerik kullanır.": "api.message.fil_catalog_offline",
+  "Logo medya referansı gerekli.": "api.message.fil_catalog_logo",
+  "Kaynak adresi geçersiz.": "api.message.fil_catalog_source_url",
+  "Kaynak yalnızca herkese açık Etili ürün adresi olabilir.": "api.message.fil_catalog_public_source",
+  "Teknik özellikler geçersiz.": "api.message.fil_catalog_specifications",
+  "QR görseli geçersiz.": "api.message.fil_catalog_qr",
+  "Ürün grubu geçersiz.": "api.message.fil_catalog_groups",
   "Reviewers are people: once your members accept their invites, choose the reviewers again (Settings → Approvals).": "system.import.workspace_reviewers",
   "People provisioned by SCIM are provisioned again by your identity provider once you give it this server's SCIM address and a new token.": "system.import.scim_users",
   "Follows the SCIM people above: your identity provider sends the group members again.": "system.import.scim_group_members",

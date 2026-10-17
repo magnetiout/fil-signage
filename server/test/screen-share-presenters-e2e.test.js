@@ -53,7 +53,12 @@ const run = (sql, ...a) => { const r = new (require('better-sqlite3'))(path.join
 async function waitFor(fn, ms = 20000, what = 'condition') {
   const t0 = Date.now();
   for (;;) {
-    const v = await fn();
+    let v;
+    try { v = await fn(); } catch (e) {
+      // A player's initial self-reload replaces its execution context. Retry only that
+      // transient navigation boundary; real evaluation failures and the deadline still fail.
+      if (!/Execution context was destroyed|Cannot find context with specified id/.test(e.message)) throw e;
+    }
     if (v) return v;
     if (Date.now() - t0 > ms) throw new Error('timed out waiting for ' + what);
     await sleep(150);

@@ -1,7 +1,7 @@
 'use strict';
 const TYPES = new Set(['category', 'page', 'gallery', 'image', 'video', 'url']);
 function validateMenu(input, lookup) {
-  if (!input || input.schema !== 'fil-menu-v1' || !Array.isArray(input.items) || input.items.length > (input.presentation === 'catalog' ? 2000 : 150)) throw new Error('Geçersiz menü; en fazla 150 öğe.');
+  if (!input || input.schema !== 'fil-menu-v1' || !Array.isArray(input.items) || input.items.length > (input.presentation === 'catalog' ? 2000 : 150)) throw new Error(input?.presentation === 'catalog' ? 'Geçersiz katalog; en fazla 2000 öğe.' : 'Geçersiz menü; en fazla 150 öğe.');
   const menu = JSON.parse(JSON.stringify(input));
   if (typeof menu.title !== 'string' || !menu.title.trim() || menu.title.length > 120) throw new Error('Menü başlığı gerekli.');
   if (menu.presentation && menu.presentation !== 'catalog') throw new Error('Geçersiz sunum türü.');
@@ -17,7 +17,7 @@ function validateMenu(input, lookup) {
     if (menu.presentation === 'catalog') {
       if (item.sourceUrl) {
         let url; try { url = new URL(item.sourceUrl); } catch { throw new Error('Kaynak adresi geçersiz.'); }
-        if (url.origin !== 'https://etiliseramik.com' || url.search || url.hash || url.username || url.password) throw new Error('Kaynak yalnızca herkese açık Etili ürün adresi olabilir.');
+        if (url.origin !== 'https://etiliseramik.com' || !url.pathname.startsWith('/product/') || url.search || url.hash || url.username || url.password) throw new Error('Kaynak yalnızca herkese açık Etili ürün adresi olabilir.');
       }
       if (item.specifications && (typeof item.specifications !== 'object' || Array.isArray(item.specifications) || Object.keys(item.specifications).length > 30 || Object.entries(item.specifications).some(([k,v]) => k.length > 80 || typeof v !== 'string' || v.length > 600))) throw new Error('Teknik özellikler geçersiz.');
       if (item.qr && (!item.sourceUrl || typeof item.qr !== 'string' || item.qr.length > 18000 || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(item.qr))) throw new Error('QR görseli geçersiz.');
