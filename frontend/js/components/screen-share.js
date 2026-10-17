@@ -12,7 +12,7 @@ import { uiText, renderHTML, bindMessage } from '../lib/i18n-bindings.js';
  * The share belongs to the PAGE, not to a view: it survives moving around the dashboard (the bar is
  * on document.body) and ends when the tab closes, because its signalling socket closes with it.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
@@ -96,7 +96,7 @@ export async function startScreenShare(device, { audio = false, also = [] } = {}
     start = await api.startScreenShare(device.id, { audio: !!audio && stream.getAudioTracks().length > 0 });
   } catch (e) {
     stopStream(stream);
-    showToast((e && e.body && e.body.reason) ? screenShareReasonText(e.body.reason) : ((e.uiMessage || e.message) || t('screen_share.reason.generic')), 'error', 7000);
+    showToast((e && e.body && e.body.reason) ? screenShareReasonText(e.body.reason) : ((errorMessage(e)) || t('screen_share.reason.generic')), 'error', 7000);
     return false;
   }
   // The display's mirrors (its link open somewhere else) come back as extra legs: the same one
@@ -154,7 +154,7 @@ export async function startScreenShareTo({ deviceIds = [], groupId = null, label
     let msg;
     if (b.reason === 'too_many_targets') msg = t('screen_share.reason.too_many_targets', { max: b.max_targets, count: b.screens });
     else if (b.reason === 'none_available' && Array.isArray(b.skipped) && b.skipped.length) msg = t('screen_share.reason.none_available');
-    else msg = b.reason ? screenShareReasonText(b.reason) : (e.message || t('screen_share.reason.generic'));
+    else msg = b.reason ? screenShareReasonText(b.reason) : (errorMessage(e));
     showToast(msg, 'error', 9000);
     return false;
   }
@@ -434,14 +434,14 @@ export function renderScreenShareCard(host, device, opts = {}) {
     host.querySelector('[data-share-kick-all]')?.addEventListener('click', async (e) => {
       e.currentTarget.disabled = true;
       try { await api.stopScreenShareAll(status.session.share_id); showToast(t('screen_share.card.kicked'), 'success'); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
       load();
     });
     host.querySelector('[data-share-mine-stop]')?.addEventListener('click', () => stopScreenShare());
     host.querySelector('[data-share-kick]')?.addEventListener('click', async (e) => {
       e.currentTarget.disabled = true;
       try { await api.stopScreenShare(device.id); showToast(t('screen_share.card.kicked'), 'success'); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
       load();
     });
     host.querySelector('[data-share-multi]')?.addEventListener('change', async (e) => {
@@ -450,19 +450,19 @@ export function renderScreenShareCard(host, device, opts = {}) {
       try {
         await api.setScreenShareMulti(device.id, want);
         showToast(t(want ? 'screen_share.multi.on_toast' : 'screen_share.multi.off_toast'), 'success');
-      } catch (err) { e.target.checked = !want; showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { e.target.checked = !want; showToast(errorMessage(err), 'error'); }
       load();
     });
     host.querySelectorAll('[data-presenter-spot]').forEach((b) => b.addEventListener('click', async () => {
       b.disabled = true;
       try { await api.spotlightScreenShare(device.id, b.dataset.on ? null : b.dataset.presenterSpot); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
       load();
     }));
     host.querySelectorAll('[data-presenter-remove]').forEach((b) => b.addEventListener('click', async () => {
       b.disabled = true;
       try { await api.removeScreenSharePresenter(device.id, b.dataset.presenterRemove); showToast(t('screen_share.card.removed'), 'success'); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
       load();
     }));
     host.querySelector('[data-share-guest]')?.addEventListener('change', async (e) => {
@@ -471,7 +471,7 @@ export function renderScreenShareCard(host, device, opts = {}) {
       try {
         await api.setScreenShareGuest(device.id, want);
         showToast(t(want ? 'screen_share.guest.on_toast' : 'screen_share.guest.off_toast'), 'success');
-      } catch (err) { e.target.checked = !want; showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { e.target.checked = !want; showToast(errorMessage(err), 'error'); }
       load();
     });
   }
@@ -530,7 +530,7 @@ export async function renderScreenShareSettings(host, { workspaceId } = {}) {
         await api.setScreenShareWorkspace(workspaceId, want);
         enabled = want;
         showToast(t(want ? 'screen_share.settings.on_toast' : 'screen_share.settings.off_toast'), 'success');
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
       paint();
     });
   }

@@ -25,7 +25,7 @@ import { displayQuantity, displayValue, message as t } from '../i18n.js';
  * read them. Edges are colour only until hovered or selected.
  */
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 
@@ -85,7 +85,7 @@ async function tick() {
   let data;
   try { data = await api.get('/mesh/noc'); } catch (e) {
     const body = host.querySelector('#nocBody');
-    if (body) body.innerHTML = `<p style="color:var(--text-muted)">${uiText((e.uiMessage || e.message))}</p>`;
+    if (body) body.innerHTML = `<p style="color:var(--text-muted)">${uiText((errorMessage(e)))}</p>`;
     // A 404 means the mesh is off here; a 403 that this is not the instance owner. Either way, stop asking.
     if (/404|403|not found|owner/i.test(e.message || '')) stop();
     return;
@@ -122,7 +122,7 @@ async function loadSelected(nodeId) {
   try {
     const r = await api.get(`/mesh/noc?node=${encodeURIComponent(nodeId)}`);
     selectedData = r.selected || null;
-  } catch (e) { selectedData = { id: nodeId, error: e.message, screens: [], alerts: [], more: 0 }; }
+  } catch (e) { selectedData = { id: nodeId, error: errorMessage(e), screens: [], alerts: [], more: 0 }; }
 }
 
 /* ------------------------------ layout + draw ------------------------------ */
@@ -391,7 +391,7 @@ function wireDetail(body, data) {
         const r = await api.delete(`/mesh/links/${encodeURIComponent(nodeId)}`);
         showToast(r.summary || t("ui.noc.disconnected_f8fa2a"), 'success');
         await tick();
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     });
   });
 }

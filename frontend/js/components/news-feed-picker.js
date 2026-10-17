@@ -16,7 +16,7 @@ import { uiText, renderHTML, bindMessage, binding } from '../lib/i18n-bindings.j
  * Used by the widget editor (views/widgets.js) and the Simple view's news task (views/simple-news.js).
  * Everything from the server reaches the page through esc() or textContent.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 
@@ -113,7 +113,7 @@ export function mountFeedPicker(host, { url = '', mode = 'feed', simple = false,
       placeholderOnError(preview);
     } catch (err) {
       if (mine !== seq) return;
-      preview.innerHTML = `<p class="news-picker-error">${uiText(feedErrorText(err.code, (err.uiMessage || err.message)))}</p>`;
+      preview.innerHTML = `<p class="news-picker-error">${uiText(feedErrorText(err.code, (errorMessage(err))))}</p>`;
     }
   }
 
@@ -188,7 +188,7 @@ export function mountFeedPicker(host, { url = '', mode = 'feed', simple = false,
       }
     } catch (err) {
       if (mine !== seq) return;
-      setStatus(feedErrorText(err.code, err.message), 'error');
+      setStatus(feedErrorText(err.code, errorMessage(err)), 'error');
     } finally {
       if (mine === seq) findBtn.disabled = false;
     }

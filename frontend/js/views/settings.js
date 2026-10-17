@@ -1,8 +1,8 @@
 import { renderHTML, uiText, translatedAttribute, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { subscribe, displayValue, getLanguage, setLanguage, getAdminLanguages as getAvailableLanguages, message as t } from '../i18n.js';
+import { localizedError, subscribe, displayValue, getLanguage, setLanguage, getAdminLanguages as getAvailableLanguages, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api } from '../api.js';
 import { SPONSOR_URL } from '../components/plan-nudges.js';
@@ -491,7 +491,7 @@ export async function render(container) {
     if (!box) return;
     const fmt = (s) => (s ? displayValue(new Date(s * 1000), "toLocaleString", undefined) : '—');
     let st;
-    try { st = await api.get('/auth/support/status'); } catch (err) { box.innerHTML = `<p style="color:var(--danger);font-size:13px">${uiText((err.uiMessage || err.message))}</p>`; return; }
+    try { st = await api.get('/auth/support/status'); } catch (err) { box.innerHTML = `<p style="color:var(--danger);font-size:13px">${uiText((errorMessage(err)))}</p>`; return; }
 
     const grants = st.grants.map((g) => `
       <tr>
@@ -518,11 +518,11 @@ export async function render(container) {
 
     box.querySelectorAll('[data-revoke]').forEach((b) => b.addEventListener('click', async () => {
       try { await api.delete(`/auth/support/grant/${encodeURIComponent(b.dataset.revoke)}`); showToast(t('support.toast_revoked'), 'success'); loadSupportAccess(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     }));
     box.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', async () => {
       try { await api.delete(`/auth/support/request/${encodeURIComponent(b.dataset.cancel)}`); loadSupportAccess(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     }));
 
     const issuer = document.getElementById('supportIssuer');
@@ -538,7 +538,7 @@ export async function render(container) {
       bindText(document.getElementById('supportRequestExpiry'), 'support.request_expires', { hours: r.ttl_hours });
       document.getElementById('supportRequestResult').style.display = 'block';
       loadSupportAccess();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
   document.getElementById('supportRequestCopyBtn')?.addEventListener('click', async () => {
     const code = document.getElementById('supportRequestCodeOut').textContent;
@@ -557,7 +557,7 @@ export async function render(container) {
       document.getElementById('supportTokenOutput').value = data.token;
       document.getElementById('supportTokenResult').style.display = 'block';
       showToast(t('settings.toast.support_token_generated', { hours }), 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   // Export data handler
@@ -652,13 +652,13 @@ export async function render(container) {
           }
         } catch (err) {
           statusEl.style.color = 'var(--danger)';
-          bindText(statusEl, 'settings.import.failed_with_error', { error: err.message });
+          bindText(statusEl, 'settings.import.failed_with_error', { error: errorMessage(err) });
         }
         e.target.value = '';
       };
     } catch (err) {
       statusEl.style.color = 'var(--danger)';
-      bindText(statusEl, 'settings.import.read_failed', { error: err.message });
+      bindText(statusEl, 'settings.import.read_failed', { error: errorMessage(err) });
     }
   });
 
@@ -733,7 +733,7 @@ export async function render(container) {
           showToast(t('apitoken.revoked_toast'), 'success');
           loadTokens();
         } catch (err) {
-          showToast(err.uiMessage || err.message, 'error');
+          showToast(errorMessage(err), 'error');
         }
       });
     });
@@ -766,7 +766,7 @@ export async function render(container) {
           showToast(t('apitoken.targets_updated'), 'success');
           panel.style.display = 'none';
           loadTokens();
-        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+        } catch (err) { showToast(errorMessage(err), 'error'); }
       };
       document.getElementById('cancelTargetsBtn').onclick = () => { panel.style.display = 'none'; };
     }));
@@ -795,7 +795,7 @@ export async function render(container) {
           showToast(t('apitoken.folder_updated'), 'success');
           panel.style.display = 'none';
           loadTokens();
-        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+        } catch (err) { showToast(errorMessage(err), 'error'); }
       };
       document.getElementById('cancelFolderBtn').onclick = () => { panel.style.display = 'none'; };
     }));
@@ -896,7 +896,7 @@ export async function render(container) {
 
     let me;
     try { me = await api.getMe(); }
-    catch (e) { paint(`<p style="${muted}">${uiText((e.uiMessage || e.message))}</p>`); return; }
+    catch (e) { paint(`<p style="${muted}">${uiText((errorMessage(e)))}</p>`); return; }
 
     // The page may have been left while this was loading: draw nothing into a detached card.
     if (!document.contains(block)) return;
@@ -935,7 +935,7 @@ export async function render(container) {
           await api.ssoUnlink(pw);
           showToast(t('settings.signin_unlinked_toast'), 'success');
           loadSsoLink();
-        } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+        } catch (e) { showToast(errorMessage(e), 'error'); }
       };
       return;
     }
@@ -964,7 +964,7 @@ export async function render(container) {
         try {
           const { url } = await api.ssoLinkStart(slug);
           window.location.href = url;
-        } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+        } catch (e) { showToast(errorMessage(e), 'error'); }
       };
     });
   }
@@ -978,7 +978,7 @@ export async function render(container) {
 
     let status;
     try { status = await api.totpStatus(); }
-    catch (e) { paint(`<p style="${muted}">${uiText((e.uiMessage || e.message))}</p>`); return; }
+    catch (e) { paint(`<p style="${muted}">${uiText((errorMessage(e)))}</p>`); return; }
 
     // The page may have been left while this was loading: draw nothing into a detached card.
     if (!document.contains(block)) return;
@@ -1001,7 +1001,7 @@ export async function render(container) {
 
     async function startEnroll() {
       let data;
-      try { data = await api.totpSetup(); } catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
+      try { data = await api.totpSetup(); } catch (e) { showToast(errorMessage(e), 'error'); return; }
       const qr = data.qr_data_url
         ? `<img src="${data.qr_data_url}" ${translatedAttribute("alt", "ui.settings.alt_totp_qr_eb4412")} width="200" height="200" style="border-radius:8px;background:#fff;padding:6px">`
         : `<p style="${muted}">${renderHTML(t('settings.2fa_setup_manual'))}</p>`;
@@ -1029,7 +1029,7 @@ export async function render(container) {
           const r = await api.totpEnable(code);
           showToast(t('settings.2fa_enabled_toast'), 'success');
           showRecoveryCodes(r.recovery_codes);
-        } catch (e) { showToast(e.uiMessage || e.message, 'error'); codeEl.select(); }
+        } catch (e) { showToast(errorMessage(e), 'error'); codeEl.select(); }
       };
       document.getElementById('enroll2faVerify').addEventListener('click', doEnable);
       codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') doEnable(); });
@@ -1096,7 +1096,7 @@ export async function render(container) {
       const go = async () => {
         const code = codeEl.value.trim();
         if (!code) { showToast(t('settings.2fa_code_required'), 'error'); return; }
-        try { await run(code); } catch (e) { showToast(e.uiMessage || e.message, 'error'); codeEl.select(); }
+        try { await run(code); } catch (e) { showToast(errorMessage(e), 'error'); codeEl.select(); }
       };
       document.getElementById('twoFactorActionConfirm').addEventListener('click', go);
       codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
@@ -1115,7 +1115,7 @@ export async function render(container) {
 
     let st;
     try { st = await api.passkeysList(); }
-    catch (e) { paint(`<p style="${muted}">${uiText((e.uiMessage || e.message))}</p>`); return; }
+    catch (e) { paint(`<p style="${muted}">${uiText((errorMessage(e)))}</p>`); return; }
 
     // The page may have been left while this was loading: draw nothing into a detached card.
     if (!document.contains(block)) return;
@@ -1191,7 +1191,7 @@ export async function render(container) {
         showToast(t('passkey.added_toast'), 'success');
         loadPasskeys();
       } catch (err) {
-        if (!err.cancelled) showToast(err.uiMessage || err.message, 'error');
+        if (!err.cancelled) showToast(errorMessage(err), 'error');
         btn.disabled = false;
       }
     });
@@ -1203,7 +1203,7 @@ export async function render(container) {
         const name = window.prompt(t('passkey.rename_prompt'), current);
         if (name == null || !name.trim()) return;
         try { await api.passkeyRename(id, name.trim()); loadPasskeys(); }
-        catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+        catch (err) { showToast(errorMessage(err), 'error'); }
       });
       row.querySelector('[data-pk-remove]').addEventListener('click', async () => {
         if (!window.confirm(t('passkey.remove_confirm', { name: current }))) return;
@@ -1211,7 +1211,7 @@ export async function render(container) {
           await api.passkeyDelete(id);
           showToast(t('passkey.removed_toast'), 'success');
           loadPasskeys();
-        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+        } catch (err) { showToast(errorMessage(err), 'error'); }
       });
     });
   }
@@ -1223,7 +1223,7 @@ export async function render(container) {
   document.getElementById('revokeOtherSessionsBtn')?.addEventListener('click', async (e) => {
     e.target.disabled = true;
     try { await api.revokeOtherSessions(); showToast(t('settings.sessions_revoked'), 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
     finally { e.target.disabled = false; }
   });
 
@@ -1784,7 +1784,7 @@ export async function render(container) {
       showToast(t('apitoken.created_toast'), 'success');
       loadTokens();
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     } finally {
       btn.disabled = false;
     }
@@ -1802,7 +1802,7 @@ export async function render(container) {
       localStorage.setItem('user', JSON.stringify({ ...stored, ...updated }));
       showToast(t('settings.toast.profile_saved'), 'success');
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     } finally {
       btn.disabled = false;
     }
@@ -1824,7 +1824,7 @@ export async function render(container) {
       document.getElementById('acctConfirmPw').value = '';
       showToast(t('settings.toast.password_changed'), 'success');
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     } finally {
       btn.disabled = false;
     }
@@ -1856,7 +1856,7 @@ export async function render(container) {
         showToast(t("ui.settings.widget_sandbox_isolation_disabled"), 'success');
       } catch (err) {
         checkbox.checked = true;
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
       return;
     }
@@ -1868,7 +1868,7 @@ export async function render(container) {
       showToast(t("ui.settings.widget_sandbox_isolation_enabled"), 'success');
     } catch (err) {
       checkbox.checked = false;
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   });
 }
@@ -1987,12 +1987,12 @@ async function loadWhiteLabel() {
       // still said "Branding saved" while nothing at all had been written.
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(localizeServerError(err.error) || t('settings.toast.branding_save_failed'));
+        throw localizedError(localizeServerError(err.error) || t('settings.toast.branding_save_failed'));
       }
       await resetBranding();
       showToast(t('settings.toast.branding_saved'), 'success');
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   });
 

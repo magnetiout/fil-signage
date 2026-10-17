@@ -11,7 +11,7 @@ import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
  * ⚠️ A layout change is a DRAFT like any other playlist edit: screens get it on Publish, together
  * with the moved items, so the two can never be seen half-applied.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from './toast.js';
 import { esc } from '../utils.js';
 import { message as t, messageCount as tn } from '../i18n.js';
@@ -60,7 +60,7 @@ export async function mountLayoutPicker(playlist, onChanged) {
       if (done) { showToast(t('layoutpl.toast_changed'), 'info'); onChanged && onChanged(); }
       else sel.value = current;
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
       sel.value = current;
     }
   });
@@ -158,7 +158,7 @@ export function bindZoneSelects(root, playlistId, onChanged) {
         await api.updatePlaylistItem(playlistId, sel.dataset.itemId, { zone_id: sel.value || null });
         showToast(t('layoutpl.toast_zone'), 'info');
         onChanged && onChanged();
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); onChanged && onChanged(); }
+      } catch (err) { showToast(errorMessage(err), 'error'); onChanged && onChanged(); }
     });
   });
 }

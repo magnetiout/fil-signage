@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { renderHTML, translatedAttribute, bindMessage, bindText, binding } from '../lib/i18n-bindings.js';
 
 import { message as t } from '../i18n.js';
@@ -69,7 +70,7 @@ export function openWorkspaceRenameModal(workspace) {
     } catch (err) {
       saveBtn.disabled = false;
       bindText(saveBtn, "ui.workspace_rename_modal.save");
-      showError(err.message || t("ui.workspace_rename_modal.rename_failed_85aa47"));
+      showError(errorMessage(err));
     }
   }
   function showError(msg) {

@@ -1,6 +1,6 @@
 import { uiText, renderHTML, bindMessage, bindAttribute, binding } from '../lib/i18n-bindings.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 import { message as t, messageCount as tn } from '../i18n.js';
@@ -298,7 +298,7 @@ function openForm(app, tr) {
     } catch (e) {
       // The server's message is the useful one — it names the actual rule (token charset, a
       // cross-workspace playlist, a duplicate token) far better than anything generic here.
-      showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error');
+      showToast((e && (errorMessage(e))) || t('common.error'), 'error');
     }
   });
 }
@@ -347,7 +347,7 @@ export async function render(app) {
       groups: Array.isArray(grps) ? grps : (grps.groups || []),
     };
   } catch (e) {
-    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`;
+    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (errorMessage(e))) || t('common.error'))}</p>`;
     return;
   }
 
@@ -376,7 +376,7 @@ export async function render(app) {
     row.querySelector('[data-act="del"]')?.addEventListener('click', async () => {
       if (!confirm(t('trigger.confirm_delete'))) return;
       try { await api.delete(`/triggers/${tr.id}`); showToast(t('trigger.deleted'), 'success'); render(app); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
     });
   });
 }

@@ -1,7 +1,7 @@
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { api, assertLocalCallAllowed } from '../api.js';
+import { errorMessage, api, assertLocalCallAllowed } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 import { message as t } from '../i18n.js';
@@ -165,7 +165,7 @@ export function render(container, widgetId) {
         ? t('designer.ai.done_imgwarn', { n: (design.elements || []).length })
         : t('designer.ai.done', { n: (design.elements || []).length }));
     } catch (err) {
-      bindMessage(status, (err && (err.uiMessage || err.message)) || t('designer.ai.failed'));
+      bindMessage(status, (err && (errorMessage(err))) || t('designer.ai.failed'));
     } finally {
       aiGenBtn.disabled = false; bindText(aiGenBtn, 'designer.ai.generate', undefined);
     }
@@ -237,7 +237,7 @@ export function render(container, widgetId) {
       }
       if (res.ok) showToast(t('designer.toast.published'), 'success');
       else showToast(t('designer.toast.publish_failed'), 'error');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 
   // Export PNG screenshot
@@ -281,7 +281,7 @@ export function render(container, widgetId) {
       }
       const link = document.createElement('a');
       link.download = 'signage-design.png'; link.href = canvas.toDataURL('image/png'); link.click();
-    } catch (err) { showToast(t('designer.toast.export_failed', { error: (err.uiMessage || err.message) }), 'error'); }
+    } catch (err) { showToast(t('designer.toast.export_failed', { error: (errorMessage(err)) }), 'error'); }
   };
 
   // Load saved design
@@ -368,7 +368,7 @@ async function loadWidgetForEdit(widgetId) {
     if (pub) bindText(pub, 'common.save', undefined); // updating an existing widget, not publishing a new one
     redraw();
     showToast(t('designer.toast.loaded'), 'success');
-  } catch (e) { showToast((e && (e.uiMessage || e.message)) || t('designer.toast.invalid_file'), 'error'); }
+  } catch (e) { showToast((e && (errorMessage(e))) || t('designer.toast.invalid_file'), 'error'); }
 }
 
 // Best-effort reverse of generateInnerHTML() for LEGACY widgets that stored only the rendered HTML.

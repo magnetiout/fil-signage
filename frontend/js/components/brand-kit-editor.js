@@ -12,8 +12,8 @@ import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-
  *
  * Values from the server reach the page through esc() or .value only.
  */
-import { api } from '../api.js';
-import { message as t } from '../i18n.js';
+import { errorMessage, api } from '../api.js';
+import { localizedError, message as t } from '../i18n.js';
 import { esc, hydrateAuthImages } from '../utils.js';
 import { showToast } from './toast.js';
 
@@ -49,7 +49,7 @@ export async function mountBrandKit(host, { onSaved } = {}) {
   host.innerHTML = `<p class="simple-muted">${uiText(t('common.loading'))}</p>`;
   let data;
   try { data = await api.getBrandKit(); } catch (err) {
-    host.innerHTML = `<p class="simple-muted">${uiText((err && (err.uiMessage || err.message)) || t('signs.err.load'))}</p>`;
+    host.innerHTML = `<p class="simple-muted">${uiText((err && (errorMessage(err))) || t('signs.err.load'))}</p>`;
     return;
   }
   if (!document.contains(host)) return;
@@ -145,12 +145,12 @@ export async function mountBrandKit(host, { onSaved } = {}) {
       try {
         const up = await api.uploadContent([f]);
         const item = (Array.isArray(up) ? up : [up]).find((c) => c && c.id);
-        if (!item) throw new Error(t('onboarding.toast.upload_failed'));
+        if (!item) throw localizedError(t('onboarding.toast.upload_failed'));
         kit.logo_content_id = item.id;
         kit.logo_url = item.filepath && !item.remote_url ? `/uploads/content/${encodeURIComponent(item.filepath)}` : null;
         draw(t('signs.brand.unsaved'));
       } catch (err) {
-        if (!(err && err.planPromptShown)) bindMessage(status, (err && (err.uiMessage || err.message)) || t('onboarding.toast.upload_failed'));
+        if (!(err && err.planPromptShown)) bindMessage(status, (err && (errorMessage(err))) || t('onboarding.toast.upload_failed'));
       }
     });
     host.querySelector('[data-bk-save]').addEventListener('click', async (e) => {
@@ -170,7 +170,7 @@ export async function mountBrandKit(host, { onSaved } = {}) {
         if (typeof onSaved === 'function') onSaved(r.kit);
       } catch (err) {
         e.target.disabled = false;
-        bindMessage(status, (err && (err.uiMessage || err.message)) || t('signs.err.save'));
+        bindMessage(status, (err && (errorMessage(err))) || t('signs.err.save'));
       }
     });
   }

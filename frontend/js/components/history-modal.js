@@ -6,7 +6,7 @@ import { displayValue, message as t } from '../i18n.js';
 // published or not), compares two, previews one, and restores one INTO THE DRAFT. Restore never
 // touches the live version; the bar below the list then offers the next step the workspace's
 // release policy wants (publish, publish draft, or submit for review).
-import { api, fetchRevisionRender, fetchRevisionFileUrl } from '../api.js';
+import { errorMessage, api, fetchRevisionRender, fetchRevisionFileUrl } from '../api.js';
 
 import { showToast } from '../components/toast.js';
 
@@ -48,7 +48,7 @@ export async function openHistoryModal(type, id, { name = '', onChanged } = {}) 
   let data, selected = null, compareWith = null;
 
   async function load() {
-    try { data = await api.getHistory(type, id); } catch (e) { list.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; return; }
+    try { data = await api.getHistory(type, id); } catch (e) { list.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; return; }
     bindMessage(note, data.require_approval ? t('history.note_approval_on') : t('history.note_approval_off'));
     list.innerHTML = data.revisions.map((r) => `
       <div class="history-row" data-rev="${esc(r.id)}" style="padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;${selected === r.id ? 'background:var(--bg-secondary)' : ''}">
@@ -85,9 +85,9 @@ export async function openHistoryModal(type, id, { name = '', onChanged } = {}) 
       if (type === 'content') {
         body = `<div><strong>${uiText(st.filename || '')}</strong> <span style="color:var(--text-muted)">${uiText(st.mime_type || '')} · ${renderHTML(st.file_size ? Math.round(st.file_size / 1024) + ' KB' : '')}</span></div>`;
         if (rev.has_file && /^image\//.test(st.mime_type || '')) {
-          try { const url = await fetchRevisionFileUrl(type, id, revId); body += `<img src="${url}" style="max-width:100%;max-height:260px;border-radius:8px;margin-top:8px">`; } catch (e) { body += `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
+          try { const url = await fetchRevisionFileUrl(type, id, revId); body += `<img src="${url}" style="max-width:100%;max-height:260px;border-radius:8px;margin-top:8px">`; } catch (e) { body += `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
         } else if (rev.has_file && /^video\//.test(st.mime_type || '')) {
-          try { const url = await fetchRevisionFileUrl(type, id, revId); body += `<video src="${url}" controls style="max-width:100%;max-height:260px;margin-top:8px"></video>`; } catch (e) { body += `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
+          try { const url = await fetchRevisionFileUrl(type, id, revId); body += `<video src="${url}" controls style="max-width:100%;max-height:260px;margin-top:8px"></video>`; } catch (e) { body += `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
         } else if (!rev.has_file && !st.remote_url) {
           body += `<div style="margin-top:8px;color:#fbbf24">${uiText(t('history.bytes_gone'))}</div>`;
         }
@@ -104,7 +104,7 @@ export async function openHistoryModal(type, id, { name = '', onChanged } = {}) 
         body = `<div><strong>${uiText(st.name || '')}</strong> · ${renderHTML(slides.length)} ${renderHTML(t('history.slides'))}</div><ol style="margin:8px 0 0 18px;padding:0">${renderHTML(slides.map((sl) => `<li>${uiText(sl.name || sl.id)}</li>`).join(''))}</ol>`;
       }
       detail.innerHTML = body;
-    } catch (e) { detail.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
+    } catch (e) { detail.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
     load();
   }
 
@@ -126,7 +126,7 @@ export async function openHistoryModal(type, id, { name = '', onChanged } = {}) 
     const c = e.target.closest('[data-compare]');
     if (c) {
       if (!compareWith) { compareWith = c.dataset.compare; bindText(note, 'history.compare_pick_second', undefined); load(); return; }
-      try { const d = await api.diffRevision(type, id, c.dataset.compare, compareWith); renderDiff(d.diff, d.against); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      try { const d = await api.diffRevision(type, id, c.dataset.compare, compareWith); renderDiff(d.diff, d.against); } catch (err) { showToast(errorMessage(err), 'error'); }
       compareWith = null; load(); return;
     }
     const r = e.target.closest('[data-restore]');
@@ -138,7 +138,7 @@ export async function openHistoryModal(type, id, { name = '', onChanged } = {}) 
         bindMessage(note, out.next === 'submit_for_review' ? t('history.next_submit') : out.next === 'publish_draft' ? t('history.next_publish_draft') : t('history.next_publish'));
         await load();
         if (onChanged) onChanged(out);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     }
   });
   await load();

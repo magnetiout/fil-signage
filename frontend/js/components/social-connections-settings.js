@@ -10,7 +10,7 @@ import { displayValue, message as t } from '../i18n.js';
  * ⚠️ SECRETS ARE WRITE-ONLY. The form sends a token or key; nothing the server returns contains
  * one. Editing with the field left blank keeps the stored one.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 
 import { showToast } from './toast.js';
@@ -66,7 +66,7 @@ export async function mountSocialConnections(host) {
   renderForm(addForm, null, 'instagram');
 
   async function reload() {
-    try { data = await api.get(BASE); } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+    try { data = await api.get(BASE); } catch (err) { showToast(errorMessage(err), 'error'); return; }
     render();
   }
 
@@ -99,7 +99,7 @@ export async function mountSocialConnections(host) {
       try {
         const r = await api.post(`${BASE}/${b.dataset.scTest}/test`, {});
         bindMessage(out, `${r.ok ? '✅' : '❌'} ${r.detail || ''}`);
-      } catch (err) { bindMessage(out, (err.uiMessage || err.message)); }
+      } catch (err) { bindMessage(out, (errorMessage(err))); }
     }));
     list.querySelectorAll('[data-sc-edit]').forEach((b) => b.addEventListener('click', () => {
       const box = list.querySelector(`[data-sc-editbox="${b.dataset.scEdit}"]`);
@@ -113,8 +113,8 @@ export async function mountSocialConnections(host) {
       if (!confirm(t('social.conn_confirm_delete'))) return;
       try { await api.delete(`${BASE}/${b.dataset.scDel}`); }
       catch (err) {
-        if (err.status !== 409) { showToast(err.uiMessage || err.message, 'error'); return; }
-        if (!confirm(err.message)) return;
+        if (err.status !== 409) { showToast(errorMessage(err), 'error'); return; }
+        if (!confirm(String(errorMessage(err)))) return;
         try { await api.delete(`${BASE}/${b.dataset.scDel}?force=1`); } catch (e2) { showToast(e2.message, 'error'); return; }
       }
       showToast(t('social.removed'), 'success');
@@ -151,7 +151,7 @@ export async function mountSocialConnections(host) {
       if (secret) body.secret = secret;
       try {
         if (row) await api.put(`${BASE}/${row.id}`, body); else await api.post(BASE, body);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+      } catch (err) { showToast(errorMessage(err), 'error'); return; }
       showToast(t('social.saved'), 'success');
       if (!row) { host.querySelector('[data-sc="add"]').open = false; renderForm(addForm, null, 'instagram'); }
       reload();

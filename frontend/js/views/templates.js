@@ -1,8 +1,8 @@
 import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { displayValue, message as t, getLanguage } from '../i18n.js';
+import { localizedError, displayValue, message as t, getLanguage } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api, assertLocalCallAllowed, getAuthHeaders } from '../api.js';
 import { showToast } from '../components/toast.js';
@@ -48,10 +48,10 @@ async function TAPI(url, opts = {}) {
     ...opts,
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...(opts.headers || {}) },
   });
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
   const body = await r.json().catch(() => ({}));
   if (!r.ok) {
-    const e = new Error(localizeServerError(body.error) || t("ui.templates.request_failed_value0_ad6dc0", {value0: r.status}));
+    const e = localizedError(localizeServerError(body.error) || t("ui.templates.request_failed_value0_ad6dc0", {value0: r.status}));
     e.status = r.status;
     e.body = body;
     throw e;
@@ -202,7 +202,7 @@ async function renderInstalled(body, admin, refresh) {
   body.innerHTML = `<div class="tpl-meta">${uiText(t('templates.loading'))}</div>`;
   let list;
   try { list = (await TAPI('/templates/installed' + langQuery(lang()))).templates || []; } catch (e) {
-    body.innerHTML = `<div class="tpl-callout tpl-callout-error">${uiText((e.uiMessage || e.message))}</div>`;
+    body.innerHTML = `<div class="tpl-callout tpl-callout-error">${uiText((errorMessage(e)))}</div>`;
     return;
   }
   if (activeTab !== 'installed') return;
@@ -296,7 +296,7 @@ async function uninstall(tpl, refresh) {
       });
       return;
     }
-    showToast(e.uiMessage || e.message, 'error');
+    showToast(errorMessage(e), 'error');
   }
 }
 
@@ -367,7 +367,7 @@ async function renderLibrary(body, admin, refresh) {
   body.innerHTML = `<div class="tpl-meta">${uiText(t('templates.loading'))}</div>`;
   let lib;
   try { lib = await TAPI('/templates/library' + langQuery(lang())); } catch (e) {
-    body.innerHTML = `<div class="tpl-callout tpl-callout-error">${uiText((e.uiMessage || e.message))}</div>`;
+    body.innerHTML = `<div class="tpl-callout tpl-callout-error">${uiText((errorMessage(e)))}</div>`;
     return;
   }
   if (activeTab !== 'library') return;
@@ -461,7 +461,7 @@ async function renderLibrary(body, admin, refresh) {
       try {
         const r = await TAPI(`/templates/catalogs/${encodeURIComponent(b.dataset.refresh)}/refresh`, { method: 'POST', body: '{}' });
         showToast(t('templates.toast_checked', { n: r.templates }), 'success');
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
       refresh();
     }));
     listEl.querySelectorAll('[data-install]').forEach((b) => b.addEventListener('click', () => {
@@ -504,7 +504,7 @@ async function renderLibrary(body, admin, refresh) {
       await TAPI('/templates/settings', { method: 'PUT', body: JSON.stringify({ network_enabled: true }) });
       showToast(t('templates.toast_network_on'), 'success');
       refresh();
-    } catch (e) { en.disabled = false; showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { en.disabled = false; showToast(errorMessage(e), 'error'); }
   });
 
   // Opening the tab is what "seen" means; the badges on screen stay until the next load.
@@ -564,7 +564,7 @@ async function installFromLibrary(e, refresh) {
     await TAPI('/templates/install', { method: 'POST', body: installBody(e) });
     selected.delete(e.key);
     showToast(t('templates.toast_installed', { name: nameOf(e), version: e.latest }), 'success');
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+  } catch (err) { showToast(errorMessage(err), 'error'); }
   refresh();
 }
 
@@ -667,7 +667,7 @@ function openImportModal(refresh) {
         body: file,
       });
       const out = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(localizeServerError(out.error) || t("ui.templates.request_failed_value0_ad6dc0", {value0: r.status}));
+      if (!r.ok) throw localizedError(localizeServerError(out.error) || t("ui.templates.request_failed_value0_ad6dc0", {value0: r.status}));
       if (out.bundle) {
         showToast(t('templates.toast_bundle', { catalog: out.bundle.catalog, n: out.bundle.templates, packages: out.bundle.packages }), 'success');
         activeTab = 'library';
@@ -679,7 +679,7 @@ function openImportModal(refresh) {
       refresh();
     } catch (e) {
       go.disabled = false;
-      status.innerHTML = `<span class="tpl-warn-text">${uiText((e.uiMessage || e.message))}</span>`;
+      status.innerHTML = `<span class="tpl-warn-text">${uiText((errorMessage(e)))}</span>`;
     }
   });
 }
@@ -695,7 +695,7 @@ async function openSettingsModal(refresh) {
     let s, cats;
     try {
       [s, cats] = await Promise.all([TAPI('/templates/settings'), TAPI('/templates/catalogs')]);
-    } catch (e) { bodyEl.innerHTML = `<div class="tpl-callout tpl-callout-error">${uiText((e.uiMessage || e.message))}</div>`; return; }
+    } catch (e) { bodyEl.innerHTML = `<div class="tpl-callout tpl-callout-error">${uiText((errorMessage(e)))}</div>`; return; }
     const list = cats.catalogs || [];
     bodyEl.innerHTML = `
       <div class="form-group">
@@ -746,7 +746,7 @@ async function openSettingsModal(refresh) {
     const net = bodyEl.querySelector('#tplSetNet');
     net.addEventListener('change', async () => {
       try { await put({ network_enabled: net.checked }); showToast(net.checked ? t('templates.toast_network_on') : t('templates.toast_network_off'), 'success'); }
-      catch (e) { net.checked = !net.checked; showToast(e.uiMessage || e.message, 'error'); }
+      catch (e) { net.checked = !net.checked; showToast(errorMessage(e), 'error'); }
     });
     const uns = bodyEl.querySelector('#tplSetUnsigned');
     const box = bodyEl.querySelector('#tplUnsignedConfirm');
@@ -763,7 +763,7 @@ async function openSettingsModal(refresh) {
         return;
       }
       try { await put({ unsigned_code_allowed: false }); showToast(t('templates.toast_unsigned_off'), 'success'); }
-      catch (e) { uns.checked = true; showToast(e.uiMessage || e.message, 'error'); }
+      catch (e) { uns.checked = true; showToast(errorMessage(e), 'error'); }
     });
     phrase.addEventListener('input', () => { goBtn.disabled = phrase.value.trim() !== UNSIGNED_PHRASE; });
     bodyEl.querySelector('#tplUnsignedCancel').addEventListener('click', () => { box.style.display = 'none'; });
@@ -773,18 +773,18 @@ async function openSettingsModal(refresh) {
         showToast(t('templates.toast_unsigned_on'), 'success');
         box.style.display = 'none';
         uns.checked = true;
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     });
     bodyEl.querySelectorAll('[data-cat-toggle]').forEach((cb) => cb.addEventListener('change', async () => {
       try {
         await TAPI(`/templates/catalogs/${encodeURIComponent(cb.dataset.catToggle)}`, { method: 'PATCH', body: JSON.stringify({ enabled: cb.checked }) });
-      } catch (e) { cb.checked = !cb.checked; showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { cb.checked = !cb.checked; showToast(errorMessage(e), 'error'); }
     }));
     bodyEl.querySelectorAll('[data-cat-remove]').forEach((b) => b.addEventListener('click', async () => {
       const id = b.dataset.catRemove;
       if (!window.confirm(t('templates.remove_catalog_confirm', { id }))) return;
       try { await TAPI(`/templates/catalogs/${encodeURIComponent(id)}`, { method: 'DELETE' }); showToast(t('templates.toast_catalog_removed'), 'success'); draw(); }
-      catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      catch (e) { showToast(errorMessage(e), 'error'); }
     }));
     bodyEl.querySelector('#tplCatAdd').addEventListener('click', async () => {
       const payload = {
@@ -794,7 +794,7 @@ async function openSettingsModal(refresh) {
         public_key: bodyEl.querySelector('#tplCatKey').value.trim(),
       };
       try { await TAPI('/templates/catalogs', { method: 'POST', body: JSON.stringify(payload) }); showToast(t('templates.toast_catalog_added'), 'success'); draw(); }
-      catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      catch (e) { showToast(errorMessage(e), 'error'); }
     });
   }
   draw();
@@ -880,7 +880,7 @@ export async function openUseModal({ tpl, widget = null, values: initialValues =
     try {
       tpl = await TAPI(`/templates/installed/${encodeURIComponent(cat || '')}/${encodeURIComponent(id || '')}${langQuery(lang())}`);
     } catch (e) {
-      showToast(t('templates.widget_template_missing', { key, error: (e.uiMessage || e.message) }), 'error');
+      showToast(t('templates.widget_template_missing', { key, error: (errorMessage(e)) }), 'error');
       return;
     }
   }
@@ -980,7 +980,7 @@ export async function openUseModal({ tpl, widget = null, values: initialValues =
     } catch (e) {
       if (closed || mine !== seq) return;
       bindMessage(stateEl, '');
-      bindMessage(errEl, (e.uiMessage || e.message));
+      bindMessage(errEl, (errorMessage(e)));
     }
   }
   function schedulePreview() { clearTimeout(timer); timer = setTimeout(updatePreview, 400); }
@@ -1010,7 +1010,7 @@ export async function openUseModal({ tpl, widget = null, values: initialValues =
       showCreated(m, w);
     } catch (e) {
       go.disabled = false;
-      bindMessage(errEl, (e.uiMessage || e.message));
+      bindMessage(errEl, (errorMessage(e)));
       if (e.body && e.body.param) {
         const el = m.overlay.querySelector(`[data-param="${CSS.escape(e.body.param)}"], [data-image-param="${CSS.escape(e.body.param)}"]`);
         if (el) el.scrollIntoView({ block: 'center' });
@@ -1053,6 +1053,6 @@ async function showCreated(m, w) {
       await api.addPlaylistItem(sel.value, { widget_id: w.id });
       const pl = pls.find((p) => String(p.id) === sel.value);
       msg.innerHTML = `${renderHTML(t('templates.added_to_playlist_draft', { name: pl ? pl.name : '' }))} <a href="#/playlists/${encodeURIComponent(sel.value)}">${uiText(t('templates.open_playlist'))}</a>`;
-    } catch (e) { btn.disabled = false; msg.innerHTML = `<span class="tpl-warn-text">${uiText((e.uiMessage || e.message))}</span>`; }
+    } catch (e) { btn.disabled = false; msg.innerHTML = `<span class="tpl-warn-text">${uiText((errorMessage(e)))}</span>`; }
   });
 }

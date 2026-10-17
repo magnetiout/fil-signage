@@ -5,7 +5,7 @@ import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-
 // smart playlist and when editing its rules. It shows a live preview of what the rules select, so
 // the operator sees the result before anything is saved, let alone published.
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 import { message as t } from '../i18n.js';
 
@@ -207,7 +207,7 @@ export async function openSmartRulesModal({ title, initial, saveLabel, onSave, o
       } catch (err) {
         if (seq !== previewSeq) return;
         bindMessage($('smCount'), '');
-        bindMessage($('smError'), (err.uiMessage || err.message));
+        bindMessage($('smError'), (errorMessage(err)));
       }
     }, 250);
   }
@@ -262,7 +262,7 @@ export async function openSmartRulesModal({ title, initial, saveLabel, onSave, o
       saved = true;
       close();
     } catch (err) {
-      bindMessage($('smError'), (err.uiMessage || err.message));
+      bindMessage($('smError'), (errorMessage(err)));
       btn.disabled = false;
     }
   });

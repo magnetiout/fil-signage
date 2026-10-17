@@ -36,6 +36,9 @@ export function localizeServerError(message, status = 400) {
   return value === generic ? (message || 'Request failed') : value;
 }
 
+// Keep technical Error.message/status/code for diagnostics and localize only its UI presentation.
+export function errorMessage(error) { return error?.uiMessage || localizeServerError(error?.message,error?.status); }
+
 export function requestError(status, body) {
   const b = body && typeof body === 'object' ? body : {};
   let msg = localizeServerError(b.error, status);

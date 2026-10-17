@@ -12,7 +12,7 @@ import { displayValue, message as t } from '../i18n.js';
  * anything; a finished one keeps its terms (they are a record of what customers were offered) unless
  * it is given new dates, which runs it again. Delete is for sales that are not running.
  */
-import { api, localizeServerError } from '../api.js';
+import { errorMessage, api, localizeServerError } from '../api.js';
 import { esc } from '../utils.js';
 
 import { showToast } from './toast.js';
@@ -44,7 +44,7 @@ export async function mountPromotionsAdmin(el, editId = null) {
   try {
     [data, { plans }] = await Promise.all([api.adminListPromotions(), api.adminListPlans()]);
   } catch (err) {
-    el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`;
     return;
   }
   const paid = plans.filter((p) => p.active && p.price_monthly > 0);
@@ -158,7 +158,7 @@ export async function mountPromotionsAdmin(el, editId = null) {
       }
       await mountPromotionsAdmin(el);
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
       btn.disabled = false;
     }
   };
@@ -178,7 +178,7 @@ export async function mountPromotionsAdmin(el, editId = null) {
         showToast(r.stripe_warning ? t('admin.promo.deleted_warn', { w: r.stripe_warning }) : t('admin.promo.deleted'), r.stripe_warning ? 'warning' : 'success');
         await mountPromotionsAdmin(el, editId === b.dataset.delete ? null : editId);
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         b.disabled = false;
       }
     };
@@ -192,7 +192,7 @@ export async function mountPromotionsAdmin(el, editId = null) {
         showToast(r.stripe_warning ? t('admin.promo.ended_warn', { w: r.stripe_warning }) : t('admin.promo.ended'), r.stripe_warning ? 'warning' : 'success');
         await mountPromotionsAdmin(el);
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         b.disabled = false;
       }
     };

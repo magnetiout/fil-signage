@@ -2,7 +2,7 @@ import { renderHTML, uiText, translatedAttribute, bindText } from '../lib/i18n-b
 
 import { displayValue, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 /*
  * Microsoft 365 (server/routes/m365.js, docs/cloud-documents.md).
@@ -71,7 +71,7 @@ export async function mountM365Settings(host) {
       showToast(t("ui.m365_settings.microsoft_365_saved"), 'success');
       render();
       await test();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   }
 
   async function test() {
@@ -80,13 +80,13 @@ export async function mountM365Settings(host) {
       showToast(r.ok ? t("ui.labels.microsoft_accepted_the_app_credentials_6ea899") : localizeServerError(r.error), r.ok ? 'success' : 'error');
       app = await api.get('/m365/app');
       render();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   }
 
   async function remove() {
     if (!confirm(t("ui.m365_settings.remove_the_microsoft_365_app_folder_syncs"))) return;
     try { await api.delete('/m365/app'); app = { configured: false, can_manage: true }; render(); showToast(t("ui.m365_settings.microsoft_365_removed"), 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   }
 }
 
@@ -131,7 +131,7 @@ export async function openCloudFolders({ onChange } = {}) {
   async function load() {
     try {
       [app, list] = await Promise.all([api.get('/m365/app'), api.get('/m365/folders')]);
-    } catch (err) { body.innerHTML = `<p style="color:var(--danger,#b91c1c)">${uiText((err.uiMessage || err.message))}</p>`; return; }
+    } catch (err) { body.innerHTML = `<p style="color:var(--danger,#b91c1c)">${uiText((errorMessage(err)))}</p>`; return; }
     render();
   }
 
@@ -175,16 +175,16 @@ export async function openCloudFolders({ onChange } = {}) {
     body.querySelectorAll('[data-cf-sync]').forEach((b) => b.addEventListener('click', async () => {
       b.disabled = true; bindText(b, "ui.m365_settings.syncing");
       try { await api.post(`/m365/folders/${b.dataset.cfSync}/sync`, {}); if (onChange) onChange(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
       await load();
     }));
     body.querySelectorAll('[data-cf-toggle]').forEach((b) => b.addEventListener('click', async () => {
-      try { await api.put(`/m365/folders/${b.dataset.cfToggle}`, { enabled: b.dataset.on !== '1' }); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      try { await api.put(`/m365/folders/${b.dataset.cfToggle}`, { enabled: b.dataset.on !== '1' }); } catch (err) { showToast(errorMessage(err), 'error'); }
       await load();
     }));
     body.querySelectorAll('[data-cf-del]').forEach((b) => b.addEventListener('click', async () => {
       if (!confirm(t("ui.m365_settings.stop_syncing_this_folder_the_files_already"))) return;
-      try { await api.delete(`/m365/folders/${b.dataset.cfDel}`); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      try { await api.delete(`/m365/folders/${b.dataset.cfDel}`); } catch (err) { showToast(errorMessage(err), 'error'); }
       await load();
     }));
   }
@@ -208,7 +208,7 @@ export async function openCloudFolders({ onChange } = {}) {
       // The first sync runs in the background; look again shortly so its outcome appears.
       setTimeout(() => { if (document.body.contains(overlay)) { load(); if (onChange) onChange(); } }, 4000);
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
       btn.disabled = false; bindText(btn, "ui.m365_settings.add_folder");
     }
   }

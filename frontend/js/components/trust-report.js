@@ -1,3 +1,4 @@
+import {localizedError} from '../i18n.js';
 import { uiText, renderHTML } from '../lib/i18n-bindings.js';
 import { displayQuantity, displayValue, displayList, hasMessage, message as t } from '../i18n.js';
 
@@ -8,7 +9,7 @@ import { displayQuantity, displayValue, displayList, hasMessage, message as t } 
  * Every fact rendered here comes from GET /api/trust/report, which reads the RUNNING configuration;
  * nothing on this page is a hand-written claim. Everything the server sends is escaped with esc().
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from './toast.js';
 import { esc } from '../utils.js';
 
@@ -171,7 +172,7 @@ export async function mountOutbound(el, { instance = false } = {}) {
     el.innerHTML = `<p class="trust-muted">${uiText(t('common.loading'))}</p>`;
     let data;
     try { data = await api.get(`/trust/outbound?days=${days}${instance ? '&scope=instance' : ''}`); }
-    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((e.uiMessage || e.message))}</p>`; return; }
+    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((errorMessage(e)))}</p>`; return; }
     const rows = data.rows || [];
     const scopeLabel = (s) => tk(`trust.out.scope.${s}`, s);
     el.innerHTML = `
@@ -207,7 +208,7 @@ export async function mountExports(el, { canOrg = false } = {}) {
   async function load() {
     let data;
     try { data = await api.get('/trust/exports'); }
-    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((e.uiMessage || e.message))}</p>`; return; }
+    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((errorMessage(e)))}</p>`; return; }
     const jobs = [...(data.organization || []), ...(data.personal || [])].sort((a, b) => b.created_at - a.created_at);
     const status = (j) => tk(`trust.exp.status.${j.status}`, j.status);
     el.innerHTML = `
@@ -231,7 +232,7 @@ export async function mountExports(el, { canOrg = false } = {}) {
         await api.post('/trust/exports', { kind: b.dataset.export });
         showToast(t('trust.exp.started'), 'success');
       } catch (e) {
-        showToast(e.code ? tk(`trust.err.${e.code}`, (e.uiMessage || e.message)) : (e.uiMessage || e.message), 'error');
+        showToast(e.code ? tk(`trust.err.${e.code}`, (errorMessage(e))) : (errorMessage(e)), 'error');
       }
       load();
     }));
@@ -240,7 +241,7 @@ export async function mountExports(el, { canOrg = false } = {}) {
         const { url } = await api.post(`/trust/exports/${encodeURIComponent(b.dataset.download)}/link`);
         // A same-origin path the server built; a plain navigation lets the browser stream the zip to disk.
         if (typeof url === 'string' && url.startsWith('/api/public/trust-export/')) window.location.href = url;
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     }));
     stopPolling();
     if (jobs.some((j) => j.status === 'queued' || j.status === 'running')) {
@@ -256,7 +257,7 @@ export async function mountDeletion(el, report) {
   async function load() {
     let st;
     try { st = await api.get('/trust/org-deletion'); }
-    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((e.uiMessage || e.message))}</p>`; return; }
+    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((errorMessage(e)))}</p>`; return; }
     const orgName = (report.organization && report.organization.name) || '';
     if (st.scheduled) {
       el.innerHTML = `<div class="trust-residency leaves"><strong>${uiText(t('trust.del.scheduled', { when: when(st.execute_after) }))}</strong>
@@ -264,7 +265,7 @@ export async function mountDeletion(el, report) {
         ${renderHTML(st.can_delete ? `<button type="button" class="btn btn-secondary" id="trustCancelDelete">${uiText(t('trust.del.cancel'))}</button>` : '')}`;
       el.querySelector('#trustCancelDelete')?.addEventListener('click', async () => {
         try { await api.delete('/trust/org-deletion'); showToast(t('trust.del.cancelled'), 'success'); load(); }
-        catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+        catch (e) { showToast(errorMessage(e), 'error'); }
       });
       return;
     }
@@ -281,7 +282,7 @@ export async function mountDeletion(el, report) {
           try {
             await api.post('/trust/org-deletion', { confirm_name: orgName, understand: true });
           } catch (e) {
-            throw new Error(e.code ? tk(`trust.err.${e.code}`, e.message) : e.message);
+            throw localizedError(e.code ? tk(`trust.err.${e.code}`, errorMessage(e)) : errorMessage(e));
           }
           showToast(t('trust.del.done'), 'success');
           load();
@@ -298,7 +299,7 @@ export async function mountPublicToggle(el) {
   async function load() {
     let st;
     try { st = await api.get('/trust/public'); }
-    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((e.uiMessage || e.message))}</p>`; return; }
+    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((errorMessage(e)))}</p>`; return; }
     el.innerHTML = `
       <label class="trust-switch"><input type="checkbox" id="trustPublicToggle" ${st.enabled ? 'checked' : ''}> ${uiText(t('trust.pub.toggle'))}</label>
       <p class="trust-muted">${uiText(t('trust.pub.desc'))}</p>
@@ -306,7 +307,7 @@ export async function mountPublicToggle(el) {
       <details class="trust-details"><summary>${uiText(t('trust.pub.preview'))}</summary><pre class="trust-pre">${uiText(JSON.stringify(st.preview, null, 2))}</pre></details>`;
     el.querySelector('#trustPublicToggle').addEventListener('change', async (e) => {
       try { await api.put('/trust/public', { enabled: e.target.checked }); showToast(t('trust.pub.saved'), 'success'); load(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.checked = !e.target.checked; }
+      catch (err) { showToast(errorMessage(err), 'error'); e.target.checked = !e.target.checked; }
     });
   }
   await load();

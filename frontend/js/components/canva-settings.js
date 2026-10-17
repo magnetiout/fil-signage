@@ -2,7 +2,7 @@ import { uiText, renderHTML, bindMessage, bindText } from '../lib/i18n-bindings.
 
 // Settings → Canva: the organization's own Canva integration (server: routes/canva.js /integration).
 // Org admins only. The client secret is write-only: it is never shown back, blank keeps it.
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 
@@ -40,7 +40,7 @@ export async function mountCanvaSettings(el) {
     const secret = el.querySelector('#canvaClientSecret').value;
     if (secret) body.client_secret = secret;
     try { await api.put('/canva/integration', body); showToast(t('canva.saved'), 'success'); mountCanvaSettings(el); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   });
   el.querySelector('#canvaTest')?.addEventListener('click', async () => {
     const out = el.querySelector('#canvaTestOut');
@@ -48,11 +48,11 @@ export async function mountCanvaSettings(el) {
     try {
       const r = await api.post('/canva/integration/test', {});
       out.innerHTML = `${r.ok ? '✅' : '❌'} ${esc(r.detail || '')}${r.ok ? `<div style="color:var(--text-muted);margin-top:4px">${uiText(t('canva.test_caveat'))}</div>` : ''}`;
-    } catch (err) { bindMessage(out, (err.uiMessage || err.message)); }
+    } catch (err) { bindMessage(out, (errorMessage(err))); }
   });
   el.querySelector('#canvaRemove')?.addEventListener('click', async () => {
     if (!confirm(t('canva.remove_confirm'))) return;
     try { await api.delete('/canva/integration'); showToast(t('canva.removed'), 'success'); mountCanvaSettings(el); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   });
 }

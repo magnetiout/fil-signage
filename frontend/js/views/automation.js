@@ -2,7 +2,7 @@ import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding 
 
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 
@@ -143,7 +143,7 @@ export async function render(app) {
       subs: Array.isArray(subs) ? subs : [],
     };
   } catch (e) {
-    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`;
+    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (errorMessage(e))) || t('common.error'))}</p>`;
     return;
   }
   body.innerHTML = `
@@ -167,7 +167,7 @@ export async function render(app) {
   body.querySelectorAll('[data-unsub]').forEach((b) => b.addEventListener('click', async () => {
     if (!confirm(t('auto.confirm_unsub'))) return;
     try { await api.delete(`/automation/subscriptions/${b.dataset.unsub}`); render(app); }
-    catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+    catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
   }));
   body.querySelectorAll('.corp-card[data-id]').forEach((card) => {
     const h = cache.hooks.find((x) => x.id === card.dataset.id);
@@ -175,12 +175,12 @@ export async function render(app) {
     card.querySelector('[data-act="del"]').addEventListener('click', async () => {
       if (!confirm(t('auto.confirm_delete', { name: h.name }))) return;
       try { await api.delete(`/automation/${h.id}`); showToast(t('auto.deleted'), 'success'); render(app); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
     });
     card.querySelector('[data-act="rotate"]').addEventListener('click', async () => {
       if (!confirm(t('auto.confirm_rotate'))) return;
       try { const r = await api.post(`/automation/${h.id}/rotate`, {}); showUrl(r.url, h.name); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
     });
     card.querySelector('[data-act="test"]').addEventListener('click', async (ev) => {
       const takesOver = ['emergency', 'mass_notification', 'playlist', 'trigger'].includes(h.kind);
@@ -190,7 +190,7 @@ export async function render(app) {
         const r = await api.post(`/automation/${h.id}/test`, {});
         showToast(r.outcome || t('auto.tested'), r.ok ? 'success' : 'error');
         render(app);
-      } catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); ev.target.disabled = false; }
+      } catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); ev.target.disabled = false; }
     });
     card.querySelector('[data-act="calls"]').addEventListener('click', async () => {
       const box = card.querySelector('.auto-calls');
@@ -203,7 +203,7 @@ export async function render(app) {
           ${renderHTML(rows.map((c) => `<tr><td>${uiText(displayValue(new Date(c.at * 1000), "toLocaleString", undefined))}${renderHTML(c.test ? ` <span class="corp-help">(${uiText(t('auto.test_mark'))})</span>` : '')}</td>
             <td style="color:${c.status < 300 ? 'inherit' : '#dc2626'}">${uiText(String(c.status))}</td><td>${uiText(c.outcome || '')}</td></tr>`).join(''))}
           </tbody></table></div>` : `<span class="corp-help">${uiText(t('auto.no_calls'))}</span>`;
-      } catch (e) { box.innerHTML = `<span style="color:var(--danger)">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</span>`; }
+      } catch (e) { box.innerHTML = `<span style="color:var(--danger)">${uiText((e && (errorMessage(e))) || t('common.error'))}</span>`; }
     });
   });
 }
@@ -370,7 +370,7 @@ function openForm(app, hook) {
       if (hook) { await api.put(`/automation/${hook.id}`, body); overlay.remove(); showToast(t('auto.saved'), 'success'); render(app); }
       else { const r = await api.post('/automation', body); overlay.remove(); render(app); showUrl(r.url, r.name); }
     } catch (e) {
-      bindMessage($('afError'), (e && (e.uiMessage || e.message)) || t('common.error'));
+      bindMessage($('afError'), (e && (errorMessage(e))) || t('common.error'));
       $('afSave').disabled = false;
     }
   });

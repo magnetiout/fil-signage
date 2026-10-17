@@ -1,7 +1,7 @@
 import { renderHTML, uiText } from '../lib/i18n-bindings.js';
 import { displayValue, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
@@ -192,7 +192,7 @@ export async function render(container) {
         if (data.error) { showToast(localizeServerError(data.error), 'error'); return; }
         if (data.url) window.location.href = data.url;
       } catch (err) {
-        showToast(t('billing.toast.checkout_failed', { error: (err.uiMessage || err.message) }), 'error');
+        showToast(t('billing.toast.checkout_failed', { error: (errorMessage(err)) }), 'error');
       }
     };
 
@@ -206,7 +206,7 @@ export async function render(container) {
         if (data.error) { showToast(localizeServerError(data.error), 'error'); return; }
         if (data.url) window.location.href = data.url;
       } catch (err) {
-        showToast(t('billing.toast.portal_failed', { error: (err.uiMessage || err.message) }), 'error');
+        showToast(t('billing.toast.portal_failed', { error: (errorMessage(err)) }), 'error');
       }
     };
 
@@ -223,7 +223,7 @@ export async function render(container) {
 
   } catch (err) {
     const host = document.getElementById('billingContent');
-    if (host) host.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('billing.failed_to_load'))}</h3><p>${uiText((err.uiMessage || err.message))}</p></div>`;
+    if (host) host.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('billing.failed_to_load'))}</h3><p>${uiText((errorMessage(err)))}</p></div>`;
   }
 }
 

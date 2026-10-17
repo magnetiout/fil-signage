@@ -1,7 +1,7 @@
 import { uiText, renderHTML, bindAttribute, bindMessage, ht, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { message as t } from '../i18n.js';
-import { requestError } from '../api.js';
+import { errorMessage, requestError } from '../api.js';
 
 import { esc } from '../utils.js';
 import { showToast } from '../components/toast.js';
@@ -40,7 +40,7 @@ export async function renderManaged(container,page) {
 
  async function versions(){const rows=await api(`/fil-kiosk/${page.id}/versions`);el('filVersions').innerHTML=rows.length?rows.map(v=>`<button class="btn btn-secondary" style="margin:4px" data-version="${v.version}" ${v.active?'disabled':''}>${ht(v.active?'fil.version_active':'fil.version_restore',{version:v.version})}</button>`).join(''):ht('fil.not_published');el('filVersions').querySelectorAll('[data-version]').forEach(b=>b.onclick=()=>guarded(async()=>{await api(`/fil-kiosk/${page.id}/activate`,'POST',{version:Number(b.dataset.version)});await versions();bindText(el('filStatus'),'fil.restored')}))}
  async function save(){basics();await api(`/fil-kiosk/${page.id}/managed`,'PUT',menu);bindText(el('filStatus'),'fil.draft_saved');await preview()}
- async function guarded(fn){try{await fn()}catch(e){showToast(e.uiMessage || e.message,'error');bindMessage(el('filStatus'), (e.uiMessage || e.message))}}
+ async function guarded(fn){try{await fn()}catch(e){showToast(errorMessage(e),'error');bindMessage(el('filStatus'), (errorMessage(e)))}}
  el('filAdd').onclick=()=>{const item={id:crypto.randomUUID(),type:'page',label:String(t('fil.new_item')),parent:null,order:menu.items.length,active:true,media:[]};menu.items.push(item);selected=item.id;list();fields()};
  el('filSave').onclick=()=>guarded(save);
  el('filPublish').onclick=()=>guarded(async()=>{await save();const p=await api(`/fil-kiosk/${page.id}/publish`,'POST',{});bindText(el('filStatus'),'fil.published_status',{version:p.version});showToast(t('fil.published'));await versions()});

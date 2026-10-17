@@ -50,3 +50,15 @@ test('explicit lists retain nested label locale and escape hostile content after
  const value=m.displayList([m.message('common.save'),'<img onerror=bad()>']);
  assert.equal(String(value),'Kaydet, <img onerror=bad()>');m.setLanguage('en');assert.equal(String(value),'Save, <img onerror=bad()>');assert(!binding.uiText(value).includes('<img'));m.setLanguage('tr');
 });
+
+test('localized errors retain a reactive UI descriptor while diagnostic message, code and status stay unchanged',()=>{
+ const m=require('../../frontend/js/i18n.js'),api=require('../../frontend/js/api.js'),original=m.getLanguage();
+ try{
+  api.setErrorTranslator(m.message);m.setLanguage('en');
+  const error=Object.assign(m.localizedError(m.message('common.save')),{status:409,code:'UNCHANGED_CODE'});
+  assert(error instanceof Error);assert.equal(error.message,'Save');
+  m.setLanguage('tr');assert.equal(String(api.errorMessage(error)),'Kaydet');assert.equal(error.message,'Save');assert.equal(error.status,409);assert.equal(error.code,'UNCHANGED_CODE');
+  const technical=Object.assign(new Error('INTERNAL_DATABASE_DETAIL_NOT_FOR_UI'),{status:500});
+  assert.equal(String(api.errorMessage(technical)),tr['common.request_failed']);assert.equal(technical.message,'INTERNAL_DATABASE_DETAIL_NOT_FOR_UI');
+ }finally{api.setErrorTranslator(null);m.setLanguage(original);}
+});

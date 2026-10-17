@@ -13,7 +13,7 @@ import { displayValue, message as t } from '../i18n.js';
  *
  * Every value from the server reaches the page through esc() or textContent.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 
 import { esc, hydrateAuthImages } from '../utils.js';
 import { showToast } from '../components/toast.js';
@@ -65,7 +65,7 @@ async function renderInbox(body) {
   async function load() {
     let rows;
     try { rows = await api.get(`/content-requests/requests?status=${encodeURIComponent(sel.value)}`); }
-    catch (e) { list.innerHTML = `<div class="corp-notice corp-notice-danger" style="margin:12px">${uiText((e.uiMessage || e.message))}</div>`; return; }
+    catch (e) { list.innerHTML = `<div class="corp-notice corp-notice-danger" style="margin:12px">${uiText((errorMessage(e)))}</div>`; return; }
     list.innerHTML = rows.map((r) => `
       <div data-id="${esc(r.id)}" style="display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;${selected === r.id ? 'background:var(--bg-secondary)' : ''}">
         <img data-auth-src="/api/content/${esc(r.content_id)}/thumbnail" alt="" style="width:64px;height:40px;object-fit:cover;border-radius:4px;background:var(--bg-secondary);flex:none">
@@ -84,7 +84,7 @@ async function renderInbox(body) {
     detail.innerHTML = esc(t('common.loading'));
     let r;
     try { r = await api.get(`/content-requests/requests/${encodeURIComponent(id)}`); }
-    catch (e) { detail.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; return; }
+    catch (e) { detail.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; return; }
     const c = r.content || {};
     detail.style.color = 'var(--text-primary, inherit)';
     const verified = { none: 'creq.verified.none', email: 'creq.verified.email', sso: 'creq.verified.sso' }[r.verified_via] || 'creq.verified.none';
@@ -128,7 +128,7 @@ async function renderInbox(body) {
           const out = await api.post(`/content-requests/requests/${encodeURIComponent(r.id)}/publish`, {});
           showToast(t(out.all_published ? 'creq.toast.approved' : 'creq.toast.partial'), out.all_published ? 'success' : 'error');
         }
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
       await show(r.id);
     };
   }
@@ -180,7 +180,7 @@ function openDecline(r, done) {
       busy = false;
       input.disabled = false;
       go.disabled = !input.value.trim();
-      bindMessage(errEl, (err.uiMessage || err.message));
+      bindMessage(errEl, (errorMessage(err)));
       input.focus();
       return;
     }
@@ -196,7 +196,7 @@ async function renderForms(body) {
   body.innerHTML = esc(t('common.loading'));
   let forms, opts;
   try { [forms, opts] = await Promise.all([api.get('/content-requests/forms'), api.get('/content-requests/options')]); }
-  catch (e) { body.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; return; }
+  catch (e) { body.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; return; }
   body.innerHTML = `
     ${canWrite() ? `<div class="corp-toolbar" style="margin-bottom:12px"><button class="btn btn-primary" id="creqNew">${uiText(t('creq.form.new'))}</button></div>` : ''}
     ${forms.length ? forms.map(formCard).join('') : `<div class="corp-empty">${uiText(t('creq.form.empty'))}</div>`}`;
@@ -214,7 +214,7 @@ async function renderForms(body) {
         if (act === 'rotate') { if (!confirm(t('creq.form.rotate_confirm'))) return; await api.post(`/content-requests/forms/${f.id}/rotate`, {}); showToast(t('creq.form.rotated'), 'success'); }
         if (act === 'delete') { if (!confirm(t('creq.form.delete_confirm', { title: f.title }))) return; await api.delete(`/content-requests/forms/${f.id}`); }
         renderForms(body);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
   });
 }
@@ -333,6 +333,6 @@ function editForm(body, f, opts) {
       if (f) await api.put(`/content-requests/forms/${f.id}`, payload); else await api.post('/content-requests/forms', payload);
       showToast(t('creq.form.saved'), 'success');
       renderForms(body);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 }

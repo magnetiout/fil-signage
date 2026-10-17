@@ -24,8 +24,8 @@ import { uiText, renderHTML, translatedAttribute, bindMessage, binding, bindText
  *
  * Values from the server reach the page through esc() or textContent only.
  */
-import { api } from '../api.js';
-import { message as t, messageCount as tn } from '../i18n.js';
+import { errorMessage, api } from '../api.js';
+import { localizedError, message as t, messageCount as tn } from '../i18n.js';
 import { esc, screenshotUrl, hydrateAuthImages } from '../utils.js';
 import { showToast } from '../components/toast.js';
 import { setUiMode } from '../components/ui-mode.js';
@@ -101,7 +101,7 @@ export function shell(container, inner) {
   container.querySelectorAll('[data-switch-ws]').forEach((b) => b.addEventListener('click', async () => {
     b.disabled = true;
     try { await switchWorkspaceTo(b.dataset.switchWs, '#/'); }
-    catch (err) { b.disabled = false; showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { b.disabled = false; showToast(errorMessage(err), 'error'); }
   }));
   container.querySelector('[data-simple-signout]').addEventListener('click', () => {
     localStorage.removeItem('token');
@@ -621,11 +621,11 @@ async function renderTeam(container) {
     ];
     people.innerHTML = rows.join('') || `<p class="simple-muted">${uiText(t('simple.team.nobody'))}</p>`;
     people.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', async () => {
-      try { await api.cancelWorkspaceInvite(ws.id, b.dataset.cancel); loadPeople(); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      try { await api.cancelWorkspaceInvite(ws.id, b.dataset.cancel); loadPeople(); } catch (err) { showToast(errorMessage(err), 'error'); }
     }));
     people.querySelectorAll('[data-remove]').forEach((b) => b.addEventListener('click', async () => {
       if (!window.confirm(t('simple.team.remove_confirm', { name: b.dataset.name }))) return;
-      try { await api.removeWorkspaceMember(ws.id, b.dataset.remove); loadPeople(); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      try { await api.removeWorkspaceMember(ws.id, b.dataset.remove); loadPeople(); } catch (err) { showToast(errorMessage(err), 'error'); }
     }));
   }
 
@@ -656,7 +656,7 @@ async function renderTeam(container) {
       }
       loadPeople();
     } catch (err) {
-      bindMessage(status, (err.uiMessage || err.message) || t('simple.team.failed'));
+      bindMessage(status, (errorMessage(err)) || t('simple.team.failed'));
     } finally { e.target.disabled = false; }
   });
   loadPeople();
@@ -864,7 +864,7 @@ async function renderChange(container, presetId) {
     const status = container.querySelector('[data-status]');
     const busy = (msg) => { bindMessage(status, msg); container.querySelectorAll('button, input').forEach((e) => { e.disabled = true; }); };
     // At a storage limit the upgrade prompt (plan-nudges.js) says it; the status line does not repeat it.
-    const fail = (err) => { bindMessage(status, err && err.planPromptShown ? '' : ((err && (err.uiMessage || err.message)) || t('onboarding.toast.upload_failed'))); container.querySelectorAll('button, input').forEach((e) => { e.disabled = false; }); };
+    const fail = (err) => { bindMessage(status, err && err.planPromptShown ? '' : ((err && (errorMessage(err))) || t('onboarding.toast.upload_failed'))); container.querySelectorAll('button, input').forEach((e) => { e.disabled = false; }); };
 
     const go = async (files) => {
       busy(tn('simple.uploading', files.length));
@@ -884,7 +884,7 @@ async function renderChange(container, presetId) {
       } catch (err) { fail(err); }
     });
     container.querySelector('[data-sample]').addEventListener('click', async () => {
-      try { go([await sampleFile()]); } catch { fail(new Error(t('onboarding.toast.sample_failed'))); }
+      try { go([await sampleFile()]); } catch { fail(localizedError(t('onboarding.toast.sample_failed'))); }
     });
     mountStockPicker(container.querySelector('[data-stock]'), {
       collapsed: true,
@@ -959,7 +959,7 @@ async function renderUpload(container, presetIds = []) {
         uploaded = (Array.isArray(up) ? up : [up]).filter((c) => c && c.id);
         if (devices.length) screensStep();
         else doneOnly(tn('simple.upload.saved', uploaded.length));
-      } catch (err) { bindMessage(status, err.planPromptShown ? '' : ((err.uiMessage || err.message) || t('onboarding.toast.upload_failed'))); }
+      } catch (err) { bindMessage(status, err.planPromptShown ? '' : ((errorMessage(err)) || t('onboarding.toast.upload_failed'))); }
     });
   }
 
@@ -1000,7 +1000,7 @@ async function renderUpload(container, presetIds = []) {
           body: doneBody([review ? tn('simple.upload.review_on', ids.length) : tn('simple.upload.shown_on', ids.length),
             t(review ? 'simple.done.review_hint' : 'simple.done.seconds')]) }));
       } catch (err) {
-        bindMessage(status, (err.uiMessage || err.message) || t('onboarding.toast.assign_failed'));
+        bindMessage(status, (errorMessage(err)) || t('onboarding.toast.assign_failed'));
         e.target.disabled = false;
       }
     });
@@ -1041,7 +1041,7 @@ async function renderPasskey(container) {
   shell(container, `<p class="simple-muted">${uiText(t('common.loading'))}</p>`);
   const page = container.querySelector('.simple-page');
   let st;
-  try { st = await api.passkeysList(); } catch (err) { st = { error: err.message }; }
+  try { st = await api.passkeysList(); } catch (err) { st = { error: errorMessage(err) }; }
   if (!document.contains(page)) return;
 
   // Anything that stops a passkey being added here is said plainly, with a way home.
@@ -1077,7 +1077,7 @@ async function renderPasskey(container) {
     try {
       await addPasskey({ password, code: page.querySelector('#pkCode')?.value.trim(), name: suggestedPasskeyName() });
     } catch (err) {
-      bindMessage(status, err.cancelled ? '' : (err.uiMessage || err.message));
+      bindMessage(status, err.cancelled ? '' : (errorMessage(err)));
       next.disabled = false;
       return;
     }
@@ -1112,7 +1112,7 @@ async function renderRequests(container) {
 
   async function loadWaiting() {
     let rows = [];
-    try { rows = await api.get('/content-requests/requests?status=pending'); } catch (e) { waiting.innerHTML = `<p class="simple-status">${uiText((e.uiMessage || e.message))}</p>`; return; }
+    try { rows = await api.get('/content-requests/requests?status=pending'); } catch (e) { waiting.innerHTML = `<p class="simple-status">${uiText((errorMessage(e)))}</p>`; return; }
     if (!rows.length) { waiting.innerHTML = `<div class="simple-card"><p class="simple-muted" style="margin:0">${uiText(t('simple.req.none'))}</p></div>`; return; }
     waiting.innerHTML = rows.map((r) => `
       <div class="simple-card" data-req="${esc(r.id)}" style="margin-bottom:12px">
@@ -1141,7 +1141,7 @@ async function renderRequests(container) {
           const out = await api.post(`/content-requests/requests/${encodeURIComponent(id)}/approve`, {});
           bindText(status, out.all_published ? 'simple.req.approved' : 'creq.toast.partial', undefined);
           el.querySelectorAll('button').forEach((b) => { b.disabled = true; });
-        } catch (err) { bindMessage(status, (err.uiMessage || err.message)); e.target.disabled = false; }
+        } catch (err) { bindMessage(status, (errorMessage(err))); e.target.disabled = false; }
       });
       el.querySelector('[data-decline]').addEventListener('click', () => { el.querySelector('[data-why]').hidden = false; el.querySelector('textarea').focus(); });
       el.querySelector('[data-send]').addEventListener('click', async (e) => {
@@ -1152,14 +1152,14 @@ async function renderRequests(container) {
           await api.post(`/content-requests/requests/${encodeURIComponent(id)}/reject`, { reason });
           bindText(status, 'simple.req.declined', undefined);
           el.querySelectorAll('button').forEach((b) => { b.disabled = true; });
-        } catch (err) { bindMessage(status, (err.uiMessage || err.message)); e.target.disabled = false; }
+        } catch (err) { bindMessage(status, (errorMessage(err))); e.target.disabled = false; }
       });
     });
   }
 
   async function loadLinks() {
     let forms = [];
-    try { forms = await api.get('/content-requests/forms'); } catch (e) { links.innerHTML = `<p class="simple-status">${uiText((e.uiMessage || e.message))}</p>`; return; }
+    try { forms = await api.get('/content-requests/forms'); } catch (e) { links.innerHTML = `<p class="simple-status">${uiText((errorMessage(e)))}</p>`; return; }
     const open = forms.filter((f) => f.status === 'open');
     if (!open.length) { links.innerHTML = `<div class="simple-card"><p class="simple-muted" style="margin:0">${uiText(t('simple.req.no_links'))}</p></div>`; return; }
     links.innerHTML = open.map((f) => `
@@ -1216,7 +1216,7 @@ async function renderRequestNew(container) {
           title, targets: ids.map((id) => ({ label: (devices.find((d) => d.id === id) || {}).name || id, device_id: id })),
         });
         doneStep(f);
-      } catch (err) { bindMessage(status, (err.uiMessage || err.message)); e.target.disabled = false; }
+      } catch (err) { bindMessage(status, (errorMessage(err))); e.target.disabled = false; }
     });
   }
 

@@ -2,7 +2,7 @@ import { renderHTML, uiText, translatedAttribute, bindMessage, bindAttribute, bi
 
 import { displayValue, getLocale, message as t, messageCount as tn } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import * as gettingStarted from '../components/getting-started.js';
 import { showToast } from '../components/toast.js';
 import { esc, hydrateAuthImages } from '../utils.js';
@@ -168,7 +168,7 @@ async function loadPlaylists() {
     renderPlaylistGrid(cachedPlaylists);
   } catch (err) {
     const grid = document.getElementById('playlistGrid');
-    if (grid) grid.innerHTML = `<div style="grid-column:1/-1;color:var(--text-muted);padding:40px;text-align:center">${renderHTML(t('playlist.load_failed', { error: (err.uiMessage || err.message) }))}</div>`;
+    if (grid) grid.innerHTML = `<div style="grid-column:1/-1;color:var(--text-muted);padding:40px;text-align:center">${renderHTML(t('playlist.load_failed', { error: (errorMessage(err)) }))}</div>`;
   }
 
   // #313/checklist: creating a playlist ticks a step, and every create reloads this list.
@@ -289,7 +289,7 @@ function showCreateModal(prefill = {}) {
       showToast(t('playlist.toast.created'));
       window.location.hash = `#/playlists/${pl.id}`;
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   }
 
@@ -308,7 +308,7 @@ async function renderDetail(container, playlistId) {
   } catch (err) {
     container.innerHTML = `
       <div style="padding:40px;text-align:center;color:var(--text-muted)">
-        <p>${renderHTML(t('playlist.load_failed', { error: (err.uiMessage || err.message) }))}</p>
+        <p>${renderHTML(t('playlist.load_failed', { error: (errorMessage(err)) }))}</p>
         <a href="#/playlists" class="btn btn-secondary" style="margin-top:16px">${renderHTML(t('playlist.back_to_playlists'))}</a>
       </div>
     `;
@@ -607,7 +607,7 @@ function renderDetailContent(container, playlist) {
       } catch (err) {
         publishBtn.disabled = false;
         bindText(publishBtn, 'playlist.draft.publish', undefined);
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   }
@@ -623,7 +623,7 @@ function renderDetailContent(container, playlist) {
         showToast(t('playlist.toast.draft_discarded'));
         renderDetailContent(container, updated.smart_rules || playlist.corporate || playlist.corporate_slot ? await api.getPlaylist(playlist.id) : updated);
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   }
@@ -693,7 +693,7 @@ function renderDetailContent(container, playlist) {
       refreshAfterMutation();
       showToast(t('playlist.toast.sorted'), 'success');
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     } finally {
       btn.disabled = false;
     }
@@ -709,7 +709,7 @@ function renderDetailContent(container, playlist) {
       showToast(t('playlist.bulk.updated', {n: '1'}));
       refreshAfterMutation();
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
       e.target.value = playlist.playback_order || 'sequential';
     } finally {
       e.target.disabled = false;
@@ -753,7 +753,7 @@ function renderDetailContent(container, playlist) {
         await api.deleteFill(cs.fill_id);
         showToast(t('corp.slot.level_removed'), 'success');
         window.location.hash = '#/corporate';
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
     return;
   }
@@ -764,7 +764,7 @@ function renderDetailContent(container, playlist) {
       showToast(t('playlist.toast.deleted'));
       window.location.hash = '#/playlists';
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   });
 }
@@ -957,7 +957,7 @@ async function editConditionModal(ids, parsed) {
           geoSearch.value = geoPoint.label; geoResults.innerHTML = '';
           bindMessage(modal.querySelector('#condGeoPoint'), `${r.latitude}, ${r.longitude}`);
         }));
-      } catch (e) { geoResults.innerHTML = `<span style="font-size:12px;color:var(--danger)">${uiText((e.uiMessage || e.message))}</span>`; }
+      } catch (e) { geoResults.innerHTML = `<span style="font-size:12px;color:var(--danger)">${uiText((errorMessage(e)))}</span>`; }
     }, 300);
   });
   typeSel.addEventListener('change', showType);
@@ -1119,7 +1119,7 @@ async function runSelection(body) {
     await refreshSelection();
     return r;
   } catch (err) {
-    showToast(err.uiMessage || err.message, 'error');
+    showToast(errorMessage(err), 'error');
     return null;
   }
 }
@@ -1226,7 +1226,7 @@ async function handleSelection(act) {
       const w = await pickTransitionWidget(trans);
       if (!w) return;
       return runSelection({ action: 'transition', ids, widget_id: w.id });
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
     return;
   }
   if (act === 'condition') {
@@ -1483,7 +1483,7 @@ function renderItems(items) {
         await api.updatePlaylistItem(currentPlaylistId, itemId, { duration_sec: val });
         refreshAfterMutation();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   });
@@ -1494,7 +1494,7 @@ function renderItems(items) {
         await api.updatePlaylistItem(currentPlaylistId, e.target.dataset.itemId, { play_to_end: e.target.checked });
         refreshAfterMutation();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         refreshAfterMutation();   // put the checkbox back to what is actually stored
       }
     });
@@ -1506,7 +1506,7 @@ function renderItems(items) {
         await api.setContentPrerotated(e.target.dataset.contentId, e.target.checked);
         refreshAfterMutation();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         refreshAfterMutation();
       }
     });
@@ -1520,7 +1520,7 @@ function renderItems(items) {
         showToast(t('repeat.toast_saved'), 'info');
         refreshAfterMutation();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         refreshAfterMutation();   // put the select back to what is actually stored
       }
     });
@@ -1538,7 +1538,7 @@ function renderItems(items) {
         await api.updatePlaylistItem(currentPlaylistId, itemId, { weight: val });
         refreshAfterMutation();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   });
@@ -1553,7 +1553,7 @@ function renderItems(items) {
       showToast(t('playlist.toast.window_saved'), 'info');
       refreshAfterMutation();
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   };
   itemsEl.querySelectorAll('.item-play-from').forEach(input => {
@@ -1573,7 +1573,7 @@ function renderItems(items) {
         refreshAfterMutation();
         showToast(t('playlist.toast.item_removed'));
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   });
@@ -1598,7 +1598,7 @@ function renderItems(items) {
         refreshAfterMutation();
         showToast(t('playlist.toast.item_duplicated'));
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   });
@@ -1628,7 +1628,7 @@ function renderItems(items) {
         renderItems(updated);
         refreshAfterMutation();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   });
@@ -1683,7 +1683,7 @@ function bindSlotRows(itemsEl) {
     });
     if (!ok) return;
     try { await api.deleteSlot(b.dataset.slotId); showToast(t('corp.hq.slot_removed'), 'success'); refreshAfterMutation(); }
-    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    catch (e) { showToast(errorMessage(e), 'error'); }
   }));
   itemsEl.querySelectorAll('.slot-preview').forEach((b) => b.addEventListener('click', () => {
     cui.openScreenPreview({ playlistId: currentPlaylistId, canDraft: !!(corpEditor && corpEditor.canAuthor) });
@@ -1744,7 +1744,7 @@ async function mountCorporateEditor(container, playlist) {
   if (ed.mode === 'corporate') {
     let detail;
     try { detail = await api.getCorporatePlaylist(playlist.id); }
-    catch (e) { bar.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; return; }
+    catch (e) { bar.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; return; }
     if (corpEditor !== ed || currentPlaylistId !== playlist.id) return;
     ed.slots = new Map((detail.slots || []).map((sl) => [sl.id, sl]));
     ed.screens = detail.screens || 0;
@@ -1790,7 +1790,7 @@ async function mountCorporateEditor(container, playlist) {
   let pv = null;
   try {
     [slotsResp, pv] = await Promise.all([api.getSlotFills(cs.slot_id), api.previewFill(cs.fill_id).catch(() => null)]);
-  } catch (e) { bar.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; return; }
+  } catch (e) { bar.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; return; }
   if (corpEditor !== ed || currentPlaylistId !== playlist.id) return;
   const slot = slotsResp.slot || {};
   const fill = (slotsResp.fills || []).find((f) => f.id === cs.fill_id) || {};
@@ -1846,7 +1846,7 @@ async function openFillPreview(fillId) {
     const r = await api.previewFill(fillId);
     m.q('#corpFpOut').innerHTML = `${r.device_id ? '' : `<div class="corp-help">${uiText(t('corp.fill.preview_no_screen'))}</div>`}${cui.previewHtml({ ...r, mandate: null, total_sec: r.total_sec != null ? r.total_sec : (r.items || []).reduce((a, i) => a + (i.seconds || 0), 0) })}`;
     hydrateAuthImages(m.overlay);
-  } catch (e) { m.q('#corpFpOut').innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
+  } catch (e) { m.q('#corpFpOut').innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
 }
 
 function setupDragReorder(container) {
@@ -1891,7 +1891,7 @@ function setupDragReorder(container) {
       renderItems(items);
       refreshAfterMutation();
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
       const playlist = await api.getPlaylist(currentPlaylistId);
       renderItems(playlist.items || []);
     }
@@ -1922,7 +1922,7 @@ function inlineEdit(playlist, field) {
         const updated = await api.updatePlaylist(playlist.id, { [field]: val });
         playlist[field] = updated[field];
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
       const newEl = document.createElement('h1');
       newEl.id = 'playlistTitle';
@@ -1949,7 +1949,7 @@ function inlineEdit(playlist, field) {
         const updated = await api.updatePlaylist(playlist.id, { description: val });
         playlist.description = updated.description;
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
       const newEl = document.createElement('div');
       newEl.className = 'subtitle';
@@ -2042,7 +2042,7 @@ async function showAddHoldModal(playlistId, trigger) {
       await refreshAfterMutation();
       document.getElementById('addHoldBtn')?.focus();
     } catch (err) {
-      bindMessage(d.root.querySelector('[data-err]'), (err.uiMessage || err.message));
+      bindMessage(d.root.querySelector('[data-err]'), (errorMessage(err)));
       e.currentTarget.disabled = false;
     }
   });
@@ -2155,7 +2155,7 @@ function showScheduleModal(item, opts = {}) {
       renderItems(playlist.items || []);
       refreshAfterMutation();
     } catch (e) {
-      showToast(e.uiMessage || e.message, 'error');
+      showToast(errorMessage(e), 'error');
     }
   }
 

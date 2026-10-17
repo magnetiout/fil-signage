@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage } from '../lib/i18n-bindings.js';
 
 // Edit or create a plan (platform admin → Billing → Plans). Server: lib/plan-admin.js.
@@ -173,12 +174,12 @@ export async function openPlanEditor({ plan = null, stripeConfigured = false, on
     btn.disabled = true;
     try {
       const r = creating ? await api.adminCreatePlan(body) : await api.adminUpdatePlan(p.id, body);
-      for (const w of (r.warnings || [])) showToast(w, 'info', 7000);
+      for (const w of (r.warnings || [])) showToast(t(w === 'Stripe is not configured on this server, so the linked prices were saved without being checked.' ? 'admin.plan.prices_unchecked' : 'admin.plan.server_warning'), 'info', 7000);
       showToast(creating ? t('admin.plan.created', { name: r.plan.display_name }) : t('admin.plan.saved', { name: r.plan.display_name }), 'success');
       d.close();
       if (onSaved) onSaved(r.plan);
     } catch (err) {
-      showError(err.body && err.body.field, err.message);
+      showError(err.body && err.body.field, errorMessage(err));
       btn.disabled = false;
     }
   });

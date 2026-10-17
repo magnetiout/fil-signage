@@ -2,7 +2,7 @@ import { uiText, renderHTML, translatedAttribute, bindMessage, binding } from '.
 
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
 
-import { api, getAuthHeaders } from '../api.js';
+import { errorMessage, api, getAuthHeaders } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 
@@ -42,7 +42,7 @@ export async function render(app) {
   try {
     const [f, c] = await Promise.all([api.get('/social/feeds'), api.get('/social/connections')]);
     state.feeds = f.feeds || []; state.kinds = f.networks || {}; state.canEdit = !!f.can_edit; state.connections = c.connections || [];
-  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</p>`; return; }
   body.innerHTML = `${state.canEdit ? `<div class="corp-toolbar"><button class="btn btn-primary" id="socNew">${uiText(t('social.new_feed'))}</button></div>` : ''}
     ${state.feeds.length ? state.feeds.map(feedCard).join('') : `<div class="corp-empty">${uiText(t('social.no_feeds'))}</div>`}`;
   document.getElementById('socNew')?.addEventListener('click', () => openForm(app, null));
@@ -63,13 +63,13 @@ export async function render(app) {
         } else showToast(t('social.refreshed', { n: r.added || 0 }), 'success');
         render(app);
       }
-      catch (e) { showToast(e.uiMessage || e.message, 'error'); ev.target.disabled = false; }
+      catch (e) { showToast(errorMessage(e), 'error'); ev.target.disabled = false; }
     });
     el.querySelector('[data-act="del"]')?.addEventListener('click', async () => {
       if (!confirm(t('social.confirm_delete_feed'))) return;
       try { await api.delete(`/social/feeds/${feed.id}`); }
       catch (e) {
-        if (e.status !== 409 || !confirm(e.message)) { if (e.status !== 409) showToast(e.uiMessage || e.message, 'error'); return; }
+        if (e.status !== 409 || !confirm(e.message)) { if (e.status !== 409) showToast(errorMessage(e), 'error'); return; }
         try { await api.delete(`/social/feeds/${feed.id}?force=1`); } catch (e2) { showToast(e2.message, 'error'); return; }
       }
       render(app);
@@ -133,7 +133,7 @@ async function loadQueue(app, feed, box) {
   box.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { state.tab = b.dataset.tab; loadQueue(app, feed, box); }));
   let posts = [];
   try { posts = (await api.get(`/social/feeds/${feed.id}/posts?status=${state.tab}`)).posts || []; }
-  catch (e) { bindMessage(box.querySelector('.soc-posts'), (e.uiMessage || e.message)); return; }
+  catch (e) { bindMessage(box.querySelector('.soc-posts'), (errorMessage(e))); return; }
   const list = box.querySelector('.soc-posts');
   list.classList.remove('corp-help');
   if (!posts.length) { list.innerHTML = `<p class="corp-help">${uiText(t('social.queue_empty'))}</p>`; return; }
@@ -157,7 +157,7 @@ async function loadQueue(app, feed, box) {
       const r = await api.post(`/social/feeds/${feed.id}/posts/moderate`, { key, action: b.dataset.mod });
       if (r.refetch) showToast(t('social.refetch_note'), 'info');
       render(app);
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   }));
 }
 
@@ -243,6 +243,6 @@ function openForm(app, f) {
     try {
       if (f) await api.put(`/social/feeds/${f.id}`, body); else await api.post('/social/feeds', body);
       overlay.remove(); render(app);
-    } catch (e) { bindMessage($('sfError'), (e.uiMessage || e.message)); }
+    } catch (e) { bindMessage($('sfError'), (errorMessage(e))); }
   });
 }

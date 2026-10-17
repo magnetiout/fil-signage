@@ -2,7 +2,7 @@ import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
 
 import { getLocale, message as t, messageCount as tn } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from './toast.js';
 
 // Reusable resource-count formatter. Returns localized "1 device" / "N devices"
@@ -233,7 +233,7 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
                        : countStr           ? esc(countStr)
                                             : '';
         // Searchable haystack: org name + workspace name, lowercased.
-        const haystack = `${orgName} ${w.name}`.toLowerCase();
+        const haystack = `${orgName} ${w.name}`.toLocaleLowerCase(getLocale());
         return `
         <div class="workspace-switcher-item ${w.id === currentId ? 'current' : ''}" data-workspace-id="${esc(w.id)}" data-search="${esc(haystack)}" role="option">
           <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="${w.id === currentId ? '' : 'visibility:hidden'}">
@@ -303,7 +303,7 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
         showToast(t("ui.workspace_switcher.switch_returned_no_token"), 'error');
       }
     } catch (err) {
-      showToast(err.uiMessage || err.message || t("ui.workspace_switcher.failed_to_switch_workspace_d32f53"), 'error');
+      showToast(errorMessage(err) || t("ui.workspace_switcher.failed_to_switch_workspace_d32f53"), 'error');
     }
   }
 
@@ -332,7 +332,7 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
   }
 
   function applyFilter(q) {
-    const query = (q || '').trim().toLowerCase();
+    const query = (q || '').trim().toLocaleLowerCase(getLocale());
     let anyVisible = false;
     for (const it of allItems) {
       const match = !query || it.dataset.search.includes(query);

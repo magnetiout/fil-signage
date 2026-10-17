@@ -1,6 +1,6 @@
 import { renderHTML, uiText, translatedAttribute } from '../lib/i18n-bindings.js';
 
-import { displayQuantity, message as t, displayValue } from '../i18n.js';
+import { localizedError, displayQuantity, message as t, displayValue } from '../i18n.js';
 
 /*
  * "My endpoint" vs "ScreenTinker credits" — the path and model picker for hosted AI images.
@@ -13,7 +13,7 @@ import { displayQuantity, message as t, displayValue } from '../i18n.js';
  * Renders nothing when the server has no hosted provider configured (self-hosted with no platform
  * keys): the BYO path is then the only path, exactly as before.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
 
@@ -49,7 +49,7 @@ export async function buyPack(packId) {
   try {
     const { url } = await api.aiHostedCheckout(packId);
     if (url) window.location.href = url;
-  } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+  } catch (e) { showToast(errorMessage(e), 'error'); }
 }
 
 /**
@@ -102,7 +102,7 @@ export async function mountHostedPicker(el) {
     isHosted: () => path === 'hosted',
     async generate(prompt, dims) {
       const sel = byKey.get(choice);
-      if (!sel) throw new Error(t("ui.labels.choose_a_model_first_561f34"));
+      if (!sel) throw localizedError(t("ui.labels.choose_a_model_first_561f34"));
       if (status.balance < sel.credits) { await offerCredits(status, sel.credits); return null; }
       // eslint-disable-next-line no-alert
       if (!confirm(t("ui.ai_hosted_picker.generate_with_value0_this_spends_value1_credits_value2_you_have_v_fd7789", {value0: formatRow(sel), value1: sel.credits, value2: usd(sel.charge_usd), value3: status.balance}))) return null;

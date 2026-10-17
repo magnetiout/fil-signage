@@ -1,6 +1,6 @@
 import { renderHTML, uiText, attributeBinding } from '../lib/i18n-bindings.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
@@ -136,7 +136,7 @@ export async function mountDeviceSection(host, device) {
     btn.addEventListener('click', async () => {
       btn.disabled = true;
       try { await api.post(`/screen-verification/devices/${encodeURIComponent(device.id)}/check`, {}); showToast(t('sv.check_requested'), 'info'); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
       setTimeout(() => { if (document.contains(host)) mountDeviceSection(host, device); }, 8000);
     });
   }
@@ -148,7 +148,7 @@ export async function mountSettings(host) {
   if (!host) return;
   let s, incidents;
   try { [s, incidents] = await Promise.all([api.get('/screen-verification/settings'), api.get('/screen-verification/incidents?limit=25')]); }
-  catch (e) { host.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`; return; }
+  catch (e) { host.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (errorMessage(e))) || t('common.error'))}</p>`; return; }
   if (!document.contains(host)) return;
   const admin = canAdminVerification();
   const dis = admin ? '' : 'disabled';
@@ -192,7 +192,7 @@ export async function mountSettings(host) {
         alert_checks: [...host.querySelectorAll('.sv-check:checked')].map((i) => i.value),
       };
       try { await api.put('/screen-verification/settings', body); showToast(t('sv.saved'), 'success'); mountSettings(host); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); save.disabled = false; }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); save.disabled = false; }
     });
   }
 }

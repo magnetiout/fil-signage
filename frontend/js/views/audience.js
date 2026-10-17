@@ -1,7 +1,7 @@
 import { renderHTML, uiText } from '../lib/i18n-bindings.js';
-import { displayValue, message as t } from '../i18n.js';
+import { localizedError, displayValue, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
@@ -18,8 +18,8 @@ const API = (url, opts = {}) => fetch('/api' + url, {
   ...opts,
   headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, ...(opts.body ? { 'Content-Type': 'application/json' } : {}), ...opts.headers },
 }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); const err = new Error(localizeServerError(e.error) || t("ui.audience.request_failed_value0_ad6dc0", {value0: r.status})); err.code = e.code; throw err; }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); const err = localizedError(localizeServerError(e.error) || t("ui.audience.request_failed_value0_ad6dc0", {value0: r.status})); err.code = e.code; throw err; }
   return r.json();
 });
 
@@ -76,7 +76,7 @@ let settings = null;
 
 async function loadSettings() {
   const box = document.getElementById('audSettings');
-  try { settings = await API('/audience/settings'); } catch (e) { box.innerHTML = `<p style="color:var(--text-muted)">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  try { settings = await API('/audience/settings'); } catch (e) { box.innerHTML = `<p style="color:var(--text-muted)">${uiText((errorMessage(e)))}</p>`; return; }
   const s = settings;
   const dis = s.can_manage ? '' : 'disabled';
   box.innerHTML = `
@@ -115,13 +115,13 @@ async function saveSettings() {
     settings = await API('/audience/settings', { method: 'PUT', body: JSON.stringify(body) });
     showToast(t('audience.saved'), 'success');
     loadSettings();
-  } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+  } catch (e) { showToast(errorMessage(e), 'error'); }
 }
 
 async function loadScreens() {
   const box = document.getElementById('audScreens');
   let data;
-  try { data = await API('/audience/screens'); } catch (e) { box.innerHTML = `<p style="color:var(--text-muted)">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  try { data = await API('/audience/screens'); } catch (e) { box.innerHTML = `<p style="color:var(--text-muted)">${uiText((errorMessage(e)))}</p>`; return; }
   const manage = settings && settings.can_manage;
   const off = !(settings && settings.allowed);
   const row = (kind, x, extra) => `
@@ -157,7 +157,7 @@ async function loadScreens() {
         await API(`/audience/${path}/${encodeURIComponent(cb.dataset.audId)}`, { method: 'PUT', body: JSON.stringify({ enabled: cb.checked }) });
         showToast(cb.checked ? t('audience.enabled_toast') : t('audience.disabled_toast'), 'success');
         loadScreens();
-      } catch (e) { cb.checked = !cb.checked; showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { cb.checked = !cb.checked; showToast(errorMessage(e), 'error'); }
     });
   });
 }
@@ -179,7 +179,7 @@ function rangeQs() {
 async function loadReport() {
   const box = document.getElementById('audReport');
   let r;
-  try { r = await API(`/audience/report?${rangeQs()}`); } catch (e) { box.innerHTML = `<p style="color:var(--text-muted)">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  try { r = await API(`/audience/report?${rangeQs()}`); } catch (e) { box.innerHTML = `<p style="color:var(--text-muted)">${uiText((errorMessage(e)))}</p>`; return; }
   if (!r.overall.observed_minutes && !r.overall.arrivals) { box.innerHTML = `<div class="empty-state"><p>${renderHTML(t('audience.no_data'))}</p></div>`; return; }
   const o = r.overall;
   const th = (txt, right) => `<th style="padding:8px;text-align:${right ? 'right' : 'left'};color:var(--text-muted)">${renderHTML(txt)}</th>`;
@@ -240,13 +240,13 @@ function bars(id, data) {
 async function downloadCsv() {
   try {
     const r = await fetch(`/api/audience/export.csv?${rangeQs()}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-    if (!r.ok) throw new Error(localizeServerError((await r.json().catch(() => ({}))).error) || t("ui.audience.request_failed_value0_ad6dc0", {value0: r.status}));
+    if (!r.ok) throw localizedError(localizeServerError((await r.json().catch(() => ({}))).error) || t("ui.audience.request_failed_value0_ad6dc0", {value0: r.status}));
     const url = URL.createObjectURL(await r.blob());
     const a = document.createElement('a');
     a.href = url; a.download = 'audience.csv';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+  } catch (e) { showToast(errorMessage(e), 'error'); }
 }
 
 export function cleanup() {}

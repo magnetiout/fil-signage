@@ -2,7 +2,7 @@ import { uiText, renderHTML, translatedAttribute, bindMessage, bindAttribute, bi
 
 import { displayQuantity, displayValue, getLocale, message as t, messageCount as tn } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { isSimpleMode } from '../components/ui-mode.js';
 import { plansVisible } from '../components/plan-nudges.js';
 import { on, off, requestScreenshot, startGroupTalk, stopGroupTalk } from '../socket.js';
@@ -784,7 +784,7 @@ export function render(container) {
         loadDashboard();
       } catch (err) {
         if (err.planPromptShown) { document.getElementById('addDeviceModal').style.display = 'none'; return; }
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
       return;
     }
@@ -804,7 +804,7 @@ export function render(container) {
     } catch (err) {
       // A plan limit is answered by the upgrade prompt (plan-nudges.js); the dialog gets out of its way.
       if (err.planPromptShown) { document.getElementById('addDeviceModal').style.display = 'none'; return; }
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   };
 
@@ -937,7 +937,7 @@ export function render(container) {
       loadDashboard();
     } catch (err) {
       // Only reaches here if creating the GROUP failed — the per-device results are handled above.
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
     menu.removeAttribute('open');
   };
@@ -1082,7 +1082,7 @@ async function createWallFromSelection() {
     } catch (e) {
       // Declined "I've checked these": the wall exists, empty — open it so the person can decide.
       if (!e.cancelled) throw e;
-      showToast(e.uiMessage || e.message, 'info');
+      showToast(errorMessage(e), 'info');
       window.location.hash = `#/wall/${wall.id}`;
       return;
     }
@@ -1090,7 +1090,7 @@ async function createWallFromSelection() {
     showToast(t("ui.dashboard.video_wall_created"), 'success');
     window.location.hash = `#/wall/${wall.id}`;
   } catch (e) {
-    showToast(e.uiMessage || e.message, 'error');
+    showToast(errorMessage(e), 'error');
   }
 }
 
@@ -1127,7 +1127,7 @@ async function loadRemoteDashboard(org) {
      */
     rows = await api.get('/devices');
   } catch (e) {
-    liveError = e.message || t("ui.dashboard.that_server_did_not_answer_c47a91");
+    liveError = errorMessage(e);
   }
 
   /*
@@ -1393,7 +1393,7 @@ async function loadDashboard() {
     refreshSelectionBar();
 
   } catch (err) {
-    main.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('dashboard.failed_to_load'))}</h3><p>${uiText((err.uiMessage || err.message))}</p></div>`;
+    main.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('dashboard.failed_to_load'))}</h3><p>${uiText((errorMessage(err)))}</p></div>`;
   }
 }
 
@@ -1503,7 +1503,7 @@ function attachGroupHandlers(groupsWithDevices) {
       try {
         await api.reorderDevices(ids);
         loadDashboard();
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
   });
 
@@ -1559,7 +1559,7 @@ function attachGroupHandlers(groupsWithDevices) {
         }
         showToast(t('dashboard.toast.moved_device', { name: deviceName, group: targetGroup.name }), 'success');
         loadDashboard();
-      } catch (err) { showToast(err.uiMessage || err.message, err.cancelled ? 'info' : 'error'); }
+      } catch (err) { showToast(errorMessage(err), err.cancelled ? 'info' : 'error'); }
     });
   });
 
@@ -1586,7 +1586,7 @@ function attachGroupHandlers(groupsWithDevices) {
         for (const m of memberships) await cui.withImpactAck((o) => api.removeDeviceFromGroup(m.id, deviceId, o));
         showToast(tn('dashboard.toast.removed_device', memberships.length, { name: deviceName }), 'success');
         loadDashboard();
-      } catch (err) { showToast(err.uiMessage || err.message, err.cancelled ? 'info' : 'error'); loadDashboard(); }
+      } catch (err) { showToast(errorMessage(err), err.cancelled ? 'info' : 'error'); loadDashboard(); }
     });
   });
 
@@ -1618,7 +1618,7 @@ function attachGroupHandlers(groupsWithDevices) {
         const result = await api.groupAssignPlaylist(groupId, playlistId);
         showToast(tn('dashboard.toast.playlist_assigned', result.devices_updated), 'success');
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
       e.target.value = '';
     });
@@ -1634,7 +1634,7 @@ function attachGroupHandlers(groupsWithDevices) {
         showToast(enabled ? t('dashboard.group_sync.toast_on') : t('dashboard.group_sync.toast_off'), 'success');
         loadDashboard(); // re-render so the Resync button shows/hides
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         e.target.checked = !enabled;
       }
     });
@@ -1658,7 +1658,7 @@ function attachGroupHandlers(groupsWithDevices) {
         }
         loadDashboard();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         e.target.value = previous;
       }
     });
@@ -1673,7 +1673,7 @@ function attachGroupHandlers(groupsWithDevices) {
         await api.resyncGroup(groupId);
         showToast(t('dashboard.group_sync.toast_resync'), 'success');
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   });
@@ -1737,7 +1737,7 @@ function attachGroupHandlers(groupsWithDevices) {
         }
         showToast(msg, refused > 0 && !result.sent ? 'error' : (result.offline > 0 || result.unsupported > 0 || refused > 0) ? 'warning' : 'success');
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
       e.target.value = '';
     });
@@ -1753,7 +1753,7 @@ function attachGroupHandlers(groupsWithDevices) {
         await cui.withImpactAck((o) => api.deleteGroup(id, o));
         showToast(t('dashboard.toast.group_deleted'), 'success');
         loadDashboard();
-      } catch (e) { showToast(e.uiMessage || e.message, e.cancelled ? 'info' : 'error'); }
+      } catch (e) { showToast(errorMessage(e), e.cancelled ? 'info' : 'error'); }
     });
   });
 
@@ -1841,7 +1841,7 @@ async function toggleBroadcast(btn) {
     showToast(t('dashboard.talk.on_air'), 'info');
   } catch (e) {
     try { stopGroupTalk(scope); } catch (_) {}
-    showToast(t('dashboard.talk.failed') + (e && (e.uiMessage || e.message) ? ': ' + (e.uiMessage || e.message) : ''), 'error');
+    showToast(t('dashboard.talk.failed') + (e && (errorMessage(e)) ? ': ' + (errorMessage(e)) : ''), 'error');
   } finally {
     btn.disabled = false;
   }

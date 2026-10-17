@@ -1,7 +1,7 @@
 import { renderHTML, uiText, bindMessage, attributeBinding, binding, bindText } from '../../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../../api.js';
-import { getLocale, message as t } from '../../i18n.js';
+import { errorMessage, localizeServerError } from '../../api.js';
+import { localizedError, getLocale, message as t } from '../../i18n.js';
 
 // The Content Library's "Content details" inspector.
 //
@@ -254,7 +254,7 @@ export function createInspector(host, opts) {
       showToast(t('content.toast.updated'), 'success');
       opts.onSaved(item);
     } catch (err) {
-      showToast(err.uiMessage || err.message || t('content.error_update_failed'), 'error');
+      showToast(errorMessage(err) || t('content.error_update_failed'), 'error');
       syncSaveRow();
     }
   }
@@ -279,11 +279,11 @@ export function createInspector(host, opts) {
       });
       const body = await r.json().catch(() => ({}));
       // ⚠️ Read the response: a refused type is not a success (see the edit dialog's replace).
-      if (!r.ok) throw new Error(localizeServerError(body.error) || t('content.error_update_failed'));
+      if (!r.ok) throw localizedError(localizeServerError(body.error) || t('content.error_update_failed'));
       showToast(body.pending_review ? t('review.toast.saved_as_draft') : t('library.inspector.replaced'), 'success');
       opts.onReplaced(item);
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
       if (btn && document.contains(btn)) { btn.disabled = false; bindText(btn, 'library.inspector.replace', undefined); }
     }
   }

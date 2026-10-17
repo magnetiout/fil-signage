@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { renderHTML, translatedAttribute, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { message as t } from '../i18n.js';
@@ -125,7 +126,7 @@ export function openWorkspaceCreateModal() {
       bindText(saveBtn, 'switcher.create_submit', undefined);
       // The server's own words — it distinguishes a duplicate slug from a bad one from the per-org
       // cap, and each needs a different action from the person reading it.
-      showError(err.message || t('switcher.create_failed'));
+      showError(errorMessage(err));
     }
   }
   function showError(msg) {

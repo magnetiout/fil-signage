@@ -86,3 +86,13 @@ karşılığı sayılmaz. Ekran/durum matrisi [COVERAGE.md](COVERAGE.md), teriml
 `uiText`/`renderHTML` çeviri sınırında bir kez yapılır. Böylece ad içindeki `&` ve
 `<` doğru görünürken HTML olarak çalışmaz; silme onayında yazılması gereken gerçek
 ad değişmez. Bu sınır gerçek onay penceresiyle regresyon testine dahildir.
+
+Hata gösteriminde `errorMessage(error)` kullanılır. Sunucu yanıtının kodu, gövdesi,
+status değeri ve teknik Error.message sözleşmesi değişmez; UI için uiMessage
+ayrı tutulur. Yerel olarak üretilen çevirili hatalar `localizedError(message(...))`
+ile anahtarını korur. Böylece açık hata görünümü de dil değiştirebilir. Bilinmeyen
+sunucu/ağ hatası arayüzde genel, yerelleştirilmiş bir açıklamayla sunulur. Teşhis
+amacıyla kullanılan ham hata sınıflandırmaları ve günlükler bu sunumdan ayrıdır.
+Ad aramasında medya/klasör/çalışma alanı/üye seçicileri de etkin locale ile
+harf dönüşümü yapar; MIME, enum, slug, e-posta kaydı, tag/API kimliği ve klavye
+komutlarının kanonik kuralları değiştirilmez.

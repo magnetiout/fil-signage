@@ -3,7 +3,7 @@ import { uiText, renderHTML } from '../lib/i18n-bindings.js';
 // Workspace administration: "Require approval before publishing". Rendered on the members page
 // for workspace admins. Explains what turning it on or off does, requires at least one eligible
 // reviewer before it can be enabled, and says so plainly in a single-user workspace.
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 
@@ -46,6 +46,6 @@ export async function renderApprovalSettings(host) {
       await api.updateApprovalSettings({ require_approval: want, reviewers });
       showToast(t('approval.toast.saved'), 'success');
       await renderApprovalSettings(host);
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   };
 }

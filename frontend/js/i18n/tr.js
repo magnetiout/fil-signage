@@ -1,6 +1,12 @@
 // Turkish admin catalog. Central, offline TR/EN resources; reviewed against source context.
 // API identifiers, product names and user content keep their original values.
 export default {
+
+
+  'admin.plan.prices_unchecked': "Bu sunucuda Stripe yapılandırılmadığı için bağlı fiyatlar doğrulanmadan kaydedildi.",
+  'admin.plan.server_warning': "Kaydedildi. Sunucu ek bir uyarı döndürdü.",
+  'storage.test.failed': "Depolama bağlantısı kurulamadı: {error}",
+
   'history.item_content': "Medya {id}",
   'history.item_widget': "Bileşen {id}",
   'history.item_playlist': "Oynatma listesi {id}",

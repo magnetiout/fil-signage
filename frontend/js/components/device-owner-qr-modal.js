@@ -4,7 +4,7 @@ import { renderHTML, uiText, translatedAttribute, binding } from '../lib/i18n-bi
 // setup, and Android silently installs the player as device owner. Shared by the device detail
 // page and the Add Display flow so both show the exact same (always-current) QR. The checksum in
 // the payload is computed server-side from the SERVED apk, so it can't drift from the build.
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from './toast.js';
 import { esc } from '../utils.js';
 import { message as t } from '../i18n.js';
@@ -12,7 +12,7 @@ import { message as t } from '../i18n.js';
 export async function showDeviceOwnerQRModal() {
   let info;
   try { info = await api.getDeviceOwnerQR(); }
-  catch (e) { showToast(e.uiMessage || e.message || t('device.owner_provision.error'), 'error'); return; }
+  catch (e) { showToast(errorMessage(e) || t('device.owner_provision.error'), 'error'); return; }
 
   // Surface whether the checksum was derived from the live APK (the safe case) or fell back to a
   // constant because the server has no APK to read (the QR would then point at a missing download).

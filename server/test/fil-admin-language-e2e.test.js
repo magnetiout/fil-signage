@@ -141,3 +141,21 @@ test('a delayed signed-out configuration cannot overwrite a newer authenticated 
   assert(await page.$('#fileInput'),'the authenticated media page remains mounted');assert.equal(await page.$('#loginEmail'),null);assert.deepEqual(errors,[]);
  }finally{await browser?.close();s.stop()}
 });
+
+test('API and network error states switch language in place without exposing unknown diagnostic text',{skip:SKIP,timeout:90000},async()=>{
+ const s=await startServer('fil-error-language');let browser;
+ try{
+  await s.api('PUT','/auth/me',{ui_mode:'advanced',onboarded:true});const user=await s.api('GET','/auth/me');
+  browser=await launch();const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));let network=false;
+  await page.evaluateOnNewDocument((token,user)=>{if(window.top!==window)return;localStorage.setItem('token',token);localStorage.setItem('user',JSON.stringify(user));localStorage.setItem('rd_onboarded','1')},s.token,user);
+  await page.setRequestInterception(true);
+  page.on('request',r=>{if(new URL(r.url()).pathname==='/api/audience/settings'){if(network)r.abort('failed');else r.respond({status:500,contentType:'application/json',body:JSON.stringify({error:'INTERNAL_PRIVATE_DIAGNOSTIC_NOT_FOR_UI',code:'UNKNOWN_TEST_CODE'})});}else r.continue()});
+  const tr=require('../../frontend/js/i18n/tr.js').default,en=require('../../frontend/js/i18n/en.js').default;
+  await page.goto(s.base+'/app#/audience');await page.waitForFunction(()=>document.getElementById('audSettings')?.querySelector('p'));
+  for(const mode of ['http','network']){
+   if(mode==='network'){network=true;await page.reload();await page.waitForFunction(()=>document.getElementById('audSettings')?.querySelector('p'));}
+   for(const language of ['en','tr']){await page.select('#adminLanguage',language);const text=await page.$eval('#audSettings',e=>e.textContent.trim());assert.equal(text,(language==='tr'?tr:en)['common.request_failed']);assert(!text.includes('INTERNAL_PRIVATE'));}
+  }
+  assert.deepEqual(errors,[]);
+ }finally{await browser?.close();s.stop()}
+});

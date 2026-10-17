@@ -13,7 +13,7 @@ import { uiText, renderHTML, translatedAttribute, bindMessage, bindText } from '
  * Every server value — deck names, original text, translations — reaches the page via esc() or
  * .value only. Translations are written by a model and are untrusted text like any other.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from '../components/toast.js';
@@ -62,7 +62,7 @@ export async function render(container, hash = window.location.hash || '') {
       api.aiTranslations().then((r) => (r && r.translations) || []),
     ]);
   } catch (err) {
-    container.querySelector('[data-decks]').innerHTML = `<p class="simple-status">${uiText((err && (err.uiMessage || err.message)) || t('translate.load_failed'))}</p>`;
+    container.querySelector('[data-decks]').innerHTML = `<p class="simple-status">${uiText((err && (errorMessage(err))) || t('translate.load_failed'))}</p>`;
     return;
   }
   if (run !== alive) return;
@@ -126,7 +126,7 @@ export async function render(container, hash = window.location.hash || '') {
         if (window.location.hash === hash) render(container, hash);
       } catch (err) {
         e.target.disabled = false;
-        bindMessage(status, (err && (err.uiMessage || err.message)) || t('translate.failed'));
+        bindMessage(status, (err && (errorMessage(err))) || t('translate.failed'));
       }
     };
   }
@@ -169,7 +169,7 @@ export async function render(container, hash = window.location.hash || '') {
       const changed = () => edits().some((e, i) => e.text !== x.strings[i].text);
       sec.querySelector('[data-save]')?.addEventListener('click', async () => {
         try { await api.aiTranslationSave(x.id, edits()); showToast(t('translate.saved'), 'success'); drawReview(id); refresh(); }
-        catch (err) { bindMessage(status, (err && (err.uiMessage || err.message)) || t('translate.failed')); }
+        catch (err) { bindMessage(status, (err && (errorMessage(err))) || t('translate.failed')); }
       });
       sec.querySelector('[data-approve]')?.addEventListener('click', async () => {
         try {
@@ -177,12 +177,12 @@ export async function render(container, hash = window.location.hash || '') {
           await api.aiTranslationApprove(x.id);
           showToast(t('translate.approved_toast', { lang: langLabel(x.lang) }), 'success');
           drawReview(id); refresh();
-        } catch (err) { bindMessage(status, (err && (err.uiMessage || err.message)) || t('translate.failed')); }
+        } catch (err) { bindMessage(status, (err && (errorMessage(err))) || t('translate.failed')); }
       });
       sec.querySelector('[data-delete]')?.addEventListener('click', async () => {
         if (!confirm(t('translate.delete_confirm', { lang: langLabel(x.lang) }))) return;   // eslint-disable-line no-alert
         try { await api.aiTranslationDelete(x.id); drawReview(id); refresh(); }
-        catch (err) { bindMessage(status, (err && (err.uiMessage || err.message)) || t('translate.failed')); }
+        catch (err) { bindMessage(status, (err && (errorMessage(err))) || t('translate.failed')); }
       });
     });
   }
@@ -197,7 +197,7 @@ export async function render(container, hash = window.location.hash || '') {
   async function drawScreens() {
     const host = container.querySelector('[data-screens]');
     let r;
-    try { r = await api.aiScreenLanguages(); } catch (err) { host.innerHTML = `<p class="simple-status">${uiText((err && (err.uiMessage || err.message)) || '')}</p>`; return; }
+    try { r = await api.aiScreenLanguages(); } catch (err) { host.innerHTML = `<p class="simple-status">${uiText((err && (errorMessage(err))) || '')}</p>`; return; }
     if (run !== alive) return;
     const langs = r.languages || [];
     if (!r.screens || !r.screens.length) { host.innerHTML = `<p class="simple-muted">${uiText(t('translate.no_screens'))}</p>`; return; }
@@ -217,7 +217,7 @@ export async function render(container, hash = window.location.hash || '') {
         const v = sel.value;
         const body = v === 'rotate' ? ['rotate', langs] : v.startsWith('fixed:') ? ['fixed', [v.slice(6)]] : ['original', []];
         try { await api.aiSetScreenLanguage(s.id, body[0], body[1]); showToast(t('translate.screen_saved', { name: s.name }), 'success'); }
-        catch (err) { sel.value = valueOf(s); showToast((err && (err.uiMessage || err.message)) || t('translate.failed'), 'error'); }
+        catch (err) { sel.value = valueOf(s); showToast((err && (errorMessage(err))) || t('translate.failed'), 'error'); }
       });
     });
   }

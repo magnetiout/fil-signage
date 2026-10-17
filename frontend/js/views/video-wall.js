@@ -1,7 +1,7 @@
-import { messageCount as tn } from '../i18n.js';
+import { localizedError, messageCount as tn } from '../i18n.js';
 import { renderHTML, uiText, translatedAttribute, bindAttribute, bindMessage, attributeBinding, binding } from '../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api, assertLocalCallAllowed } from '../api.js';
 import { on, off, requestScreenshot } from '../socket.js';
@@ -107,7 +107,7 @@ async function renderList(container) {
         </div>
       </div>
     `).join('');
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+  } catch (err) { showToast(errorMessage(err), 'error'); }
 }
 
 // ============================================================
@@ -903,7 +903,7 @@ async function renderWallEditor(container, wallId) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...((opts && opts.headers) || {}) },
     });
     const body = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(localizeServerError(body.error) || ('HTTP ' + r.status));
+    if (!r.ok) throw localizedError(localizeServerError(body.error) || ('HTTP ' + r.status));
     return body;
   }
 
@@ -960,7 +960,7 @@ async function renderWallEditor(container, wallId) {
     if (!wall.layout_id || zones.length < 2) { box.innerHTML = ''; return; }
     if (!wall.playlist_id) { box.innerHTML = `<p style="font-size:12px;color:var(--text-muted)">${uiText(t('wall.zones_need_playlist'))}</p>`; return; }
     let pl;
-    try { pl = await jsonOrThrow(`/playlists/${wall.playlist_id}`); } catch (err) { box.innerHTML = `<p style="font-size:12px;color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; return; }
+    try { pl = await jsonOrThrow(`/playlists/${wall.playlist_id}`); } catch (err) { box.innerHTML = `<p style="font-size:12px;color:var(--danger)">${uiText((errorMessage(err)))}</p>`; return; }
     const items = pl.items || [];
     const valid = new Set(zones.map(z => z.id));
     const secs = (it) => Math.max(1, Number(it.duration_sec) || 10);
@@ -996,7 +996,7 @@ async function renderWallEditor(container, wallId) {
     `;
     const patch = async (itemId, body) => {
       try { await api.updatePlaylistItem(wall.playlist_id, itemId, body); renderZoneItems(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     };
     box.querySelectorAll('.wz-zone').forEach(sel => sel.addEventListener('change', () => patch(sel.dataset.item, { zone_id: sel.value || null })));
     box.querySelectorAll('.wz-dur').forEach(inp => inp.addEventListener('change', () => {
@@ -1015,7 +1015,7 @@ async function renderWallEditor(container, wallId) {
       if (j < 0 || j >= items.length) return;
       [order[i], order[j]] = [order[j], order[i]];
       try { await api.reorderPlaylistItems(wall.playlist_id, order); renderZoneItems(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     }));
     box.querySelectorAll('.wz-hold').forEach(btn => btn.addEventListener('click', async () => {
       try {
@@ -1024,11 +1024,11 @@ async function renderWallEditor(container, wallId) {
         if (!zoneHoldContentId) zoneHoldContentId = (await jsonOrThrow('/content/hold', { method: 'POST', body: JSON.stringify({ mode: 'freeze' }) })).id;
         await api.addPlaylistItem(wall.playlist_id, { content_id: zoneHoldContentId, zone_id: btn.dataset.zone, duration_sec: 30 });
         renderZoneItems();
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     }));
     box.querySelector('#wzPublishBtn')?.addEventListener('click', async () => {
       try { await api.publishPlaylist(wall.playlist_id); showToast(t('wall.toast.zones_published'), 'success'); renderZoneItems(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     });
   }
 
@@ -1046,7 +1046,7 @@ async function renderWallEditor(container, wallId) {
 
   document.getElementById('setWallLayoutBtn').addEventListener('click', async () => {
     try { await setWallLayout(document.getElementById('wallLayout').value || null); showToast(t('wall.toast.layout_updated'), 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   // One zone per screen: each screen's overlap with the player, as percentages of it — the quickest
@@ -1072,7 +1072,7 @@ async function renderWallEditor(container, wallId) {
       if (sel) sel.insertAdjacentHTML('beforeend', `<option value="${esc(l.id)}">${uiText(l.name)}</option>`);
       await setWallLayout(l.id);
       showToast(t('wall.toast.layout_created'), 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   document.getElementById('saveLayoutBtn').addEventListener('click', async () => {
@@ -1115,7 +1115,7 @@ async function renderWallEditor(container, wallId) {
       btn.disabled = true;
       btn.classList.remove('btn-primary');
       showToast(t("ui.video_wall.layout_saved"), 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, err.cancelled ? 'info' : 'error'); }
+    } catch (err) { showToast(errorMessage(err), err.cancelled ? 'info' : 'error'); }
   });
 
   document.getElementById('wallCommand').addEventListener('change', async (e) => {
@@ -1131,7 +1131,7 @@ async function renderWallEditor(container, wallId) {
       if (r.unsupported) msg += ' ' + t('wall.toast.cmd_unsupported', { n: r.unsupported });
       if (r.refused) msg += ' ' + t('wall.toast.cmd_refused', { n: r.refused });
       showToast(msg, (r.offline || r.unsupported || r.refused) ? 'warning' : 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   document.getElementById('renameWallBtn').addEventListener('click', async () => {
@@ -1141,7 +1141,7 @@ async function renderWallEditor(container, wallId) {
       await API(`/walls/${wallId}`, { method: 'PUT', body: JSON.stringify({ name: newName }) });
       wall.name = newName;
       bindMessage(document.getElementById('wallTitleText'), newName);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   document.getElementById('setPlaylistBtn').addEventListener('click', async () => {
@@ -1151,7 +1151,7 @@ async function renderWallEditor(container, wallId) {
       wall.playlist_id = playlistId;
       showToast(t('wall.toast.playlist_updated'), 'success');
       renderZoneItems();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   document.getElementById('deleteWallBtn').addEventListener('click', async () => {
@@ -1160,7 +1160,7 @@ async function renderWallEditor(container, wallId) {
       await API(`/walls/${wallId}`, { method: 'DELETE' });
       showToast(t('wall.toast.deleted'), 'success');
       window.location.hash = '#/walls';
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   // Warn before navigating away with unsaved layout changes

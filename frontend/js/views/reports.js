@@ -1,8 +1,8 @@
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText, attributeBinding } from '../lib/i18n-bindings.js';
-import { displayQuantity, displayValue, message as t } from '../i18n.js';
+import { localizedError, displayQuantity, displayValue, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api, meshCapability } from '../api.js';
 import { showToast } from '../components/toast.js';
@@ -18,8 +18,8 @@ import { esc } from '../utils.js';
 // the dead catch). The shared client in api.js has always thrown on !res.ok; these local copies did
 // not. Same contract now, including the 401 session-expiry reload.
 const API = (url, opts = {}) => fetch('/api' + url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.reports.request_failed_value0_ad6dc0", {value0: r.status})); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw localizedError(localizeServerError(e.error) || t("ui.reports.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
 });
 
@@ -193,7 +193,7 @@ export async function render(container) {
       renderBarChart('hourlyChart', hourData);
 
     } catch (err) {
-      content.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('report.error'))}</h3><p>${uiText((err.uiMessage || err.message))}</p></div>`;
+      content.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('report.error'))}</h3><p>${uiText((errorMessage(err)))}</p></div>`;
     }
   }
 }
@@ -326,7 +326,7 @@ async function loadUptime() {
   try {
     r = await api.get(`/mesh/uptime?clientId=${encodeURIComponent(uptimeState.clientId)}&from=${from}&to=${to}`);
   } catch (e) {
-    body.innerHTML = `<div style="color:var(--text-muted)">${renderHTML(t("ui.reports.could_not_load_1c60b7", {value0: (e.uiMessage || e.message)}))}</div>`;
+    body.innerHTML = `<div style="color:var(--text-muted)">${renderHTML(t("ui.reports.could_not_load_1c60b7", {value0: (errorMessage(e))}))}</div>`;
     return;
   }
   if (r.uptimePct == null) {
@@ -385,7 +385,7 @@ async function downloadUptimeCsv() {
     const res = await fetch(
       `/api/mesh/uptime.csv?clientId=${encodeURIComponent(uptimeState.clientId)}&from=${from}&to=${to}`,
       { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-    if (!res.ok) throw new Error(t("ui.reports.export_failed_value0_6dc4a6", {value0: res.status}));
+    if (!res.ok) throw localizedError(t("ui.reports.export_failed_value0_6dc4a6", {value0: res.status}));
     const blob = await res.blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -396,6 +396,6 @@ async function downloadUptimeCsv() {
     // Revoked on a delay: some browsers abort a download whose object URL is released too early.
     setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
   } catch (e) {
-    showToast(t("ui.reports.could_not_export_value0_f26ab1", {value0: e.uiMessage || e.message}), 'error');
+    showToast(t("ui.reports.could_not_export_value0_f26ab1", {value0: errorMessage(e)}), 'error');
   }
 }

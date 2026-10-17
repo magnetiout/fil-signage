@@ -35,7 +35,7 @@ import { getLocale, message as t, messageCount as tn } from '../i18n.js';
  * or widgets when head office does not allow them — and says why in one line, so nothing looks
  * missing by accident. The server refuses all of them anyway (FILL_FLAT / FILL_LIVE / FILL_TYPE).
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from './toast.js';
 import { esc, hydrateAuthImages } from '../utils.js';
 import {
@@ -191,7 +191,7 @@ export async function openContentPicker(opts = {}) {
    * #318/#319: name order by default — filenames carrying a timestamp are the common case.
    */
   function sortItems(list, mode) {
-    const name = (i) => (i.filename || i.name || '').toLowerCase();
+    const name = (i) => (i.filename || i.name || '').toLocaleLowerCase(getLocale());
     const when = (i) => Number(i.created_at) || 0;
     const dur = (i) => Number(i.duration_sec) || 0;
     const by = {
@@ -251,8 +251,8 @@ export async function openContentPicker(opts = {}) {
     // Search finds FOLDERS as well as files: while there is a query, the bar shows the folders
     // whose names match — from anywhere in the tree, with their path — INSTEAD of this level's
     // children, so one of two hundred is a few keystrokes away rather than a scroll.
-    const q = ($('#addItemSearch')?.value || '').trim().toLowerCase();
-    const hits = q ? allFolders.filter((f) => (f.name || '').toLowerCase().includes(q) && countIn(f.id) > 0 && f.id !== folderFilter).slice(0, 40) : [];
+    const q = ($('#addItemSearch')?.value || '').trim().toLocaleLowerCase(getLocale());
+    const hits = q ? allFolders.filter((f) => (f.name || '').toLocaleLowerCase(getLocale()).includes(q) && countIn(f.id) > 0 && f.id !== folderFilter).slice(0, 40) : [];
     if (hits.length) {
       parts.push(`<span style="flex:0 0 auto;align-self:center;color:var(--text-muted);font-size:11px;padding:0 2px">${uiText(t('playlist.folders_matching'))}</span>`);
       for (const f of hits) parts.push(chip(f.id, pathTo(f.id).map((x) => x.name).join(' › ') || f.name, countIn(f.id)));
@@ -335,7 +335,7 @@ export async function openContentPicker(opts = {}) {
     } catch (err) {
       btn.disabled = false;
       bindMessage(btn, labels.idle);
-      showToast(err.uiMessage || err.message, 'error');   // the server's message already names the item
+      showToast(errorMessage(err), 'error');   // the server's message already names the item
     }
   }
 
@@ -347,7 +347,7 @@ export async function openContentPicker(opts = {}) {
     if (nestingBlockedBy) { list.innerHTML = emptyRow(tn('playlist.nest_blocked', nestingBlockedBy)); return; }
     const candidates = sortItems(allPlaylists.filter((p) =>
       p.id !== targetPlaylistId && !p.has_children
-      && (p.name || '').toLowerCase().includes(search)), $('#addItemSort')?.value || 'name_asc');
+      && (p.name || '').toLocaleLowerCase(getLocale()).includes(search)), $('#addItemSort')?.value || 'name_asc');
     if (!candidates.length) { list.innerHTML = emptyRow(t('playlist.no_playlists_nestable')); return; }
     list.innerHTML = candidates.map((p) => `
       <div class="add-item-row" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius)">
@@ -370,7 +370,7 @@ export async function openContentPicker(opts = {}) {
    * not from the display that will render the widget.
    */
   function renderKioskTab(list, search) {
-    const pages = sortItems(allKiosk.filter((k) => (k.name || '').toLowerCase().includes(search)), $('#addItemSort')?.value || 'name_asc');
+    const pages = sortItems(allKiosk.filter((k) => (k.name || '').toLocaleLowerCase(getLocale()).includes(search)), $('#addItemSort')?.value || 'name_asc');
     if (!pages.length) {
       list.innerHTML = `<div style="color:var(--text-muted);padding:24px;text-align:center">${renderHTML(t('playlist.no_kiosk_found'))}
         <a href="#/kiosk" style="color:var(--accent)">${uiText(t('device.assign.create_one'))}</a></div>`;
@@ -399,7 +399,7 @@ export async function openContentPicker(opts = {}) {
         await doAdd(btn, { type: 'widget', id: w.id, kiosk: true }, { idle: t('playlist.add_btn') });
       } catch (err) {
         btn.disabled = false;
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     }));
   }
@@ -421,7 +421,7 @@ export async function openContentPicker(opts = {}) {
 
   function renderTab() {
     const list = $('#addItemList');
-    const search = ($('#addItemSearch')?.value || '').toLowerCase();
+    const search = ($('#addItemSearch')?.value || '').toLocaleLowerCase(getLocale());
     const folderSel = $('#addItemFolder');
     if (folderSel) folderSel.style.display = activeTab === 'content' && allFolders.length ? '' : 'none';
     const bar = $('#addItemFolderBar');
@@ -429,7 +429,7 @@ export async function openContentPicker(opts = {}) {
     const sortSel = $('#addItemSort');
     if (sortSel) sortSel.style.display = activeTab === 'content' || activeTab === 'widgets' ? '' : 'none';
 
-    if (loadError) { list.innerHTML = emptyRow(t('playlist.load_failed', { error: loadError.message })); return; }
+    if (loadError) { list.innerHTML = emptyRow(t('playlist.load_failed', { error: errorMessage(loadError) })); return; }
     if (activeTab === 'playlists') return renderPlaylistsTab(list, search);
     if (activeTab === 'kiosk') return renderKioskTab(list, search);
 
@@ -439,7 +439,7 @@ export async function openContentPicker(opts = {}) {
     // ⚠️ SUBTREE, not the folder alone: picking a parent means "everything under here".
     const wanted = active && active !== '__root__' ? subtreeIds(active) : null;
     const matched = sortItems(items.filter((item) => {
-      const name = (item.filename || item.name || '').toLowerCase();
+      const name = (item.filename || item.name || '').toLocaleLowerCase(getLocale());
       if (!name.includes(search)) return false;
       if (!active) return true;
       if (active === '__root__') return !item.folder_id;
@@ -510,7 +510,7 @@ export async function openContentPicker(opts = {}) {
         } catch (err) {
           btn.disabled = false;
           bindMessage(btn, idleLabel);
-          showToast(err.uiMessage || err.message, 'error');
+          showToast(errorMessage(err), 'error');
         }
         return;
       }
@@ -561,7 +561,7 @@ export async function openContentPicker(opts = {}) {
       if (skipped.length) showToast(t('playlist.toast.bulk_added_partial', { added, skipped: skipped.length }), 'warning');
       else showToast(tn('playlist.toast.bulk_added', added), 'success');
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     } finally {
       btn.disabled = false;
       updateBulkBar();

@@ -1,6 +1,6 @@
 import { renderHTML, uiText, bindMessage } from '../lib/i18n-bindings.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from './toast.js';
 import { esc } from '../utils.js';
 import { message as t } from '../i18n.js';
@@ -69,7 +69,7 @@ export async function setupViewAccess(device) {
       try {
         state = await api.updateViewAccess(device.id, { enabled: on });
         showToast(on ? t('device.view.turned_on') : t('device.view.turned_off'));
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
       draw();
     });
     if (!state.enabled) return;
@@ -77,7 +77,7 @@ export async function setupViewAccess(device) {
     host.querySelector('#viewRegenBtn').addEventListener('click', async () => {
       if (!confirm(t('device.view.confirm_regenerate'))) return;
       try { state = await api.regenerateViewLink(device.id); showToast(t('device.view.regenerated')); draw(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     });
     host.querySelector('#viewCidrSave').addEventListener('click', async () => {
       const errEl = host.querySelector('#viewCidrError');
@@ -86,7 +86,7 @@ export async function setupViewAccess(device) {
         state = await api.updateViewAccess(device.id, { cidrs: host.querySelector('#viewCidrs').value });
         showToast(t('device.view.networks_saved'));
         draw();
-      } catch (err) { bindMessage(errEl, (err.uiMessage || err.message)); }
+      } catch (err) { bindMessage(errEl, (errorMessage(err))); }
     });
     const net = host.querySelector('#viewNetCopyBtn');
     if (net) net.addEventListener('click', () => copy('#viewNetUrl'));

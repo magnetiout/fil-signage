@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { renderHTML, bindMessage, bindText } from '../lib/i18n-bindings.js';
 
 // #10: forced first-login password change. When an admin provisions a user
@@ -72,7 +73,7 @@ export async function render(container) {
     } catch (err) {
       submit.disabled = false;
       bindText(submit, 'forcepw.submit', undefined);
-      showError(err?.message || t('forcepw.error_generic'));
+      showError(errorMessage(err));
     }
   }
 

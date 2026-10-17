@@ -5,7 +5,7 @@ import { displayValue, message as t } from '../i18n.js';
 // The review queue: what is waiting, who sent it, when, what screens it touches, what changed
 // against the live version, a preview, and the decisions. Creators see their own submissions
 // here too. Approving records a decision; publishing is a separate, explicit act.
-import { api, fetchRevisionRender, fetchRevisionFileUrl } from '../api.js';
+import { errorMessage, api, fetchRevisionRender, fetchRevisionFileUrl } from '../api.js';
 
 import { showToast } from '../components/toast.js';
 import { approvalSettings } from '../components/approval-actions.js';
@@ -32,7 +32,7 @@ export async function render(container) {
 
   async function load() {
     try { rows = filter.value === 'mine' ? await api.getMySubmissions('all') : await api.getReviewQueue(filter.value); }
-    catch (e) { list.innerHTML = `<div style="margin:12px" class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; return; }
+    catch (e) { list.innerHTML = `<div style="margin:12px" class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; return; }
     list.innerHTML = rows.map((r) => `
       <div data-id="${esc(r.id)}" style="padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;${selected === r.id ? 'background:var(--bg-secondary)' : ''}">
         <div style="display:flex;justify-content:space-between;gap:8px"><strong>${uiText(r.resource_name || r.resource_id)}</strong><span class="pill" style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-secondary)">${uiText(t('review.status.' + r.status))}</span></div>
@@ -58,7 +58,7 @@ export async function render(container) {
     selected = id; load();
     detail.innerHTML = esc(t('common.loading'));
     let sub;
-    try { sub = await api.getSubmission(id); } catch (e) { detail.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; return; }
+    try { sub = await api.getSubmission(id); } catch (e) { detail.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; return; }
     const st = sub.revision && sub.revision.state || {};
     // A content request (views/requests.js) says itself who may decide it: with approval off, any editor.
     const rq = sub.request || null;
@@ -90,7 +90,7 @@ export async function render(container) {
       } else if (sub.resource_type === 'slide_deck') {
         pv.innerHTML = `<ol style="margin:0 0 0 18px;padding:0">${renderHTML(((st.doc && st.doc.slides) || []).map((sl) => `<li>${uiText(sl.name || sl.id)}</li>`).join(''))}</ol>`;
       }
-    } catch (e) { bindMessage(pv, (e.uiMessage || e.message)); }
+    } catch (e) { bindMessage(pv, (errorMessage(e))); }
 
     const actions = detail.querySelector('#reviewActions');
     const btn = (attr, label, cls = 'btn-secondary') => `<button class="btn ${cls} btn-sm" ${attr}>${uiText(label)}</button>`;
@@ -111,7 +111,7 @@ export async function render(container) {
         if (b.hasAttribute('data-publish')) { await api.publishSubmission(sub.id); showToast(t('review.toast.published'), 'success'); }
         if (b.hasAttribute('data-withdraw')) { await api.withdrawSubmission(sub.id); showToast(t('review.toast.withdrawn')); }
         await show(sub.id);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); await show(sub.id); }
+      } catch (err) { showToast(errorMessage(err), 'error'); await show(sub.id); }
     };
   }
   list.addEventListener('click', (e) => { const r = e.target.closest('[data-id]'); if (r) show(r.dataset.id); });

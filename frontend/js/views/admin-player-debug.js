@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { messageCount as tn } from '../i18n.js';
 import { renderHTML, uiText, translatedAttribute, bindMessage, bindText } from '../lib/i18n-bindings.js';
 
@@ -172,7 +173,7 @@ export async function render(container) {
       loadSummary();
       loadList();
     } catch (err) {
-      showToast(t("ui.admin_player_debug.delete_failed_c834e9") + ((err.uiMessage || err.message) || err), 'error');
+      showToast(t("ui.admin_player_debug.delete_failed_c834e9") + ((errorMessage(err)) || err), 'error');
     }
   };
 
@@ -208,7 +209,7 @@ async function loadSummary() {
       `).join(''))}
     `;
   } catch (err) {
-    el.innerHTML = `<span style="color:var(--danger)">${renderHTML(t('ui.debug.summary_failed',{error:err.uiMessage||err.message||err}))}</span>`;
+    el.innerHTML = `<span style="color:var(--danger)">${renderHTML(t('ui.debug.summary_failed',{error:errorMessage(err)||err}))}</span>`;
   }
 }
 
@@ -336,6 +337,6 @@ async function loadList() {
       pag.appendChild(next);
     }
   } catch (err) {
-    el.innerHTML = `<p style="color:var(--danger)">${renderHTML(t('ui.debug.load_failed',{error:err.uiMessage||err.message||err}))}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${renderHTML(t('ui.debug.load_failed',{error:errorMessage(err)||err}))}</p>`;
   }
 }

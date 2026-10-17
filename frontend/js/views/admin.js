@@ -1,8 +1,9 @@
+import {getLocale} from '../i18n.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
+import { localizedError, displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api } from '../api.js';
 import { mountPromotionsAdmin } from '../components/promotions-admin.js';
@@ -26,7 +27,7 @@ async function loadTrustInstance() {
   const el = document.getElementById('trustInstance');
   if (!el) return;
   try { el.innerHTML = reportHtml(await api.get('/trust/report?scope=instance')); }
-  catch (e) { el.innerHTML = `<p style="color:var(--text-muted)">${uiText((e.uiMessage || e.message))}</p>`; }
+  catch (e) { el.innerHTML = `<p style="color:var(--text-muted)">${uiText((errorMessage(e)))}</p>`; }
   mountOutbound(document.getElementById('trustOutboundInstance'), { instance: true });
   mountPublicToggle(document.getElementById('trustPublic'));
   // 3.0 export / import the whole server (components/org-move.js, docs/move-server.md).
@@ -44,8 +45,8 @@ const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}
 // the dead catch). The shared client in api.js has always thrown on !res.ok; these local copies did
 // not. Same contract now, including the 401 session-expiry reload.
 const API = (url, opts = {}) => fetch('/api' + url, { headers: headers(), ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.admin.request_failed_value0_ad6dc0", {value0: r.status})); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw localizedError(localizeServerError(e.error) || t("ui.admin.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
 });
 
@@ -292,7 +293,7 @@ async function loadAttentionDetail(d) {
   const table = (heads, rows) => rows.length ? `<div class="table-wrap"><table class="att-table"><thead><tr>${renderHTML(heads.map((h) => `<th>${uiText(h)}</th>`).join(''))}</tr></thead>
     <tbody>${renderHTML(rows.map((r) => `<tr>${renderHTML(r.map((c) => `<td>${renderHTML(c)}</td>`).join(''))}</tr>`).join(''))}</tbody></table></div>` : `<p class="platform-empty">${uiText(t('platform.att.nothing_now'))}</p>`;
   let r = {};
-  if (item !== 'host') try { r = await api.adminAttention(item); } catch (err) { body.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; return; }
+  if (item !== 'host') try { r = await api.adminAttention(item); } catch (err) { body.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`; return; }
   switch (item) {
     case 'sso':
       body.innerHTML = `<p class="att-why">${uiText(t('platform.att.sso_why'))}</p>` +
@@ -488,7 +489,7 @@ async function loadOverview() {
       d.addEventListener('toggle', () => { if (d.open && !d.dataset.loaded) { d.dataset.loaded = '1'; loadAttentionDetail(d); } });
     });
   } catch (err) {
-    el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`;
   }
 }
 
@@ -572,11 +573,11 @@ async function loadSsoOnlyRequests() {
   const decide = async (id, decision) => {
     try {
       const res = await authed(`/organizations/sso-only/removal-requests/${id}/${decision}`, { method: 'POST', body: '{}' });
-      if (!res.ok) throw new Error((localizeServerError((await res.json().catch(() => ({}))).error)) || String(res.status));
+      if (!res.ok) throw localizedError((localizeServerError((await res.json().catch(() => ({}))).error)) || String(res.status));
       showToast(t(decision === 'approve' ? 'admin.sso_only.approved' : 'admin.sso_only.rejected'), 'success');
       await loadSsoOnlyRequests();
     } catch (e) {
-      showToast((e && (e.uiMessage || e.message)) || t('admin.sso_only.failed'), 'error');
+      showToast((e && (errorMessage(e))) || t('admin.sso_only.failed'), 'error');
     }
   };
   // Approving RE-OPENS password sign-in for a whole organization, so it is confirmed; rejecting
@@ -594,9 +595,9 @@ function wireOrgFilter(el) {
   if (!search) return;
   const cards = [...el.querySelectorAll('.org-card[data-filter-text]')];
   const apply = () => {
-    const q = search.value.trim().toLowerCase();
+    const q = search.value.trim().toLocaleLowerCase(getLocale());
     let shown = 0;
-    for (const c of cards) { const ok = !q || c.dataset.filterText.includes(q); c.hidden = !ok; if (ok) shown++; }
+    for (const c of cards) { const ok = !q || c.dataset.filterText.toLocaleLowerCase(getLocale()).includes(q); c.hidden = !ok; if (ok) shown++; }
     if (count) bindText(count, 'platform.orgs.showing', { n: shown, total: cards.length });
   };
   search.oninput = apply;
@@ -610,7 +611,7 @@ async function loadOrgs() {
   try {
     orgs = await api.adminListOrgs();
   } catch (err) {
-    el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message) || t("ui.admin.failed_to_load_organizations_924642"))}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)) || t("ui.admin.failed_to_load_organizations_924642"))}</p>`;
     return;
   }
   // #talk: the per-org Talk controls are only meaningful when the TALK_ENABLED master switch is on.
@@ -630,7 +631,7 @@ async function loadOrgs() {
         <button class="btn btn-danger btn-sm" data-del-ws="${esc(w.id)}" data-ws-name="${esc(w.name)}">${renderHTML(t('admin.orgs.delete_ws'))}</button>
       </div>`).join('');
     return `
-      <div class="org-card" style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px" data-filter-text="${esc([o.name, o.owner_email, o.owner_name, ...(o.workspaces || []).map((w) => w.name)].filter(Boolean).join(' ').toLowerCase())}">
+      <div class="org-card" style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px" data-filter-text="${esc([o.name, o.owner_email, o.owner_name, ...(o.workspaces || []).map((w) => w.name)].filter(Boolean).join(' '))}">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-secondary)">
           <div>
             <div style="font-weight:600">${uiText(o.name)}</div>
@@ -664,7 +665,7 @@ async function loadOrgs() {
     try {
       await api.adminSetOrgTalk(id, { talk_enabled: enabled, ice_servers: ice || null });
       showToast(t('admin.orgs.talk_saved'), 'success');
-    } catch (e) { showToast((e && (e.uiMessage || e.message)) || t('admin.orgs.talk_save_failed'), 'error'); }
+    } catch (e) { showToast((e && (errorMessage(e))) || t('admin.orgs.talk_save_failed'), 'error'); }
   }));
 
   el.querySelectorAll('[data-del-org]').forEach(btn => btn.addEventListener('click', () => {
@@ -703,7 +704,7 @@ async function loadBranding() {
   const el = document.getElementById('brandingForm');
   if (!el) return;
   let b = {};
-  try { b = await api.adminGetBranding(); } catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
+  try { b = await api.adminGetBranding(); } catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(e)) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
   const v = (x) => esc(x == null ? '' : x);
   el.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:640px">
@@ -731,7 +732,7 @@ async function loadBranding() {
         hide_branding: document.getElementById('brHide').checked,
       });
       showToast(t('admin.branding.saved'), 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 }
 
@@ -746,10 +747,10 @@ function wireUserFilters(el) {
   if (!search || !role) return;
   const rows = [...el.querySelectorAll('tr[data-filter-text]')];
   const apply = () => {
-    const q = search.value.trim().toLowerCase();
+    const q = search.value.trim().toLocaleLowerCase(getLocale());
     let shown = 0;
     for (const r of rows) {
-      const ok = (!q || r.dataset.filterText.includes(q)) && (!role.value || r.dataset.filterKind === role.value);
+      const ok = (!q || r.dataset.filterText.toLocaleLowerCase(getLocale()).includes(q)) && (!role.value || r.dataset.filterKind === role.value);
       r.hidden = !ok;
       if (ok) shown++;
     }
@@ -783,7 +784,7 @@ async function loadUsers() {
         </tr></thead>
         <tbody>
           ${renderHTML(users.map(u => `
-            <tr style="border-bottom:1px solid var(--border)" data-filter-text="${esc([u.name, u.email, workspaceSummary(u)].filter(Boolean).join(' ').toLowerCase())}" data-filter-kind="${isPlatformStaffRole(u.role) ? 'platform' : 'user'}">
+            <tr style="border-bottom:1px solid var(--border)" data-filter-text="${esc([u.name, u.email, workspaceSummary(u)].filter(Boolean).join(' '))}" data-filter-kind="${isPlatformStaffRole(u.role) ? 'platform' : 'user'}">
               <!-- ESCAPED: these come from self-registration and from an identity provider's
                    email claim, so they are attacker-chosen. A reviewer registered an address whose
                    local part was an img tag with an onerror handler, anonymously, and got script
@@ -817,7 +818,7 @@ async function loadUsers() {
         try {
           await API(`/auth/users/${select.dataset.roleUser}/role`, { method: 'PUT', body: JSON.stringify({ role: select.value }) });
           showToast(t('admin.toast.role_updated'), 'success');
-        } catch (err) { showToast(err.uiMessage || err.message, 'error'); loadUsers(); }
+        } catch (err) { showToast(errorMessage(err), 'error'); loadUsers(); }
       };
     });
 
@@ -826,7 +827,7 @@ async function loadUsers() {
         try {
           await API('/subscription/assign', { method: 'POST', body: JSON.stringify({ user_id: select.dataset.planUser, plan_id: select.value }) });
           showToast(t('admin.toast.plan_updated'), 'success');
-        } catch (err) { showToast(err.uiMessage || err.message, 'error'); loadUsers(); }
+        } catch (err) { showToast(errorMessage(err), 'error'); loadUsers(); }
       };
     });
 
@@ -851,7 +852,7 @@ async function loadUsers() {
         try {
           await api.resetUserPassword(btn.dataset.resetPwUser, pw);
           showToast(t('admin.toast.password_reset'), 'success');
-        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+        } catch (err) { showToast(errorMessage(err), 'error'); }
       };
     });
 
@@ -860,14 +861,14 @@ async function loadUsers() {
       btn.onclick = async () => {
         if (confirming) {
           try { await api.deleteUser(btn.dataset.deleteUser); showToast(t('admin.toast.user_removed'), 'success'); loadUsers(); }
-          catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+          catch (err) { showToast(errorMessage(err), 'error'); }
           return;
         }
         confirming = true; bindText(btn, 'admin.confirm', undefined); btn.style.background = 'var(--danger)'; btn.style.color = 'white';
         setTimeout(() => { confirming = false; bindText(btn, 'admin.remove', undefined); btn.style.background = ''; btn.style.color = ''; }, 3000);
       };
     });
-  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; }
+  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`; }
 }
 
 // #146: toggle /api/status debug-metrics exposure. Mirrors loadBranding's
@@ -877,7 +878,7 @@ async function loadStatusDebug() {
   if (!el) return;
   let enabled = false;
   try { enabled = (await api.adminGetStatusDebug()).enabled; }
-  catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
+  catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(e)) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
   el.innerHTML = `
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="statusDebugChk" ${enabled ? 'checked' : ''}> ${renderHTML(t("ui.admin.expose_api_status_debug_metrics_bdc780"))}
@@ -888,7 +889,7 @@ async function loadStatusDebug() {
     const chk = e.target;
     chk.disabled = true;
     try { await api.adminSetStatusDebug(chk.checked); showToast(t(chk.checked ? 'ui.admin.status_debug_enabled' : 'ui.admin.status_debug_disabled'), 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); chk.checked = !chk.checked; }
+    catch (err) { showToast(errorMessage(err), 'error'); chk.checked = !chk.checked; }
     finally { chk.disabled = false; }
   };
 }
@@ -903,7 +904,7 @@ async function loadTvSafe() {
   if (!el) return;
   let data;
   try { data = await api.adminGetVideoVariants(); }
-  catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
+  catch (e) { el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(e)) || t("ui.admin.failed_to_load_af14db"))}</p>`; return; }
   const s = data.settings || {};
   const row = (label, input, hint = '') => `<div class="form-group" style="margin-bottom:10px"><label style="font-size:13px">${uiText(label)}</label>${renderHTML(input)}${renderHTML(hint ? `<p style="color:var(--text-muted);font-size:12px;margin:4px 0 0">${uiText(hint)}</p>` : '')}</div>`;
   el.innerHTML = `
@@ -928,7 +929,7 @@ async function loadTvSafe() {
         org_monthly_minutes: Number(document.getElementById('tvSafeMinutes').value),
       });
       showToast(t('platform.tvsafe.saved'), 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
     finally { btn.disabled = false; }
   };
 }
@@ -955,7 +956,7 @@ async function loadSharePresenters() {
     const sel = e.target;
     sel.disabled = true;
     try { await api.adminSetScreenShare(Number(sel.value)); showToast(t('screen_share.admin.saved'), 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
     finally { sel.disabled = false; }
   };
 }
@@ -974,7 +975,7 @@ async function loadStockKeys() {
   try { data = await api.adminGetStockKeys(); }
   catch (e) {
     if (e.status === 403) { document.getElementById('stockKeysSection')?.remove(); return; }
-    el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_af14db"))}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(e)) || t("ui.admin.failed_to_load_af14db"))}</p>`;
     return;
   }
   const stateText = (p) => p.source === 'env' ? t('stock.admin.from_env', { env: p.env })
@@ -1005,11 +1006,11 @@ async function loadStockKeys() {
       const key = input.value.trim();
       if (!key) return;
       try { await api.adminSetStockKey(id, key); input.value = ''; showToast(t('stock.admin.saved_toast'), 'success'); loadStockKeys(); }
-      catch (err) { bindMessage(result, (err.uiMessage || err.message)); }
+      catch (err) { bindMessage(result, (errorMessage(err))); }
     });
     row.querySelector('[data-stock-remove]')?.addEventListener('click', async () => {
       try { await api.adminSetStockKey(id, ''); loadStockKeys(); }
-      catch (err) { bindMessage(result, (err.uiMessage || err.message)); }
+      catch (err) { bindMessage(result, (errorMessage(err))); }
     });
     row.querySelector('[data-stock-test]')?.addEventListener('click', async (e) => {
       e.target.disabled = true;
@@ -1017,7 +1018,7 @@ async function loadStockKeys() {
       try {
         const r = await api.adminTestStockKey(id);
         bindMessage(result, r.ok ? t('stock.admin.test_ok') : (r.error || t('stock.admin.test_failed')));
-      } catch (err) { bindMessage(result, (err.uiMessage || err.message)); }
+      } catch (err) { bindMessage(result, (errorMessage(err))); }
       finally { e.target.disabled = false; }
     });
   });
@@ -1086,7 +1087,7 @@ async function loadPlans() {
       const { openPlanEditor } = await import('../components/plan-editor.js');
       openPlanEditor({ plan: plans.find((x) => x.id === b.dataset.planEdit), stripeConfigured, onSaved: () => loadPlans() });
     }));
-  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; }
+  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`; }
 }
 
 async function loadSystem() {
@@ -1149,7 +1150,7 @@ async function loadSystem() {
         }
         loadSystem(); // refresh the whole card
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         btn.disabled = false;
         bindText(btn, 'admin.check_now', undefined);
       }
@@ -1172,7 +1173,7 @@ async function loadSystem() {
           body: JSON.stringify({ target }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(localizeServerError(data.error) || res.statusText);
+        if (!res.ok) throw localizedError(localizeServerError(data.error) || res.statusText);
         if (data.queued) {
           watchUpdate(resultEl, data.id);
           return;  // the button stays disabled until the job ends
@@ -1189,7 +1190,7 @@ async function loadSystem() {
           </div>`;
         document.getElementById('copyCmdBtn')?.addEventListener('click', () => copyText(resultEl.querySelector('pre')?.textContent || ''));
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
       btn.disabled = false;
       bindText(btn, 'admin.update_now', undefined);
@@ -1204,7 +1205,7 @@ async function loadSystem() {
                && Date.now() / 1000 - updateStatus.job.updated_at < 86400) {
       renderUpdateJob(document.getElementById('updateResult'), updateStatus);
     }
-  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; }
+  } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`; }
 }
 
 let updatePollTimer = null;
@@ -1302,7 +1303,7 @@ async function loadDiagnostics() {
   try {
     [shape, lag] = await Promise.all([api.adminDiagShape(), api.adminDiagLag(14)]);
   } catch (e) {
-    el.innerHTML = `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message) || t("ui.admin.failed_to_load_diagnostics_c143ae"))}</p>`;
+    el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(e)) || t("ui.admin.failed_to_load_diagnostics_c143ae"))}</p>`;
     return;
   }
 
@@ -1395,7 +1396,7 @@ function wireDiagnostics() {
       if (d) d.style.display = '';
       showToast(t('admin.diag.profile_done'), 'success');
     } catch (e) {
-      if (out) out.innerHTML = `<p style="color:var(--danger);margin-top:12px">${uiText((e.uiMessage || e.message) || t("ui.admin.profile_failed_1f3fd3"))}</p>`;
+      if (out) out.innerHTML = `<p style="color:var(--danger);margin-top:12px">${uiText((errorMessage(e)) || t("ui.admin.profile_failed_1f3fd3"))}</p>`;
     } finally {
       btn.disabled = false;
       bindMessage(btn, original);
@@ -1420,7 +1421,7 @@ async function loadPlugins() {
       if (off) off.hidden = false;
       return;
     }
-    if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
+    if (!res.ok) throw localizedError(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
     body = await res.json();
   } catch (e) {
     section.style.display = 'none';
@@ -1528,12 +1529,12 @@ async function loadPlugins() {
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: extra ? JSON.stringify(extra) : '{}',
       });
-      if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
+      if (!res.ok) throw localizedError(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
       const r = await res.json().catch(() => ({}));
       showToast(okMsg || (r.restart_required ? t('admin.plugins.restart_now') : t('admin.plugins.saved')), 'success');
       await loadPlugins();
     } catch (e) {
-      showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
+      showToast(errorMessage(e) || t('admin.plugins.failed'), 'error');
     }
   };
 
@@ -1559,11 +1560,11 @@ async function loadPlugins() {
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ settings }),
         });
-        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
+        if (!res.ok) throw localizedError(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         showToast(t('admin.plugins.settings_saved'), 'success');
         await loadPlugins();
       } catch (e) {
-        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
+        showToast(errorMessage(e) || t('admin.plugins.failed'), 'error');
       }
     });
   });
@@ -1584,16 +1585,16 @@ async function loadPlugins() {
             headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({ replace: true }),
           });
-          if (!res2.ok) throw new Error(localizeServerError((await res2.json().catch(() => ({}))).error) || String(res2.status));
+          if (!res2.ok) throw localizedError(localizeServerError((await res2.json().catch(() => ({}))).error) || String(res2.status));
           showToast(t('admin.plugins.approved_ok'), 'success');
           await loadPlugins();
           return;
         }
-        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
+        if (!res.ok) throw localizedError(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         showToast(t('admin.plugins.approved_ok'), 'success');
         await loadPlugins();
       } catch (e) {
-        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
+        showToast(errorMessage(e) || t('admin.plugins.failed'), 'error');
       }
     };
     subHost.querySelectorAll('[data-plugin-approve]').forEach((b) => b.addEventListener('click', () => approveOne(b.dataset.pluginApprove)));
@@ -1605,12 +1606,12 @@ async function loadPlugins() {
       if (!out || !rel) return;
       try {
         const res = await fetch(`/api/admin/plugins/submissions/${id}/file?path=${encodeURIComponent(rel)}`, { headers });
-        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
+        if (!res.ok) throw localizedError(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         const body = await res.json();
         out.style.display = '';
         bindMessage(out, body.binary ? t("ui.admin.value0_value1_bytes_binary_a4caec", {value0: rel, value1: body.size}) : (body.text || ''));
       } catch (e) {
-        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
+        showToast(errorMessage(e) || t('admin.plugins.failed'), 'error');
       }
     }));
   }
@@ -1631,12 +1632,12 @@ async function loadPlugins() {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           body: fd,
         });
-        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
+        if (!res.ok) throw localizedError(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         showToast(t('admin.plugins.queued'), 'success');
         input.value = '';
         await loadPlugins();
       } catch (e) {
-        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
+        showToast(errorMessage(e) || t('admin.plugins.failed'), 'error');
       }
     });
   }
@@ -1654,7 +1655,7 @@ async function mountCleanup(el, days = 180, lastResult = null, noticeDays = 14) 
   if (!el) return;
   el.innerHTML = `<p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p>`;
   let data;
-  try { data = await api.adminStaleAccounts(days); } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; return; }
+  try { data = await api.adminStaleAccounts(days); } catch (err) { el.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`; return; }
   const when = (sec) => (sec ? displayValue(new Date(sec * 1000), "toLocaleDateString", undefined) : t('platform.cleanup.never'));
   const noticeCell = (a) => {
     if (a.notice === 'ready') return `<span class="notice-pill notice-ready">${uiText(t('platform.cleanup.st_ready'))}</span>`;
@@ -1808,7 +1809,7 @@ async function loadRollouts() {
   const host = document.getElementById('rolloutsBody');
   if (!host) return;
   let data;
-  try { data = await api.get('/admin/ota-rollouts'); } catch (e) { host.innerHTML = `<p class="error">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  try { data = await api.get('/admin/ota-rollouts'); } catch (e) { host.innerHTML = `<p class="error">${uiText((errorMessage(e)))}</p>`; return; }
   const rows = data.rollouts || [];
   host.innerHTML = `
     ${data.enabled ? '' : `<p style="color:#ca8a04;font-size:13px">${uiText(t('platform.rollouts.disabled'))}</p>`}
@@ -1828,6 +1829,6 @@ async function loadRollouts() {
     const [family, version, action] = b.dataset.ro.split('|');
     if ((action === 'halt' || action === 'release') && !confirm(t(`platform.rollouts.confirm.${action}`, { v: version }))) return;
     try { await api.post(`/admin/ota-rollouts/${encodeURIComponent(family)}/${encodeURIComponent(version)}/${action}`, {}); showToast(t('platform.rollouts.done'), 'success'); loadRollouts(); }
-    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    catch (e) { showToast(errorMessage(e), 'error'); }
   }));
 }

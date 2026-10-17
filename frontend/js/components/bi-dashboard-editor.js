@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { uiText, renderHTML, translatedAttribute, attributeBinding, binding } from '../lib/i18n-bindings.js';
 
 /*
@@ -112,7 +113,7 @@ async function browseInto(provider) {
   pick.innerHTML = `<option>${uiText(t('bi.w_loading'))}</option>`;
   let items = [];
   try { items = ((await apiGet(`/bi-connections/${encodeURIComponent(conn)}/dashboards`)) || {}).items || []; }
-  catch (err) { pick.innerHTML = `<option>${uiText((err.uiMessage || err.message))}</option>`; return; }
+  catch (err) { pick.innerHTML = `<option>${uiText((errorMessage(err)))}</option>`; return; }
   if (!items.length) { pick.innerHTML = `<option>${uiText(t('bi.w_nothing_found'))}</option>`; return; }
   pick.innerHTML = `<option value="">${uiText(t('bi.w_choose'))}</option>` + items.map((it, i) => `<option value="${i}">${uiText(it.folder ? `${it.folder} / ${it.title}` : it.title)}</option>`).join('');
   pick.onchange = () => {

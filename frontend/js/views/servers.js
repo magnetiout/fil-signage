@@ -3,7 +3,7 @@ import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding,
 
 import { displayValue, message as t } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 
 import { showToast } from '../components/toast.js';
@@ -297,7 +297,7 @@ export async function render(container) {
         // Re-render from the top so the header, and anything else reading the name, agree.
         render(container);
       } catch (e) {
-        bindMessage(msg, (e && (e.uiMessage || e.message)) || t("ui.servers.could_not_save_the_name_106de9"));
+        bindMessage(msg, (e && (errorMessage(e))) || t("ui.servers.could_not_save_the_name_106de9"));
         msg.style.color = 'var(--danger)';
       }
     };
@@ -348,7 +348,7 @@ async function renderClients(panel) {
       api.get('/mesh/orgs').then((r) => r.orgs || r || []).catch(() => []),
     ]);
   } catch (e) {
-    panel.innerHTML = `<div style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</div>`;
+    panel.innerHTML = `<div style="color:var(--danger)">${uiText((errorMessage(e)))}</div>`;
     return;
   }
 
@@ -518,7 +518,7 @@ async function renderClients(panel) {
             : ` — ${esc(x.reason || t("ui.servers.no_reason_given_b8dda0"))}`)}
         </div>`).join('');
     } catch (e) {
-      out.innerHTML = `<span style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</span>`;
+      out.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`;
     }
   });
 
@@ -527,7 +527,7 @@ async function renderClients(panel) {
     const out = panel.querySelector('#clientOut');
     if (!name) { bindText(out, "ui.servers.give_the_customer_a_name"); return; }
     try { await api.post('/mesh/clients', { name }); reload(); }
-    catch (e) { out.innerHTML = `<span style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</span>`; }
+    catch (e) { out.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`; }
   });
 
   panel.querySelectorAll('[data-assign-node]').forEach((sel) => {
@@ -538,7 +538,7 @@ async function renderClients(panel) {
           `/mesh/clients/${encodeURIComponent(sel.value)}/nodes/${encodeURIComponent(sel.dataset.assignNode)}`, {});
         showToast(t("ui.servers.filed"));
         reload();
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     });
   });
 
@@ -550,7 +550,7 @@ async function renderClients(panel) {
       const out = panel.querySelector(`[data-client-out="${CSS.escape(id)}"]`);
       if (!user) { bindText(out, "ui.servers.choose_a_colleague_first"); return; }
       try { await api.put(`/mesh/clients/${encodeURIComponent(id)}/access`, { user_id: user, role }); reload(); }
-      catch (e) { out.innerHTML = `<span style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</span>`; }
+      catch (e) { out.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`; }
     });
   });
 
@@ -622,7 +622,7 @@ async function renderClients(panel) {
           bindMessage(out, t("ui.servers.sent_value0_file_s_value1_3828a1", {value0: stored, value1: held ? t('ui.servers.held_suffix',{count:held}) : ''}));
           showToast(t("ui.servers.content_sent"));
         } catch (e) {
-          out.innerHTML = `<span style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</span>`;
+          out.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`;
         }
       });
     });
@@ -636,7 +636,7 @@ async function renderClients(panel) {
         await api.put(`/mesh/clients/${encodeURIComponent(btn.dataset.revokeAccess)}/access`,
                       { user_id: btn.dataset.user, role: '' });
         reload();
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     });
   });
 }
@@ -696,7 +696,7 @@ async function loadFleet(panel) {
     renderPager(panel);
   } catch (e) {
     panel.querySelector('#serversTable').innerHTML =
-      `<p style="color:var(--text-muted)">${renderHTML(t("ui.servers.could_not_load_1c60b7", {value0: (e.uiMessage || e.message) || t("ui.servers.unknown_error_af6321")}))}</p>`;
+      `<p style="color:var(--text-muted)">${renderHTML(t("ui.servers.could_not_load_1c60b7", {value0: (errorMessage(e)) || t("ui.servers.unknown_error_af6321")}))}</p>`;
   }
 }
 
@@ -725,7 +725,7 @@ async function renderTopology(panel) {
   try {
     data = await api.get('/mesh/topology');
   } catch (e) {
-    panel.innerHTML = `<p style="color:var(--text-muted)">${renderHTML(t("ui.servers.could_not_load_1c60b7", {value0: (e.uiMessage || e.message)}))}</p>`;
+    panel.innerHTML = `<p style="color:var(--text-muted)">${renderHTML(t("ui.servers.could_not_load_1c60b7", {value0: (errorMessage(e))}))}</p>`;
     return;
   }
 
@@ -906,7 +906,7 @@ async function renderTopology(panel) {
         const r = await api.delete(`/mesh/links/${encodeURIComponent(nodeId)}`);
         showToast(r.summary || t("ui.servers.disconnected_f8fa2a"), 'success');
         renderTopology(panel);
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     });
   });
 }
@@ -1005,7 +1005,7 @@ function renderMintPanel(host, caps) {
           ${renderHTML(t('ui.servers.code_valid',{expires:hhmm(r.expiresAt),name:r.nodeName||''}))}<br>${renderHTML(t('ui.servers.allowed_scope',{scope:(r.grantDescription||r.grant||[]).join(' ')}))}
         </div>`;
     } catch (e) {
-      out.innerHTML = `<span style="color:var(--text-muted)">${uiText((e.uiMessage || e.message))}</span>`;
+      out.innerHTML = `<span style="color:var(--text-muted)">${uiText((errorMessage(e)))}</span>`;
     }
   });
 }
@@ -1269,7 +1269,7 @@ async function renderConnect(panel, caps) {
       // ⚠️ The other server's refusal text is shown VERBATIM. It is written to be actionable
       // ("codes expire and may be used once"), and replacing it with a generic failure would
       // discard the only explanation the operator is going to get.
-      out.innerHTML = `<span style="color:var(--text-muted)">${uiText((e.uiMessage || e.message))}</span>`;
+      out.innerHTML = `<span style="color:var(--text-muted)">${uiText((errorMessage(e)))}</span>`;
     }
   });
 
@@ -1279,7 +1279,7 @@ async function renderConnect(panel, caps) {
         const r = await api.delete(`/mesh/uplink/${encodeURIComponent(btn.dataset.sever)}`);
         showToast(r.note || t("ui.servers.stopped_reporting_bcb2c4"));
         renderConnect(panel, await api.get('/mesh/capabilities'));
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     });
   });
 
@@ -1329,7 +1329,7 @@ async function renderConnect(panel, caps) {
       out.innerHTML = (r.consequences || []).map((c) => `<div style="font-size:12px">${uiText(c)}</div>`).join('');
       renderConnect(panel, await api.get('/mesh/capabilities'));
     } catch (e) {
-      out.innerHTML = `<span style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</span>`;
+      out.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`;
     }
   };
 
@@ -1345,7 +1345,7 @@ async function renderConnect(panel, caps) {
         showToast(r.note || t("ui.servers.saved_9d4af6"));
       } catch (e) {
         cb.checked = !cb.checked;   // put it back: the server did not accept it
-        showToast(e.uiMessage || e.message, 'error');
+        showToast(errorMessage(e), 'error');
       }
     });
   });
@@ -1373,7 +1373,7 @@ async function renderConnect(panel, caps) {
              <div style="margin-top:6px">${uiText(r.note || '')}</div>`
           : `<div>${renderHTML(t("ui.servers.that_server_has_not_stored_anything_here"))}</div>`;
       } catch (e) {
-        body.innerHTML = `<span style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</span>`;
+        body.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`;
       }
     });
   });
@@ -1399,7 +1399,7 @@ async function renderConnect(panel, caps) {
           : `<div>${renderHTML(t("ui.servers.that_server_has_not_changed_anything_here"))}</div>
              <div style="margin-top:6px">${uiText(r.note || '')}</div>`;
       } catch (e) {
-        body.innerHTML = `<span style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</span>`;
+        body.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`;
       }
     });
   });

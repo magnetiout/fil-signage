@@ -2,7 +2,7 @@ import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-
 
 import { displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 
@@ -61,7 +61,7 @@ async function renderList(app) {
   app.innerHTML = `<div class="page-header"><div><h1>${uiText(t('nav.experiments'))}</h1><div class="subtitle">${uiText(t('exp.intro'))}</div></div></div><div id="expBody">${uiText(t('common.loading'))}</div>`;
   const body = app.querySelector('#expBody');
   let list;
-  try { list = await api.get('/experiments'); } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  try { list = await api.get('/experiments'); } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</p>`; return; }
   body.innerHTML = `${renderHTML(canWrite() ? `<div class="corp-toolbar"><a class="btn btn-primary" href="#/experiments/new">${uiText(t('exp.new'))}</a></div>` : '')}
     ${renderHTML(list.length ? list.map((x) => `<a class="corp-card" href="#/experiments/${esc(x.id)}" style="display:block;margin-bottom:12px;padding:16px;text-decoration:none;color:inherit">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>${uiText(x.name)}</strong> ${renderHTML(statusPill(x.status))}
@@ -86,7 +86,7 @@ async function renderForm(app, editId) {
   try {
     opts = await api.get('/experiments/options');
     if (editId) existing = await api.get(`/experiments/${encodeURIComponent(editId)}`);
-  } catch (e) { box.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  } catch (e) { box.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</p>`; return; }
   if (!canWrite()) { box.innerHTML = `<p class="corp-notice">${uiText(t('exp.read_only'))}</p>`; return; }
   if (opts.approvals) { box.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText(t('exp.approvals_on'))}</p>`; return; }
   if (!opts.playlists.length) { box.innerHTML = `<div class="corp-empty">${uiText(t('exp.no_playlists'))}</div>`; return; }
@@ -210,7 +210,7 @@ async function renderForm(app, editId) {
     if (!plId) return;
     try {
       state.slot = await api.get(`/experiments/slot?playlist_id=${encodeURIComponent(plId)}`);
-    } catch (e) { bindMessage($('#expScreens'), (e.uiMessage || e.message)); return; }
+    } catch (e) { bindMessage($('#expScreens'), (errorMessage(e))); return; }
     const items = state.slot.items;
     sel.innerHTML = items.length
       ? items.map((it) => `<option value="${it.id}" ${String(it.id) === String(selectedItem) ? 'selected' : ''} ${it.busy ? 'disabled' : ''}>${uiText(it.name || t('common.unknown'))}${renderHTML(it.busy ? ` (${esc(t('exp.row_badge'))})` : '')}</option>`).join('')
@@ -258,7 +258,7 @@ async function renderForm(app, editId) {
       const saved = existing ? await api.put(`/experiments/${encodeURIComponent(existing.id)}`, payload) : await api.post('/experiments', payload);
       location.hash = `#/experiments/${saved.id}`;
     } catch (e) {
-      bindMessage($('#expFormError'), (e.uiMessage || e.message));
+      bindMessage($('#expFormError'), (errorMessage(e)));
       $('#expSave').disabled = false;
     }
   });
@@ -341,7 +341,7 @@ async function renderDetail(app, id) {
   try {
     exp = await api.get(`/experiments/${encodeURIComponent(id)}`);
     res = await api.get(`/experiments/${encodeURIComponent(id)}/results`);
-  } catch (e) { box.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p><p><a href="#/experiments">${uiText(t('exp.back'))}</a></p>`; return; }
+  } catch (e) { box.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</p><p><a href="#/experiments">${uiText(t('exp.back'))}</a></p>`; return; }
   const write = canWrite();
   const usesSales = [exp.config.outcome, ...(exp.config.secondary || [])].some((o) => o.source === 'sales');
   const usesCsv = [exp.config.outcome, ...(exp.config.secondary || [])].some((o) => o.source === 'csv');
@@ -390,7 +390,7 @@ async function renderDetail(app, id) {
   renderUnits(box.querySelector('#expUnits'), exp, res, write && usesSales && ['draft', 'running'].includes(exp.status));
   if (best != null && box.querySelector('#expWinner')) box.querySelector('#expWinner').value = String(best);
 
-  const act = (sel, fn) => { const el = box.querySelector(sel); if (el) el.addEventListener('click', async () => { el.disabled = true; try { await fn(); } catch (e) { showToast(e.uiMessage || e.message, 'error'); } finally { el.disabled = false; } }); };
+  const act = (sel, fn) => { const el = box.querySelector(sel); if (el) el.addEventListener('click', async () => { el.disabled = true; try { await fn(); } catch (e) { showToast(errorMessage(e), 'error'); } finally { el.disabled = false; } }); };
   act('#expStart', async () => {
     if (!confirm(t('exp.confirm_start'))) return;
     await api.post(`/experiments/${encodeURIComponent(exp.id)}/start`, {});
@@ -430,7 +430,7 @@ async function renderDetail(app, id) {
       const errs = (e.body && e.body.errors) || [];
       out.innerHTML = errs.length
         ? `<ul style="margin:6px 0 0 18px;color:var(--danger)">${renderHTML(errs.map((x) => `<li>${uiText(x.row ? t('exp.csv_row', { row: x.row, message: x.message }) : x.message)}</li>`).join(''))}</ul>`
-        : `<p style="color:var(--danger)">${uiText((e.uiMessage || e.message))}</p>`;
+        : `<p style="color:var(--danger)">${uiText((errorMessage(e)))}</p>`;
     }
   });
 }
@@ -459,7 +459,7 @@ function renderUnits(el, exp, res, editable) {
       square_location_id: (row.querySelector('.exp-sq') || {}).value || null,
       shopify_location_id: (row.querySelector('.exp-sh') || {}).value || null,
     }));
-    try { await api.put(`/experiments/${encodeURIComponent(exp.id)}/units`, { units: list }); showToast(t('exp.pos_saved'), 'success'); } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    try { await api.put(`/experiments/${encodeURIComponent(exp.id)}/units`, { units: list }); showToast(t('exp.pos_saved'), 'success'); } catch (e) { showToast(errorMessage(e), 'error'); }
   });
   el.querySelector('#expLoadLocs').addEventListener('click', async () => {
     for (const dsId of sources) {
@@ -472,7 +472,7 @@ function renderUnits(el, exp, res, editable) {
           dl.appendChild(o);
         }
         showToast(tn('exp.pos_found', r.locations.length), 'info');
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     }
   });
 }

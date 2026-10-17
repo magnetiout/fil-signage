@@ -20,7 +20,7 @@ import { displayValue, message as t, messageCount as tn } from '../i18n.js';
  * view never decides on its own that something is forbidden — it hides only what the role matrix
  * says a role never has (authoring for store users), and explains the rest.
  */
-import { api, downloadSlotReportCsv } from '../api.js';
+import { errorMessage, api, downloadSlotReportCsv } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc, hydrateAuthImages } from '../utils.js';
 
@@ -74,7 +74,7 @@ export async function render(container) {
     if (from) cui.rememberReturnWorkspace(from);
     try { await cui.switchWorkspaceTo(s.hq_workspace_id, window.location.hash || '#/corporate'); }
     catch (e) {
-      container.innerHTML = pageShell(t('corp.hq.title'), `<div class="corp-empty">${uiText((e.uiMessage || e.message))}</div>`);
+      container.innerHTML = pageShell(t('corp.hq.title'), `<div class="corp-empty">${uiText((errorMessage(e)))}</div>`);
     }
     return;
   }
@@ -111,7 +111,7 @@ function renderHq(container, s) {
     <div id="corpTab"></div>`, t('corp.hq.subtitle', { name: s.hq_workspace_name || '' }));
   const host = container.querySelector('#corpTab');
   const run = { playlists: renderPlaylistsTab, where: renderWhereTab, slots: renderSlotsTab, emergency: renderEmergencyTab }[tab];
-  run(host, s).catch((e) => { host.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; });
+  run(host, s).catch((e) => { host.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; });
 }
 
 function reloadTab() { if (currentApp) render(currentApp); }
@@ -153,7 +153,7 @@ async function renderPlaylistsTab(host, s) {
     const p = playlists.find((x) => x.id === b.dataset.demote);
     if (!await cui.ask({ title: t('corp.hq.demote'), text: t('corp.hq.demote_confirm', { name: p.name }), confirmLabel: t('corp.hq.demote') })) return;
     try { await api.demoteCorporatePlaylist(p.id); showToast(t('corp.hq.demoted', { name: p.name }), 'success'); reloadTab(); }
-    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    catch (e) { showToast(errorMessage(e), 'error'); }
   }));
 }
 
@@ -173,14 +173,14 @@ function newCorporatePlaylist() {
       const p = await api.createCorporatePlaylist(name, m.q('#corpPlDesc').value.trim());
       m.close();
       window.location.hash = `#/playlists/${p.id}`;
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   });
 }
 
 async function promoteDialog() {
   let rows = [];
   try { rows = (await api.getPlaylists()).filter((p) => !p.corporate && !p.smart_rules && !p.is_auto_generated && !p.corporate_slot); }
-  catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
+  catch (e) { showToast(errorMessage(e), 'error'); return; }
   const m = cui.openModal({
     title: t('corp.hq.promote'),
     body: rows.length ? `<p class="corp-help">${uiText(t('corp.hq.promote_help'))}</p>
@@ -190,7 +190,7 @@ async function promoteDialog() {
   });
   m.q('#corpPromoteGo')?.addEventListener('click', async () => {
     try { await api.promoteCorporatePlaylist(m.q('#corpPromoteSel').value); m.close(); showToast(t('corp.hq.promoted'), 'success'); reloadTab(); }
-    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    catch (e) { showToast(errorMessage(e), 'error'); }
   });
 }
 
@@ -242,7 +242,7 @@ async function renderWhereTab(host, s) {
         r = await api.updateMandate(mm.id, { enabled: cb.checked, acknowledge_impact: true });
       }
       showToast(tn('corp.where.changed_screens', r.screens_changed || 0), 'success'); cui.forgetCorporateCache(); reloadTab();
-    } catch (e) { cb.checked = !cb.checked; if (e.code !== 'CORPORATE_STORE_TRIGGERS_IMPACT') showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { cb.checked = !cb.checked; if (e.code !== 'CORPORATE_STORE_TRIGGERS_IMPACT') showToast(errorMessage(e), 'error'); }
   }));
   host.querySelectorAll('[data-remove]').forEach((b) => b.addEventListener('click', async () => {
     const mm = mandates.find((x) => x.id === b.dataset.remove);
@@ -254,7 +254,7 @@ async function renderWhereTab(host, s) {
     });
     if (!ok) return;
     try { const r = await api.deleteMandate(mm.id); showToast(tn('corp.where.changed_screens', r.screens_changed || 0), 'success'); cui.forgetCorporateCache(); reloadTab(); }
-    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    catch (e) { showToast(errorMessage(e), 'error'); }
   }));
 }
 
@@ -263,7 +263,7 @@ async function mandateDialog(existing, playlists) {
   let layouts = [];
   try {
     [targets, layouts] = await Promise.all([api.getCorporateTargets(), api.get('/layouts').catch(() => [])]);
-  } catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
+  } catch (e) { showToast(errorMessage(e), 'error'); return; }
   const pickable = playlists;
   const kind0 = existing ? existing.target_kind : 'workspace';
   const m = cui.openModal({
@@ -352,7 +352,7 @@ async function mandateDialog(existing, playlists) {
       if (ack) ack.addEventListener('change', () => { save.disabled = !ack.checked; });
     } catch (e) {
       if (mine !== seq) return;
-      box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`;
+      box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`;
     }
   };
   kindSel.addEventListener('change', () => { fillTargets(); refreshPreview(); });
@@ -377,7 +377,7 @@ async function mandateDialog(existing, playlists) {
       showToast(tn('corp.where.changed_screens', r.screens_changed || 0), 'success');
       cui.forgetCorporateCache();
       reloadTab();
-    } catch (e) { if (e.code !== 'CORPORATE_STORE_TRIGGERS_IMPACT') showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { if (e.code !== 'CORPORATE_STORE_TRIGGERS_IMPACT') showToast(errorMessage(e), 'error'); }
   });
 }
 
@@ -420,7 +420,7 @@ async function renderSlotsTab(host) {
           <td>${renderHTML(cui.chip(stateLabel(r.state), STATE_TONE[r.state] || 'muted'))}</td>
           <td>${renderHTML((r.fills || []).map((f) => `<div>${uiText(cui.levelLabel(f.scope_kind, f.scope_name))}: ${uiText(tn('corp.n_items', f.items))}, ${uiText(cui.formatSec(f.seconds))}${renderHTML(f.fill_state === 'over_limit' ? ' ' + cui.chip(t('corp.slots.over'), 'emergency') : '')}${renderHTML(!f.published ? ' ' + cui.chip(t('corp.status.never'), 'muted') : '')}<span class="corp-help"> · ${uiText(when(f.updated_at))}</span></div>`).join('') || '—')}</td>
         </tr>`).join(''))}</tbody></table></div>` : `<div class="corp-empty">${uiText(problems.checked ? t('corp.slots.no_problems') : t('corp.slots.empty'))}</div>`;
-    } catch (e) { rowsEl.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
+    } catch (e) { rowsEl.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
   }
   problems.addEventListener('change', loadRows);
   host.querySelector('#corpCsv').addEventListener('click', async () => {
@@ -431,7 +431,7 @@ async function renderSlotsTab(host) {
       a.download = 'store-slots.csv';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   });
   const airEl = host.querySelector('#corpAirtime');
   const range = host.querySelector('#corpAirRange');
@@ -446,7 +446,7 @@ async function renderSlotsTab(host) {
         <h4 class="corp-h4">${uiText(t('corp.slots.by_workspace'))}</h4>${renderHTML(table(r.workspaces || [], 'workspace_name'))}
         <h4 class="corp-h4">${uiText(t('corp.slots.by_playlist'))}</h4>${renderHTML(table(r.playlists || [], 'playlist_name'))}
         <div class="corp-help">${uiText(t('corp.slots.airtime_note'))}</div>`;
-    } catch (e) { airEl.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
+    } catch (e) { airEl.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
   }
   range.addEventListener('change', loadAir);
   await Promise.all([loadRows(), loadAir()]);
@@ -531,7 +531,7 @@ async function renderEmergencyTab(host, s) {
           if (!await cui.ask({ title: t('common.delete'), text: t('corp.em.delete_confirm', { name: a.name }), danger: true, confirmLabel: t('common.delete') })) return;
           await api.deleteEmergencyAlert(a.id); showToast(t('corp.em.deleted'), 'success'); reloadTab();
         }
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     }));
   });
   // "Live now" counts down without a reload, and the tab refreshes when an alert ends on its own.
@@ -616,7 +616,7 @@ async function activateDialog(a) {
       m.close();
       showToast(t('corp.em.activated', { online: r.reached.online, offline: r.reached.offline_will_get_on_reconnect, not: (r.reached.not_eligible || []).length }), 'success');
       reloadTab();
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   });
 }
 
@@ -624,7 +624,7 @@ async function emergencyEditor(a) {
   let playlists = [];
   let targets = null;
   try { [playlists, targets] = await Promise.all([api.getPlaylists(), api.getCorporateTargets()]); }
-  catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
+  catch (e) { showToast(errorMessage(e), 'error'); return; }
   const published = playlists.filter((p) => p.published_snapshot || p.status === 'published');
   const scopes = new Set((a && a.scopes || []).map((x) => `${x.scope_kind}:${x.scope_id}`));
   const mode0 = a ? a.mode : 'until_cleared';
@@ -692,7 +692,7 @@ async function emergencyEditor(a) {
     try {
       if (a) await api.updateEmergencyAlert(a.id, body); else await api.createEmergencyAlert(body);
       m.close(); showToast(t('corp.em.saved'), 'success'); reloadTab();
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   });
 }
 
@@ -701,7 +701,7 @@ async function emergencyEditor(a) {
 async function renderStore(container, s) {
   let data;
   try { data = await api.getCorporateStore(); } catch (e) {
-    container.innerHTML = pageShell(t('nav.head_office'), `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`);
+    container.innerHTML = pageShell(t('nav.head_office'), `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`);
     return;
   }
   const mandates = data.mandates || [];
@@ -761,7 +761,7 @@ async function renderStore(container, s) {
     });
     if (!ok) return;
     try { await api.deleteFill(f.id); showToast(t('corp.slot.level_removed'), 'success'); render(container); }
-    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    catch (e) { showToast(errorMessage(e), 'error'); }
   }));
 }
 
@@ -796,7 +796,7 @@ async function fillLevelDialog(sl, wsId) {
   let walls = [];
   let devices = [];
   try { [groups, walls, devices] = await Promise.all([api.getGroups(), api.getWalls().catch(() => []), api.getDevices()]); }
-  catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
+  catch (e) { showToast(errorMessage(e), 'error'); return; }
   const cov = await cui.workspaceCoverage();
   const taken = new Set((sl.fills || []).map((f) => `${f.scope_kind}:${f.scope_id}`));
   const ws = (() => { try { const me = JSON.parse(localStorage.getItem('user') || 'null'); return (me.accessible_workspaces || []).find((w) => w.id === wsId) || { name: '' }; } catch { return { name: '' }; } })();
@@ -825,7 +825,7 @@ async function fillLevelDialog(sl, wsId) {
     } catch (e) {
       // Already has content at that level: open it rather than leave the person at an error.
       if (e.code === 'CORPORATE_FILL_EXISTS' && e.body && e.body.fill) { m.close(); window.location.hash = `#/playlists/${e.body.fill.fill_playlist_id}`; return; }
-      showToast(e.uiMessage || e.message, 'error');
+      showToast(errorMessage(e), 'error');
     }
   });
 }

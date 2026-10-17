@@ -1,8 +1,8 @@
 import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { displayValue, displayList, messageCount as tn, message as t } from '../i18n.js';
+import { localizedError, displayValue, displayList, messageCount as tn, message as t } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 import { showToast } from '../components/toast.js';
 
@@ -487,7 +487,7 @@ async function openNewDeckModal(container) {
       close();
       await openDeck(container, d.id);
     } catch (e) {
-      showToast(e.uiMessage || e.message || t("ui.slides.could_not_create_the_deck_d25884"), 'error');
+      showToast(errorMessage(e) || t("ui.slides.could_not_create_the_deck_d25884"), 'error');
     }
   };
 }
@@ -528,7 +528,7 @@ export async function render(container) {
   } catch (e) {
     if (stale()) return;
     container.querySelector('#deckArea').innerHTML =
-      `<p style="color:var(--danger)">${renderHTML(t("ui.slides.could_not_load_decks_4766c5", {value0: (e.uiMessage || e.message) || ''}))}</p>`;
+      `<p style="color:var(--danger)">${renderHTML(t("ui.slides.could_not_load_decks_4766c5", {value0: (errorMessage(e)) || ''}))}</p>`;
     return;
   }
   if (stale()) return;
@@ -574,7 +574,7 @@ function renderList(container) {
       await api.delete(`/slide-decks/${b.dataset.del}`);
       state.decks = state.decks.filter((x) => x.id !== b.dataset.del);
       renderList(container);
-    } catch (e) { showToast(e.uiMessage || e.message || t("ui.slides.could_not_delete_c2cddf"), 'error'); }
+    } catch (e) { showToast(errorMessage(e) || t("ui.slides.could_not_delete_c2cddf"), 'error'); }
   }));
 }
 
@@ -593,7 +593,7 @@ async function openDeck(container, id) {
     if (repaired) state.dirty = true;
     undoHistory.reset(snapshot());
     renderEditor(container);
-  } catch (e) { showToast(e.uiMessage || e.message || t("ui.slides.could_not_open_the_deck_bb710d"), 'error'); }
+  } catch (e) { showToast(errorMessage(e) || t("ui.slides.could_not_open_the_deck_bb710d"), 'error'); }
 }
 
 function renderEditor(container) {
@@ -2387,7 +2387,7 @@ function renderProps(container) {
           showToast(`Added ${added.label}`, 'success');
         } catch (err) {
           msg.style.color = 'var(--danger)';
-          bindMessage(msg, ` ${(err.uiMessage || err.message) || t("ui.slides.could_not_upload_that_font_9378bd")}`);
+          bindMessage(msg, ` ${(errorMessage(err)) || t("ui.slides.could_not_upload_that_font_9378bd")}`);
         }
       };
     }
@@ -2559,7 +2559,7 @@ async function save(container) {
     paintAll(container);
     showToast(t("ui.slides.saved"), 'success');
   } catch (e) {
-    showToast(e.uiMessage || e.message || t("ui.slides.could_not_save_875138"), 'error');
+    showToast(errorMessage(e) || t("ui.slides.could_not_save_875138"), 'error');
   } finally { state.saving = false; }
 }
 
@@ -2577,7 +2577,7 @@ async function publish(container) {
     // know that has no idea where to go to put these on a screen.
     showToast(tn('ui.slides.published_count', n), 'success');
   } catch (e) {
-    showToast(e.uiMessage || e.message || t("ui.slides.could_not_publish_8c2c73"), 'error');
+    showToast(errorMessage(e) || t("ui.slides.could_not_publish_8c2c73"), 'error');
   }
 }
 
@@ -2652,7 +2652,7 @@ async function aiGenerateBackground(container) {
     } else {
       out = await api.aiGenerateBackground(prompt, aspectPixels());
     }
-    if (!out || !out.content_id) throw new Error(t("ui.slides.no_image_came_back_c91d98"));
+    if (!out || !out.content_id) throw localizedError(t("ui.slides.no_image_came_back_c91d98"));
     const idx = state.deck.doc.slides.indexOf(target);
     if (idx < 0) { say(t("ui.slides.that_slide_is_gone_nothing_changed_013ecc"), true); return; }
     target.template = target.template || {};
@@ -2684,7 +2684,7 @@ async function aiGenerateBackground(container) {
     paintAll(container);
     say(out.credits_spent ? t("ui.slides.background_applied_value0_credits_spent_value1_left_3773e0", {value0: out.credits_spent, value1: out.balance}) : t("ui.slides.background_applied_362867"));
   } catch (e) {
-    say(String((e && e.message) || e).slice(0, 200), true);
+    say(errorMessage(e), true);
   } finally {
     aiBgBusy = false;
     btn.disabled = false;
@@ -2730,7 +2730,7 @@ async function aiGenerateLayered(container) {
   say(t("ui.slides.generating_value0_images_and_cutting_the_objects_out_this_takes_a_208501", {value0: OBJECTS + 1}));
   try {
     const out = await api.aiGenerateLayered(prompt, aspectPixels(), OBJECTS);
-    if (!out || !out.template) throw new Error(t("ui.slides.nothing_came_back_290a8c"));
+    if (!out || !out.template) throw localizedError(t("ui.slides.nothing_came_back_290a8c"));
     const idx = state.deck.doc.slides.indexOf(target);
     if (idx < 0) { say(t("ui.slides.that_slide_is_gone_nothing_changed_013ecc"), true); return; }
     target.template = out.template;
@@ -2750,7 +2750,7 @@ async function aiGenerateLayered(container) {
       : t("ui.slides.built_value0_of_value1_layers_7f2536", {value0: out.generated, value1: out.requested});
     say(out.notes && out.notes.length ? `${short} ${out.notes[0]}` : short, out.generated < out.requested);
   } catch (e) {
-    say(String((e && e.message) || e).slice(0, 200), true);
+    say(errorMessage(e), true);
   } finally {
     aiLayerBusy = false;
     btn.disabled = false;
@@ -2852,7 +2852,7 @@ async function aiGenerate(container) {
   } catch (err) {
     // The server distinguishes "AI is not configured" from "timed out" from "returned nonsense",
     // and each needs a different action from the person reading it.
-    say((err && err.message) || t('slides.ai.failed'), true);
+    say(errorMessage(err), true);
   } finally {
     aiBusy = false;
     // Read the resting label from i18n rather than from a variable captured mid-flight.

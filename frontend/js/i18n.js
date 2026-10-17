@@ -185,3 +185,6 @@ export const displayList = (values,separator=', ') => new LocalizedDisplay({kind
   values:values.map(value=>isMessage(value)?{message:messageData(value)}:isDisplay(value)?{display:value.display}:{text:String(value??'')})});
 export const displayQuantity = (value,unit,digits=0) => displayList([
   displayValue(value,'toLocaleString',{minimumFractionDigits:digits,maximumFractionDigits:digits}),unit],' ');
+
+// Error coerces messages to strings; retain the explicit descriptor for a later language switch.
+export const localizedError = value => Object.assign(new Error(String(value)),{uiMessage:value});

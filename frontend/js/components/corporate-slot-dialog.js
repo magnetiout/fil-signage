@@ -9,7 +9,7 @@ import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
  * dialog shows the draft-vs-live line from GET /api/corporate/slots/:id/impact — "Live: up to 5 ·
  * After you publish: up to 3 · 2 stores have more than that" — before anyone saves.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
@@ -111,6 +111,6 @@ export async function openSlotDialog(playlist, slot, onSaved) {
       m.close();
       showToast(t('corp.hq.slot_saved'), 'success');
       if (typeof onSaved === 'function') onSaved();
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   });
 }

@@ -13,7 +13,7 @@ import { uiText, renderHTML, attributeBinding, bindText } from '../lib/i18n-bind
  *
  * Values from the server reach the page through esc() only.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from '../components/toast.js';
@@ -41,7 +41,7 @@ async function load(app, run = alive) {
     const r = await api.getAccessibility();
     report = r && !Array.isArray(r) ? r : null;
   } catch (e) {
-    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p>`;
+    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</p>`;
     return;
   }
   if (run !== alive || !document.contains(body)) return;
@@ -181,7 +181,7 @@ function wire(app, body) {
       if (!issue) return;
       btn.disabled = true;
       try { showToast(await applyA11yFix(src, issue), 'success'); refresh(app); }
-      catch (err) { btn.disabled = false; showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { btn.disabled = false; showToast(errorMessage(err), 'error'); }
     } else if (act === 'captions' && card) {
       btn.disabled = true;
       bindText(btn, 'a11y.captions.working', undefined);
@@ -195,7 +195,7 @@ function wire(app, body) {
       const data = {};
       row.querySelectorAll('input[data-k]').forEach((i) => { data[i.dataset.k] = i.value === '' ? null : Number(i.value); });
       try { await api.updateAccessibilityScreen(row.dataset.device, data); showToast(t('a11y.saved'), 'success'); refresh(app); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     }
   });
 
@@ -208,7 +208,7 @@ function wire(app, body) {
       });
       showToast(t('a11y.saved'), 'success');
       refresh(app);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
   document.getElementById('a11ySttSettings')?.addEventListener('click', () => openAiSettingsModal());
 }

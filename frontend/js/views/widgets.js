@@ -1,9 +1,10 @@
+import {getLocale} from '../i18n.js';
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText, bindAttribute, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { displayValue, message as t } from '../i18n.js';
+import { localizedError, displayValue, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api, assertLocalCallAllowed } from '../api.js';
 import { showToast } from '../components/toast.js';
@@ -73,8 +74,8 @@ const API = (url, opts = {}) => {
   // ⚠️ This helper bypasses api.js's routing, so it must ask the same question itself.
   assertLocalCallAllowed(url, opts.method);
   return fetch('/api' + url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.widgets.request_failed_value0_ad6dc0", {value0: r.status})); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw localizedError(localizeServerError(e.error) || t("ui.widgets.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
   });
 };
@@ -267,7 +268,7 @@ function _diParseSectioned(lines, warnings) {
 function _diParseDelimited(raw) {
   const warnings = [];
   const lines = raw.split(/\r?\n/).map(l => l.replace(/\s+$/, '')).filter(l => l.trim() !== '');
-  if (!lines.length) throw new Error(t('widget.dir.import_err_empty'));
+  if (!lines.length) throw localizedError(t('widget.dir.import_err_empty'));
   const sample = lines.slice(0, 12);
   let delim = null, best = 1;
   for (const d of ['\t', ',', ';', '|']) {
@@ -280,14 +281,14 @@ function _diParseDelimited(raw) {
 }
 function parseDirectoryImport(text) {
   const raw = String(text == null ? '' : text).trim();
-  if (!raw) throw new Error(t('widget.dir.import_err_empty'));
+  if (!raw) throw localizedError(t('widget.dir.import_err_empty'));
   let json = null;
   if (/^[[{]/.test(raw)) { try { json = JSON.parse(raw); } catch (e) { /* not JSON */ } }
   const res = (json && typeof json === 'object') ? _diNormalizeJson(json) : _diParseDelimited(raw);
   res.categories = (res.categories || [])
     .map(c => ({ name: String(c.name || '').trim(), entries: (c.entries || []).filter(e => (e.identifier || '').trim() || (e.name || '').trim()) }))
     .filter(c => c.name || c.entries.length);
-  if (!res.categories.length) throw new Error(t('widget.dir.import_err_norows'));
+  if (!res.categories.length) throw localizedError(t('widget.dir.import_err_norows'));
   res.stats = { categories: res.categories.length, entries: res.categories.reduce((n, c) => n + c.entries.length, 0) };
   return res;
 }
@@ -364,8 +365,8 @@ export function openContentPicker({ multiple = false, title, returnItem = false 
 
     function renderList() {
       const searchEl = overlay.querySelector('#cpSearch');
-      const q = ((searchEl && searchEl.value) || '').toLowerCase();
-      const filtered = items.filter(i => (i.filename || '').toLowerCase().includes(q));
+      const q = ((searchEl && searchEl.value) || '').toLocaleLowerCase(getLocale());
+      const filtered = items.filter(i => (i.filename || '').toLocaleLowerCase(getLocale()).includes(q));
       const list = overlay.querySelector('#cpList');
       if (!list) return;
       if (!filtered.length) {
@@ -417,7 +418,7 @@ export function openContentPicker({ multiple = false, title, returnItem = false 
         const r = await api.uploadContent(multiple ? picked : [picked[0]],
           (pct) => setStatus(t('widget.picker.uploading_pct', { pct })));
         const added = (Array.isArray(r) ? r : [r]).filter(Boolean);
-        if (!added.length) throw new Error(t('widget.picker.upload_failed'));
+        if (!added.length) throw localizedError(t('widget.picker.upload_failed'));
         items = added.concat(items);   // newest first, the order the server itself returns
         setStatus('');
         if (!multiple) {
@@ -434,7 +435,7 @@ export function openContentPicker({ multiple = false, title, returnItem = false 
         renderList();
       } catch (e) {
         // The server's own words — "Unsupported file type", a storage-limit refusal — or nothing.
-        setStatus((e && e.message) || t('widget.picker.upload_failed'), 'error');
+        setStatus(errorMessage(e), 'error');
       } finally {
         uploading = false;
         const f = overlay.querySelector('#cpFile');
@@ -651,11 +652,11 @@ export async function render(container) {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           body: fd,
         });
-        if (!res.ok) throw new Error(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
+        if (!res.ok) throw localizedError(localizeServerError((await res.json().catch(() => ({}))).error) || String(res.status));
         showToast(t('widget.plugin_submit.ok'), 'success');
         await loadPluginSubmit();
       } catch (e) {
-        showToast(e.uiMessage || e.message || t('admin.plugins.failed'), 'error');
+        showToast(errorMessage(e) || t('admin.plugins.failed'), 'error');
       }
     });
   }
@@ -996,7 +997,7 @@ export async function render(container) {
       } catch (e) {
         if (mine !== seq) return;
         out.style.color = 'var(--danger,#b91c1c)';
-        bindMessage(out, (e.uiMessage || e.message));
+        bindMessage(out, (errorMessage(e)));
       }
     };
     box.addEventListener('change', check);
@@ -1018,7 +1019,7 @@ export async function render(container) {
       try {
         const defaults = await API('/widgets/clock-defaults');
         setTimezone(defaults.timezone);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
   }
 
@@ -1073,7 +1074,7 @@ export async function render(container) {
           showToast(t('widget.trans.uploaded'), 'success');
           initTransitionForm(config);   // re-read the list so it appears in the picker
         } catch (e) {
-          showToast(e.uiMessage || e.message, 'error');   // the server's own words: why it was refused
+          showToast(errorMessage(e), 'error');   // the server's own words: why it was refused
         } finally { upFile.value = ''; }
       });
     }
@@ -1336,7 +1337,7 @@ export async function render(container) {
       const errBox = overlay.querySelector('#diError');
       let result;
       try { result = parseDirectoryImport(ta.value); }
-      catch (e) { bindMessage(errBox, (e.uiMessage || e.message) || t('widget.dir.import_err_norows')); errBox.style.display = 'block'; return; }
+      catch (e) { bindMessage(errBox, (errorMessage(e)) || t('widget.dir.import_err_norows')); errBox.style.display = 'block'; return; }
       applyDirImport(result, overlay.querySelector('#diReplace').checked);
       cleanup();
     };
@@ -1553,7 +1554,7 @@ export async function render(container) {
       document.getElementById('widgetModal').style.display = 'none';
       showToast(saved && saved.pending_review ? t('review.toast.saved_as_draft') : t('widget.toast.saved'), 'success');
       loadWidgets();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 
   document.getElementById('previewWidgetBtn').onclick = async () => {
@@ -1566,10 +1567,10 @@ export async function render(container) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ widget_type: type, config }),
       });
-      if (!res.ok) throw new Error(t('widget.toast.preview_failed'));
+      if (!res.ok) throw localizedError(t('widget.toast.preview_failed'));
       const { id } = await res.json();
       showPreviewModal(id, type);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 
   async function loadWidgets() {
@@ -1637,7 +1638,7 @@ export async function render(container) {
           const edit = document.querySelector(`#widgetGrid [data-edit-widget="${CSS.escape(copy.id)}"]`);
           if (edit) { edit.scrollIntoView({ block: 'center' }); edit.click(); }
         } catch (err) {
-          showToast(err.uiMessage || err.message, 'error');
+          showToast(errorMessage(err), 'error');
           dupBtn.disabled = false;
         }
         return;
@@ -1696,7 +1697,7 @@ export async function render(container) {
           await API(`/widgets/${deleteBtn.dataset.deleteWidget}`, { method: 'DELETE' });
           showToast(t('widget.toast.deleted'), 'success');
           loadWidgets();
-        } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+        } catch (err) { showToast(errorMessage(err), 'error'); }
       }
     };
   }

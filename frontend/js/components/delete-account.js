@@ -13,7 +13,7 @@ import { renderHTML, uiText, bindMessage, bindText } from '../lib/i18n-bindings.
  * Signing in again for that proof leaves this page, so the route to come back to is stashed
  * (stashReturnRoute) and app.js returns here once the new session is in place.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t } from '../i18n.js';
 import { esc, inManagerApp } from '../utils.js';
 import { openModal } from './corporate-ui.js';
@@ -73,7 +73,7 @@ export async function mountDeleteAccountCard(el) {
   let info;
   try { info = await api.accountDeletionInfo(); } catch (err) {
     if (!document.contains(el)) return;
-    el.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText((err.uiMessage || err.message))}</p>`;
+    el.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText((errorMessage(err)))}</p>`;
     return;
   }
   if (!document.contains(el)) return;
@@ -150,7 +150,7 @@ export function openDeleteAccountDialog(info) {
     } catch (err) {
       submit.disabled = false;
       bindText(submit, 'account_delete.submit', undefined);
-      bindMessage(status, (err.uiMessage || err.message));
+      bindMessage(status, (errorMessage(err)));
       if (err.code === 'reauth_recent_sign_in_required') {
         submit.disabled = true;
         const note = m.q('[data-reauth-note]');

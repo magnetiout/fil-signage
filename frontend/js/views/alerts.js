@@ -1,6 +1,6 @@
 import { uiText, renderHTML, translatedAttribute, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 import { message as t, messageCount as tn } from '../i18n.js';
@@ -60,7 +60,7 @@ export async function render(app) {
   try {
     const [chs, devs, grps] = await Promise.all([api.get('/alert-channels'), api.get('/devices'), api.get('/groups')]);
     cache = { channels: Array.isArray(chs) ? chs : [], devices: Array.isArray(devs) ? devs : (devs.devices || []), groups: Array.isArray(grps) ? grps : (grps.groups || []) };
-  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`; return; }
+  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (errorMessage(e))) || t('common.error'))}</p>`; return; }
   body.innerHTML = `<div id="svSettings"></div><div class="corp-toolbar"><button class="btn btn-primary" id="alNew">${uiText(t('alerts.new'))}</button></div>
     ${renderHTML(cache.channels.length ? cache.channels.map(card).join('') : `<div class="corp-empty">${uiText(t('alerts.empty'))}</div>`)}
     <p class="corp-help" style="font-size:12px;margin-top:16px">${uiText(t('alerts.owner_note'))}</p>`;
@@ -73,12 +73,12 @@ export async function render(app) {
     el.querySelector('[data-act="del"]').addEventListener('click', async () => {
       if (!confirm(t('alerts.confirm_delete', { name: c.name }))) return;
       try { await api.delete(`/alert-channels/${c.id}`); showToast(t('alerts.deleted'), 'success'); render(app); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
     });
     el.querySelector('[data-act="test"]').addEventListener('click', async (ev) => {
       ev.target.disabled = true;
       try { await api.post(`/alert-channels/${c.id}/test`, {}); showToast(t('alerts.test_sent'), 'success'); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
       render(app);
     });
   });
@@ -163,6 +163,6 @@ function openForm(app, ch) {
     try {
       if (editing) { delete body.kind; await api.put(`/alert-channels/${ch.id}`, body); } else await api.post('/alert-channels', body);
       showToast(t('alerts.saved'), 'success'); close(); render(app);
-    } catch (e) { bindMessage($('alError'), (e && (e.uiMessage || e.message)) || t('common.error')); $('alSave').disabled = false; }
+    } catch (e) { bindMessage($('alError'), (e && (errorMessage(e))) || t('common.error')); $('alSave').disabled = false; }
   });
 }

@@ -1,4 +1,4 @@
-import { message as t } from '../i18n.js';
+import { localizedError, message as t } from '../i18n.js';
 /**
  * PDF → one image per page, rendered IN THE BROWSER.
  *
@@ -110,7 +110,7 @@ export async function renderPdfToPages(file, onPage) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         await page.render({ canvasContext: ctx, viewport }).promise;
         const blob = await new Promise((resolve, reject) => {
-          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t("ui.pdf_pages.could_not_encode_the_page_7c7d00")))), 'image/png');
+          canvas.toBlob((b) => (b ? resolve(b) : reject(localizedError(t("ui.pdf_pages.could_not_encode_the_page_7c7d00")))), 'image/png');
         });
         out.push(new File([blob], pageFileName(base, n, total), { type: 'image/png' }));
         // Release the bitmap now rather than at GC time: a 50-page document at 1920px is a lot

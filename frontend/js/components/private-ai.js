@@ -12,7 +12,7 @@ import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-
  *
  * Every server value reaches the page through esc() or .value/.textContent.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
@@ -105,7 +105,7 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
       getPrivateAiStatus(true);
     } catch (err) {
       e.target.checked = !on;
-      showToast((err && (err.uiMessage || err.message)) || t('private_ai.save_failed'), 'error');
+      showToast((err && (errorMessage(err))) || t('private_ai.save_failed'), 'error');
     }
   });
 
@@ -151,7 +151,7 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
         ${r.private ? privateBadge({ private: true }) : `<span class="private-ai-public">${uiText(t('private_ai.public_address'))}</span>`}`;
     } catch (err) {
       result.classList.add('is-error');
-      bindMessage(result, (err && (err.uiMessage || err.message)) || t('private_ai.test_failed'));
+      bindMessage(result, (err && (errorMessage(err))) || t('private_ai.test_failed'));
     } finally { btn.disabled = false; }
   }
   function wireAllow() {
@@ -164,7 +164,7 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
         await runTest();
       } catch (err) {
         b.disabled = false;
-        showToast((err && (err.uiMessage || err.message)) || t('private_ai.save_failed'), 'error');
+        showToast((err && (errorMessage(err))) || t('private_ai.save_failed'), 'error');
       }
     });
   }
@@ -188,7 +188,7 @@ export async function mountPrivateAiSettings(host, { legacy = [] } = {}) {
       } catch (err) {
         result.className = 'private-ai-result is-error';
         if (err && err.code === 'not_allowed' && err.body) { result.innerHTML = notAllowedHtml({ ...err.body, can_allow: lastTest && lastTest.can_allow }); wireAllow(); }
-        else bindMessage(result, (err && (err.uiMessage || err.message)) || t('private_ai.save_failed'));
+        else bindMessage(result, (err && (errorMessage(err))) || t('private_ai.save_failed'));
         return false;
       }
     },

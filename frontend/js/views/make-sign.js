@@ -20,7 +20,7 @@ import { uiText, renderHTML, bindMessage, attributeBinding, binding, bindText } 
  *
  * Values from the server and from the person reach the page through esc() or .value only.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc, isPlatformAdmin } from '../utils.js';
 import { openUseModal } from './templates.js';
@@ -218,7 +218,7 @@ export async function renderSign(container, { simple = false, device: presetId =
   } catch (err) {
     if (run !== alive) return;
     paint(guideFrame({ step: 0, total: 1, icon: '&#9888;', title: t('signs.title'), back: false, cancelHref: home,
-      body: `<p class="simple-lead">${uiText((err && (err.uiMessage || err.message)) || t('signs.err.load'))}</p>` }));
+      body: `<p class="simple-lead">${uiText((err && (errorMessage(err))) || t('signs.err.load'))}</p>` }));
     return;
   }
   if (run !== alive) return;
@@ -548,7 +548,7 @@ export async function renderSign(container, { simple = false, device: presetId =
       const first = err && err.body && Array.isArray(err.body.errors) ? err.body.errors[0] : null;
       bindMessage(status, first
         ? t(`signs.err.${first.code}`, { field: fieldLabel(tp, first.field) })
-        : ((err && (err.uiMessage || err.message)) || t('signs.err.save')));
+        : ((err && (errorMessage(err))) || t('signs.err.save')));
       return;
     }
     if (run !== alive) return;
@@ -571,7 +571,7 @@ export async function renderSign(container, { simple = false, device: presetId =
     } catch (err) {
       // The sign exists (it is in Slides); only putting it on a screen failed. Say exactly that.
       buttons.forEach((b) => { b.disabled = false; });
-      const reason = (err && err.message) || '';
+      const reason = errorMessage(err);
       bindText(status, 'signs.err.assign', { reason });
       return;
     }
@@ -600,7 +600,7 @@ export async function renderSign(container, { simple = false, device: presetId =
       } catch (err) {
         buttons.forEach((x) => { x.disabled = false; });
         const first = err && err.body && Array.isArray(err.body.errors) ? err.body.errors[0] : null;
-        bindMessage(status, `${tplName(tp)}: ${first ? t(`signs.err.${first.code}`, { field: fieldLabel(tp, first.field) }) : ((err && (err.uiMessage || err.message)) || t('signs.err.save'))}`);
+        bindMessage(status, `${tplName(tp)}: ${first ? t(`signs.err.${first.code}`, { field: fieldLabel(tp, first.field) }) : ((err && (errorMessage(err))) || t('signs.err.save'))}`);
         return;
       }
       if (run !== alive) return;
@@ -621,7 +621,7 @@ export async function renderSign(container, { simple = false, device: presetId =
       }
     } catch (err) {
       buttons.forEach((b) => { b.disabled = false; });
-      const reason = (err && err.message) || '';
+      const reason = errorMessage(err);
       bindText(status, 'signs.err.assign', { reason });
       return;
     }

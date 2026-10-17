@@ -22,7 +22,7 @@ import { uiText, renderHTML, attributeBinding, binding } from '../../lib/i18n-bi
 import { uploadFileResumable } from '../../lib/chunked-upload.js';
 import { isPdf } from '../pdf-pages.js';
 import { esc } from '../../utils.js';
-import { message as t } from '../../i18n.js';
+import { localizedError, message as t } from '../../i18n.js';
 import { confirmDialog } from './dialog.js';
 
 const items = [];
@@ -75,7 +75,7 @@ async function runOne(it) {
   try {
     let created;
     if (it.pdf) {
-      if (!pdfImporter) throw new Error(t('library.upload.pdf_unavailable'));
+      if (!pdfImporter) throw localizedError(t('library.upload.pdf_unavailable'));
       created = await pdfImporter(it.file, it.folderId, (pct, note) => { it.sent = pct; it.total = 100; it.note = note || ''; renderTray(); });
     } else {
       created = await uploadFileResumable(it.file, {

@@ -13,7 +13,7 @@ import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-
  * release gate (review) applies. The server reads the feed (lib/news-feed); screens never contact
  * the news site.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { shell, guideFrame, showOnScreen } from './simple-home.js';
@@ -100,7 +100,7 @@ export async function renderNews(container) {
       });
     } catch (err) {
       controls.forEach((b) => { b.disabled = false; });
-      bindMessage(status, (err && (err.uiMessage || err.message)) || t('news.simple.err_save'));
+      bindMessage(status, (err && (errorMessage(err))) || t('news.simple.err_save'));
       return;
     }
     let shown = 0;
@@ -120,7 +120,7 @@ export async function renderNews(container) {
       }
     } catch (err) {
       controls.forEach((b) => { b.disabled = false; });
-      const reason = (err && err.message) || '';
+      const reason = errorMessage(err);
       bindText(status, 'news.simple.err_assign', { reason });
       return;
     }

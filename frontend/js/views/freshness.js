@@ -16,7 +16,7 @@ import { displayValue, message as t, messageCount as tn } from '../i18n.js';
  *
  * Values from the server reach the page through esc() only.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 
 import { esc } from '../utils.js';
 import { showToast } from '../components/toast.js';
@@ -36,7 +36,7 @@ export async function render(app) {
   const ws = new URLSearchParams(window.location.hash.split('?')[1] || '').get('ws');
   const u = cachedUser() || {};
   if (ws && ws !== u.current_workspace_id && (u.accessible_workspaces || []).some((w) => w.id === ws)) {
-    try { await switchWorkspaceTo(ws, '#/freshness'); return; } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    try { await switchWorkspaceTo(ws, '#/freshness'); return; } catch (e) { showToast(errorMessage(e), 'error'); }
   }
 
   app.innerHTML = `
@@ -52,7 +52,7 @@ async function load(app) {
     const r = await api.getFreshness();
     report = r && !Array.isArray(r) ? r : null;
   } catch (e) {
-    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p>`;
+    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</p>`;
     return;
   }
   if (!report) { body.innerHTML = `<div class="corp-empty">${uiText(t('fresh.unavailable'))}</div>`; return; }
@@ -213,7 +213,7 @@ async function loadDigestPref() {
     ${renderHTML(note ? `<p class="corp-help" style="font-size:12px;margin-top:6px">${uiText(note)}</p>` : '')}`;
   host.querySelector('#freshDigestMe').addEventListener('change', async (e) => {
     try { await api.setFreshnessDigest(e.target.checked); showToast(t('fresh.saved'), 'success'); }
-    catch (err) { e.target.checked = !e.target.checked; showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { e.target.checked = !e.target.checked; showToast(errorMessage(err), 'error'); }
   });
 }
 
@@ -231,7 +231,7 @@ function wire(app, body) {
       await api.snoozeFreshness(row.dataset.type, row.dataset.id, Number(sel.value));
       showToast(t('fresh.snoozed_toast'), 'success');
       refreshAfterChange(app);
-    } catch (err) { sel.value = ''; showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { sel.value = ''; showToast(errorMessage(err), 'error'); }
   });
 
   body.addEventListener('click', async (e) => {
@@ -241,7 +241,7 @@ function wire(app, body) {
     const act = btn.dataset.act;
     if (act === 'unsnooze') {
       try { await api.unsnoozeFreshness(row.dataset.type, row.dataset.id); refreshAfterChange(app); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     } else if (act === 'remove') {
       const item = report.items.find((i) => i.id === row.dataset.id);
       if (!confirm(t('fresh.confirm_remove', { name: item ? item.name : '' }))) return;
@@ -249,7 +249,7 @@ function wire(app, body) {
         const r = await api.updateContent(row.dataset.id, { expires_at: Math.floor(Date.now() / 1000) });
         showToast(t(r && r.pending_review ? 'fresh.removed_review' : 'fresh.removed'), 'success');
         refreshAfterChange(app);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     } else if (act === 'expiry') {
       const box = row.querySelector('.fresh-expiry');
       box.hidden = !box.hidden;
@@ -261,7 +261,7 @@ function wire(app, body) {
       const at = Math.floor(new Date(`${v}T23:59:59`).getTime() / 1000);
       if (!Number.isFinite(at)) return;
       try { await api.updateContent(row.dataset.id, { expires_at: at }); showToast(t('fresh.expiry_set', { date: v }), 'success'); refreshAfterChange(app); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     }
   });
 
@@ -276,7 +276,7 @@ function wire(app, body) {
         });
         showToast(t('fresh.saved'), 'success');
         refreshAfterChange(app);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
   }
 }

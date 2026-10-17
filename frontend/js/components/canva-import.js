@@ -1,6 +1,6 @@
 import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 // Canva in the content library (server: routes/canva.js, lib/canva.js).
 //
@@ -9,7 +9,7 @@ import { localizeServerError } from '../api.js';
 // search, choose a design, choose pages and a format, optionally make a playlist, import. Imports run
 // as server jobs (an export can take a while), so the picker polls until the job settles.
 import { api } from '../api.js';
-import { message as t } from '../i18n.js';
+import { localizedError, message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -44,7 +44,7 @@ export async function waitForJob(id, { timeoutMs = 10 * 60 * 1000 } = {}) {
     await sleep(wait);
     wait = Math.min(wait * 1.3, 3000);
   }
-  throw new Error(t('canva.err_timeout'));
+  throw localizedError(t('canva.err_timeout'));
 }
 
 export async function mountCanvaCard(el, { onImported } = {}) {
@@ -73,7 +73,7 @@ export async function mountCanvaCard(el, { onImported } = {}) {
       try {
         const r = await api.post('/canva/connect', {});
         window.location.href = r.url;
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.disabled = false; }
+      } catch (err) { showToast(errorMessage(err), 'error'); e.target.disabled = false; }
     });
     return;
   }
@@ -84,7 +84,7 @@ export async function mountCanvaCard(el, { onImported } = {}) {
   el.querySelector('[data-canva-add]').addEventListener('click', () => openCanvaPicker({ onImported }));
   el.querySelector('[data-canva-disconnect]').addEventListener('click', async () => {
     if (!confirm(t('canva.disconnect_confirm'))) return;
-    try { await api.post('/canva/disconnect', {}); showToast(t('canva.disconnected'), 'success'); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    try { await api.post('/canva/disconnect', {}); showToast(t('canva.disconnected'), 'success'); } catch (err) { showToast(errorMessage(err), 'error'); }
     mountCanvaCard(el, { onImported });
   });
 }
@@ -128,7 +128,7 @@ export function openCanvaPicker({ onImported, folderId = null } = {}) {
       if (query) qs.set('query', query);
       if (continuation) qs.set('continuation', continuation);
       data = await api.get(`/canva/designs?${qs}`);
-    } catch (err) { grid.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; return; }
+    } catch (err) { grid.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`; return; }
     const cards = (data.items || []).map((d) => `
       <button type="button" class="content-item" data-design="${esc(d.id)}" style="text-align:left;cursor:pointer;padding:0;border:1px solid var(--border);background:var(--bg-card);border-radius:var(--radius)">
         <div style="aspect-ratio:16/9;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius) var(--radius) 0 0">
@@ -149,7 +149,7 @@ export function openCanvaPicker({ onImported, folderId = null } = {}) {
   async function showDesign(id) {
     step.innerHTML = `<p>${uiText(t('common.loading'))}</p>`;
     let info;
-    try { info = await api.get(`/canva/designs/${encodeURIComponent(id)}/pages`); } catch (err) { step.innerHTML = `<p style="color:var(--danger)">${uiText((err.uiMessage || err.message))}</p>`; return; }
+    try { info = await api.get(`/canva/designs/${encodeURIComponent(id)}/pages`); } catch (err) { step.innerHTML = `<p style="color:var(--danger)">${uiText((errorMessage(err)))}</p>`; return; }
     const pages = info.pages.length ? info.pages : Array.from({ length: info.design.page_count || 1 }, (_, i) => ({ index: i + 1, thumbnail: null }));
     step.innerHTML = `
       <button class="btn btn-secondary btn-sm" id="canvaBack" style="margin-bottom:12px">← ${uiText(t('canva.back'))}</button>
@@ -195,14 +195,14 @@ export function openCanvaPicker({ onImported, folderId = null } = {}) {
       try {
         const { job_id: jobId } = await api.post('/canva/import', body);
         const job = await waitForJob(jobId);
-        if (job.status !== 'done') throw new Error(localizeServerError(job.error) || t('canva.err_failed'));
+        if (job.status !== 'done') throw localizedError(localizeServerError(job.error) || t('canva.err_failed'));
         showToast(t('canva.imported', { n: job.result.content_ids.length }), 'success');
         close();
         if (onImported) onImported(job.result);
       } catch (err) {
         bindMessage(busy, '');
         e.target.disabled = false;
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   }
@@ -218,6 +218,6 @@ export async function loadCanvaLinks() {
 export async function syncCanvaLink(contentId) {
   const { job_id: jobId } = await api.post(`/canva/links/${encodeURIComponent(contentId)}/sync`, {});
   const job = await waitForJob(jobId);
-  if (job.status !== 'done') throw new Error(localizeServerError(job.error) || t('canva.err_failed'));
+  if (job.status !== 'done') throw localizedError(localizeServerError(job.error) || t('canva.err_failed'));
   return job.result;
 }

@@ -1,11 +1,11 @@
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText, bindAttribute, binding } from '../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { renderManaged, emptyMenu } from './fil-kiosk.js';
 import { showToast } from '../components/toast.js';
-import { message as t } from '../i18n.js';
+import { localizedError, message as t } from '../i18n.js';
 import { esc } from '../utils.js';
 
 // A refused request must reject, not resolve.
@@ -18,8 +18,8 @@ import { esc } from '../utils.js';
 // the dead catch). The shared client in api.js has always thrown on !res.ok; these local copies did
 // not. Same contract now, including the 401 session-expiry reload.
 const API = (url, opts = {}) => fetch('/api' + url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.kiosk.request_failed_value0_ad6dc0", {value0: r.status})); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw localizedError(localizeServerError(e.error) || t("ui.kiosk.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
 });
 
@@ -95,11 +95,11 @@ async function renderList(container) {
           showToast(t('kiosk.toast.deleted'));
           renderList(container);
         } catch (err) {
-          showToast(err.uiMessage || err.message || t('kiosk.toast.delete_failed'), 'error');
+          showToast(errorMessage(err) || t('kiosk.toast.delete_failed'), 'error');
         }
       };
     });
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+  } catch (err) { showToast(errorMessage(err), 'error'); }
 }
 
 async function renderEditor(container, rawPageId) {
@@ -225,7 +225,7 @@ async function renderEditor(container, rawPageId) {
       await API(`/kiosk/${pageId}`, { method: 'PUT', body: JSON.stringify({ config }) });
       showToast(t('kiosk.toast.saved'), 'success');
       document.getElementById('kioskPreview').src = `/api/kiosk/${pageId}/render?t=${Date.now()}`;
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 
   renderButtons();

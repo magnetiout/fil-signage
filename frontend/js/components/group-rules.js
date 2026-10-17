@@ -6,7 +6,7 @@ import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-
 // playlist editor (components/smart-rules.js) so the two read the same, with a live preview of
 // which screens the rules select before anything is saved.
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 import { message as t } from '../i18n.js';
 
@@ -118,7 +118,7 @@ export function openGroupRulesModal({ group, onSave }) {
       } catch (err) {
         if (mine !== seq) return;
         bindMessage($('grCount'), '');
-        bindMessage($('grError'), (err.uiMessage || err.message));
+        bindMessage($('grError'), (errorMessage(err)));
       }
     }, 250);
   }
@@ -159,7 +159,7 @@ export function openGroupRulesModal({ group, onSave }) {
 
   async function save(rules, btn) {
     btn.disabled = true;
-    try { await onSave(rules); close(); } catch (err) { bindMessage($('grError'), (err.uiMessage || err.message)); btn.disabled = false; }
+    try { await onSave(rules); close(); } catch (err) { bindMessage($('grError'), (errorMessage(err))); btn.disabled = false; }
   }
   $('grSave').addEventListener('click', () => {
     const rules = collect();

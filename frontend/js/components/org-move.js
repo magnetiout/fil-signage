@@ -1,7 +1,7 @@
 import { uiText, renderHTML } from '../lib/i18n-bindings.js';
-import { displayValue, message as t } from '../i18n.js';
+import { localizedError, displayValue, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 /*
  * 3.0 Move an organization to another server — the pieces that live on OTHER pages
@@ -84,7 +84,7 @@ function mountHandoverSender(el) {
           </tbody></table></div>
           <p class="trust-muted">${uiText(t('imp.handover.after'))}</p>`;
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         send.disabled = false;
       }
     });
@@ -101,7 +101,7 @@ export async function mountServerMove(el) {
   async function load() {
     let data;
     try { data = await api.get('/org-import/instance-exports'); }
-    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((e.uiMessage || e.message))}</p>`; return; }
+    catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((errorMessage(e)))}</p>`; return; }
     const status = (j) => tk(`trust.exp.status.${j.status}`, j.status);
     el.innerHTML = `
       <p class="trust-desc">${uiText(t('imp.server.desc'))}</p>
@@ -125,20 +125,20 @@ export async function mountServerMove(el) {
     el.querySelector('#impServerExport').addEventListener('click', async (e) => {
       e.target.disabled = true;
       try { await api.post('/org-import/instance-exports', { include_settings: el.querySelector('#impServerSettings').checked }); showToast(t('trust.exp.started'), 'success'); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
       load();
     });
     const linkFor = async (id) => (await api.post(`/org-import/instance-exports/${encodeURIComponent(id)}/link`)).url;
     el.querySelectorAll('[data-dl]').forEach((b) => b.addEventListener('click', async () => {
       try { const url = await linkFor(b.dataset.dl); if (typeof url === 'string' && url.startsWith('/api/public/instance-export/')) window.location.href = url; }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     }));
     el.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
       try {
         const url = await linkFor(b.dataset.copy);
         await copy(window.location.origin + url);
         showToast(t('imp.server.link_copied'), 'success');
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     }));
     stopServerPoll();
     if (data.exports.some((j) => j.status === 'queued' || j.status === 'running')) {
@@ -167,6 +167,6 @@ export async function sendChunk(jobId, offset, blob) {
   });
   const body = await r.json().catch(() => ({}));
   if (r.status === 409 && Number.isFinite(body.offset)) return { offset: body.offset };
-  if (!r.ok) throw Object.assign(new Error(localizeServerError(body.error) || t("ui.org_move.upload_failed_value0_b6b087", {value0: r.status})), { status: r.status });
+  if (!r.ok) throw Object.assign(localizedError(localizeServerError(body.error) || t("ui.org_move.upload_failed_value0_b6b087", {value0: r.status})), { status: r.status });
   return body;
 }

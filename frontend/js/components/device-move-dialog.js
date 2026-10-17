@@ -1,3 +1,4 @@
+import {getLocale} from '../i18n.js';
 import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
 
 /*
@@ -15,7 +16,7 @@ import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
  * The server refuses without either, so a stale dialog cannot skip them. A move whose copy the
  * target account has no storage for is refused by the preview itself, before anyone ticks anything.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { displayValue, displayQuantity, message as t, messageCount as tn } from '../i18n.js';
 import { esc, isPlatformAdmin } from '../utils.js';
 import { showToast } from './toast.js';
@@ -71,8 +72,8 @@ function broughtSummary(screens) {
 }
 
 function targetOptions(targets, grouped, filter) {
-  const f = String(filter || '').trim().toLowerCase();
-  const shown = f ? targets.filter((w) => `${w.name} ${w.organization_name || ''}`.toLowerCase().includes(f)) : targets;
+  const f = String(filter || '').trim().toLocaleLowerCase(getLocale());
+  const shown = f ? targets.filter((w) => `${w.name} ${w.organization_name || ''}`.toLocaleLowerCase(getLocale()).includes(f)) : targets;
   const opt = (w) => `<option value="${esc(w.id)}">${uiText(w.name)}</option>`;
   if (!grouped) return shown.map(opt).join('');
   const byOrg = new Map();
@@ -192,7 +193,7 @@ export async function openDeviceMoveDialog(deviceIds, { currentWorkspaceId, onMo
     } catch (e) {
       if (mine !== seq) return;
       impact = [];
-      box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`;
+      box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`;
       btn.disabled = true;
     }
   }
@@ -220,7 +221,7 @@ export async function openDeviceMoveDialog(deviceIds, { currentWorkspaceId, onMo
       cui.forgetCorporateCache();
       if (typeof onMoved === 'function') onMoved(r);
     } catch (e) {
-      showToast(e.uiMessage || e.message, e.cancelled ? 'info' : 'error');
+      showToast(errorMessage(e), e.cancelled ? 'info' : 'error');
       syncBtn();
     }
   });

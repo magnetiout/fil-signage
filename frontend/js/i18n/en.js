@@ -1,6 +1,12 @@
 // English translations. This file is the source of truth for keys —
 // every other locale should mirror its keys (or fall back to en).
 export default {
+
+
+  'admin.plan.prices_unchecked': "Stripe is not configured on this server, so the linked prices were saved without being checked.",
+  'admin.plan.server_warning': "Saved. The server returned an additional warning.",
+  'storage.test.failed': "Could not connect to storage: {error}",
+
   'history.item_content': "Content {id}",
   'history.item_widget': "Widget {id}",
   'history.item_playlist': "Playlist {id}",

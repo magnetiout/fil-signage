@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { uiText, renderHTML, attributeBinding } from '../lib/i18n-bindings.js';
 
 /*
@@ -13,7 +14,7 @@ import { uiText, renderHTML, attributeBinding } from '../lib/i18n-bindings.js';
  * numbers). Values from the server reach the DOM through esc() only.
  */
 import { api } from '../api.js';
-import { message as t, messageCount as tn } from '../i18n.js';
+import { localizedError, message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { isSimpleMode } from './ui-mode.js';
 
@@ -144,7 +145,7 @@ export async function confirmAccessibility(type, id) {
 
 /** The error a publish path throws when the person chose to fix things first. */
 export function a11yCancelled() {
-  const e = new Error(t('a11y.gate.cancelled'));
+  const e = localizedError(t('a11y.gate.cancelled'));
   e.code = 'a11y_cancelled';
   return e;
 }
@@ -173,9 +174,9 @@ export async function applyA11yFix(source, issue) {
     const deck = await api.get(`/slide-decks/${encodeURIComponent(source.id)}`);
     const doc = deck.doc;
     const s = doc && doc.slides && doc.slides[where.slide_index];
-    if (!s) throw new Error(t('a11y.fix.gone'));
+    if (!s) throw localizedError(t('a11y.fix.gone'));
     if (fix.kind === 'dim') s.template.background_dim = fix.dim;
-    else if (!setElementStyle(s.template, where.element, fix)) throw new Error(t('a11y.fix.gone'));
+    else if (!setElementStyle(s.template, where.element, fix)) throw localizedError(t('a11y.fix.gone'));
     await api.put(`/slide-decks/${encodeURIComponent(source.id)}`, { doc });
     const live = deck.playlist_id || doc.slides.some((x) => x.widget_id);
     if (!live) return t('a11y.fix.saved');
@@ -183,7 +184,7 @@ export async function applyA11yFix(source, issue) {
       await api.post(`/slide-decks/${encodeURIComponent(source.id)}/publish`, {});
       return t('a11y.fix.published');
     } catch (e) {
-      const reason = e && e.message ? e.message : '';
+      const reason = errorMessage(e);
       return t('a11y.fix.saved_not_published', { reason });
     }
   }
@@ -194,10 +195,10 @@ export async function applyA11yFix(source, issue) {
     config = config || {};
     if (w.widget_type === 'slide') {
       if (fix.kind === 'dim') { config.template = config.template || {}; config.template.background_dim = fix.dim; }
-      else if (!setElementStyle(config.template, where.element, fix)) throw new Error(t('a11y.fix.gone'));
+      else if (!setElementStyle(config.template, where.element, fix)) throw localizedError(t('a11y.fix.gone'));
     } else if (where.key && fix.color) {
       config[where.key] = fix.color;
-    } else throw new Error(t('a11y.fix.gone'));
+    } else throw localizedError(t('a11y.fix.gone'));
     const r = await api.put(`/widgets/${encodeURIComponent(source.id)}`, { config });
     return t(r && (r.pending_review || r.draft) ? 'a11y.fix.review' : 'a11y.fix.saved_live');
   }
@@ -205,7 +206,7 @@ export async function applyA11yFix(source, issue) {
     const r = await api.updateContent(source.id, { captions_enabled: true });
     return t(r && r.pending_review ? 'a11y.fix.review' : 'a11y.fix.saved_live');
   }
-  throw new Error(t('a11y.fix.gone'));
+  throw localizedError(t('a11y.fix.gone'));
 }
 
 /** Where to edit a source by hand. */

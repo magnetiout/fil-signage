@@ -1,7 +1,8 @@
+import {isMessage} from '../i18n.js';
 import { uiText, renderHTML, bindMessage, bindAttribute, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../api.js';
-import { getLocale, message as t } from '../i18n.js';
+import { errorMessage, localizeServerError } from '../api.js';
+import { localizedError, getLocale, message as t } from '../i18n.js';
 
 import { api, assertLocalCallAllowed } from '../api.js';
 import * as gettingStarted from '../components/getting-started.js';
@@ -480,7 +481,7 @@ function folderDropTarget(el, folderId) {
       showToast(folderId ? t('library.bulk.moved', { count: ids.length, folder: folderPathOf(folderById().get(folderId)) }) : t('library.bulk.moved_root', { count: ids.length }), 'success');
       if (ids.length > 1) state.selected.clear();
       scheduleReload();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 }
 
@@ -865,7 +866,7 @@ async function canvaSync(c) {
     const r = await syncCanvaLink(c.id);
     if (r.errors) showToast(t('canva.sync_failed'), 'error');
     else showToast(r.replaced ? t('canva.synced') : t('canva.up_to_date'), 'success');
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+  } catch (err) { showToast(errorMessage(err), 'error'); }
   scheduleReload();
 }
 
@@ -902,12 +903,13 @@ async function deleteDialog(items) {
     afterBulk(false);
   } catch (err) {
     // The batch is all-or-nothing (routes/content.js): name the item it stopped on.
-    showToast(t('library.bulk.failed_none', { error: nameForError((err.uiMessage || err.message), items) }), 'error');
+    showToast(t('library.bulk.failed_none', { error: nameForError((errorMessage(err)), items) }), 'error');
   }
 }
 
 // "Access denied for content: <uuid>" reads better with the item's name.
 function nameForError(msg, items) {
+  if (isMessage(msg)) return msg;
   let out = String(msg || '');
   for (const c of items) if (out.includes(c.id)) out = out.replace(c.id, `“${c.filename}”`);
   return out;
@@ -940,7 +942,7 @@ function moveDialog(items) {
       showToast(f ? t('library.bulk.moved', { count: items.length, folder: folderPathOf(f) }) : t('library.bulk.moved_root', { count: items.length }), 'success');
       d.close();
       afterBulk(items.length > 1);
-    } catch (err) { bindText(d.root.querySelector('[data-err]'), 'library.bulk.failed_none', { error: nameForError(err.message, items) }); e.target.disabled = false; }
+    } catch (err) { bindText(d.root.querySelector('[data-err]'), 'library.bulk.failed_none', { error: nameForError(errorMessage(err), items) }); e.target.disabled = false; }
   });
 }
 
@@ -968,14 +970,14 @@ function tagDialog(items) {
       showToast(t('library.tag.done', { count: items.length }), 'success');
       d.close();
       afterBulk(false);
-    } catch (err) { bindText(d.root.querySelector('[data-err]'), 'library.bulk.failed_none', { error: nameForError(err.message, items) }); e.target.disabled = false; }
+    } catch (err) { bindText(d.root.querySelector('[data-err]'), 'library.bulk.failed_none', { error: nameForError(errorMessage(err), items) }); e.target.disabled = false; }
   });
 }
 
 async function playlistDialog(items) {
   const d = openDialog({ title: t('library.playlist.title', { count: items.length }), html: `<p>${uiText(t('common.loading'))}</p>` });
   let playlists;
-  try { playlists = await api.getPlaylists(); } catch (err) { d.body.innerHTML = `<p role="alert">${uiText((err.uiMessage || err.message))}</p>`; return; }
+  try { playlists = await api.getPlaylists(); } catch (err) { d.body.innerHTML = `<p role="alert">${uiText((errorMessage(err)))}</p>`; return; }
   if (d.closed) return;
   // Smart playlists choose their own content (the bulk route refuses them); auto-generated ones are
   // a screen's own and are not offered either.
@@ -1029,7 +1031,7 @@ async function playlistDialog(items) {
       }
       afterBulk(items.length > 1);
     } catch (err) {
-      bindText(d.body.querySelector('[data-err]'), 'library.playlist.failed', { error: nameForError(err.message, items) });
+      bindText(d.body.querySelector('[data-err]'), 'library.playlist.failed', { error: nameForError(errorMessage(err), items) });
       e.target.disabled = false;
     }
   });
@@ -1074,7 +1076,7 @@ async function newFolder(trigger, parentId = state.location.kind === 'folder' ? 
     if (r.parent) state.expanded.add(r.parent);
     await loadNav();
     if (f && f.id) goLocation({ kind: 'folder', folderId: f.id });
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+  } catch (err) { showToast(errorMessage(err), 'error'); }
 }
 
 async function renameFolder(id) {
@@ -1086,7 +1088,7 @@ async function renameFolder(id) {
     await api.renameFolder(id, r.value);
     showToast(t('content.toast.folder_renamed'), 'success');
     await loadNav();
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+  } catch (err) { showToast(errorMessage(err), 'error'); }
 }
 
 async function deleteFolder(id) {
@@ -1105,7 +1107,7 @@ async function deleteFolder(id) {
     state.location = f.parent_id ? { kind: 'folder', folderId: f.parent_id } : { kind: 'all', folderId: null };
     await loadNav();
     scopeChanged();
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+  } catch (err) { showToast(errorMessage(err), 'error'); }
 }
 
 /* ================================ adding content ================================ */
@@ -1217,7 +1219,7 @@ async function importPdf(file, parentFolderId, report) {
     await api.addPlaylistItemsBulk(playlist.id, items.map((c) => c.id));
     showToast(t('content.toast.pdf_imported', { name: base, count: items.length }), 'success');
   } catch (err) {
-    showToast(t('content.toast.pdf_playlist_failed', { name: base, count: items.length, error: (err.uiMessage || err.message) }), 'error');
+    showToast(t('content.toast.pdf_playlist_failed', { name: base, count: items.length, error: (errorMessage(err)) }), 'error');
   }
   return items;
 }
@@ -1419,7 +1421,7 @@ function showEditModal(contentItem, onSave, { focus = null } = {}) {
     tvEl.hidden = false;
     overlay.querySelector('#editTvRetry')?.addEventListener('click', async (e) => {
       e.target.disabled = true;
-      try { renderTvCopies(await api.retryContentTvCopies(contentItem.id)); } catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.disabled = false; }
+      try { renderTvCopies(await api.retryContentTvCopies(contentItem.id)); } catch (err) { showToast(errorMessage(err), 'error'); e.target.disabled = false; }
     });
   };
   if (tvEl) api.getContentTvCopies(contentItem.id).then(renderTvCopies).catch(() => {});
@@ -1498,7 +1500,7 @@ function showEditModal(contentItem, onSave, { focus = null } = {}) {
           body: JSON.stringify(updateData)
         });
         const body = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(localizeServerError(body.error) || t("ui.labels.update_failed_4de04c"));
+        if (!r.ok) throw localizedError(localizeServerError(body.error) || t("ui.labels.update_failed_4de04c"));
         pendingReview = !!body.pending_review;
       }
 
@@ -1520,7 +1522,7 @@ function showEditModal(contentItem, onSave, { focus = null } = {}) {
           body: formData
         });
         const rb = await rr.json().catch(() => ({}));
-        if (!rr.ok) throw new Error(localizeServerError(rb.error) || t('content.error_update_failed'));
+        if (!rr.ok) throw localizedError(localizeServerError(rb.error) || t('content.error_update_failed'));
         if (rb.pending_review) pendingReview = true;
       }
 
@@ -1537,14 +1539,14 @@ function showEditModal(contentItem, onSave, { focus = null } = {}) {
           body: subForm
         });
         const sb = await sr.json().catch(() => ({}));
-        if (!sr.ok) throw new Error(localizeServerError(sb.error) || t('content.error_update_failed'));
+        if (!sr.ok) throw localizedError(localizeServerError(sb.error) || t('content.error_update_failed'));
       }
 
       closeEdit();
       showToast(pendingReview ? t('review.toast.saved_as_draft') : t('content.toast.updated'), 'success');
       if (onSave) onSave();
     } catch (err) {
-      showToast(err.uiMessage || err.message || t('content.error_update_failed'), 'error');
+      showToast(errorMessage(err) || t('content.error_update_failed'), 'error');
     }
   };
 }
@@ -1571,7 +1573,7 @@ async function showPreview(content) {
     try {
       session = await api.post(`/content/${content.id}/bundle-preview`);
     } catch (err) {
-      showToast(err.uiMessage || err.message || t('content.bundle_preview_failed'), 'error');
+      showToast(errorMessage(err) || t('content.bundle_preview_failed'), 'error');
       return;
     }
     const overlay = document.createElement('div');

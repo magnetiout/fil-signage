@@ -3,7 +3,7 @@ import { renderHTML, uiText, translatedAttribute, bindMessage, bindAttribute, at
 
 import { displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api } from '../api.js';
 import { publishOrSubmit } from '../components/release.js';
@@ -73,7 +73,7 @@ async function wirePowerSchedule(device) {
       });
       bind();
     } catch (err) {
-      bindMessage(host, (err.uiMessage || err.message));
+      bindMessage(host, (errorMessage(err)));
     }
   }
 
@@ -116,7 +116,7 @@ async function wirePowerSchedule(device) {
         showToast(t('power.saved'), 'success');
         await load();
       } catch (err) {
-        showToast(`${t('power.save_failed')}: ${(err.uiMessage || err.message)}`, 'error');
+        showToast(`${t('power.save_failed')}: ${(errorMessage(err))}`, 'error');
       }
     });
 
@@ -127,7 +127,7 @@ async function wirePowerSchedule(device) {
         showToast(t('power.saved'), 'success');
         await load();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   }
@@ -639,7 +639,7 @@ function wireLocationSearch() {
       try {
         rows = await api.get(`/devices/geocode?q=${encodeURIComponent(q)}`);
         results.innerHTML = rows.map((r, i) => `<button type="button" class="btn btn-secondary btn-sm" data-loc-i="${i}" style="text-align:left">${uiText([r.name, r.region, r.country].filter(Boolean).join(', '))}</button>`).join('');
-      } catch (err) { results.innerHTML = `<span style="font-size:12px;color:var(--danger)">${uiText((err.uiMessage || err.message))}</span>`; }
+      } catch (err) { results.innerHTML = `<span style="font-size:12px;color:var(--danger)">${uiText((errorMessage(err)))}</span>`; }
     }, 300);
   });
   document.addEventListener('click', (e) => {
@@ -1851,7 +1851,7 @@ async function loadDevice(deviceId, activeTab = null) {
     }
 
   } catch (err) {
-    contentEl.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('device.failed_load'))}</h3><p>${uiText((err.uiMessage || err.message))}</p></div>`;
+    contentEl.innerHTML = `<div class="empty-state"><h3>${renderHTML(t('device.failed_load'))}</h3><p>${uiText((errorMessage(err)))}</p></div>`;
   }
 }
 
@@ -2163,7 +2163,7 @@ function setupCorporateDevice(device) {
   document.querySelectorAll('[data-corp-add]').forEach((b) => b.addEventListener('click', () => corporateAdd(device, b.dataset.corpAdd)));
   document.querySelectorAll('[data-corp-publish]').forEach((b) => b.addEventListener('click', async () => {
     try { b.disabled = true; await api.publishPlaylist(b.dataset.corpPublish); showToast(t('corp.dev.published'), 'success'); loadDevice(device.id, 'playlist'); }
-    catch (e) { b.disabled = false; showToast(e.uiMessage || e.message, 'error'); }
+    catch (e) { b.disabled = false; showToast(errorMessage(e), 'error'); }
   }));
   document.querySelectorAll('[data-corp-own]').forEach((b) => b.addEventListener('click', async () => {
     const sl = (corp.slots || []).find((x) => x.id === b.dataset.corpOwn);
@@ -2173,13 +2173,13 @@ function setupCorporateDevice(device) {
       const f = await api.createFill(sl.id, { scope_kind: device.wall_id ? 'wall' : 'device', scope_id: device.wall_id || device.id });
       showToast(t('corp.slot.own_created'), 'success');
       window.location.hash = `#/playlists/${f.fill_playlist_id}`;
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   }));
   document.querySelectorAll('[data-corp-unown]').forEach((b) => b.addEventListener('click', async () => {
     const ok = await cui.ask({ title: t('corp.slot.use_shared'), text: t('corp.slot.use_shared_confirm'), confirmLabel: t('corp.slot.use_shared'), danger: true });
     if (!ok) return;
     try { await api.deleteFill(b.dataset.corpUnown); showToast(t('corp.slot.level_removed'), 'success'); loadDevice(device.id, 'playlist'); }
-    catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    catch (e) { showToast(errorMessage(e), 'error'); }
   }));
 }
 
@@ -2351,7 +2351,7 @@ function renderMirrors(device) {
       device.mirrors = list.filter((x) => x.id !== id);
       renderMirrors(device);
       showToast(t('device.mirrors.removed'));
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   }));
 }
 
@@ -2413,7 +2413,7 @@ function setupEnrolKey(device) {
       device.enrol_key = r.enrol_key;
       showToast(rolled ? t('device.enrol.rolled') : t('device.enrol.created'));
       draw();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   }
 
   draw();
@@ -2675,7 +2675,7 @@ async function showReAdoptModal(device) {
       api.getRemovedDevices(),
       api.getPlaylists().catch(() => []),   // best-effort: only used to label the restored playlist
     ]);
-  } catch (err) { showToast(err.uiMessage || err.message || t('device.readopt.error'), 'error'); return; }
+  } catch (err) { showToast(errorMessage(err) || t('device.readopt.error'), 'error'); return; }
 
   const plById = new Map((playlists || []).map(p => [p.id, p.name]));
   const playlistLabel = (s) => !s.playlist_id
@@ -2742,7 +2742,7 @@ async function showReAdoptModal(device) {
         loadDevice(device.id);   // refresh so restored orientation/name/etc show immediately
       } catch (err) {
         // Server messages: 404 no snapshot, 403 cross-workspace, 400 bad request.
-        showToast(err.uiMessage || err.message || t('device.readopt.error'), 'error');
+        showToast(errorMessage(err) || t('device.readopt.error'), 'error');
         btn.disabled = false;
       }
     });
@@ -2763,7 +2763,7 @@ function setupActions(device) {
       if (el) bindMessage(el, r.settings_pin);
       showToast(r.delivered ? t('device.pin.updated_live') : t('device.pin.updated_offline'), 'success');
     } catch (e) {
-      showToast((e.uiMessage || e?.message) || t('device.pin.failed'), 'error');
+      showToast((errorMessage(e)) || t('device.pin.failed'), 'error');
     }
   }
 
@@ -2800,7 +2800,7 @@ function setupActions(device) {
         currentDevice.name = name;
         showToast(t('device.toast.renamed'), 'success');
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     }
   });
@@ -2975,7 +2975,7 @@ function setupActions(device) {
         if (el) el.value = saved.tags.join(', ');   // show what was stored (normalised), not what was typed
       }
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   });
 
@@ -3002,7 +3002,7 @@ function setupActions(device) {
       } catch (err) {
         devicePublishBtn.disabled = false;
         bindText(devicePublishBtn, 'device.draft.publish', undefined);
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   }
@@ -3015,7 +3015,7 @@ function setupActions(device) {
         showToast(t('device.toast.draft_discarded'));
         loadDevice(device.id, 'playlist');
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   }
@@ -3065,7 +3065,7 @@ function setupActions(device) {
          */
         loadDevice(device.id, 'playlist');
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   }
@@ -3078,7 +3078,7 @@ function setupActions(device) {
       showToast(t('device.toast.playlist_reverted'));
       loadDevice(device.id, 'playlist');
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   });
 
@@ -3103,7 +3103,7 @@ function setupActions(device) {
       const data = await res.json();
       if (res.ok) showToast(t('device.copy.toast', { n: data.copied, device: target.name }), 'success');
       else showToast(localizeServerError(data.error), 'error');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   // #146 Item D: operator block/unblock — takes effect on the device's next register,
@@ -3142,7 +3142,7 @@ function setupActions(device) {
       if (device.blocked) { await api.unblockDevice(device.id); device.blocked = 0; showToast(t("ui.device_detail.device_unblocked"), 'success'); }
       else { await api.blockDevice(device.id); device.blocked = 1; showToast(t("ui.device_detail.device_blocked_refused_on_next_reconnect"), 'success'); }
       bindMessage(blockBtn, device.blocked ? t("ui.device_detail.unblock_12aabd") : t("ui.device_detail.block_82dd2c"));
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
     finally { blockBtn.disabled = false; }
   });
 
@@ -3166,7 +3166,7 @@ function setupActions(device) {
         showToast(t('device.toast.removed'), 'success');
         window.location.hash = '/';
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         bindText(deleteBtn, 'device.remove', undefined);
         deleteBtn.disabled = false;
         deleteConfirming = false;
@@ -3336,11 +3336,11 @@ function setupActions(device) {
         duration: Number(document.getElementById('pipDuration').value) || 0,
       });
       showToast(t("ui.device_detail.overlay_sent_value0_sent_value1_offline_7a78c4", {value0: res.sent, value1: res.offline}), res.sent ? 'success' : 'warning');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
   document.getElementById('clearPipBtn')?.addEventListener('click', async () => {
     try { await api.clearPip(device.id); showToast(t("ui.device_detail.overlay_cleared"), 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   // Trigger listener settings. `delivered` distinguishes "the panel has this now" from "it will
@@ -3365,7 +3365,7 @@ function setupActions(device) {
       });
       showToast(res.delivered ? t('device.trigcfg.saved_live') : t('device.trigcfg.saved_queued'),
         res.delivered ? 'success' : 'warning');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 
   document.getElementById('rotateTrigSecretBtn')?.addEventListener('click', async () => {
@@ -3380,7 +3380,7 @@ function setupActions(device) {
       }
       showToast(res.delivered ? t('device.trigcfg.saved_live') : t('device.trigcfg.saved_queued'),
         res.delivered ? 'success' : 'warning');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 }
 
@@ -3459,7 +3459,7 @@ function setupRemote(device) {
       });
       talkClient = new TalkClient(device.id, {
         duplex,
-        onError: (e) => { showToast((t('device.talk.failed')) + ((e.uiMessage || e?.message) ? ': ' + (e.uiMessage || e.message) : ''), 'error'); },
+        onError: (e) => { showToast((t('device.talk.failed')) + ((errorMessage(e)) ? ': ' + (errorMessage(e)) : ''), 'error'); },
       });
       await talkClient.start();
       talkMuted = false;
@@ -3471,7 +3471,7 @@ function setupRemote(device) {
       stopTalkSession(device.id);
       showTalk(false);
       disarmNoMicNotice();
-      showToast((t('device.talk.failed')) + ((e.uiMessage || e?.message) ? ': ' + (e.uiMessage || e.message) : ''), 'error');
+      showToast((t('device.talk.failed')) + ((errorMessage(e)) ? ': ' + (errorMessage(e)) : ''), 'error');
     } finally {
       if (talkStartBtn) talkStartBtn.disabled = false;
       if (talk2wayBtn) talk2wayBtn.disabled = false;
@@ -3572,7 +3572,7 @@ async function setupPlaylistActions(device) {
       // Reload the device page to show updated zone selectors, stay on playlist tab
       loadDevice(device.id, 'playlist');
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   });
 
@@ -3652,7 +3652,7 @@ async function setupPlaylistActions(device) {
         const added = []; const skipped = [];
         for (const id of ids) {
           try { added.push(remember(await api.addAssignment(device.id, payload({ type: 'content', id }, extras)))); }
-          catch (e) { skipped.push({ id, error: e.message }); }
+          catch (e) { skipped.push({ id, error: errorMessage(e) }); }
         }
         return { added, skipped };
       },
@@ -3689,7 +3689,7 @@ async function publishForSimpleMode(playlistId) {
     showToast(t('device.simple.sent_to_screen'), 'success');
     api.trackEvent('first_publish', { from: 'device_page' });
   } catch (err) {
-    showToast(err.uiMessage || err.message || t('device.simple.publish_failed'), 'error');
+    showToast(errorMessage(err) || t('device.simple.publish_failed'), 'error');
   }
 }
 
@@ -3753,7 +3753,7 @@ function attachRemoveHandlers(device) {
             await api.updateAssignment(assignmentId, { zone_id: select.value || null }, device.id);
             showToast(t('device.toast.zone_updated'), 'success');
             loadDevice(device.id, 'playlist');
-          } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+          } catch (err) { showToast(errorMessage(err), 'error'); }
         };
       });
     };
@@ -3783,7 +3783,7 @@ function attachRemoveHandlers(device) {
         await api.updateAssignment(id, { muted: !currentlyMuted }, device.id);
         showToast(currentlyMuted ? t('device.toast.unmuted') : t('device.toast.muted'), 'success');
         loadDevice(device.id, 'playlist');
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
   });
 
@@ -3798,7 +3798,7 @@ function attachRemoveHandlers(device) {
         showToast(t('device.toast.removed_publish_to_update'), 'info', 7000);
         loadDevice(device.id, 'playlist');
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   });
@@ -3849,7 +3849,7 @@ function attachRemoveHandlers(device) {
         showToast(t('device.toast.playlist_reordered'), 'success');
         loadDevice(device.id, 'playlist');
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         loadDevice(device.id, 'playlist');
       }
     });

@@ -1,6 +1,6 @@
 import { uiText, renderHTML, bindMessage, binding } from '../lib/i18n-bindings.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 import { displayValue, displayQuantity, message as t, messageCount as tn } from '../i18n.js';
@@ -95,7 +95,7 @@ export async function render(app) {
       devices: Array.isArray(devs) ? devs : (devs.devices || []),
       groups: Array.isArray(grps) ? grps : (grps.groups || []),
     };
-  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`; return; }
+  } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (errorMessage(e))) || t('common.error'))}</p>`; return; }
   body.innerHTML = `<div class="corp-toolbar"><button class="btn btn-primary" id="scNew">${uiText(t('sitecache.new'))}</button></div>
     ${renderHTML(cache.caches.length ? cache.caches.map(card).join('') : `<div class="corp-empty">${uiText(t('sitecache.empty'))}</div>`)}
     <p class="corp-help" style="font-size:12px;margin-top:16px">${uiText(t('sitecache.how'))}</p>`;
@@ -107,12 +107,12 @@ export async function render(app) {
     el.querySelector('[data-act="rotate"]').addEventListener('click', async () => {
       if (!confirm(t('sitecache.confirm_rotate', { name: c.name }))) return;
       try { const r = await api.post(`/site-caches/${c.id}/rotate-token`, {}); showSetup(app, r); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
     });
     el.querySelector('[data-act="del"]').addEventListener('click', async () => {
       if (!confirm(t('sitecache.confirm_delete', { name: c.name }))) return;
       try { await api.delete(`/site-caches/${c.id}`); showToast(t('sitecache.deleted'), 'success'); render(app); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
     });
   });
 }
@@ -153,7 +153,7 @@ function openForm(app, c) {
         const r = await api.post('/site-caches', payload);
         overlay.remove(); showSetup(app, r);
       }
-    } catch (e) { bindMessage($('scError'), (e && (e.uiMessage || e.message)) || t('common.error')); $('scSave').disabled = false; }
+    } catch (e) { bindMessage($('scError'), (e && (errorMessage(e))) || t('common.error')); $('scSave').disabled = false; }
   });
 }
 
@@ -200,6 +200,6 @@ function openAssign(app, c) {
     try {
       await api.put(`/site-caches/${c.id}/assignments`, { group_ids: picked('group'), device_ids: picked('device') });
       overlay.remove(); showToast(t('sitecache.saved_ok'), 'success'); render(app);
-    } catch (e) { bindMessage(overlay.querySelector('#scaError'), (e && (e.uiMessage || e.message)) || t('common.error')); }
+    } catch (e) { bindMessage(overlay.querySelector('#scaError'), (e && (errorMessage(e))) || t('common.error')); }
   });
 }

@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
 // Invite-member modal. Mirrors workspace-rename-modal.js's structure
@@ -108,7 +109,7 @@ export function openInviteMemberModal(workspace, opts = {}) {
       // was provided (shouldn't happen in normal use, defensive only).
       const msg = (typeof mapError === 'function')
         ? mapError(err)
-        : (err?.message || t('members.error.mutation_generic', { error: '' }));
+        : (errorMessage(err));
       showError(msg);
     }
   }

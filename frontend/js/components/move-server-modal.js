@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { message as t } from '../i18n.js';
@@ -83,7 +84,7 @@ export function openMoveServerModal(opts = {}) {
     } catch (err) {
       confirmBtn.disabled = false;
       bindMessage(confirmBtn, label);
-      bindMessage(errorEl, (err.uiMessage || err?.message) || t('moveserver.failed'));
+      bindMessage(errorEl, (errorMessage(err)) || t('moveserver.failed'));
       errorEl.style.display = 'block';
     }
   }

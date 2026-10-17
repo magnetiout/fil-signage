@@ -1,7 +1,7 @@
 import { uiText, bindMessage, binding } from '../lib/i18n-bindings.js';
 
 import { message as t, messageCount as tn } from '../i18n.js';
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 import { renderPowerScheduleEditor, readPowerScheduleEditor, presetWindows, problemMessage } from './power-schedule-editor.js';
@@ -84,7 +84,7 @@ export function openGroupPowerScheduleModal(group, devices = []) {
         + renderPowerScheduleEditor(current || { windows: [], enabled: true }, { supported: true });
       bind(facts);
     } catch (err) {
-      bindMessage(host, (err.uiMessage || err.message));
+      bindMessage(host, (errorMessage(err)));
     }
   }
 
@@ -127,7 +127,7 @@ export function openGroupPowerScheduleModal(group, devices = []) {
         if (r && r.mandated_members) showToast(tn('corp.skipped.power', r.mandated_members), 'info');
         close();
       } catch (err) {
-        showToast(`${t('power.save_failed')}: ${(err.uiMessage || err.message)}`, 'error');
+        showToast(`${t('power.save_failed')}: ${(errorMessage(err))}`, 'error');
       }
     });
 
@@ -138,7 +138,7 @@ export function openGroupPowerScheduleModal(group, devices = []) {
         showToast(t('power.saved'), 'success');
         close();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
   }

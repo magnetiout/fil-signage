@@ -1,7 +1,7 @@
 import { renderHTML, uiText } from '../lib/i18n-bindings.js';
 import { displayValue, displayQuantity, messageCount as tn, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 /*
  * "Where media is stored" (server/routes/storage-profiles.js, docs/storage.md). Three levels:
@@ -40,7 +40,7 @@ export async function mountStorageSettings(host) {
   render();
 
   async function reload() {
-    try { data = await api.get(BASE); } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+    try { data = await api.get(BASE); } catch (err) { showToast(errorMessage(err), 'error'); return; }
     render();
   }
 
@@ -112,21 +112,21 @@ export async function mountStorageSettings(host) {
     on('#stSaveDefault', 'click', async () => {
       const v = body.querySelector('#stDefault').value || null;
       try { await api.put(`${BASE}/settings/current`, { default_profile_id: v }); showToast(t("ui.storage_settings.saved_new_uploads_only_existing_files_stay"), 'success'); reload(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     });
     on('#stWsChoice', 'change', async (e) => {
       try { await api.put(`${BASE}/settings/current`, { workspace_choice: e.target.checked }); showToast(t("ui.storage_settings.saved"), 'success'); reload(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.checked = !e.target.checked; }
+      catch (err) { showToast(errorMessage(err), 'error'); e.target.checked = !e.target.checked; }
     });
     on('#stSaveWs', 'click', async () => {
       const v = body.querySelector('#stWsDefault').value || null;
       try { await api.put(`${BASE}/settings/current`, { workspace_profile_id: v }); showToast(t("ui.storage_settings.saved_new_uploads_only_existing_files_stay"), 'success'); reload(); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     });
     on('#stDirect', 'change', async (e) => {
       const v = e.target.value === '' ? null : e.target.value === '1';
       try { await api.put(`${BASE}/settings/current`, { workspace_direct_fetch: v }); showToast(t("ui.storage_settings.saved"), 'success'); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     });
     on('#stAdd', 'click', () => openForm(body.querySelector('#stForm'), null, {
       canPrivate: settings.can_allow_private,
@@ -206,7 +206,7 @@ export async function mountStorageSettings(host) {
         showToast(tn('ui.storage.removed_copies', r.removed), 'success'); return reload();
       }
       if (what === 'abort') { await api.post(`${BASE}/${encodeURIComponent(id)}/migrate/abort`, {}); showToast(t("ui.storage_settings.stopped_every_existing_copy_was_kept"), 'success'); return reload(); }
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   }
 
   async function openBrowser(p, prefix, cursor = null) {
@@ -214,7 +214,7 @@ export async function mountStorageSettings(host) {
     box.innerHTML = `<p style="font-size:13px;color:var(--text-muted)">${renderHTML(t("ui.storage_settings.listing_856620"))}</p>`;
     let page;
     try { page = await api.get(`${BASE}/${encodeURIComponent(p.id)}/objects?prefix=${encodeURIComponent(prefix)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`); }
-    catch (err) { box.innerHTML = `<p style="color:var(--danger);font-size:13px">${uiText((err.uiMessage || err.message))}</p>`; return; }
+    catch (err) { box.innerHTML = `<p style="color:var(--danger);font-size:13px">${uiText((errorMessage(err)))}</p>`; return; }
     const up = prefix.replace(/[^/]+\/$/, '');
     box.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:12px">
       <h4 style="margin-bottom:8px">${uiText(p.name)}: /${uiText(prefix)}</h4>
@@ -244,7 +244,7 @@ export async function mountStorageSettings(host) {
         const r = await api.post(`${BASE}/${encodeURIComponent(p.id)}/import`, { keys, mode: box.querySelector('#sbMode').value });
         showToast(t("ui.storage_settings.imported_value0_value1_dab71c", {value0: r.imported.length, value1: r.errors.length ? t('ui.storage.refused_suffix',{count:r.errors.length,reason:localizeServerError(r.errors[0].error)}) : ''}), r.errors.length ? 'error' : 'success');
         reload();
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
   }
 }
@@ -258,7 +258,7 @@ export async function mountInstanceStorage(host) {
   if (!host) return;
   let data;
   const load = async () => {
-    try { data = await api.get(`${BASE}/instance`); } catch (err) { host.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText((err.uiMessage || err.message))}</p>`; return false; }
+    try { data = await api.get(`${BASE}/instance`); } catch (err) { host.innerHTML = `<p style="color:var(--text-muted);font-size:13px">${uiText((errorMessage(err)))}</p>`; return false; }
     return true;
   };
   if (!(await load())) return;
@@ -294,7 +294,7 @@ export async function mountInstanceStorage(host) {
           if (!window.confirm(t("ui.storage_settings.delete_the_instance_storage_profile_value0_organizations_that_fol_9f6848", {value0: p.name}))) return;
           await api.delete(`${BASE}/${encodeURIComponent(p.id)}`); showToast(t("ui.storage_settings.deleted"), 'success'); return refresh();
         }
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     }));
   };
   render();
@@ -303,8 +303,8 @@ export async function mountInstanceStorage(host) {
 async function testProfile(id) {
   try {
     const r = await api.post(`${BASE}/${encodeURIComponent(id)}/test`, {});
-    showToast(r.ok ? t("ui.storage_settings.connected_c2f9b7") : `${r.message} (${r.code})`, r.ok ? 'success' : 'error');
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    showToast(r.ok ? t("ui.storage_settings.connected_c2f9b7") : t('storage.test.failed',{error:errorMessage({message:r.message,status:400})}), r.ok ? 'success' : 'error');
+  } catch (err) { showToast(errorMessage(err), 'error'); }
 }
 
 /**
@@ -390,7 +390,7 @@ function openForm(box, p, { canPrivate = false, scopes = null, extraPayload = nu
       showToast(t("ui.storage_settings.saved"), 'success');
       box.innerHTML = '';
       if (onSaved) onSaved();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 }
 

@@ -16,7 +16,7 @@ import { displayValue, message as t } from '../i18n.js';
  * Escaping follows the SPA rule: values are stored raw and esc()'d where they are rendered. Group
  * names, user names and event details all come from the identity provider, i.e. from outside.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 
 import { showToast } from './toast.js';
@@ -69,7 +69,7 @@ export async function mountScimSettings(host, orgId) {
 
   async function reload(next) {
     if (next) { data = next; render(); return; }
-    try { data = await api.get(base); } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+    try { data = await api.get(base); } catch (err) { showToast(errorMessage(err), 'error'); return; }
     render();
   }
 
@@ -167,7 +167,7 @@ export async function mountScimSettings(host, orgId) {
   function wire() {
     const q = (sel) => host.querySelector(sel);
     q('[data-scim="enabled"]').addEventListener('change', async (e) => {
-      try { await reload(await api.put(base, { enabled: e.target.checked })); } catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.checked = !e.target.checked; }
+      try { await reload(await api.put(base, { enabled: e.target.checked })); } catch (err) { showToast(errorMessage(err), 'error'); e.target.checked = !e.target.checked; }
     });
     const copy = async (text) => { try { await navigator.clipboard.writeText(text); showToast(t('scim.copied'), 'success'); } catch { /* user-select:all is the fallback */ } };
     q('[data-scim="copy-url"]').addEventListener('click', () => copy(data.base_url));
@@ -177,12 +177,12 @@ export async function mountScimSettings(host, orgId) {
       try {
         const r = await api.post(`${base}/tokens`, { name: q('[data-scim="token-name"]').value.trim() });
         freshToken = r.token;
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+      } catch (err) { showToast(errorMessage(err), 'error'); return; }
       reload();
     });
     host.querySelectorAll('[data-scim-revoke]').forEach((b) => b.addEventListener('click', async () => {
       if (!confirm(t('scim.confirm_revoke'))) return;
-      try { await api.delete(`${base}/tokens/${encodeURIComponent(b.dataset.scimRevoke)}`); } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+      try { await api.delete(`${base}/tokens/${encodeURIComponent(b.dataset.scimRevoke)}`); } catch (err) { showToast(errorMessage(err), 'error'); return; }
       freshToken = null;
       reload();
     }));
@@ -191,18 +191,18 @@ export async function mountScimSettings(host, orgId) {
       try {
         await reload(await api.put(base, { default_workspace_id: ws || null, default_role: ws ? q('[data-scim="default-role"]').value : null }));
         showToast(t('scim.saved'), 'success');
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
     host.querySelectorAll('[data-scim-map]').forEach((b) => b.addEventListener('click', async () => {
       const gid = b.dataset.scimMap;
       const ws = host.querySelector(`[data-scim-map-ws="${CSS.escape(gid)}"]`).value;
       const role = host.querySelector(`[data-scim-map-role="${CSS.escape(gid)}"]`).value;
       if (!ws) return;
-      try { await reload(await api.post(`${base}/mappings`, { group_id: gid, workspace_id: ws, role })); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      try { await reload(await api.post(`${base}/mappings`, { group_id: gid, workspace_id: ws, role })); } catch (err) { showToast(errorMessage(err), 'error'); }
     }));
     host.querySelectorAll('[data-scim-unmap]').forEach((b) => b.addEventListener('click', async () => {
       if (!confirm(t('scim.confirm_unmap'))) return;
-      try { await reload(await api.delete(`${base}/mappings/${encodeURIComponent(b.dataset.scimUnmap)}`)); } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      try { await reload(await api.delete(`${base}/mappings/${encodeURIComponent(b.dataset.scimUnmap)}`)); } catch (err) { showToast(errorMessage(err), 'error'); }
     }));
     q('[data-scim="users-box"]').addEventListener('toggle', async (e) => {
       if (!e.target.open) return;
@@ -214,7 +214,7 @@ export async function mountScimSettings(host, orgId) {
             ${uiText(u.user_name)}${renderHTML(u.email && u.email !== u.user_name ? ` <span style="${muted}">${uiText(u.email)}</span>` : '')}
             <span style="${muted}"> · ${uiText(u.active ? t('scim.user_active') : t('scim.user_inactive'))}</span>
           </div>`).join('') : `<p style="${muted}">${uiText(t('scim.no_users'))}</p>`;
-      } catch (err) { bindMessage(out, (err.uiMessage || err.message)); }
+      } catch (err) { bindMessage(out, (errorMessage(err))); }
     });
     q('[data-scim="events-box"]').addEventListener('toggle', async (e) => {
       if (!e.target.open) return;
@@ -232,7 +232,7 @@ export async function mountScimSettings(host, orgId) {
             ${renderHTML(detail ? `<span style="color:${failed ? 'var(--danger,#b91c1c)' : 'var(--text-muted)'}"> · ${uiText(detail)}</span>` : '')}
           </div>`;
         }).join('') : `<p style="${muted}">${uiText(t('scim.no_activity'))}</p>`;
-      } catch (err) { bindMessage(out, (err.uiMessage || err.message)); }
+      } catch (err) { bindMessage(out, (errorMessage(err))); }
     });
   }
 

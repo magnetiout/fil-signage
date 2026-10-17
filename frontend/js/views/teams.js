@@ -1,11 +1,11 @@
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
-import { message as t, messageCount as tn } from '../i18n.js';
+import { localizedError, message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 
 // A refused request must reject, not resolve.
@@ -18,8 +18,8 @@ import { esc } from '../utils.js';
 // the dead catch). The shared client in api.js has always thrown on !res.ok; these local copies did
 // not. Same contract now, including the 401 session-expiry reload.
 const API = (url, opts = {}) => fetch('/api' + url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw Object.assign(new Error(localizeServerError(e.error) || t("ui.teams.request_failed_value0_ad6dc0", {value0: r.status})), { status: r.status, body: e }); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw Object.assign(localizedError(localizeServerError(e.error) || t("ui.teams.request_failed_value0_ad6dc0", {value0: r.status})), { status: r.status, body: e }); }
   return r.json();
 });
 
@@ -89,7 +89,7 @@ async function renderList(container) {
         </div>
       `).join(''))}
     </div>`;
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+  } catch (err) { showToast(errorMessage(err), 'error'); }
 }
 
 async function renderTeamDetail(container, teamId) {
@@ -174,7 +174,7 @@ async function renderTeamDetail(container, teamId) {
       await API(`/teams/${teamId}/invite`, { method: 'POST', body: JSON.stringify({ email, role }) });
       showToast(t('team.toast.invitation_sent'), 'success');
       renderTeamDetail(container, teamId);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 
   container.querySelectorAll('[data-member-id]').forEach(select => {
@@ -182,7 +182,7 @@ async function renderTeamDetail(container, teamId) {
       try {
         await API(`/teams/${teamId}/members/${select.dataset.memberId}`, { method: 'PUT', body: JSON.stringify({ role: select.value }) });
         showToast(t('team.toast.role_updated'), 'success');
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     };
   });
 
@@ -192,7 +192,7 @@ async function renderTeamDetail(container, teamId) {
         await API(`/teams/${teamId}/members/${btn.dataset.removeMember}`, { method: 'DELETE' });
         showToast(t('team.toast.member_removed'), 'success');
         renderTeamDetail(container, teamId);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     };
   });
 
@@ -203,7 +203,7 @@ async function renderTeamDetail(container, teamId) {
       await API(`/teams/${teamId}/devices`, { method: 'POST', body: JSON.stringify({ device_id: deviceId }) });
       showToast(t('team.toast.device_added'), 'success');
       renderTeamDetail(container, teamId);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 
   container.querySelectorAll('[data-remove-device]').forEach(btn => {
@@ -212,7 +212,7 @@ async function renderTeamDetail(container, teamId) {
         await API(`/teams/${teamId}/devices/${btn.dataset.removeDevice}`, { method: 'DELETE' });
         showToast(t('team.toast.device_removed'), 'success');
         renderTeamDetail(container, teamId);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     };
   });
 
@@ -221,7 +221,7 @@ async function renderTeamDetail(container, teamId) {
       await API(`/teams/${teamId}`, { method: 'DELETE' });
       showToast(t('team.toast.deleted'), 'success');
       window.location.hash = '#/teams';
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 }
 

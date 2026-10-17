@@ -10,7 +10,7 @@ import { uiText, renderHTML } from '../lib/i18n-bindings.js';
  * store triggers it changes and needs "I've checked these" ticked before Save — the server refuses
  * the change without that acknowledgement (409 CORPORATE_IMPACT_UNACKNOWLEDGED) whatever this does.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { showToast } from './toast.js';
@@ -88,7 +88,7 @@ export async function mountCorporateSettings(host) {
           </details>
           <label class="corp-check"><input type="checkbox" id="csAck"> ${uiText(t('corp.settings.impact_ack'))}</label>
         </div>` : `<div class="corp-help">${uiText(t('corp.settings.impact_none'))}</div>`;
-    } catch (e) { box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
+    } catch (e) { box.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
   }
   host.querySelectorAll('input[name="csPolicy"]').forEach((r) => r.addEventListener('change', showImpact));
   q('#csCap').addEventListener('change', () => { if (policy() === 'leased') showImpact(); });
@@ -134,6 +134,6 @@ export async function mountCorporateSettings(host) {
       mountCorporateSettings(host);
       // The sidebar's Corporate item and the head office bar follow these settings.
       if (body.corporate_enabled !== undefined || body.hq_workspace_id !== undefined) setTimeout(() => window.location.reload(), 600);
-    } catch (e) { if (e.code !== 'CORPORATE_IMPACT_UNACKNOWLEDGED' || !(e.body && e.body.impact)) showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { if (e.code !== 'CORPORATE_IMPACT_UNACKNOWLEDGED' || !(e.body && e.body.impact)) showToast(errorMessage(e), 'error'); }
   });
 }

@@ -1,8 +1,8 @@
 import { renderHTML, uiText, bindMessage, binding } from '../lib/i18n-bindings.js';
 
-import { displayValue, message as t, messageCount as tn } from '../i18n.js';
+import { localizedError, displayValue, message as t, messageCount as tn } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 
@@ -45,7 +45,7 @@ function card(l) {
 export async function render(app) {
   app.innerHTML = `<div class="page-header"><div><h1>${uiText(t('nav.qr_codes'))}</h1><div class="subtitle">${uiText(t('qr.intro'))}</div></div></div><div id="qrBody"></div>`;
   const body = document.getElementById('qrBody');
-  try { links = await api.get('/qr-links'); } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  try { links = await api.get('/qr-links'); } catch (e) { body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</p>`; return; }
   body.innerHTML = `<div class="corp-toolbar"><button class="btn btn-primary" id="qrNew">${uiText(t('qr.new'))}</button></div>
     ${renderHTML(links.length ? links.map(card).join('') : `<div class="corp-empty">${uiText(t('qr.empty'))}</div>`)}
     ${renderHTML(/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname) ? `<p style="font-size:12px;color:#ca8a04;margin-top:12px">${uiText(t('qr.private_origin', { origin: location.origin }))}</p>` : '')}`;
@@ -58,16 +58,16 @@ export async function render(app) {
     el.querySelector('[data-act="edit"]').addEventListener('click', () => openForm(app, l));
     el.querySelector('[data-act="del"]').addEventListener('click', async () => {
       if (!confirm(t('qr.confirm_delete', { name: l.name }))) return;
-      try { await api.delete(`/qr-links/${l.id}`); render(app); } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      try { await api.delete(`/qr-links/${l.id}`); render(app); } catch (e) { showToast(errorMessage(e), 'error'); }
     });
     el.querySelector('[data-act="svg"]').addEventListener('click', async () => {
       try {
         const r = await fetch(`/api/qr-links/${l.id}/qr.svg?origin=${encodeURIComponent(location.origin)}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-        if (!r.ok) throw new Error(t('common.error'));
+        if (!r.ok) throw localizedError(t('common.error'));
         const url = URL.createObjectURL(await r.blob());
         const a = document.createElement('a'); a.href = url; a.download = `qr-${l.code}.svg`; a.click();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     });
     el.querySelector('[data-act="stats"]').addEventListener('click', async () => {
       const box = el.querySelector('.qr-stats');
@@ -77,7 +77,7 @@ export async function render(app) {
         const d = (await api.get(`/qr-links/${l.id}`)).stats;
         box.innerHTML = `<div style="font-size:12px;color:var(--text-muted);margin-top:10px">${uiText(t('qr.last30'))}</div>${renderHTML(bars(d.days))}
           <div style="font-size:12px;color:var(--text-secondary)">${uiText(t('qr.platforms', d.platforms))}${renderHTML(d.last_scan_at ? ` · ${esc(t('qr.last_scan', { when: displayValue(new Date(d.last_scan_at * 1000), "toLocaleString", undefined) }))}` : '')}</div>`;
-      } catch (e) { bindMessage(box, (e.uiMessage || e.message)); }
+      } catch (e) { bindMessage(box, (errorMessage(e))); }
     });
   });
 }
@@ -104,6 +104,6 @@ function openForm(app, l) {
     try {
       if (l) await api.put(`/qr-links/${l.id}`, body); else await api.post('/qr-links', body);
       overlay.remove(); render(app);
-    } catch (e) { bindMessage($('qrError'), (e.uiMessage || e.message)); }
+    } catch (e) { bindMessage($('qrError'), (errorMessage(e))); }
   });
 }

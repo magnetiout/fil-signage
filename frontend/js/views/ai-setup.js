@@ -16,7 +16,7 @@ import { renderHTML, uiText, bindMessage, binding, bindText } from '../lib/i18n-
  *
  * With no AI set up the page explains that and, for an admin, opens AI settings — never an error.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { shell, guideFrame, simpleCanChange } from './simple-home.js';
@@ -89,7 +89,7 @@ export async function renderAiSetup(container, { simple = false, hash = '' } = {
       } catch (err) {
         if (run !== alive) return;
         next.disabled = false;
-        bindMessage(status, (err && (err.uiMessage || err.message)) || t('ai_setup.failed'));
+        bindMessage(status, (err && (errorMessage(err))) || t('ai_setup.failed'));
       }
     });
   }

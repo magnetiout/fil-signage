@@ -1,10 +1,11 @@
+import {getLocale} from '../i18n.js';
 import { uiText, renderHTML, bindMessage, binding } from '../lib/i18n-bindings.js';
 
 // "Manage workspaces" modal for the platform Users admin page. Lets a platform
 // admin see/manage ALL of a user's workspace memberships: list each with an
 // inline role dropdown + Remove, and add the user to more workspaces via a
 // type-to-filter picker. Backed by /api/admin/users/:id/workspaces.
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t } from '../i18n.js';
 import { showToast } from '../components/toast.js';
 
@@ -82,8 +83,8 @@ export function openManageWorkspacesModal(user, opts = {}) {
 
   function renderAddOptions() {
     const memberIds = new Set(memberships.map(m => m.workspace_id));
-    const f = (filterEl.value || '').trim().toLowerCase();
-    const avail = allWs.filter(w => !memberIds.has(w.id) && (!f || wsLabel(w).toLowerCase().includes(f)));
+    const f = (filterEl.value || '').trim().toLocaleLowerCase(getLocale());
+    const avail = allWs.filter(w => !memberIds.has(w.id) && (!f || wsLabel(w).toLocaleLowerCase(getLocale()).includes(f)));
     let html = `<option value="">${uiText(t('manage_ws.pick'))}</option>`;
     let curOrg = null;
     for (const w of avail) {
@@ -115,14 +116,14 @@ export function openManageWorkspacesModal(user, opts = {}) {
       sel.onchange = async () => {
         clearError();
         try { await api.adminSetUserWorkspaceRole(user.id, sel.dataset.mwsRole, sel.value); changed = true; showToast(t('manage_ws.toast.role'), 'success'); await reload(); }
-        catch (e) { showError(e.message); await reload(); }
+        catch (e) { showError(errorMessage(e)); await reload(); }
       };
     });
     listEl.querySelectorAll('[data-mws-remove]').forEach(btn => {
       btn.onclick = async () => {
         clearError();
         try { await api.adminRemoveUserWorkspace(user.id, btn.dataset.mwsRemove); changed = true; showToast(t('manage_ws.toast.removed'), 'success'); await reload(); }
-        catch (e) { showError(e.message); await reload(); }
+        catch (e) { showError(errorMessage(e)); await reload(); }
       };
     });
   }
@@ -146,7 +147,7 @@ export function openManageWorkspacesModal(user, opts = {}) {
       showToast(t('manage_ws.toast.added'), 'success');
       filterEl.value = '';
       await reload();
-    } catch (e) { showError(e.message); }
+    } catch (e) { showError(errorMessage(e)); }
     finally { addBtn.disabled = false; }
   });
 
@@ -159,7 +160,7 @@ export function openManageWorkspacesModal(user, opts = {}) {
       renderList();
       renderAddOptions();
     } catch (e) {
-      listEl.innerHTML = `<p style="color:var(--danger);font-size:13px">${uiText((e.uiMessage || e.message) || t("ui.admin_user_workspaces_modal.failed_to_load_af14db"))}</p>`;
+      listEl.innerHTML = `<p style="color:var(--danger);font-size:13px">${uiText((errorMessage(e)) || t("ui.admin_user_workspaces_modal.failed_to_load_af14db"))}</p>`;
     }
   })();
 }

@@ -66,7 +66,7 @@ test('pairing an imported screen asks for the code in the app dialog, keyboard f
   assert.match(pair, /api\.pairDevice\(input\.value\.trim\(\), p\.name\)/, 'still the ordinary pairing call');
   assert.match(pair, /e\.planPromptShown\) \{ m\.close\(\); return; \}/,
     'at a plan limit the dialog gets out of the way of the upgrade prompt');
-  assert.match(pair, /bindMessage\(errEl, \(e\.uiMessage \|\| e\.message\)/, 'a wrong code is answered inside the dialog');
+  assert.match(pair, /bindMessage\(errEl, \(errorMessage\(e\)\)/, 'a wrong code is answered inside the dialog');
 });
 
 test('declining a content request needs a reason before Decline can be pressed', () => {
@@ -82,7 +82,7 @@ test('declining a content request needs a reason before Decline can be pressed',
   assert.match(dlg, /\/reject`, \{ reason, version: r\.submission && r\.submission\.version \}\)/,
     'Decline must send the version it was looking at, as Approve does, so a concurrent decision conflicts');
   assert.match(REQUESTS, /\/approve`, \{ version: r\.submission && r\.submission\.version \}/, 'Approve still sends it too');
-  assert.match(dlg, /catch \(err\) \{[\s\S]*?bindMessage\(errEl, \(err\.uiMessage \|\| err\.message\)\);/, 'a conflict is shown inside the dialog');
+  assert.match(dlg, /catch \(err\) \{[\s\S]*?bindMessage\(errEl, \(errorMessage\(err\)\)\);/, 'a conflict is shown inside the dialog');
   assert.match(dlg, /e\.key === 'Enter' && \(e\.ctrlKey \|\| e\.metaKey\)/, 'Ctrl/Cmd+Enter declines from the keyboard');
 });
 

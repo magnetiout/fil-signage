@@ -16,8 +16,8 @@ import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
  * feature, a user outside any organization, or a remote (mesh) org all answer "nothing corporate
  * here", and every caller can treat that like an install that never heard of head office.
  */
-import { api } from '../api.js';
-import { message as t, messageCount as tn } from '../i18n.js';
+import { errorMessage, api } from '../api.js';
+import { localizedError, message as t, messageCount as tn } from '../i18n.js';
 import { esc, hydrateAuthImages } from '../utils.js';
 import { showToast } from './toast.js';
 
@@ -187,7 +187,7 @@ export async function confirmStoreTriggerImpact(e, policy) {
   const impact = e.body.impact;
   for (;;) {
     const overlay = await ask({
-      title: t(e.code === 'DEVICE_MOVE_TRIGGERS_IMPACT' ? 'corp.move.title' : 'corp.settings.store_triggers'), text: e.message, confirmLabel: t('common.save'),
+      title: t(e.code === 'DEVICE_MOVE_TRIGGERS_IMPACT' ? 'corp.move.title' : 'corp.settings.store_triggers'), text: errorMessage(e), confirmLabel: t('common.save'),
       extraHtml: storeTriggerImpactHtml(impact, policy, { ackId: 'corpTrigAckAsk' }),
     });
     if (!overlay) return false;
@@ -211,7 +211,7 @@ export async function withImpactAck(call) {
     if (!isImpactRefusal(e)) throw e;
     const s = await corporateSettings();
     const ok = await confirmStoreTriggerImpact(e, s && s.store_triggers_under_mandate);
-    if (!ok) throw Object.assign(new Error(t('corp.move.nothing_changed')), { cancelled: true });
+    if (!ok) throw Object.assign(localizedError(t('corp.move.nothing_changed')), { cancelled: true });
     return call({ acknowledge_impact: true });
   }
 }
@@ -266,7 +266,7 @@ export function forgetReturnWorkspace() {
 /** Switch the active workspace (mints a new token) and land on `hash`. */
 export async function switchWorkspaceTo(wsId, hash) {
   const resp = await api.switchWorkspace(wsId);
-  if (!resp || !resp.token) throw new Error(t('corp.ctx.switch_failed'));
+  if (!resp || !resp.token) throw localizedError(t('corp.ctx.switch_failed'));
   localStorage.setItem('token', resp.token);
   if (hash) window.location.hash = hash;
   window.location.reload();
@@ -310,7 +310,7 @@ export const thumb = (it) => (it.content_id && it.thumbnail_path
 export async function openScreenPreview(opts = {}) {
   let targets = null;
   if (!opts.deviceId) {
-    try { targets = await api.getCorporateTargets(); } catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
+    try { targets = await api.getCorporateTargets(); } catch (e) { showToast(errorMessage(e), 'error'); return; }
   }
   const screens = targets ? targets.workspaces.flatMap((w) => w.devices.map((d) => ({ ...d, workspace: w.name }))) : [];
   const m = openModal({
@@ -334,7 +334,7 @@ export async function openScreenPreview(opts = {}) {
       const r = await api.previewCorporateScreen(deviceId, !!m.q('#corpPvDraft')?.checked);
       out.innerHTML = previewHtml(r);
       hydrateAuthImages(out);
-    } catch (e) { out.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`; }
+    } catch (e) { out.innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
   }
   m.q('#corpPvScreen')?.addEventListener('change', (e) => show(e.target.value));
   m.q('#corpPvDraft')?.addEventListener('change', () => show(m.q('#corpPvScreen').value));

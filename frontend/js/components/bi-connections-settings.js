@@ -9,7 +9,7 @@ import { uiText, renderHTML, bindMessage, attributeBinding, bindText } from '../
  *
  * Escaping follows the SPA rule: values are stored raw and esc()'d where they are rendered.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
@@ -76,7 +76,7 @@ export async function mountBiConnections(host) {
   renderForm(addForm, null, 'grafana');
 
   async function reload() {
-    try { data = await api.get(BASE); } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+    try { data = await api.get(BASE); } catch (err) { showToast(errorMessage(err), 'error'); return; }
     render();
   }
 
@@ -108,7 +108,7 @@ export async function mountBiConnections(host) {
       try {
         const r = await api.post(`${BASE}/${b.dataset.biTest}/test`, {});
         out.innerHTML = (r.checks || []).map((c) => `<div>${renderHTML(c.ok ? '✅' : (c.warn ? '⚠️' : '❌'))} ${uiText(CHECK_LABELS[c.name] ? CHECK_LABELS[c.name]() : c.name)} — <span style="color:var(--text-muted)">${uiText(c.detail || '')}</span></div>`).join('');
-      } catch (err) { bindMessage(out, (err.uiMessage || err.message)); }
+      } catch (err) { bindMessage(out, (errorMessage(err))); }
     }));
     list.querySelectorAll('[data-bi-edit]').forEach((b) => b.addEventListener('click', () => {
       const box = list.querySelector(`[data-bi-editbox="${b.dataset.biEdit}"]`);
@@ -122,7 +122,7 @@ export async function mountBiConnections(host) {
       if (!confirm(t('bi.confirm_delete'))) return;
       try { await api.delete(`${BASE}/${b.dataset.biDel}`); }
       catch (err) {
-        if (err.status !== 409 || !confirm(`${err.message}\n\n${t('bi.confirm_delete_in_use')}`)) { if (err.status !== 409) showToast(err.uiMessage || err.message, 'error'); return; }
+        if (err.status !== 409 || !confirm(`${errorMessage(err)}\n\n${t('bi.confirm_delete_in_use')}`)) { if (err.status !== 409) showToast(errorMessage(err), 'error'); return; }
         try { await api.delete(`${BASE}/${b.dataset.biDel}?force=1`); } catch (e2) { showToast(e2.message, 'error'); return; }
       }
       showToast(t('bi.removed'), 'success');
@@ -158,7 +158,7 @@ export async function mountBiConnections(host) {
       if (ap) body.allow_private = ap.checked;
       try {
         if (row) await api.put(`${BASE}/${row.id}`, body); else await api.post(BASE, body);
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+      } catch (err) { showToast(errorMessage(err), 'error'); return; }
       showToast(t('bi.saved'), 'success');
       if (!row) { host.querySelector('[data-bi="add"]').open = false; renderForm(addForm, null, 'grafana'); }
       reload();

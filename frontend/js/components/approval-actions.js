@@ -4,7 +4,7 @@ import { uiText, renderHTML } from '../lib/i18n-bindings.js';
 // Submit for review / Withdraw / Publish approved; plus Publish draft / Discard draft for the
 // three resources that hold a separate draft (widgets, layouts, content). The server enforces
 // all of this; the bar only reflects what the settings and history endpoints say.
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 import { openHistoryModal } from './history-modal.js';
@@ -60,6 +60,6 @@ export async function renderApprovalBar(host, o) {
       if (b.hasAttribute('data-publish-draft')) { await api.publishDraft(o.type, o.id); showToast(t('review.toast.published'), 'success'); }
       if (b.hasAttribute('data-discard')) { if (!confirm(t('review.discard_confirm'))) return; await api.discardDraft(o.type, o.id); showToast(t('review.toast.discarded')); }
       await refresh();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 }

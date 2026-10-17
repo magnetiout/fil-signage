@@ -2,7 +2,7 @@ import { renderHTML, uiText, translatedAttribute, bindMessage, attributeBinding,
 
 import { displayValue, message as t, getAvailableLanguages } from '../i18n.js';
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { esc } from '../utils.js';
 
@@ -87,7 +87,7 @@ async function loadDataSources() {
     container.innerHTML = `
       <div class="ds-alert ds-alert-error">
         <strong>${uiText(t('data_sources.failed_load'))}</strong>
-        <span>${uiText((err.uiMessage || err.message))}</span>
+        <span>${uiText((errorMessage(err)))}</span>
       </div>`;
   }
 }
@@ -143,7 +143,7 @@ function renderDataSourcesList(container) {
         else showToast(t('data_sources.synced_ok'), 'success');
         await loadDataSources();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
         btn.disabled = false;
         btn.classList.remove('is-busy');
       }
@@ -164,7 +164,7 @@ function renderDataSourcesList(container) {
         showToast(t('data_sources.deleted_ok'), 'success');
         await loadDataSources();
       } catch (err) {
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     };
   });
@@ -851,7 +851,7 @@ function openEditModal(ds, presetType, opts = {}) {
       const res = await api.testDataSource(type, c, ds && ds.id);
       renderTestResult(result, res);
     } catch (err) {
-      result.innerHTML = `<div class="ds-alert ds-alert-error"><strong>${uiText(t('data_sources.test_failed2'))}</strong><span>${uiText((err.uiMessage || err.message))}</span></div>`;
+      result.innerHTML = `<div class="ds-alert ds-alert-error"><strong>${uiText(t('data_sources.test_failed2'))}</strong><span>${uiText((errorMessage(err)))}</span></div>`;
     } finally {
       testBtn.disabled = false;
       testBtn.classList.remove('is-busy');
@@ -947,7 +947,7 @@ function openEditModal(ds, presetType, opts = {}) {
       // The first sync runs in the background; show its result without a manual refresh.
       setTimeout(() => { if (document.getElementById('dataSourcesContainer')) loadDataSources(); }, 2500);
     } catch (err) {
-      result.innerHTML = `<div class="ds-alert ds-alert-error">${uiText((err.uiMessage || err.message) || t('common.error'))}</div>`;
+      result.innerHTML = `<div class="ds-alert ds-alert-error">${uiText((errorMessage(err)) || t('common.error'))}</div>`;
       saveBtn.disabled = false;
       bindMessage(saveBtn, isEdit ? t('common.save') : t('data_sources.save_connect'));
     }

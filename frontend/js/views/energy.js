@@ -18,7 +18,7 @@ import { displayValue, message as t, messageCount as tn } from '../i18n.js';
  *
  * Values from the server reach the page through esc() only.
  */
-import { api, downloadEnergyFile } from '../api.js';
+import { errorMessage, api, downloadEnergyFile } from '../api.js';
 
 import { esc } from '../utils.js';
 import { showToast } from '../components/toast.js';
@@ -139,7 +139,7 @@ async function download(kind) {
     a.download = kind === 'appendix' ? `energy-appendix-${state.start}-to-${state.end}.txt` : `energy-${state.start}-to-${state.end}${kind === 'day' ? '-daily' : ''}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+  } catch (e) { showToast(errorMessage(e), 'error'); }
 }
 
 function tile(label, value, sub = '') {
@@ -157,7 +157,7 @@ async function load(app) {
   if (!body) return;
   let r;
   try { r = await api.getEnergyReport(state.start, state.end); } catch (e) {
-    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</p>`;
+    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</p>`;
     return;
   }
   if (!document.contains(body)) return;
@@ -244,7 +244,7 @@ async function loadWhatIf(app) {
     list.innerHTML = `<p style="color:var(--text-muted)">${uiText(t('common.loading'))}</p>`;
     let r;
     try { r = await api.getEnergySuggestions(s, e, host.querySelector('#wiDays').value); } catch (err) {
-      list.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((err.uiMessage || err.message))}</p>`; return;
+      list.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((errorMessage(err)))}</p>`; return;
     }
     if (!document.contains(list)) return;
     if (!r.suggestions.length) { list.innerHTML = `<div class="corp-empty">${uiText(t('energy.whatif.none'))}</div>`; return; }
@@ -308,7 +308,7 @@ async function loadScreens(app) {
         await api.setEnergyDevice(d.id, { on_watts: val('on') === '' ? null : Number(val('on')), standby_watts: val('sb') === '' ? null : Number(val('sb')), country: val('cc') || null });
         showToast(t('energy.saved_toast'), 'success');
         loadScreens(app); load(app);
-      } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+      } catch (e) { showToast(errorMessage(e), 'error'); }
     });
   });
   host.querySelector('#bulkSave')?.addEventListener('click', async () => {
@@ -317,7 +317,7 @@ async function loadScreens(app) {
       const res = await api.setEnergyGroup(host.querySelector('#bulkGroup').value, { on_watts: on === '' ? null : Number(on), standby_watts: sb === '' ? null : Number(sb) });
       showToast(tn('energy.bulk_done', res.screens), 'success');
       loadScreens(app); load(app);
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   });
 }
 
@@ -351,7 +351,7 @@ async function loadSettings(app) {
       showToast(t('energy.saved_toast'), 'success');
       state.settings = null;
       load(app); loadScreens(app); loadSettings(app);
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   });
 }
 
@@ -376,7 +376,7 @@ async function loadOrg(app) {
       a.href = URL.createObjectURL(blob); a.download = `energy-organization-${state.start}-to-${state.end}.csv`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    } catch (e) { showToast(errorMessage(e), 'error'); }
   });
 }
 

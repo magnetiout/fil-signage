@@ -2,7 +2,7 @@ import { uiText, renderHTML, bindMessage, attributeBinding, binding, bindText } 
 
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
@@ -108,7 +108,7 @@ export async function render(app) {
       groups: Array.isArray(grps) ? grps : (grps.groups || []),
     };
   } catch (e) {
-    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</p>`;
+    body.innerHTML = `<p class="corp-notice corp-notice-danger">${uiText((e && (errorMessage(e))) || t('common.error'))}</p>`;
     return;
   }
   body.innerHTML = `
@@ -121,7 +121,7 @@ export async function render(app) {
     card.querySelector('[data-act="del"]').addEventListener('click', async () => {
       if (!confirm(t('capf.confirm_delete', { name: f.name }))) return;
       try { await api.delete(`/cap-feeds/${f.id}`); showToast(t('capf.deleted'), 'success'); render(app); }
-      catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); }
+      catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); }
     });
     card.querySelector('[data-act="poll"]').addEventListener('click', async (ev) => {
       ev.target.disabled = true;
@@ -129,7 +129,7 @@ export async function render(app) {
         const r = await api.post(`/cap-feeds/${f.id}/poll`, {});
         showToast(r.ok ? tn('capf.checked_ok', r.count) : (localizeServerError(r.error) || t('common.error')), r.ok ? 'success' : 'error');
         render(app);
-      } catch (e) { showToast((e && (e.uiMessage || e.message)) || t('common.error'), 'error'); ev.target.disabled = false; }
+      } catch (e) { showToast((e && (errorMessage(e))) || t('common.error'), 'error'); ev.target.disabled = false; }
     });
     card.querySelector('[data-act="alerts"]').addEventListener('click', async () => {
       const box = card.querySelector('.cap-alerts');
@@ -143,7 +143,7 @@ export async function render(app) {
             <td>${renderHTML(a.expires ? esc(displayValue(new Date(a.expires), "toLocaleString", undefined)) : '')}</td>
             <td>${uiText(a.on_screens ? t('capf.state.on_screens') : a.ended ? t('capf.state.ended') : !a.in_feed ? t('capf.state.gone') : t('capf.state.filtered'))}</td></tr>`).join(''))}
           </tbody></table></div>` : `<span class="corp-help">${uiText(t('capf.no_alerts_yet'))}</span>`;
-      } catch (e) { box.innerHTML = `<span style="color:var(--danger)">${uiText((e && (e.uiMessage || e.message)) || t('common.error'))}</span>`; }
+      } catch (e) { box.innerHTML = `<span style="color:var(--danger)">${uiText((e && (errorMessage(e))) || t('common.error'))}</span>`; }
     });
   });
 }
@@ -258,7 +258,7 @@ function openForm(app, feed) {
           ${renderHTML(sevChip(a.severity))} <span>${uiText(a.headline || a.event)}</span>
           <span class="corp-help" style="font-size:11px">${uiText(a.live && a.matches ? t('capf.would_show') : !a.live ? t('capf.not_live') : t('capf.filtered_out'))}</span></div>`).join(''))}
         ${renderHTML(r.total > 15 ? `<div class="corp-help" style="font-size:12px">${uiText(t('capf.and_more', { n: r.total - 15 }))}</div>` : '')}`;
-    } catch (e) { box.hidden = true; bindMessage($('cfError'), (e && (e.uiMessage || e.message)) || t('common.error')); }
+    } catch (e) { box.hidden = true; bindMessage($('cfError'), (e && (errorMessage(e))) || t('common.error')); }
   });
   $('cfCancel').addEventListener('click', close);
   let downOnBackdrop = false;
@@ -274,6 +274,6 @@ function openForm(app, feed) {
       showToast(t('capf.saved'), 'success');
       close();
       render(app);
-    } catch (e) { bindMessage($('cfError'), (e && (e.uiMessage || e.message)) || t('common.error')); $('cfSave').disabled = false; }
+    } catch (e) { bindMessage($('cfError'), (e && (errorMessage(e))) || t('common.error')); $('cfSave').disabled = false; }
   });
 }

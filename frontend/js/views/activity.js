@@ -1,8 +1,8 @@
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText } from '../lib/i18n-bindings.js';
-import { displayValue, message as t } from '../i18n.js';
+import { localizedError, displayValue, message as t } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { meshCapability } from '../api.js';
 import { showToast } from '../components/toast.js';
@@ -18,8 +18,8 @@ import { esc } from '../utils.js';
 // the dead catch). The shared client in api.js has always thrown on !res.ok; these local copies did
 // not. Same contract now, including the 401 session-expiry reload.
 const API = (url) => fetch('/api' + url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }}).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.activity.request_failed_value0_ad6dc0", {value0: r.status})); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw localizedError(localizeServerError(e.error) || t("ui.activity.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
 });
 
@@ -145,7 +145,7 @@ export async function render(container) {
 
       document.getElementById('loadMoreBtn').style.display = items.length >= limit ? '' : 'none';
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   }
 

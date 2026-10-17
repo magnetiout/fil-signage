@@ -7,7 +7,7 @@ import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
  * long the layout stays up), the row summary for a layout item, the zone picker for items placed in
  * a layout's zone, and the banner that says which screens will play the simplified version.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { showToast } from './toast.js';
 import { esc } from '../utils.js';
 import { message as t, messageCount as tn } from '../i18n.js';
@@ -77,7 +77,7 @@ export async function openLayoutItemDialog(playlist, item = null) {
   let lists = [];
   try {
     [layouts, lists] = await Promise.all([api.getLayouts(), api.getPlaylists()]);
-  } catch (err) { showToast(err.uiMessage || err.message, 'error'); return false; }
+  } catch (err) { showToast(errorMessage(err), 'error'); return false; }
   // A zone plays a plain list: not this playlist, not head office's, not one holding playlists.
   lists = (lists || []).filter((p) => p.id !== playlist.id && !p.corporate && !p.has_children);
   return new Promise((resolve) => {
@@ -137,7 +137,7 @@ export async function openLayoutItemDialog(playlist, item = null) {
         close(true);
       } catch (err) {
         $('#liSave').disabled = false;
-        showToast(err.uiMessage || err.message, 'error');
+        showToast(errorMessage(err), 'error');
       }
     });
     $('#liLayout').focus();

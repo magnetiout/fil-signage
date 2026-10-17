@@ -15,7 +15,7 @@ import { displayValue, message as t, messageCount as tn } from '../i18n.js';
  *
  * Read-only. Every server string reaches the page through esc() or textContent.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 
 import { esc } from '../utils.js';
 import { frameDeviceOutput, displayAspectRatio } from '../lib/device-frame.js';
@@ -156,7 +156,7 @@ export function mountPreviewAtTime(host, device) {
     try {
       sim = await api.simulateDevice(device.id, iso, extra);
     } catch (err) {
-      if (my === seq) $('#patExplain').innerHTML = `<p class="pat-warn">${uiText((err.uiMessage || err.message))}</p>`;
+      if (my === seq) $('#patExplain').innerHTML = `<p class="pat-warn">${uiText((errorMessage(err)))}</p>`;
       return;
     }
     if (my !== seq) return;
@@ -249,7 +249,7 @@ export function mountPreviewAtTime(host, device) {
     try {
       tl = await api.deviceTimeline(device.id, new Date(fromMs).toISOString(), new Date(toMs).toISOString(), weather ? { weather } : {});
     } catch (err) {
-      bindMessage($('#patStrip'), (err.uiMessage || err.message));
+      bindMessage($('#patStrip'), (errorMessage(err)));
       return;
     }
     if (my !== seq) return;
@@ -347,7 +347,7 @@ export function mountPreviewAtTime(host, device) {
 export async function renderGroupAt(host, groupId, atIso) {
   host.innerHTML = `<p class="pat-muted">${uiText(t('common.loading'))}</p>`;
   let r;
-  try { r = await api.simulateGroup(groupId, atIso); } catch (err) { host.innerHTML = `<p class="pat-warn">${uiText((err.uiMessage || err.message))}</p>`; return; }
+  try { r = await api.simulateGroup(groupId, atIso); } catch (err) { host.innerHTML = `<p class="pat-warn">${uiText((errorMessage(err)))}</p>`; return; }
   const rows = r.devices.map((d) => {
     if (d.error) return `<tr><td>${uiText(d.id)}</td><td colspan="3" class="pat-muted">${uiText(t('forecast.group.error'))}</td></tr>`;
     const what = d.power === 'off' ? t('forecast.seg.off')

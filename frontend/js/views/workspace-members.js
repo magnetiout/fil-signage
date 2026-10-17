@@ -11,7 +11,7 @@ import { displayValue, getLocale, message as t, messageCount as tn } from '../i1
 //   - invited rows: cancel-invite button only (server returns 200)
 // Server enforces all three boundaries; UI must match.
 
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 
 import { showToast } from '../components/toast.js';
 import { openInviteMemberModal } from '../components/workspace-members-invite-modal.js';
@@ -49,7 +49,7 @@ export async function render(container, workspaceId) {
     if (/Workspace access required|Workspace not found/.test(msg)) {
       content.innerHTML = renderError(t('members.workspace_not_found'));
     } else {
-      content.innerHTML = renderError(t('members.load_error', { error: (msg) }));
+      content.innerHTML = renderError(t('members.load_error', { error: errorMessage(err) }));
     }
     return;
   }
@@ -300,7 +300,7 @@ export function mapMutationError(err) {
   if (/Valid email required/i.test(msg)) return t('members.error.invalid_email');
   if (/Cannot remove the organization owner/i.test(msg)) return t('members.error.org_owner_remove');
   if (/Email send failed/i.test(msg)) return t('members.error.email_send_failed');
-  return t('members.error.mutation_generic', { error: msg });
+  return t('members.error.mutation_generic', { error: errorMessage(err) });
 }
 
 function renderError(message) {
@@ -360,7 +360,7 @@ async function renderOrgMembers(el, workspaceId) {
   try {
     data = await api.getOrganizationMembers(workspaceId);
   } catch (err) {
-    el.innerHTML = renderError(t('members.load_error', { error: err.uiMessage || err.message || '' }));
+    el.innerHTML = renderError(t('members.load_error', { error: errorMessage(err) }));
     return;
   }
   const roleLabel = (r) => esc(t('members.role.' + String(r || '')));

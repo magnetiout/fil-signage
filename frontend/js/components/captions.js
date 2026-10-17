@@ -1,6 +1,6 @@
 import { uiText, renderHTML, bindMessage, binding } from '../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 /*
  * 3.0 accessibility: "Generate captions" and the caption editor, used by the Accessibility page and
@@ -30,8 +30,8 @@ export async function generateCaptions(id, onState = () => {}, lang) {
   try {
     await api.generateCaptions(id, lang);
   } catch (e) {
-    onState('failed', (e && e.message) || '');
-    showToast((e && (e.uiMessage || e.message)) || t('a11y.captions.failed'), 'error');
+    onState('failed', errorMessage(e));
+    showToast((e && (errorMessage(e))) || t('a11y.captions.failed'), 'error');
     return false;
   }
   onState('running');
@@ -58,7 +58,7 @@ export async function generateCaptions(id, onState = () => {}, lang) {
 /** The caption editor: the WebVTT text in a textarea, saved through the server's normaliser. */
 export async function openCaptionsEditor(id, { canWrite = true, onSaved = () => {} } = {}) {
   let cur;
-  try { cur = await api.getCaptionsText(id); } catch (e) { showToast(e.uiMessage || e.message, 'error'); return; }
+  try { cur = await api.getCaptionsText(id); } catch (e) { showToast(errorMessage(e), 'error'); return; }
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.style.display = 'flex';
@@ -91,7 +91,7 @@ export async function openCaptionsEditor(id, { canWrite = true, onSaved = () => 
       close();
       onSaved();
     } catch (e) {
-      bindMessage(err, (e && (e.uiMessage || e.message)) || t('a11y.captions.save_failed'));
+      bindMessage(err, (e && (errorMessage(e))) || t('a11y.captions.save_failed'));
       err.hidden = false;
     }
   });

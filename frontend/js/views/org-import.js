@@ -17,7 +17,7 @@ import { displayValue, message as t } from '../i18n.js';
  *
  * The page is driven by the job's status, so a reload (or another tab) lands on the right step.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 
 import { showToast } from '../components/toast.js';
@@ -58,7 +58,7 @@ export async function render(container) {
     <div id="impBody"><p class="trust-muted">${uiText(t('common.loading'))}</p></div>`;
   const body = container.querySelector('#impBody');
   let ctx;
-  try { ctx = await api.get('/org-import/context'); } catch (e) { body.innerHTML = `<p class="trust-muted">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  try { ctx = await api.get('/org-import/context'); } catch (e) { body.innerHTML = `<p class="trust-muted">${uiText((errorMessage(e)))}</p>`; return; }
   if (!ctx.can_import || (instance && !ctx.platform_admin)) {
     body.innerHTML = `<div class="settings-section"><p class="trust-desc">${uiText(instance ? t('imp.platform_only') : t('imp.admins_only'))}</p></div>`;
     return;
@@ -126,7 +126,7 @@ function pullForm(el, instance) {
     try {
       const job = await api.post('/org-import/jobs', { source: 'pull', kind: instance ? 'instance' : 'org', url: el.querySelector('#impUrl').value.trim() });
       goJob(job.id, instance);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.disabled = false; }
+    } catch (err) { showToast(errorMessage(err), 'error'); e.target.disabled = false; }
   });
 }
 
@@ -146,7 +146,7 @@ function uploadForm(el, instance, resumeJob = null) {
       if (!job) job = await api.post('/org-import/jobs', { source: 'upload', kind: instance ? 'instance' : 'org', bytes: file.size, file_name: file.name });
       await sendFile(job.id, file, el.querySelector('#impUpProgress'), job.offset || 0);
       goJob(job.id, instance);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
 }
 
@@ -175,7 +175,7 @@ async function sendFile(jobId, file, progressEl, start) {
 async function diskForm(el, ctx, instance) {
   el.innerHTML = `<p class="trust-muted">${uiText(t('common.loading'))}</p>`;
   let d;
-  try { d = await api.get('/org-import/disk'); } catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  try { d = await api.get('/org-import/disk'); } catch (e) { el.innerHTML = `<p class="trust-muted">${uiText((errorMessage(e)))}</p>`; return; }
   el.innerHTML = `
     <div class="imp-card">
       <p class="trust-desc">${renderHTML(t('imp.disk.desc'))} <code>${uiText(d.folder)}</code></p>
@@ -187,7 +187,7 @@ async function diskForm(el, ctx, instance) {
   el.querySelectorAll('[data-disk]').forEach((b) => b.addEventListener('click', async () => {
     b.disabled = true;
     try { goJob((await api.post('/org-import/jobs', { source: 'disk', kind: instance ? 'instance' : 'org', disk_name: b.dataset.disk })).id, instance); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); b.disabled = false; }
+    catch (err) { showToast(errorMessage(err), 'error'); b.disabled = false; }
   }));
 }
 
@@ -203,7 +203,7 @@ async function showJob(body, ctx, jobId, instance) {
   stop();
   let job;
   try { job = await api.get(`/org-import/jobs/${encodeURIComponent(jobId)}`); }
-  catch (e) { body.innerHTML = `<p class="trust-muted">${uiText((e.uiMessage || e.message))}</p>`; return; }
+  catch (e) { body.innerHTML = `<p class="trust-muted">${uiText((errorMessage(e)))}</p>`; return; }
   const isInstance = job.kind === 'instance';
   const step = stepOf(job);
   const head = stepper(step, isInstance);
@@ -234,7 +234,7 @@ async function showJob(body, ctx, jobId, instance) {
       <div class="trust-toolbar" style="margin-top:8px"><button type="button" class="btn btn-primary" id="impRelinkGo">${uiText(t('imp.interrupted.go'))}</button>${renderHTML(cancelBtn())}</div></div>`;
     body.querySelector('#impRelinkGo').addEventListener('click', async () => {
       try { await api.post(`/org-import/jobs/${encodeURIComponent(job.id)}/link`, { url: body.querySelector('#impRelink').value.trim() }); showJob(body, ctx, jobId, instance); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     });
     wireCancel(body, job, instance);
     return;
@@ -263,7 +263,7 @@ async function showJob(body, ctx, jobId, instance) {
       <a class="btn btn-secondary" href="#/org-import${isInstance ? '?kind=instance' : ''}">${uiText(t('imp.start_again'))}</a></div>`;
     body.querySelector('#impDiscard')?.addEventListener('click', async () => {
       try { await api.post(`/org-import/jobs/${encodeURIComponent(job.id)}/discard-partial`); showJob(body, ctx, jobId, instance); }
-      catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      catch (err) { showToast(errorMessage(err), 'error'); }
     });
     return;
   }
@@ -274,7 +274,7 @@ const cancelBtn = () => `<button type="button" class="btn btn-secondary btn-sm" 
 function wireCancel(body, job, instance) {
   body.querySelector('#impCancel')?.addEventListener('click', async () => {
     try { await api.post(`/org-import/jobs/${encodeURIComponent(job.id)}/cancel`); window.location.hash = `#/org-import${instance ? '?kind=instance' : ''}`; }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   });
 }
 
@@ -351,7 +351,7 @@ function showChoice(body, head, ctx, job, instance) {
         options: { include_proof_of_play: body.querySelector('#impOptPlay').checked, include_history: body.querySelector('#impOptHist').checked, include_audit: body.querySelector('#impOptAudit').checked },
       });
       showJob(body, ctx, job.id, instance);
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.disabled = false; }
+    } catch (err) { showToast(errorMessage(err), 'error'); e.target.disabled = false; }
   });
 }
 
@@ -373,7 +373,7 @@ function showBundleChoice(body, head, job, instance) {
   body.querySelector('#impGo').addEventListener('click', async (e) => {
     e.target.disabled = true;
     try { await api.post(`/org-import/jobs/${encodeURIComponent(job.id)}/restore`, { options: { include_settings: body.querySelector('#impSettings').checked } }); showJob(body, null, job.id, instance); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.disabled = false; }
+    catch (err) { showToast(errorMessage(err), 'error'); e.target.disabled = false; }
   });
 }
 
@@ -427,12 +427,12 @@ async function showDone(body, ctx, job) {
   body.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => { await copy(b.dataset.copy); showToast(t('imp.copied'), 'success'); }));
   body.querySelector('#impOpen')?.addEventListener('click', async () => {
     try { const { switchWorkspaceTo } = await import('../components/corporate-ui.js'); await switchWorkspaceTo(ws.id, '#/'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   });
   body.querySelector('#impSend')?.addEventListener('click', async (e) => {
     e.target.disabled = true;
     try { const r2 = await api.post(`/org-import/jobs/${encodeURIComponent(job.id)}/invites/send`); showToast(t('imp.people.sent', { n: r2.sent }), r2.failed ? 'error' : 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); e.target.disabled = false; }
+    catch (err) { showToast(errorMessage(err), 'error'); e.target.disabled = false; }
   });
   body.querySelector('#impHandover').addEventListener('click', async () => {
     try {
@@ -442,7 +442,7 @@ async function showDone(body, ctx, job) {
       a.download = 'screentinker-screen-handover.json';
       document.body.appendChild(a); a.click(); a.remove();
       showToast(t('imp.screens.downloaded'), 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
   body.querySelectorAll('[data-pair]').forEach((b) => b.addEventListener('click', async () => {
     const code = body.querySelector(`[data-code="${CSS.escape(b.dataset.pair)}"]`).value.trim();
@@ -450,7 +450,7 @@ async function showDone(body, ctx, job) {
       await api.post(`/org-import/jobs/${encodeURIComponent(job.id)}/screens/${encodeURIComponent(b.dataset.pair)}/pair`, { pairing_code: code });
       showToast(t('imp.screens.paired'), 'success');
       showDone(body, ctx, await api.get(`/org-import/jobs/${encodeURIComponent(job.id)}`));
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   }));
 }
 
@@ -474,10 +474,10 @@ async function showBundleDone(body, head, job) {
     </div>`;
   body.querySelectorAll('[data-pw]').forEach((b) => b.addEventListener('click', async () => {
     try { const l = await api.post(`/org-import/accounts/${encodeURIComponent(b.dataset.pw)}/password-link`); await copy(l.url); showToast(t('imp.server.password_copied'), 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   }));
   body.querySelectorAll('[data-retry]').forEach((b) => b.addEventListener('click', async () => {
     try { await api.post(`/org-import/jobs/${encodeURIComponent(b.dataset.retry)}/restore`, { target: { mode: 'new' } }); showToast(t('imp.server.retrying'), 'success'); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    catch (err) { showToast(errorMessage(err), 'error'); }
   }));
 }

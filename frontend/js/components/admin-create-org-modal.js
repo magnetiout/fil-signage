@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { api } from '../api.js';
@@ -65,7 +66,7 @@ export function openCreateOrgModal(opts = {}) {
     } catch (err) {
       saveBtn.disabled = false;
       bindText(saveBtn, 'admin.create_org.submit', undefined);
-      showError(err.message || t('admin.create_org.err_failed'));
+      showError(errorMessage(err));
     }
   }
   function showError(msg) { bindMessage(errorEl, msg); errorEl.style.display = 'block'; }

@@ -1,6 +1,6 @@
 import { uiText, renderHTML, bindMessage, bindText } from '../lib/i18n-bindings.js';
 
-import { displayList, displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
+import { localizedError, displayList, displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
 
 /*
  * 3.0 switch to ScreenTinker: import media, playlists, layouts, schedules and screens from another
@@ -20,7 +20,7 @@ import { displayList, displayQuantity, displayValue, message as t, messageCount 
  * Every value from the server or the source system (names, reasons, vendor labels) reaches the
  * page through esc().
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 
 import { esc } from '../utils.js';
 import { showToast } from '../components/toast.js';
@@ -117,7 +117,7 @@ export async function mountMigrate(root, opts = {}) {
     state.jobs = jobs.jobs || [];
     state.folders = Array.isArray(folders) ? folders : [];
   } catch (e) {
-    body().innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((e.uiMessage || e.message))}</div>`;
+    body().innerHTML = `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`;
     return;
   }
   const want = opts.guide ? null : new URLSearchParams(window.location.hash.split('?')[1] || '').get('job');
@@ -254,7 +254,7 @@ async function connect() {
     let job;
     if (v.mode === 'file') {
       const f = document.getElementById('migFile').files[0];
-      if (!f) throw new Error(t('migrate.choose_file'));
+      if (!f) throw localizedError(t('migrate.choose_file'));
       const fd = new FormData();
       fd.append('vendor', v.id);
       fd.append('file', f);
@@ -266,7 +266,7 @@ async function connect() {
     }
     showJob(job);
   } catch (e) {
-    bindMessage(err, (e.uiMessage || e.message));
+    bindMessage(err, (errorMessage(e)));
     btn.disabled = false;
     bindText(btn, 'migrate.scan', undefined);
   }
@@ -392,7 +392,7 @@ function wireJob(j) {
   b.querySelector('[data-act="continue"]')?.addEventListener('click', () => { cleanup(); if (state.opts.onFinish) state.opts.onFinish(state.job); });
   wireSkip();
   b.querySelector('[data-act="cancel"]')?.addEventListener('click', async () => {
-    try { state.job = await api.migrateCancel(j.id); draw(); poll(); } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    try { state.job = await api.migrateCancel(j.id); draw(); poll(); } catch (e) { showToast(errorMessage(e), 'error'); }
   });
   b.querySelector('[data-act="run"]')?.addEventListener('click', async (e) => {
     const runBtn = e.currentTarget;
@@ -402,14 +402,14 @@ function wireJob(j) {
     const folder = b.querySelector('#migFolder').value;
     if (folder) options.folder_id = folder;
     try { state.job = await api.migrateRun(j.id, options); draw(); poll(); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); runBtn.disabled = false; }
+    catch (err) { showToast(errorMessage(err), 'error'); runBtn.disabled = false; }
   });
   b.querySelector('[data-act="resume"]')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;
     const cred = b.querySelector('[data-field]') ? readFields(b) : null;
     try { state.job = await api.migrateRun(j.id, null, cred); draw(); poll(); }
-    catch (err) { const el = b.querySelector('#migErr'); if (el) bindMessage(el, (err.uiMessage || err.message)); btn.disabled = false; }
+    catch (err) { const el = b.querySelector('#migErr'); if (el) bindMessage(el, (errorMessage(err))); btn.disabled = false; }
   });
 }
 
@@ -438,7 +438,7 @@ async function loadPlaceholders() {
     </section>`;
   el.querySelectorAll('[data-pair]').forEach((b) => b.addEventListener('click', () => pairPlaceholder(list.find((p) => p.id === b.dataset.pair), b)));
   el.querySelectorAll('[data-drop]').forEach((b) => b.addEventListener('click', async () => {
-    try { await api.migrateDeletePlaceholder(b.dataset.drop); loadPlaceholders(); } catch (e) { showToast(e.uiMessage || e.message, 'error'); }
+    try { await api.migrateDeletePlaceholder(b.dataset.drop); loadPlaceholders(); } catch (e) { showToast(errorMessage(e), 'error'); }
   }));
 }
 
@@ -494,20 +494,20 @@ function pairPlaceholder(p, btn) {
       if (e.planPromptShown) { m.close(); return; }
       input.disabled = false;
       go.disabled = !valid();
-      bindMessage(errEl, (e.uiMessage || e.message) || t('onboarding.toast.pair_failed'));
+      bindMessage(errEl, (errorMessage(e)) || t('onboarding.toast.pair_failed'));
       input.focus();
       return;
     }
     m.close();
     try {
       const problems = [];
-      for (const g of p.groups) { try { await api.addDeviceToGroup(g.id, dev.id); } catch (e) { problems.push(e.message); } }
-      if (p.playlist) { try { await api.assignPlaylistToDevice(p.playlist.id, dev.id); } catch (e) { problems.push(e.message); } }
+      for (const g of p.groups) { try { await api.addDeviceToGroup(g.id, dev.id); } catch (e) { problems.push(errorMessage(e)); } }
+      if (p.playlist) { try { await api.assignPlaylistToDevice(p.playlist.id, dev.id); } catch (e) { problems.push(errorMessage(e)); } }
       await api.migrateLinkPlaceholder(p.id, dev.id);
       showToast(problems.length ? t('migrate.ph_paired_partly', { problem: problems[0] }) : t('migrate.ph_paired', { name: p.name }), problems.length ? 'warning' : 'success');
       loadPlaceholders();
     } catch (e) {
-      showToast(e.uiMessage || e.message, 'error');
+      showToast(errorMessage(e), 'error');
       btn.disabled = false;
     }
   }

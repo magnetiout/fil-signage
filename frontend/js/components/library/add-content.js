@@ -21,7 +21,7 @@ import { getLocale, message as t } from '../../i18n.js';
 //                  when the server has a provider key, or to a platform admin who could add one
 // Hold is a playlist step, not library media: it is added from the playlist editor.
 
-import { api } from '../../api.js';
+import { errorMessage, api } from '../../api.js';
 import { plansVisible } from '../plan-nudges.js';
 import { esc } from '../../utils.js';
 
@@ -328,7 +328,7 @@ export function openAddContent(opts) {
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
     try { await fn(); }
-    catch (err) { bindMessage(errEl, (err.uiMessage || err.message) || t('library.add.failed')); }
+    catch (err) { bindMessage(errEl, (errorMessage(err)) || t('library.add.failed')); }
     finally { state.submitting = false; if (document.contains(btn)) { btn.disabled = false; btn.removeAttribute('aria-busy'); } }
   }
   function done(item, key, message) {
@@ -475,7 +475,7 @@ export function openAddContent(opts) {
         return cfg;
       } catch (err) {
         bindMessage(b.querySelector('[data-recognised]'), '');
-        setErr('libDoc', err.message);
+        setErr('libDoc', errorMessage(err));
         return null;
       }
     };
@@ -587,14 +587,14 @@ export function openAddContent(opts) {
         showToast(t('canva.disconnected'), 'success');
         state.canva = await api.get('/canva/status').catch(() => ({ ...c, connected: false }));
         render();
-      } catch (err) { bindMessage(b.querySelector('[data-form-error]'), (err.uiMessage || err.message)); e.target.disabled = false; }
+      } catch (err) { bindMessage(b.querySelector('[data-form-error]'), (errorMessage(err))); e.target.disabled = false; }
     });
     b.querySelector('[data-act="canva-connect"]')?.addEventListener('click', async (e) => {
       e.target.disabled = true;
       try {
         const r = await api.post('/canva/connect', {});
         window.location.href = r.url;
-      } catch (err) { bindMessage(b.querySelector('[data-form-error]'), (err.uiMessage || err.message)); e.target.disabled = false; }
+      } catch (err) { bindMessage(b.querySelector('[data-form-error]'), (errorMessage(err))); e.target.disabled = false; }
     });
   }
 

@@ -8,7 +8,7 @@ import { uiText, renderHTML, translatedAttribute, bindMessage, bindText } from '
  * ⚠️ SECRETS ARE WRITE-ONLY. The server never returns a client secret or a service-account key; an
  * edit with those fields left empty keeps the stored one.
  */
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { esc } from '../utils.js';
 import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
@@ -24,7 +24,7 @@ export async function mountRoomSettings(host) {
 
   async function reload() {
     try { [conns, settings] = await Promise.all([api.get('/rooms/connections'), api.get('/rooms/settings')]); }
-    catch (err) { showToast(err.uiMessage || err.message, 'error'); return; }
+    catch (err) { showToast(errorMessage(err), 'error'); return; }
     render();
   }
 
@@ -118,7 +118,7 @@ export async function mountRoomSettings(host) {
         await api.post('/rooms/connections', { kind: kindSel.value, ...read(newForm, kindSel.value, false) });
         showToast(t('rooms.saved'), 'success');
         await reload();
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
 
     host.querySelectorAll('.rm-conn').forEach((row) => {
@@ -137,18 +137,18 @@ export async function mountRoomSettings(host) {
             if (!r.ok) { out.style.color = 'var(--danger,#b91c1c)'; bindMessage(out, `❌ ${r.error}`); return; }
             out.style.color = 'var(--success,#15803d)';
             bindMessage(out, `✅ ${t('rooms.test_ok')}${r.rooms != null ? ` ${t('rooms.test_rooms', { n: r.rooms })}` : ''}${r.rooms_error ? ` — ${r.rooms_error}` : ''}`);
-          } catch (err) { out.style.color = 'var(--danger,#b91c1c)'; bindMessage(out, (err.uiMessage || err.message)); }
+          } catch (err) { out.style.color = 'var(--danger,#b91c1c)'; bindMessage(out, (errorMessage(err))); }
           return;
         }
         if (act === 'delete') {
           if (!confirm(t('rooms.confirm_delete'))) return;
           try { await api.delete(`/rooms/connections/${id}`); showToast(t('rooms.removed'), 'success'); await reload(); }
-          catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+          catch (err) { showToast(errorMessage(err), 'error'); }
           return;
         }
         if (act === 'save') {
           try { await api.put(`/rooms/connections/${id}`, read(row.querySelector('[data-edit]'), c.kind, true)); showToast(t('rooms.saved'), 'success'); await reload(); }
-          catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+          catch (err) { showToast(errorMessage(err), 'error'); }
         }
       });
     });
@@ -160,7 +160,7 @@ export async function mountRoomSettings(host) {
           release_min: parseInt(host.querySelector('[data-s="release_min"]').value, 10) || 0,
         });
         showToast(t('rooms.saved'), 'success');
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     });
   }
 

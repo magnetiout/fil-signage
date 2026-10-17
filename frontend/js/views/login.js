@@ -6,7 +6,7 @@ import { localizeServerError } from '../api.js';
 
 import { showToast } from '../components/toast.js';
 import { loginFormState } from '../lib/login-form-state.js';
-import { message as t } from '../i18n.js';
+import { localizedError, message as t } from '../i18n.js';
 import { esc, inManagerApp } from '../utils.js';
 import { applyAccent } from '../branding.js';
 import { passkeysUsableHere, conditionalMediationAvailable, getPasskey, isUserCancel } from '../lib/passkeys.js';
@@ -869,7 +869,7 @@ function setupHandlers(container, config, isSetup, passkeyUsable = false) {
             body: JSON.stringify({ email }),
           });
           const body = await r.json().catch(() => ({}));
-          if (!r.ok || !body.start_url) throw new Error(localizeServerError(body.error) || `start ${r.status}`);
+          if (!r.ok || !body.start_url) throw localizedError(localizeServerError(body.error) || `start ${r.status}`);
           startSso(body.start_url);
         } catch {
           btn.disabled = false;

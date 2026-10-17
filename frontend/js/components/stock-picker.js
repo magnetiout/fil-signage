@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { renderHTML, uiText, bindAttribute, bindMessage, attributeBinding, binding } from '../lib/i18n-bindings.js';
 
 /*
@@ -191,7 +192,7 @@ export async function mountStockPicker(host, opts = {}) {
       renderResults();
     } catch (err) {
       if (page === 1) results.innerHTML = '';
-      setStatus(err.message || t('stock.search_failed'));
+      setStatus(errorMessage(err));
     } finally { state.busy = false; }
   }
 
@@ -266,7 +267,7 @@ export async function mountStockPicker(host, opts = {}) {
       state.busy = false;
       paintFoot();
       // A plan-limit prompt may already have explained it; do not say it twice.
-      setStatus(err && err.planPromptShown ? '' : ((err && err.message) || t('stock.add_failed')));
+      setStatus(err && err.planPromptShown ? '' : (errorMessage(err)));
       return;
     }
     setStatus('');

@@ -1,10 +1,10 @@
 import {translatedAttribute} from '../lib/i18n-bindings.js';
-import {displayDateRange} from '../i18n.js';
+import { localizedError, displayDateRange } from '../i18n.js';
 import { renderHTML, uiText, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { displayValue, getLocale, message as t, messageCount as tn } from '../i18n.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api, assertLocalCallAllowed } from '../api.js';
 import { showToast } from '../components/toast.js';
@@ -175,8 +175,8 @@ function syncRepeatUI() {
 const API = (url, opts = {}) => {
   assertLocalCallAllowed(url, opts.method);
   return fetch('/api' + url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-    if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.schedule.request_failed_value0_ad6dc0", {value0: r.status})); }
+    if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw localizedError(localizeServerError(e.error) || t("ui.schedule.request_failed_value0_ad6dc0", {value0: r.status})); }
     return r.json();
   });
 };
@@ -906,7 +906,7 @@ export async function render(container) {
       try {
         await API(`/schedules/${st.ev.id}`, { method: 'PUT', body: JSON.stringify({ start_time: toLocalStamp(ns, minsOf(ns)), end_time: toLocalStamp(ne, minsOf(ne)) }) });
         showToast(t('schedule.toast.saved'), 'success');
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
       loadCalendar();
     };
     host.addEventListener('pointerup', end);
@@ -1022,7 +1022,7 @@ export async function render(container) {
         closePopovers();
         showToast(t('schedule.toast.saved'), 'success');
         loadCalendar();
-      } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+      } catch (err) { showToast(errorMessage(err), 'error'); }
     };
     pop.onclick = (evt) => {
       const b = evt.target.closest('[data-act]'); if (!b) return;
@@ -1110,7 +1110,7 @@ export async function render(container) {
         await API(`/schedules/${ev.id}`, { method: 'PUT', body: JSON.stringify({ start_time: toLocalStamp(base, range.startMin), end_time: toLocalStamp(base, range.endMin) }) });
         showToast(t('schedule.toast.saved'), 'success');
       }
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
     loadCalendar();
   }
 
@@ -1288,7 +1288,7 @@ export async function render(container) {
         recurrence: ev.recurrence || null, recurrence_end: ev.recurrence_end || null, priority: ev.priority || 0, color: ev.color || '#3B82F6',
       }) });
       showToast(t('schedule.toast.saved'), 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
     loadCalendar();
   }
 
@@ -1297,7 +1297,7 @@ export async function render(container) {
     try {
       await API(`/schedules/${ev.id}`, { method: 'DELETE' });
       showToast(t('schedule.toast.deleted'), 'success');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
     loadCalendar();
   }
 
@@ -1380,7 +1380,7 @@ export async function render(container) {
       document.getElementById('scheduleModal').style.display = 'none';
       showToast(t('schedule.toast.deleted'), 'success');
       loadCalendar();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 
   document.getElementById('saveScheduleBtn').onclick = async () => {
@@ -1416,7 +1416,7 @@ export async function render(container) {
       document.getElementById('scheduleModal').style.display = 'none';
       showToast(t('schedule.toast.saved'), 'success');
       loadCalendar();
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   };
 
   // ---------------------------------------------------------------- toolbar wiring + keyboard

@@ -1,10 +1,10 @@
 import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { showToast } from '../components/toast.js';
 import { api } from '../api.js';
-import { message as t } from '../i18n.js';
+import { localizedError, message as t } from '../i18n.js';
 import { esc, isTouchFirst } from '../utils.js';
 import { publishOrSubmit } from '../components/release.js';
 import { mountStockPicker } from '../components/stock-picker.js';
@@ -262,7 +262,7 @@ export function render(container, { mode = 'first' } = {}) {
       if (state === 'review') sentForReview = true;
       return { ok: true, review: state === 'review' };
     } catch (err) {
-      return { ok: false, error: err.message };
+      return { ok: false, error: errorMessage(err) };
     }
   }
 
@@ -493,7 +493,7 @@ export function render(container, { mode = 'first' } = {}) {
           renderStep();
         } catch (err) {
           // At the screen limit the upgrade prompt says it (plan-nudges.js); the step stays quiet.
-          if (status) bindMessage(status, err.planPromptShown ? '' : ((err.uiMessage || err.message) || t('onboarding.toast.pair_failed')));
+          if (status) bindMessage(status, err.planPromptShown ? '' : ((errorMessage(err)) || t('onboarding.toast.pair_failed')));
         }
         return;
       }
@@ -519,7 +519,7 @@ export function render(container, { mode = 'first' } = {}) {
         // A plan limit is answered by the upgrade prompt (plan-nudges.js); the step does not repeat it.
         if (err.planPromptShown) { if (status) bindMessage(status, ''); return; }
         if (status) bindMessage(status, err.status ? ((err.body && err.body.error) || t('onboarding.toast.pair_failed'))
-          : t('onboarding.toast.pair_failed_with_error', { error: (err.uiMessage || err.message) }));
+          : t('onboarding.toast.pair_failed_with_error', { error: (errorMessage(err)) }));
         return;
       }
       pairedDeviceId = data.id;
@@ -647,7 +647,7 @@ export function render(container, { mode = 'first' } = {}) {
       uploaded = await api.uploadContent(files, (pct) => { if (bar) bar.style.width = pct + '%'; });
     } catch (err) {
       // At a storage limit the upgrade prompt (plan-nudges.js) says it; the line under the drop area stays quiet.
-      return fail(err.planPromptShown ? '' : (err.message || t('onboarding.toast.upload_failed')));
+      return fail(err.planPromptShown ? '' : (errorMessage(err)));
     }
     if (bar) bar.style.width = '100%';
     return placeItems(Array.isArray(uploaded) ? uploaded : [uploaded]);
@@ -724,14 +724,14 @@ export function render(container, { mode = 'first' } = {}) {
         await api.assignPlaylistToDevice(pick, pairedDeviceId);
         if (neverPublished.has(pick)) {
           const published = await publish(pick);
-          if (!published.ok) throw new Error(localizeServerError(published.error) || t('onboarding.toast.publish_failed'));
+          if (!published.ok) throw localizedError(localizeServerError(published.error) || t('onboarding.toast.publish_failed'));
         }
         assignedPlaylistId = pick;
         showToast(t('onboarding.toast.playlist_assigned'), 'success');
         currentStep++;
         renderStep();
       } catch (err) {
-        if (status) bindMessage(status, (err.uiMessage || err.message) || t('onboarding.toast.assign_failed'));
+        if (status) bindMessage(status, (errorMessage(err)) || t('onboarding.toast.assign_failed'));
         e.target.disabled = false;
       }
     });

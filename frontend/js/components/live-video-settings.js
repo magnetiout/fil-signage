@@ -4,7 +4,7 @@ import { uiText, renderHTML } from '../lib/i18n-bindings.js';
 // admins, next to the approval-settings card (same host pattern). Only appears when live video is
 // enabled server-wide (features.live_video); otherwise the toggle would be inert, so it is hidden
 // entirely rather than shown greyed-out, the same rule device-detail follows for capabilities.
-import { api } from '../api.js';
+import { errorMessage, api } from '../api.js';
 import { message as t } from '../i18n.js';
 import { showToast } from './toast.js';
 
@@ -43,7 +43,7 @@ export async function renderLiveVideoSettings(host, { workspaceId, workspace } =
       } catch (err) {
         e.target.checked = !want;   // revert the visual
         e.target.disabled = false;
-        showToast(err.uiMessage || err.message || t('live_video.save_failed'), 'error');
+        showToast(errorMessage(err) || t('live_video.save_failed'), 'error');
       }
     });
   }

@@ -1,3 +1,5 @@
+import {getLocale} from '../i18n.js';
+import {errorMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
 // Add-User modal (#10). Creates a user account directly with an admin-set
@@ -128,8 +130,8 @@ export function openAddUserModal(workspace, opts = {}) {
   // platform_admin). Filter input rebuilds the option list live.
   let allWs = [];
   function renderWsOptions(filter) {
-    const f = (filter || '').trim().toLowerCase();
-    const matches = f ? allWs.filter(w => wsLabel(w).toLowerCase().includes(f)) : allWs;
+    const f = (filter || '').trim().toLocaleLowerCase(getLocale());
+    const matches = f ? allWs.filter(w => wsLabel(w).toLocaleLowerCase(getLocale()).includes(f)) : allWs;
     wsSelect.innerHTML = `<option value="">${uiText(t('members.modal.workspace_placeholder'))}</option>`
       + matches.map(w => `<option value="${esc(w.id)}">${uiText(wsLabel(w))}</option>`).join('');
   }
@@ -180,7 +182,7 @@ export function openAddUserModal(workspace, opts = {}) {
       bindText(submitBtn, 'members.modal.create', undefined);
       const msg = (typeof mapError === 'function')
         ? mapError(err)
-        : (err?.message || t('members.error.mutation_generic', { error: '' }));
+        : (errorMessage(err));
       showError(msg);
     }
   }

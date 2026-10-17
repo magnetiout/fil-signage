@@ -1,3 +1,4 @@
+import {errorMessage} from '../api.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, bindText } from '../lib/i18n-bindings.js';
 
 // Room display editor (widget_type 'room-display'; server lib/rooms). Mounted inside the widget modal
@@ -36,7 +37,7 @@ async function load() {
     canManage = !!r.can_manage;
     conns = c.connections || [];
   } catch (e) {
-    host.innerHTML = `<p style="color:var(--danger,#b91c1c);font-size:13px">${uiText((e.uiMessage || e.message))}</p>`;
+    host.innerHTML = `<p style="color:var(--danger,#b91c1c);font-size:13px">${uiText((errorMessage(e)))}</p>`;
     return;
   }
   render();
@@ -113,7 +114,7 @@ async function testRoom() {
     if (!r.ok) { out.style.color = 'var(--danger,#b91c1c)'; bindMessage(out, `❌ ${r.error}`); return; }
     out.style.color = 'var(--success,#15803d)';
     bindMessage(out, `✅ ${t('rooms.test_room_ok', { n: r.events })} ${r.busy ? t('rooms.now_busy') : t('rooms.now_free')}`);
-  } catch (e) { out.style.color = 'var(--danger,#b91c1c)'; bindMessage(out, (e.uiMessage || e.message)); }
+  } catch (e) { out.style.color = 'var(--danger,#b91c1c)'; bindMessage(out, (errorMessage(e))); }
 }
 
 async function saveRoomOptions() {
@@ -124,7 +125,7 @@ async function saveRoomOptions() {
     const r = await api.put(`/rooms/${cfg.room_id}`, body);
     rooms = rooms.map((x) => (x.id === r.id ? r : x));
     capture(); render();
-  } catch (e) { alert(e.message); }
+  } catch (e) { alert(String(errorMessage(e))); }
 }
 
 function addRoomForm() {
@@ -177,7 +178,7 @@ function wireAddForm() {
         host.querySelector('#rdCal').value = o.value;
         host.querySelector('#rdName').value = o.dataset.name || '';
       };
-    } catch (e) { alert(e.message); }
+    } catch (e) { alert(String(errorMessage(e))); }
   });
   host.querySelector('#rdCreate').addEventListener('click', async () => {
     const v = (id) => host.querySelector(id).value.trim();
@@ -192,7 +193,7 @@ function wireAddForm() {
       capture();
       cfg.room_id = r.id;
       await load();
-    } catch (e) { alert(e.message); }
+    } catch (e) { alert(String(errorMessage(e))); }
   });
 }
 

@@ -4,7 +4,7 @@
  * browser create the credential, hand it back to be verified and stored.
  */
 import { api } from '../api.js';
-import { message as t } from '../i18n.js';
+import { localizedError, message as t } from '../i18n.js';
 import { createPasskey, isUserCancel } from '../lib/passkeys.js';
 
 /**
@@ -17,10 +17,10 @@ export async function addPasskey({ password, code, name }) {
   try {
     response = await createPasskey(opts.options);
   } catch (err) {
-    if (isUserCancel(err)) throw Object.assign(new Error(t('passkey.err_cancelled')), { cancelled: true });
+    if (isUserCancel(err)) throw Object.assign(localizedError(t('passkey.err_cancelled')), { cancelled: true });
     // InvalidStateError: this authenticator already holds a passkey for this account (excludeCredentials).
-    if (err && err.name === 'InvalidStateError') throw new Error(t('passkey.err_exists'));
-    throw new Error(t('passkey.err_create'));
+    if (err && err.name === 'InvalidStateError') throw localizedError(t('passkey.err_exists'));
+    throw localizedError(t('passkey.err_create'));
   }
   const r = await api.passkeyRegisterVerify(opts.challenge_id, response, name);
   return r.passkey;

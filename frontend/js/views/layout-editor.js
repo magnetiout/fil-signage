@@ -2,11 +2,11 @@ import {builtinLayoutName, builtinZoneName} from '../lib/builtin-layout-labels.j
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText, bindMessage, binding } from '../lib/i18n-bindings.js';
 
-import { localizeServerError } from '../api.js';
+import { errorMessage, localizeServerError } from '../api.js';
 
 import { api, assertLocalCallAllowed } from '../api.js';
 import { showToast } from '../components/toast.js';
-import { message as t, messageCount as tn } from '../i18n.js';
+import { localizedError, message as t, messageCount as tn } from '../i18n.js';
 import { esc } from '../utils.js';
 import { renderApprovalBar } from '../components/approval-actions.js';
 import { snapMove, snapResize } from '../components/snap.js';
@@ -24,8 +24,8 @@ const API = (url, opts = {}) => {
   // ⚠️ This helper bypasses api.js's routing, so it must ask the same question itself.
   assertLocalCallAllowed(url, opts.method);
   return fetch('/api' + url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`, ...opts.headers }, ...opts }).then(async (r) => {
-  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw new Error(t("ui.labels.session_expired_b82819")); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(localizeServerError(e.error) || t("ui.layout_editor.request_failed_value0_ad6dc0", {value0: r.status})); }
+  if (r.status === 401) { localStorage.removeItem('token'); window.location.reload(); throw localizedError(t("ui.labels.session_expired_b82819")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw localizedError(localizeServerError(e.error) || t("ui.layout_editor.request_failed_value0_ad6dc0", {value0: r.status})); }
   return r.json();
   });
 };
@@ -94,12 +94,12 @@ async function renderList(container) {
           showToast(t('layout.toast.deleted'));
           renderList(container);
         } catch (err) {
-          showToast(err.uiMessage || err.message || t('layout.toast.delete_failed'), 'error');
+          showToast(errorMessage(err) || t('layout.toast.delete_failed'), 'error');
         }
       };
     });
   } catch (err) {
-    showToast(err.uiMessage || err.message, 'error');
+    showToast(errorMessage(err), 'error');
   }
 }
 
@@ -336,7 +336,7 @@ async function renderEditor(container, layoutId, wallId = null) {
       loadMode(variantMode);
       renderZones();
       showToast(t('layoutvar.created'), 'info');
-    } catch (err) { showToast(err.uiMessage || err.message, 'error'); }
+    } catch (err) { showToast(errorMessage(err), 'error'); }
   });
   document.getElementById('variantRemoveBtn')?.addEventListener('click', () => {
     if (!confirm(t('layoutvar.remove_confirm'))) return;
@@ -580,7 +580,7 @@ async function renderEditor(container, layoutId, wallId = null) {
       renderZones();
       updateProperties();
     } catch (err) {
-      showToast(err.uiMessage || err.message, 'error');
+      showToast(errorMessage(err), 'error');
     }
   };
 
