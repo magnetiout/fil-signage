@@ -217,9 +217,9 @@ test('the URL named in contracts is actually routed and advertised', () => {
   assert.match(route, /sendFile\(OUT\)/,
     'the page must fall back to the committed file rather than erroring');
   const sitemap = fs.readFileSync(path.join(ROOT, 'frontend', 'sitemap.xml'), 'utf8');
-  assert.ok(sitemap.includes('https://screentinker.com/certified-hardware'),
+  assert.ok(sitemap.includes('https://signage.filteknoloji.com/certified-hardware'),
     'the page is not in the sitemap');
   const html = fs.readFileSync(PAGE, 'utf8');
-  assert.ok(html.includes('<link rel="canonical" href="https://screentinker.com/certified-hardware">'),
+  assert.ok(html.includes('<link rel="canonical" href="https://signage.filteknoloji.com/certified-hardware">'),
     'the canonical URL must be the extension-less one that contracts name');
 });

@@ -63,7 +63,7 @@ test('⚠️ every published page names its Markdown twin IN THE DOCUMENT', () =
     // And it must point at the URL the server actually serves: /foo.html -> /foo.md, / -> /index.md.
     const expected = u === '/' ? '/index.md'
       : (u.endsWith('/') ? `${u}index.md` : `${u.replace(/\.html$/, '')}.md`);
-    assert.equal(m[1], `https://screentinker.com${expected}`, `${u} points at the wrong rendition`);
+    assert.equal(m[1], `https://signage.filteknoloji.com${expected}`, `${u} points at the wrong rendition`);
   }
 });
 

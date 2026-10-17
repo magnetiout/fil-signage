@@ -22,7 +22,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const DATA = path.join(ROOT, 'certified-hardware.json');
 const OUT = path.join(ROOT, 'frontend', 'certified-hardware.html');
 
-const URL = 'https://screentinker.com/certified-hardware';
+const URL = 'https://signage.filteknoloji.com/certified-hardware';
 const TITLE = 'Upstream Hardware Reports | FILSign';
 const DESCRIPTION =
   'Device models tested with ScreenTinker, what each one actually does, and which are not '
@@ -238,13 +238,13 @@ function render(data) {
   <meta property="og:url" content="${URL}">
   <meta property="og:title" content="Certified Hardware">
   <meta property="og:description" content="${esc(DESCRIPTION)}">
-  <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
+  <meta property="og:image" content="https://signage.filteknoloji.com/assets/fil-share.png">
   <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Certified Hardware">
   <meta name="twitter:description" content="${esc(DESCRIPTION)}">
-  <meta name="twitter:image" content="https://screentinker.com/assets/dashboard-preview.png">
+  <meta name="twitter:image" content="https://signage.filteknoloji.com/assets/fil-share.png">
 
   <meta name="theme-color" content="#111827">
   <link rel="icon" href="/assets/icon-192.png">
@@ -420,7 +420,7 @@ ${sections}
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://screentinker.com/" },
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://signage.filteknoloji.com/" },
       { "@type": "ListItem", "position": 2, "name": "Certified Hardware", "item": "${URL}" }
     ]
   }

@@ -22,7 +22,7 @@ const ai = require('../lib/ai-surface');
 const md = require('../lib/markdown-rendition');
 
 const FRONTEND = path.join(__dirname, '..', '..', 'frontend');
-const BASE = 'https://screentinker.com';
+const BASE = 'https://signage.filteknoloji.com';
 
 // ───────────────────────────── agent skills & capability catalogue ─────────────────────────────
 
@@ -97,7 +97,7 @@ test('⚠️ the capability catalogue lists only things we serve', () => {
   assert.match(SERVER_SRC, /ai-catalog\.json[\s\S]{0,240}Access-Control-Allow-Origin/);
   // robots.txt points at it, which is the other way the scanner and a crawler find it.
   const robots = fs.readFileSync(path.join(FRONTEND, 'robots.txt'), 'utf8');
-  assert.match(robots, /^Agentmap: https:\/\/screentinker\.com\/\.well-known\/ai-catalog\.json$/m);
+  assert.match(robots, /^Agentmap: https:\/\/signage\.filteknoloji\.com\/\.well-known\/ai-catalog\.json$/m);
 });
 
 // ───────────────────────────── protected resource metadata ─────────────────────────────
@@ -234,7 +234,7 @@ test('⚠️ an unknown /.well-known path 404s instead of returning the app shel
 test('the discovery documents point at the root copy we actually serve', () => {
   const cat = ai.apiCatalog(BASE).linkset[0];
   assert.equal(cat['service-meta'][0].href, `${BASE}/auth.md`);
-  assert.match(ai.linkHeader(BASE), /<https:\/\/screentinker\.com\/auth\.md>; rel="service-meta"/);
+  assert.match(ai.linkHeader(BASE), /<https:\/\/signage\.filteknoloji\.com\/auth\.md>; rel="service-meta"/);
 });
 
 // ───────────────────────────── which pages have a rendition ─────────────────────────────
@@ -381,7 +381,7 @@ test('the Link header advertises the catalogue, the spec and the rendition', () 
   assert.ok(!/rel="alternate"/.test(plain), 'no markdown alternate for a page that has none');
 
   const withMd = ai.linkHeader(BASE, { markdownOf: '/guides/x.md' });
-  assert.match(withMd, /<https:\/\/screentinker\.com\/guides\/x\.md>; rel="alternate"; type="text\/markdown"/);
+  assert.match(withMd, /<https:\/\/signage\.filteknoloji\.com\/guides\/x\.md>; rel="alternate"; type="text\/markdown"/);
   // Every URI reference in a Link header is angle-bracketed; an unbracketed one is silently dropped.
   for (const part of withMd.split(', ')) assert.match(part, /^<[^>]+>;/, `not bracketed: ${part}`);
 });
@@ -398,7 +398,7 @@ test('robots.txt declares Content Signals without losing a single existing direc
 
   // The directives that were already there are what keeps crawlers out of the app surfaces.
   for (const d of ['User-agent: *', 'Allow: /', 'Disallow: /api/', 'Disallow: /app',
-                   'Disallow: /player', 'Disallow: /uploads/', 'Sitemap: https://screentinker.com/sitemap.xml']) {
+                   'Disallow: /player', 'Disallow: /uploads/', 'Sitemap: https://signage.filteknoloji.com/sitemap.xml']) {
     assert.ok(robots.includes(d), `robots.txt lost: ${d}`);
   }
 });
@@ -406,7 +406,7 @@ test('robots.txt declares Content Signals without losing a single existing direc
 test('llms.txt names every solutions and integrations page, and nothing that does not exist', () => {
   const llms = fs.readFileSync(path.join(FRONTEND, 'llms.txt'), 'utf8');
   for (const dir of ['solutions', 'integrations']) {
-    const linked = (llms.match(new RegExp(`https://screentinker\\.com/${dir}/[a-z0-9-]+\\.html`, 'g')) || [])
+    const linked = (llms.match(new RegExp(`https://signage\\.filteknoloji\\.com/${dir}/[a-z0-9-]+\\.html`, 'g')) || [])
       .map((u) => u.split('/').pop());
     for (const g of new Set(linked)) {
       assert.ok(fs.existsSync(path.join(FRONTEND, dir, g)), `llms.txt links ${dir}/${g}, which does not exist`);
@@ -414,13 +414,13 @@ test('llms.txt names every solutions and integrations page, and nothing that doe
     for (const f of fs.readdirSync(path.join(FRONTEND, dir)).filter((f) => f.endsWith('.html') && f !== 'index.html')) {
       assert.ok(linked.includes(f), `llms.txt does not mention ${dir}/${f}`);
     }
-    assert.ok(llms.includes(`https://screentinker.com/${dir}/)`), `llms.txt should link the ${dir} hub`);
+    assert.ok(llms.includes(`https://signage.filteknoloji.com/${dir}/)`), `llms.txt should link the ${dir} hub`);
   }
 });
 
 test('llms.txt names the guides that exist and no others', () => {
   const llms = fs.readFileSync(path.join(FRONTEND, 'llms.txt'), 'utf8');
-  const guides = (llms.match(/https:\/\/screentinker\.com\/guides\/[a-z0-9-]+\.html/g) || [])
+  const guides = (llms.match(/https:\/\/signage\.filteknoloji\.com\/guides\/[a-z0-9-]+\.html/g) || [])
     .map((u) => u.split('/').pop());
   assert.ok(guides.length >= 9, `expected every guide to be listed, found ${guides.length}`);
   for (const g of new Set(guides)) {
