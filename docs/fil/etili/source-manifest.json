@@ -6,7 +6,10 @@
     "id": "ed2b90e4-5cff-4f83-8be2-26e4745f490d",
     "name": "Etili Seramik — Sunum Demosu"
   },
-  "cms_menu": null,
+  "cms_menu": {
+    "id": "816b5d37-76a8-49a5-a651-8fcb6fa859a3",
+    "name": "Etili Seramik — Ürün kataloğu"
+  },
   "cms_playlists": {
     "portrait": {
       "id": "cc302255-b185-41e7-8246-a948da2e8e77",
@@ -55288,8 +55291,13 @@
       "url": "https://etiliseramik.com/media/ES_KatalogWeb.pdf",
       "status": 200,
       "mime": "application/pdf",
-      "bytes": "95049583",
-      "scope": "public source catalog PDF; originals retained on source/Minix, not duplicated to VPS",
+      "bytes": 95049583,
+      "scope": "reference catalog; not asserted to be current web SKU/variant mappings",
+      "sha256": "08ddde3193d2b77b830ecc154ead09232120ec8dd276609c935fdba0ed02f1cf",
+      "downloaded_at": "2026-10-17T18:21:02.347900+00:00",
+      "pages": 297,
+      "text_extraction": "PASS",
+      "text_quality": "Embedded font mapping produces garbled text; do not infer SKU/product mappings from extraction",
       "available_pdf": true
     },
     {
@@ -55305,8 +55313,12 @@
       "url": "https://etiliseramik.com/media/etili_genel_katalog_2022.pdf",
       "status": 200,
       "mime": "application/pdf",
-      "bytes": "46549978",
-      "scope": "public source catalog PDF; originals retained on source/Minix, not duplicated to VPS",
+      "bytes": 46549978,
+      "scope": "2022 archive reference, not current web product availability",
+      "sha256": "085bf1e111850f3f54d49c64ac23c5b1132eeb66392bd395a4b3ac15777b2897",
+      "downloaded_at": "2026-10-17T18:21:04.930543+00:00",
+      "pages": 126,
+      "text_extraction": "PASS",
       "available_pdf": true
     },
     {

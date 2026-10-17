@@ -18,11 +18,11 @@ Kaynak kayıtları, görsel hash’leri, eksik alanlar ve CMS eşleştirmeleri: 
 
 ## Mevcut yapıya eklenenler
 
-`fil-menu-v1` korunur. `presentation: catalog` isteğe bağlıdır: klasik menü 150, katalog 2000 öğeyle sınırlı; döngü/medya sahipliği/izinli kaynak URL/QR/teknik alan doğrulamaları devam eder. 1431 öğe: 168 seri +501 sunum grubu +761 kaynak seçenek +gizli logo kaydı. Medya 20MiB ve Android HTML paketi 32MiB sınırları yükseltilmez.
+`fil-menu-v1` korunur. `presentation: catalog` isteğe bağlıdır: klasik menü 150, katalog 2000 öğeyle sınırlı; döngü/medya sahipliği/izinli kaynak URL/QR/teknik alan doğrulamaları devam eder. 1431 öğe: 168 seri +501 sunum grubu +761 kaynak seçenek +gizli logo kaydı. Medya 20 MiB ve Android HTML paketi 32 MiB sınırları yükseltilmez.
 
 Katalog tamamen gömülü yerel görseller ve QR kodlarıyla tek SHA256 doğrulamalı HTML belgesidir. Kullanıcı metni `textContent` ile gösterilir; dış betik/font/çeviri servisi gerekmez. Türkçe arama, ürün grubu, bağlamdaki ebat/yüzey/renk/doku filtreleri, 24 öğe sayfalama, kategori yolu, ana sayfa/geri/seriye dönüş, galeri ve teknik özellikler bulunur. Seri mekân görseli ile seçeneğin birebir aynı olduğuna dair doğrulanmamış iddia yapılmaz. Ürün QR adresi orijinal herkese açık sayfadır; kiosk içinde harici gezinme açılmaz. Telefonun QR hedefini açması internet gerektirir; katalog gezintisi gerektirmez.
 
-Büyük katalog üretimi, görsel JSON parçalarını iki sınırlı geçişte doğrudan tek UTF-8 Buffer’a yazar; bütün base64 verisini birden çok UTF-16 metinde tutmaz. Aynı sıralı kaynaklardan üretilen HTML baytları/metin SHA256’sı korunur. İkinci geçişte byte sayısı değişirse yayın yazılmadan hata verilir; önceki sağlam yayın kalır. Üretimdeki192MiB Node heap ayarıyla tam1431öğeli katalog gerçek HTTP yayın+önizleme bellek kontrolünden geçirilir.
+Büyük katalog üretimi, görsel JSON parçalarını iki sınırlı geçişte doğrudan tek UTF-8 Buffer’a yazar; bütün base64 verisini birden çok UTF-16 metinde tutmaz. Aynı sıralı kaynaklardan üretilen HTML baytları/metin SHA256’sı korunur. İkinci geçişte byte sayısı değişirse yayın yazılmadan hata verilir; önceki sağlam yayın kalır. Üretimdeki192 MiB Node heap ayarıyla tam1431 öğeli katalog gerçek HTTP yayın+önizleme bellek kontrolünden geçirilir.
 
 Teknik metinler CMS menüsünde düzenlenebilir yapılandırmadır; fotoğraflara gömülmez. Yönetilen menü editöründe teknik alanlar `Etiket: değer` satırlarıyla düzenlenir, geçersiz satır önceki veriyi değiştirmez. Kütüphane 500'lük sayfalarla yüklenir; menü öğesi araması ilk80 sonucu gösterir. TR/EN panel tercihi katalog içeriğini değiştirmez.
 
@@ -68,3 +68,18 @@ Menü/medya/playlist yayımlamak, fiziksel cihazda indirme tamamlandı anlamına
 Fiziksel tablet/TV testleri cihaz bağlanana kadar **NOT RUN**. Gerçek tarayıcıdaki çevrimdışı katalog gezinmesi ve Kotlin testleri Android donanım testi olarak raporlanmaz. Kesin canlı kimlikler, test kanıtları, dosya boyutları, APK SHA ve5dakikalık operatör akışı proje `private/HANDOFF.md` belgesinde güncellenir.
 
 Araştırma: [WooCommerce Store API](https://developer.woocommerce.com/docs/apis/store-api/resources-endpoints/products/), [WP pagination](https://developer.wordpress.org/rest-api/using-the-rest-api/pagination/), [Etili Seramik](https://etiliseramik.com/). Kaynak dosyalarının bu demo izni, ilgisiz üçüncü taraflara genel içerik lisansı vermez.
+
+
+## Canlı teslim — 17 Ekim 2026
+
+Panel https://signage.filteknoloji.com/app üzerinde uygulama commit’i **46dbdd583885168bafe3df8fb5c90d4527f65336** çalışır. Bu belgenin sonraki kanıt güncellemesi uygulama dağıtımı değildir. Kesin kimlikler ve doğrulama özeti [delivery.json](delivery.json) dosyasındadır.
+
+**Etili Seramik — Sunum Demosu** alanında ürün kataloğu (816b5d37-76a8-49a5-a651-8fcb6fa859a3) sürüm 1 yayımlandı:1431 öğe,27.037.757 bayt, SHA256 29c22d1c4823a095cb4eec0374647319c6fc9f59bf9c4b37b7d6e9a9fb915597. Portre liste cc302255-b185-41e7-8246-a948da2e8e77 (10 öğe/379 sn), yatay liste 9befd1ad-f515-479a-a34d-3db0143a22f5 (9 öğe/369 sn); tamamı sessiz/contain. Hiçbir mevcut cihazın ataması değiştirilmedi.
+
+861 gerekli dosyanın HTTPS boyut/MIME/SHA256 karşılaştırması PASS. Yalnız bu görevin161 kullanılmayan önceki türevi menü/playlist/kullanım kontrollerinden sonra API ile temizlendi; tekrar import861 medya/173 klasör/0 yeni kopya. Kaynak manifestindeki tüm928 görsel adresi CMS’ye eşleşir. Büyük özgünler ve297 sayfalık genel/126 sayfalık2022arşiv kataloglar Minix’te tutulur. Genel PDF metin eşlemesi bozuk olduğundan buradan SKU/varyant tahmini yapılmaz; arşiv güncel web ürünü veya stok iddiası olarak birleştirilmez.
+
+Canlı hamHTML marka/OG/Twitter/canonical, oturumsuz1200×630PNG ve yeni APK SHA doğrulandı. Sosyal platformların eski önizleme önbelleği ayrı ve NOT RUN. Gerçek HTTPS Chrome katalog portre/yatay/600px,10 offlinegezinme döngüsü/0 bozukgörsel/0 haricîiçerik bağımlılığı; TR/EN oturum/tercih/form/gerçek WSS PASS. Diğer3uygulama/6HTTPSsite sağlıklı; PID ve yapılandırmaları aynı. Yeni şifreli anlık görüntü Minix’te izole restore2070 checksum/1031 medya/SQLite ve katalogSHA PASS; snapshot temizlikten önceki161 eskitürevi de içerir.
+
+CI39057031725:7159 test/7138 PASS/0 FAIL/21 SKIP.14 ortam kontrolü Minix’te gerçekten PASS,7 tarihsel karşılaştırmanın commit kaynakları mevcut değil. Güncel APK1.0.1-fil/10002, aynı com.fil.signage.player ve imza,564 JVMtesti PASS; https://signage.filteknoloji.com/download/apk SHA256 8255f0616924cc511251844903a95ac3394a3f188f79b21e06bed15cff3747de. Yerel APK artifacts/etili/FILSign-1.0.1-fil-10002.apk. Mevcut uygulamanın üzerine güncelleyin; kaldırmayın/verisini temizlemeyin.
+
+Tam sahip rehberi, güvenli yönetici okuma komutu, Windows indirme, çalışma alanı/cihaz/listeler/hybrid20+5 veya60+10 ataması,5dakikalık sunum ve anahtar saklama dosyaları proje private/HANDOFF.md belgesinde günceldir. **Fiziksel tablet/TV/TVbox testleri NOT RUN**; tarayıcı/JVM sonuçları fiziksel kabul sayılmaz.

@@ -1,0 +1,213 @@
+{
+  "deployed_commit": "46dbdd583885168bafe3df8fb5c90d4527f65336",
+  "panel": "https://signage.filteknoloji.com/app",
+  "workspace": {
+    "id": "ed2b90e4-5cff-4f83-8be2-26e4745f490d",
+    "name": "Etili Seramik — Sunum Demosu"
+  },
+  "menu": {
+    "id": "816b5d37-76a8-49a5-a651-8fcb6fa859a3",
+    "name": "Etili Seramik — Ürün kataloğu"
+  },
+  "publication": {
+    "version": 1,
+    "sha256": "29c22d1c4823a095cb4eec0374647319c6fc9f59bf9c4b37b7d6e9a9fb915597",
+    "bytes": 27037757,
+    "media": 841
+  },
+  "playlists": {
+    "portrait": {
+      "id": "cc302255-b185-41e7-8246-a948da2e8e77",
+      "items": 10,
+      "status": "published",
+      "all_muted": true,
+      "all_fit_contain": true,
+      "seconds": 379,
+      "snapshot_keys": [
+        "content_id",
+        "widget_id",
+        "child_playlist_id",
+        "zone_id",
+        "sort_order",
+        "duration_sec",
+        "muted",
+        "fit_mode",
+        "filename",
+        "mime_type",
+        "filepath",
+        "file_size",
+        "content_duration",
+        "remote_url",
+        "unstable_connection",
+        "captions_enabled",
+        "captions_lang",
+        "subtitle_url",
+        "subtitle_lang",
+        "widget_name",
+        "widget_type",
+        "widget_config",
+        "widget_rev"
+      ]
+    },
+    "landscape": {
+      "id": "9befd1ad-f515-479a-a34d-3db0143a22f5",
+      "items": 9,
+      "status": "published",
+      "all_muted": true,
+      "all_fit_contain": true,
+      "seconds": 369,
+      "snapshot_keys": [
+        "content_id",
+        "widget_id",
+        "child_playlist_id",
+        "zone_id",
+        "sort_order",
+        "duration_sec",
+        "muted",
+        "fit_mode",
+        "filename",
+        "mime_type",
+        "filepath",
+        "file_size",
+        "content_duration",
+        "remote_url",
+        "unstable_connection",
+        "captions_enabled",
+        "captions_lang",
+        "subtitle_url",
+        "subtitle_lang",
+        "widget_name",
+        "widget_type",
+        "widget_config",
+        "widget_rev"
+      ]
+    }
+  },
+  "content": {
+    "source_records": 761,
+    "series": 168,
+    "display_families": 501,
+    "optimized_media_files": 861,
+    "image_URLs": 928,
+    "optimized_images": 842,
+    "generated_films": 2,
+    "company_original_videos": 3,
+    "company_video_derivatives": 6,
+    "presentation_cards": 11,
+    "CMS_bytes": 161904060,
+    "catalog_HTML_bytes": 27037757,
+    "combined_bytes": 188941817
+  },
+  "brand": {
+    "/": {
+      "status": 302,
+      "raw_title": "FILSign — Dijital yayın ve etkileşimli kiosk",
+      "raw_og": true,
+      "canonical_origin": "https://signage.filteknoloji.com"
+    },
+    "/app": {
+      "status": 200,
+      "raw_title": "FILSign",
+      "raw_og": true,
+      "canonical_origin": "https://signage.filteknoloji.com"
+    },
+    "share": {
+      "status": 200,
+      "MIME": "image/png",
+      "width": 1200,
+      "height": 630,
+      "sha256": "db02e426942cb0a25c4fc82cfdc8181a303031e8044126a8ee3eb9eb46ca964b"
+    },
+    "apk": {
+      "version": "1.0.1-fil",
+      "versionCode": 10002,
+      "sha256": "8255f0616924cc511251844903a95ac3394a3f188f79b21e06bed15cff3747de"
+    },
+    "social_platform_cache": "NOT RUN; raw HTTPS response verified separately",
+    "physical_test": "NOT RUN",
+    "result": "PASS"
+  },
+  "browser_catalog": {
+    "result": "PASS",
+    "source_records": 761,
+    "menu_id": "816b5d37-76a8-49a5-a651-8fcb6fa859a3",
+    "version": 1,
+    "sha256": "29c22d1c4823a095cb4eec0374647319c6fc9f59bf9c4b37b7d6e9a9fb915597",
+    "bytes": 27037757,
+    "HTTPS_preview_matches_immutable_publication": true,
+    "offline_browse_cycles": 10,
+    "broken_images": 0,
+    "external_requests": 0,
+    "browser_favicon_requests": 1,
+    "physical_tablet_TV": "NOT RUN"
+  },
+  "CI": {
+    "run": 39057031725,
+    "tests": 7159,
+    "pass": 7138,
+    "fail": 0,
+    "skip": 21,
+    "capability_skips_passed_on_Minix": 14,
+    "unavailable_historical_baseline_comparisons": 7
+  },
+  "Android": {
+    "tests": 564,
+    "failures": 0,
+    "errors": 0,
+    "same_signing_certificate": true,
+    "physical_test": "NOT RUN"
+  },
+  "backup": {
+    "result": "PASS",
+    "encrypted_backup": "fil-signage-20261017T185559Z.tar.gz.cms",
+    "encrypted_sha256": "6f13b9b7ba6aff7e5c09f24e3dbf52ad5d1a74e69381e57290404e915c2197d8",
+    "manifest_checksums": 2070,
+    "media_verified": 1031,
+    "SQLite_integrity": "ok",
+    "menu_id": "816b5d37-76a8-49a5-a651-8fcb6fa859a3",
+    "menu_version": 1,
+    "menu_sha256": "29c22d1c4823a095cb4eec0374647319c6fc9f59bf9c4b37b7d6e9a9fb915597",
+    "menu_items": 1431,
+    "source_products": 761,
+    "snapshot_contains_161_own_obsolete_derivatives": true
+  },
+  "health": {
+    "service": "active/running",
+    "NRestarts": 0,
+    "NeedDaemonReload": "no",
+    "upstream": "127.0.0.1:18140",
+    "other_ports_3002_3003_3004_HTTP": 200,
+    "other_HTTPS_sites": 6,
+    "other_HTTPS_sites_status": 200,
+    "other_app_and_Nginx_PIDs_and_configuration_unchanged": true,
+    "free_bytes": 1980456960
+  },
+  "physical_tablet_TV": "NOT RUN",
+  "device_assignments_changed": 0,
+  "idempotency": {
+    "repeated_import": "PASS",
+    "media_records": 861,
+    "folders": 173,
+    "playlist_item_counts": {
+      "portrait": 10,
+      "landscape": 9
+    },
+    "new_duplicates": 0
+  },
+  "derivative_cleanup": {
+    "own_superseded_derivatives_deleted": 161,
+    "production_content_deleted": 0,
+    "menu_and_playlist_reference_checks": true,
+    "all_usage_checks_unused": true,
+    "affected_devices": 0
+  },
+  "existing_data_preservation": {
+    "default_workspace_media": 9,
+    "playlists": 3,
+    "menus": 1,
+    "devices": 1,
+    "protected_fields_unchanged": true,
+    "admin_workspace_and_language_unchanged": true,
+    "time": "2026-10-17T19:07:54.343Z"
+  }
+}
