@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { getLocale, message as t, messageCount as tn } from '../i18n.js';
@@ -76,7 +77,7 @@ export async function openContentPicker(opts = {}) {
         ${renderHTML(replaceItemId || slotMode ? '' : `<button class="btn btn-secondary btn-sm tab-btn" data-tab="playlists">${renderHTML(t('playlist.tab_playlists'))}</button>`)}
         ${renderHTML(replaceItemId || slotMode ? '' : `<button class="btn btn-secondary btn-sm tab-btn" data-tab="kiosk">${renderHTML(t('playlist.tab_kiosk'))}</button>`)}
       </div>
-      ${renderHTML(slotMode ? `<div style="font-size:12px;color:var(--text-muted);margin:-4px 0 10px">${uiText(t('corp.slot.no_live'))}${renderHTML(slotAllowVideo ? '' : ' ' + t('corp.slot.no_video'))}${renderHTML(slotAllowWidgets ? '' : ' ' + t('corp.slot.no_widgets'))}</div>` : '')}
+      ${renderHTML(slotMode ? `<div style="font-size:12px;color:var(--text-muted);margin:-4px 0 10px">${uiText(t('corp.slot.no_live'))}${renderHTML(slotAllowVideo ? '' : displayList([' ',t('corp.slot.no_video')],''))}${renderHTML(slotAllowWidgets ? '' : displayList([' ',t('corp.slot.no_widgets')],''))}</div>` : '')}
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <input type="text" id="addItemSearch" class="input" placeholder="${t('playlist.search_placeholder')}" data-fil-i18n-placeholder="${binding('playlist.search_placeholder', undefined)}" style="flex:1">
         <!-- Folder filter. Hidden on the tabs that have no folders. -->
@@ -355,7 +356,7 @@ export async function openContentPicker(opts = {}) {
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${uiText(p.name)}</div>
           <div style="font-size:12px;color:var(--text-muted)">
-            ${uiText(tn('playlist.n_items', p.item_count || 0))}${renderHTML(p.status !== 'published' ? ' · ' + t('playlist.nest_draft_note') : '')}
+            ${uiText(tn('playlist.n_items', p.item_count || 0))}${renderHTML(p.status !== 'published' ? displayList([' · ',t('playlist.nest_draft_note')],'') : '')}
           </div>
         </div>
         <button class="btn btn-primary btn-sm add-child-btn" data-id="${esc(p.id)}">${renderHTML(t('playlist.add_btn'))}</button>

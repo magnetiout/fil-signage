@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {storedErrorMessage} from '../api.js';
 import {builtinLayoutName, builtinZoneName} from '../lib/builtin-layout-labels.js';
 import { renderHTML, uiText, translatedAttribute, bindMessage, bindAttribute, attributeBinding, bindText, binding } from '../lib/i18n-bindings.js';
 
@@ -1122,12 +1124,12 @@ async function loadDevice(deviceId, activeTab = null) {
           <div class="info-card">
             <div class="info-card-label">${renderHTML(t('device.info.battery'))}</div>
             <div class="info-card-value" id="telBattery">${renderHTML(!isEmbeddedDevice(device)
-                ? (latestTelemetry.battery_level != null ? latestTelemetry.battery_level + '%' : '--')
+                ? (latestTelemetry.battery_level != null ? displayValue(latestTelemetry.battery_level/100,'toLocaleString',{style:'percent',maximumFractionDigits:0}) : '--')
                 : latestTelemetry.battery_charging
                   ? (latestTelemetry.battery_level != null ? t('device.info.battery_charging_pct', { level: latestTelemetry.battery_level }) : t('device.info.battery_charging'))
                   : (device.power_source === 'usb' || latestTelemetry.power_source === 'usb')
                     ? (latestTelemetry.battery_level != null ? t('device.info.battery_mains_pct', { level: latestTelemetry.battery_level }) : t('device.info.battery_mains'))
-                    : (latestTelemetry.battery_level != null ? `${latestTelemetry.battery_level}%` : '--'))}            }</div>
+                    : (latestTelemetry.battery_level != null ? displayValue(latestTelemetry.battery_level/100,'toLocaleString',{style:'percent',maximumFractionDigits:0}) : '--'))}            }</div>
             ${renderHTML(latestTelemetry.battery_level != null ? `
             <div class="progress-bar">
               <div class="progress-bar-fill ${latestTelemetry.battery_level > 50 ? 'success' : latestTelemetry.battery_level > 20 ? 'warning' : 'danger'}"
@@ -1218,10 +1220,10 @@ async function loadDevice(deviceId, activeTab = null) {
             <div class="info-card-value small">${uiText(device.edid.manufacturer || '')} ${uiText(device.edid.monitorName || device.edid.productHex || '')}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5">
               ${renderHTML(device.edid.preferredMode ? `${renderHTML(t('device.info.edid_preferred'))}: <strong>${uiText(device.edid.preferredMode)}</strong><br>` : '')}
-              ${renderHTML(device.edid.widthCm ? `${esc(device.edid.widthCm)}&times;${esc(device.edid.heightCm)} cm &middot; ` : '')}${renderHTML(device.edid.digital ? 'digital' : 'analog')} &middot; EDID ${uiText(device.edid.edidVersion)}<br>
+              ${renderHTML(device.edid.widthCm ? `${esc(device.edid.widthCm)}&times;${esc(device.edid.heightCm)} cm &middot; ` : '')}${renderHTML(t(device.edid.digital ? 'device.edid.digital' : 'device.edid.analog'))} &middot; EDID ${uiText(device.edid.edidVersion)}<br>
               ${renderHTML(device.edid.yearOfManufacture ? `${renderHTML(t('device.info.edid_made'))}: ${uiText(device.edid.yearOfManufacture)}w${renderHTML(String(device.edid.weekOfManufacture).padStart(2, '0'))}<br>` : '')}
               ${renderHTML(device.edid.serialNumber ? `${t('device.info.edid_serial')}: ${esc(device.edid.serialNumber)} &middot; ` : '')}${renderHTML(t('device.info.edid_product'))}: ${uiText(device.edid.productHex)}
-              ${renderHTML(device.edid.cea && (device.edid.cea.bt2020Rgb || device.edid.cea.bt2020Ycc) ? `<br>${renderHTML(t("ui.device_detail.bt_2020_705858", {value0: device.edid.cea.hdrSt2084 ? ' &middot; HDR10' : ''}))}` : '')}
+              ${renderHTML(device.edid.cea && (device.edid.cea.bt2020Rgb || device.edid.cea.bt2020Ycc) ? `<br>${renderHTML(t("ui.device_detail.bt_2020_705858", {value0: device.edid.cea.hdrSt2084 ? ' · HDR10' : ''}))}` : '')}
               ${renderHTML(device.edid.checksumValid === false ? `<br><span style="color:var(--warning,#f59e0b)">${renderHTML(t('device.info.edid_checksum_bad'))}</span>` : '')}
             </div>
           </div>` : '')}
@@ -1232,7 +1234,7 @@ async function loadDevice(deviceId, activeTab = null) {
                  against public wardriving databases, so it could place a customer's premises
                  on a map — and 94% of the stored values were never SSIDs anyway. Signal
                  strength stays: it is what an installer actually acts on. -->
-            <div class="info-card-value small" id="telRssi">${renderHTML(latestTelemetry.wifi_rssi != null ? latestTelemetry.wifi_rssi + ' dBm' : '--')}</div>
+            <div class="info-card-value small" id="telRssi">${renderHTML(latestTelemetry.wifi_rssi != null ? displayQuantity(latestTelemetry.wifi_rssi,'dBm') : '--')}</div>
           </div>
           ` : '')}
           <div class="info-card">
@@ -1502,7 +1504,7 @@ async function loadDevice(deviceId, activeTab = null) {
               <option value="image">${renderHTML(t("ui.device_detail.image"))}</option>
               <option value="web">${renderHTML(t("ui.device_detail.web"))}</option>
             </select>
-            <input id="pipUri" type="url" placeholder="https://… (image or page URL)" style="flex:1;min-width:240px;padding:6px 8px;background:#0b0f1a;border:1px solid var(--border);border-radius:6px;color:var(--text)">
+            <input id="pipUri" type="url" ${translatedAttribute('placeholder','device.pip.uri_placeholder')} style="flex:1;min-width:240px;padding:6px 8px;background:#0b0f1a;border:1px solid var(--border);border-radius:6px;color:var(--text)">
             <select id="pipPosition" class="btn btn-secondary btn-sm" style="min-width:120px">
               <option value="top-right">${renderHTML(t("ui.device_detail.top_right"))}</option>
               <option value="top-left">${renderHTML(t("ui.device_detail.top_left"))}</option>
@@ -1959,7 +1961,7 @@ function renderTriggerDiagnostics(device) {
         </div>
         <div style="font-size:11px;color:var(--text-muted)">
           ${uiText(t('device.trig.counts', { received: st.received || 0, accepted: st.accepted || 0, rejected: rejTotal }))}
-          ${renderHTML(st.last_datagram_at ? ' · ' + t('device.trig.last_seen', { when: displayValue(new Date(st.last_datagram_at), "toLocaleString", undefined) }) : '')}
+          ${renderHTML(st.last_datagram_at ? displayList([' · ',t('device.trig.last_seen', { when: displayValue(new Date(st.last_datagram_at), "toLocaleString", undefined) })],'') : '')}
           · ${uiText(t('device.trig.definitions', { n: st.definitions || 0 }))}
         </div>
         ${renderHTML(rejTotal ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${renderHTML(Object.entries(rej).filter(([, v]) => v).map(([k, v]) => esc(k + ' ' + v)).join(' · '))}</div>` : '')}
@@ -2153,7 +2155,7 @@ function setupCorporateDevice(device) {
     const it = (corp.items || [])[Number(row.dataset.corpItem)];
     if (!it || !it.locked) return;
     const open = () => cui.explainLocked({
-      text: t('corp.err.CORPORATE_LOCKED', { name: corp.playlist_name || '' }) + ' ' + t('corp.locked.volume'),
+      text: displayList([displayList([t('corp.err.CORPORATE_LOCKED', { name: corp.playlist_name || '' }),' '],''),t('corp.locked.volume')],''),
       actions: (corp.slots || []).length ? [{ label: t('corp.locked.edit_slot'), primary: true, onClick: () => document.querySelector('[data-corp-slot]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }) }] : [],
     });
     row.addEventListener('click', open);
@@ -2272,7 +2274,7 @@ function renderPlaylist(assignments) {
       <div class="playlist-item-info">
         <div class="playlist-item-name">${uiText(a.filename || a.widget_name || t('common.unknown'))}</div>
         <div class="playlist-item-meta">
-          ${renderHTML(a.child_playlist_id ? tn('device.pl_item.playlist_with_count', a.child_item_count || 0) : a.widget_id && !a.content_id ? t('device.pl_item.widget_with_type', { type: a.widget_type || 'custom' }) : a.mime_type === 'video/youtube' ? t('device.pl_item.youtube') : a.mime_type?.startsWith('video/') ? t('device.pl_item.video') : t('device.pl_item.image'))}
+          ${renderHTML(a.child_playlist_id ? tn('device.pl_item.playlist_with_count', a.child_item_count || 0) : a.widget_id && !a.content_id ? t('device.pl_item.widget_with_type', { type: a.widget_type || t('device.widget_custom_type') }) : a.mime_type === 'video/youtube' ? t('device.pl_item.youtube') : a.mime_type?.startsWith('video/') ? t('device.pl_item.video') : t('device.pl_item.image'))}
           ${renderHTML(a.zone_id ? ` &middot; <span style="color:var(--accent)">${renderHTML(t('device.pl_item.zone_label', { id: a.zone_id.slice(0,8) }))}</span>` : '')}
           ${renderHTML(a.content_duration ? ` &middot; ${Math.floor(a.content_duration / 60)}:${String(Math.floor(a.content_duration % 60)).padStart(2, '0')}` : '')}
           ${renderHTML(!a.content_duration && !a.mime_type?.startsWith('video/') && a.duration_sec ? ` &middot; ${a.duration_sec}s` : '')}
@@ -2538,11 +2540,11 @@ function setupInteractiveTerminal(device) {
     });
     listen('pty-exit', (d) => {
       if (!d || d.session_id !== st.sessionId) return;
-      ended(t('device.terminal.pty_closed', { reason: d.reason || (d.code != null ? 'exit ' + d.code : 'closed') }));
+      ended(t('device.terminal.pty_closed', { reason: d.reason || (d.code != null ? t('device.terminal.exit_code',{code:d.code}) : t('device.terminal.closed_reason')) }));
     });
     listen('pty-error', (d) => {
       if (!d || d.device_id !== device.id || st.sessionId) return;
-      ended(t('device.terminal.pty_error', { error: d.error || 'unknown' }));
+      ended(t('device.terminal.pty_error', { error: storedErrorMessage(d.error) || t('common.unknown') }));
     });
 
     const enc = new TextEncoder();
@@ -2732,7 +2734,7 @@ async function showReAdoptModal(device) {
     btn.addEventListener('click', async () => {
       const s = snapshots[parseInt(btn.dataset.i, 10)];
       let msg = t('device.readopt.confirm', { source: s.device_name || t('device.readopt.unnamed'), target: device.name || '' });
-      if (s.blocked) msg += '\n\n⚠ ' + t('device.readopt.confirm_blocked');   // explicit: target will go dark
+      if (s.blocked) msg = displayList([msg,displayList(['\n\n⚠ ',t('device.readopt.confirm_blocked')],'')],'');   // explicit: target will go dark
       if (!confirm(msg)) return;
       btn.disabled = true;
       try {
@@ -3459,7 +3461,7 @@ function setupRemote(device) {
       });
       talkClient = new TalkClient(device.id, {
         duplex,
-        onError: (e) => { showToast((t('device.talk.failed')) + ((errorMessage(e)) ? ': ' + (errorMessage(e)) : ''), 'error'); },
+        onError: (e) => { showToast(displayList([t('device.talk.failed'),(errorMessage(e)) ? ': ' + (errorMessage(e)) : ''],''), 'error'); },
       });
       await talkClient.start();
       talkMuted = false;
@@ -3471,7 +3473,7 @@ function setupRemote(device) {
       stopTalkSession(device.id);
       showTalk(false);
       disarmNoMicNotice();
-      showToast((t('device.talk.failed')) + ((errorMessage(e)) ? ': ' + (errorMessage(e)) : ''), 'error');
+      showToast(displayList([t('device.talk.failed'),(errorMessage(e)) ? ': ' + (errorMessage(e)) : ''],''), 'error');
     } finally {
       if (talkStartBtn) talkStartBtn.disabled = false;
       if (talk2wayBtn) talk2wayBtn.disabled = false;
@@ -3602,7 +3604,7 @@ async function setupPlaylistActions(device) {
     const zoneHtml = zones.length > 0 ? `
         <select id="assignZone" class="input" style="background:var(--bg-input)">
           <option value="">${renderHTML(t('device.assign.zone_default'))}</option>
-          ${renderHTML(zones.map(z => `<option value="${esc(z.id)}">${uiText(z.name)} (${renderHTML(Math.round(z.width_percent))}% x ${renderHTML(Math.round(z.height_percent))}%)</option>`).join(''))}
+          ${renderHTML(zones.map(z => `<option value="${esc(z.id)}">${uiText(z.name)} (${renderHTML(displayValue(Math.round(z.width_percent)/100,'toLocaleString',{style:'percent',maximumFractionDigits:0}))} × ${renderHTML(displayValue(Math.round(z.height_percent)/100,'toLocaleString',{style:'percent',maximumFractionDigits:0}))})</option>`).join(''))}
         </select>`
       : `<div style="font-size:12px;color:${zonesFetchFailed ? 'var(--danger)' : 'var(--text-muted)'};padding:6px 0;line-height:1.5">${renderHTML(!activeLayoutIdOf(device) ? t('device.assign.zone_no_layout') : zonesFetchFailed ? t('device.assign.zone_load_failed') : t('device.assign.zone_empty_layout'))}</div>`;
     const extraFieldsHtml = `
@@ -4034,7 +4036,7 @@ function renderIncidents(deviceEvents = [], statusLog = []) {
       ? `<span style="color:var(--text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(inc.detail)}</span>`
       : '';
     const dur = (inc.durationSec != null)
-      ? `<span style="color:var(--text-muted);font-size:11px;flex:none">${uiText(t('device.incidents.down_for', { dur: formatDur(inc.durationSec) }) + (inc.ongoing ? '…' : ''))}</span>`
+      ? `<span style="color:var(--text-muted);font-size:11px;flex:none">${uiText(displayList([t('device.incidents.down_for', { dur: formatDur(inc.durationSec) }),inc.ongoing ? '…' : ''],''))}</span>`
       : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
@@ -4055,7 +4057,7 @@ function updateTelemetryDisplay(telemetry) {
     if (el) bindMessage(el, val);
   };
   if (!isEmbeddedDevice(currentDevice)) {
-    if (telemetry.battery_level != null) update('telBattery', telemetry.battery_level + '%');
+    if (telemetry.battery_level != null) update('telBattery', displayValue(telemetry.battery_level/100,'toLocaleString',{style:'percent',maximumFractionDigits:0}));
   } else if (telemetry.battery_level != null || telemetry.power_source || telemetry.battery_charging) {
     let text = '--';
     if (telemetry.battery_charging) {
@@ -4063,7 +4065,7 @@ function updateTelemetryDisplay(telemetry) {
     } else if (telemetry.power_source === 'usb' || currentDevice?.power_source === 'usb') {
       text = telemetry.battery_level != null ? t('device.info.battery_mains_pct', { level: telemetry.battery_level }) : t('device.info.battery_mains');
     } else if (telemetry.battery_level != null) {
-      text = telemetry.battery_level + '%';
+      text = displayValue(telemetry.battery_level/100,'toLocaleString',{style:'percent',maximumFractionDigits:0});
     }
     update('telBattery', text);
   }

@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import {errorMessage} from '../api.js';
 import { messageCount as tn } from '../i18n.js';
 import { renderHTML, uiText, translatedAttribute, bindMessage, bindText } from '../lib/i18n-bindings.js';
@@ -173,7 +174,7 @@ export async function render(container) {
       loadSummary();
       loadList();
     } catch (err) {
-      showToast(t("ui.admin_player_debug.delete_failed_c834e9") + ((errorMessage(err)) || err), 'error');
+      showToast(displayList([t("ui.admin_player_debug.delete_failed_c834e9"),(errorMessage(err)) || err],''), 'error');
     }
   };
 
@@ -269,7 +270,7 @@ async function loadList() {
                 <tr style="border-bottom:1px solid var(--border-light)" data-row-id="${r.id}">
                   <td style="padding:8px;font-family:monospace;color:var(--text-muted)">${renderHTML(r.id)}</td>
                   <td style="padding:8px;font-size:12px">${uiText(fmtTime(r.created_at))}</td>
-                  <td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text-secondary)">${uiText(r.device_id || '(none)')}</td>
+                  <td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text-secondary)">${uiText(r.device_id || t('common.none_parenthetical'))}</td>
                   <td style="padding:8px;font-family:monospace;font-size:12px;color:var(--text-secondary)">${uiText(r.ip || '')}</td>
                   <td style="padding:8px;font-size:12px;color:var(--text-secondary)">${uiText(uaShort(r.user_agent))}</td>
                   <td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text-muted)">${uiText(r.error_fingerprint || '')}</td>
@@ -282,9 +283,9 @@ async function loadList() {
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                       <div>
                         <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">URL</div>
-                        <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;margin-bottom:10px">${uiText(r.url || '(none)')}</div>
+                        <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;margin-bottom:10px">${uiText(r.url || t('common.none_parenthetical'))}</div>
                         <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t("ui.admin_player_debug.full_user_agent"))}</div>
-                        <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;margin-bottom:10px">${uiText(r.user_agent || '(none)')}</div>
+                        <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;margin-bottom:10px">${uiText(r.user_agent || t('common.none_parenthetical'))}</div>
                         <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${renderHTML(t("ui.admin_player_debug.error_data"))}</div>
                         <pre style="margin:0;padding:8px;background:var(--bg-primary);border-radius:4px;font-family:monospace;font-size:11px;color:var(--text-secondary);overflow:auto;max-height:300px;white-space:pre-wrap;word-break:break-word">${uiText(prettyJson(r.error_data))}</pre>
                       </div>

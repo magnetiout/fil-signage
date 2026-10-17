@@ -1,3 +1,5 @@
+import {systemMessage} from '../api.js';
+import {storedErrorMessage} from '../api.js';
 import { renderHTML, uiText } from '../lib/i18n-bindings.js';
 import { displayValue, message as t } from '../i18n.js';
 
@@ -229,7 +231,7 @@ async function showJob(body, ctx, jobId, instance) {
   }
   if (job.status === 'interrupted') {
     body.innerHTML = `${renderHTML(head)}<div class="settings-section"><h3>${uiText(t('imp.interrupted.title'))}</h3>
-      <p class="trust-desc">${uiText(job.error || '')}</p><p class="trust-desc">${uiText(t('imp.interrupted.desc'))}</p>
+      <p class="trust-desc">${uiText(storedErrorMessage(job.error || ''))}</p><p class="trust-desc">${uiText(t('imp.interrupted.desc'))}</p>
       <input id="impRelink" class="input" type="url" autocomplete="off" style="width:100%">
       <div class="trust-toolbar" style="margin-top:8px"><button type="button" class="btn btn-primary" id="impRelinkGo">${uiText(t('imp.interrupted.go'))}</button>${renderHTML(cancelBtn())}</div></div>`;
     body.querySelector('#impRelinkGo').addEventListener('click', async () => {
@@ -241,7 +243,7 @@ async function showJob(body, ctx, jobId, instance) {
   }
   if (job.status === 'refused' || job.status === 'cancelled') {
     body.innerHTML = `${renderHTML(head)}<div class="settings-section"><h3>${uiText(job.status === 'refused' ? t('imp.refused.title') : t('imp.cancelled.title'))}</h3>
-      ${renderHTML(job.error ? `<div class="trust-residency leaves"><div>${uiText(job.error)}</div></div>` : '')}
+      ${renderHTML(job.error ? `<div class="trust-residency leaves"><div>${uiText(storedErrorMessage(job.error))}</div></div>` : '')}
       <p class="trust-desc">${uiText(t('imp.refused.desc'))}</p>
       <a class="btn btn-primary" href="#/org-import${isInstance ? '?kind=instance' : ''}">${uiText(t('imp.start_again'))}</a></div>`;
     return;
@@ -257,7 +259,7 @@ async function showJob(body, ctx, jobId, instance) {
   }
   if (job.status === 'failed' || job.status === 'partial') {
     body.innerHTML = `${renderHTML(head)}<div class="settings-section"><h3>${uiText(job.status === 'failed' ? t('imp.failed.title') : t('imp.partial.title'))}</h3>
-      <div class="trust-residency leaves"><div>${uiText(job.error || '')}</div></div>
+      <div class="trust-residency leaves"><div>${uiText(storedErrorMessage(job.error || ''))}</div></div>
       <p class="trust-desc">${uiText(job.status === 'failed' ? t('imp.failed.desc') : t('imp.partial.desc'))}</p>
       ${renderHTML(job.status === 'partial' ? `<button type="button" class="btn btn-danger" id="impDiscard">${uiText(t('imp.partial.delete'))}</button>` : '')}
       <a class="btn btn-secondary" href="#/org-import${isInstance ? '?kind=instance' : ''}">${uiText(t('imp.start_again'))}</a></div>`;
@@ -320,7 +322,7 @@ function showChoice(body, head, ctx, job, instance) {
     </div>
     <div class="settings-section"><h3>${uiText(t('imp.check.not_title'))}</h3>
       <p class="trust-desc">${uiText(t('imp.check.not_desc'))}</p>
-      <ul class="imp-list">${renderHTML((s.not_restored || []).map((n) => `<li><code>${uiText(n.table)}</code>${renderHTML(n.rows ? ` (${esc(String(n.rows))})` : '')} — ${uiText(n.reason || '')}</li>`).join(''))}
+      <ul class="imp-list">${renderHTML((s.not_restored || []).map((n) => `<li><code>${uiText(n.table)}</code>${renderHTML(n.rows ? ` (${esc(String(n.rows))})` : '')} — ${uiText(systemMessage(n.reason))}</li>`).join(''))}
         <li>${uiText(t('imp.check.passkeys'))}</li><li>${uiText(t('imp.check.secrets'))}</li></ul>
     </div>
     <div class="settings-section"><h3>${uiText(t('imp.check.reconnect_title'))}</h3>
@@ -361,7 +363,7 @@ function showBundleChoice(body, head, job, instance) {
     <div class="settings-section"><h3>${uiText(t('imp.server.check_title', { n: (s.organizations || []).length }))}</h3>
       <p class="trust-desc">${uiText(t('imp.server.accounts', { n: s.accounts || 0, admins: s.platform_admins || 0 }))}</p>
       <div class="table-wrap"><table class="att-table"><tbody>
-        ${renderHTML((s.organizations || []).map((o) => `<tr><td>${uiText(o.name)}</td><td><span class="trust-pill${o.status === 'scanned' ? '' : ' warn'}">${uiText(tk(`imp.status.${o.status}`, o.status))}</span>${renderHTML(o.error ? `<div class="trust-muted">${uiText(o.error)}</div>` : '')}</td>
+        ${renderHTML((s.organizations || []).map((o) => `<tr><td>${uiText(o.name)}</td><td><span class="trust-pill${o.status === 'scanned' ? '' : ' warn'}">${uiText(tk(`imp.status.${o.status}`, o.status))}</span>${renderHTML(o.error ? `<div class="trust-muted">${uiText(storedErrorMessage(o.error))}</div>` : '')}</td>
           <td>${renderHTML(o.status === 'scanned' ? t('imp.server.org_line', { ws: o.workspaces, screens: o.screens, members: o.members, size: fmtBytes(o.media_bytes || 0) }) : '')}</td></tr>`).join(''))}
       </tbody></table></div>
       ${renderHTML(roomHtml(s.room))}
@@ -462,7 +464,7 @@ async function showBundleDone(body, head, job) {
     <div class="settings-section">
       <div class="trust-residency ${r.failed ? 'leaves' : 'ok'}"><strong>${uiText(r.failed ? t('imp.server.done_some', { n: r.failed }) : t('imp.server.done_all'))}</strong></div>
       <div class="table-wrap"><table class="att-table"><tbody>
-        ${renderHTML((r.organizations || []).map((o) => `<tr><td>${uiText(o.name || '')}</td><td><span class="trust-pill${o.status === 'done' ? '' : ' warn'}">${uiText(tk(`imp.status.${o.status}`, o.status))}</span>${renderHTML(o.error ? `<div class="trust-muted">${uiText(o.error)}</div>` : '')}</td>
+        ${renderHTML((r.organizations || []).map((o) => `<tr><td>${uiText(o.name || '')}</td><td><span class="trust-pill${o.status === 'done' ? '' : ' warn'}">${uiText(tk(`imp.status.${o.status}`, o.status))}</span>${renderHTML(o.error ? `<div class="trust-muted">${uiText(storedErrorMessage(o.error))}</div>` : '')}</td>
           <td>${renderHTML(o.status !== 'done' && o.status !== 'refused' ? `<button type="button" class="btn btn-secondary btn-sm" data-retry="${esc(o.child_id)}">${uiText(t('imp.server.retry'))}</button>` : '')}</td></tr>`).join(''))}
       </tbody></table></div>
     </div>

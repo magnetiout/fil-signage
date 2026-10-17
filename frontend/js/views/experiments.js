@@ -1,3 +1,5 @@
+import {systemMessage} from '../api.js';
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
@@ -152,7 +154,7 @@ async function renderForm(app, editId) {
         <div class="form-group" id="expBaselineWrap"><label for="expBaseline">${uiText(t('exp.f.baseline'))}</label>
           <select id="expBaseline" class="input">${renderHTML([0, 14, 28, 56].map((d) => `<option value="${d}" ${(cfg.baseline_days ?? 28) === d ? 'selected' : ''}>${uiText(d ? tn('exp.f.days', d) : t('exp.f.none'))}</option>`).join(''))}</select></div>
         <div class="form-group"><label for="expMinLift">${uiText(t('exp.f.min_lift'))}</label>
-          <select id="expMinLift" class="input">${renderHTML([0.05, 0.1, 0.2].map((x) => `<option value="${x}" ${(cfg.min_lift || 0.1) === x ? 'selected' : ''}>${renderHTML(Math.round(x * 100))}%</option>`).join(''))}</select></div>
+          <select id="expMinLift" class="input">${renderHTML([0.05, 0.1, 0.2].map((x) => `<option value="${x}" ${(cfg.min_lift || 0.1) === x ? 'selected' : ''}>${renderHTML(displayValue(x,'toLocaleString',{style:'percent',maximumFractionDigits:0}))}</option>`).join(''))}</select></div>
         <div class="form-group"><label for="expEnd">${uiText(t('exp.f.end'))}</label><input id="expEnd" type="date" class="input" value="${esc(plannedEnd)}"></div>
       </div>
       <p class="corp-help" style="font-size:12px">${uiText(t('exp.f.window_hint'))}</p>
@@ -329,7 +331,7 @@ function guardrailsBlock(exp, res) {
   for (const g of res.guardrails || []) {
     const v = g.variant != null && exp.variants[g.variant] ? exp.variants[g.variant].label : '';
     const ok = /_balanced$/.test(g.code);
-    out.push(`<li style="color:${ok ? 'var(--text-secondary)' : 'var(--warning, #ca8a04)'}">${renderHTML(ok ? '✓' : '⚠')} ${uiText(t(`exp.g.${g.code}`, { v, pct: g.worst_pct != null ? `${g.worst_pct}%` : '', message: g.message || '', when: g.at ? fmtDate(g.at) : t('exp.never') }))}</li>`);
+    out.push(`<li style="color:${ok ? 'var(--text-secondary)' : 'var(--warning, #ca8a04)'}">${renderHTML(ok ? '✓' : '⚠')} ${uiText(t(`exp.g.${g.code}`, { v, pct: g.worst_pct != null ? displayValue(g.worst_pct/100,'toLocaleString',{style:'percent',maximumFractionDigits:1}) : '', message: storedErrorMessage(g.message), when: g.at ? fmtDate(g.at) : t('exp.never') }))}</li>`);
   }
   return out.length ? `<div class="settings-section"><h3 style="font-size:15px;margin-bottom:6px">${uiText(t('exp.g.title'))}</h3><ul style="margin:0 0 0 18px;padding:0;font-size:13px;line-height:1.7">${renderHTML(out.join(''))}</ul></div>` : '';
 }
@@ -377,7 +379,7 @@ async function renderDetail(app, id) {
     <div class="settings-section" id="expUnits"></div>
     ${renderHTML(usesSales || usesCsv ? `<div class="settings-section"><h3 style="font-size:15px;margin-bottom:6px">${uiText(t('exp.data_title'))}</h3>
       ${renderHTML(usesSales ? `<p style="font-size:13px">${uiText(exp.sales.synced_at ? t('exp.sales_synced', { when: fmtDate(exp.sales.synced_at) }) : t('exp.sales_never'))}</p>
-        ${renderHTML(exp.sales.error ? `<p style="font-size:13px;color:var(--danger)">${uiText(exp.sales.error)}</p>` : '')}
+        ${renderHTML(exp.sales.error ? `<p style="font-size:13px;color:var(--danger)">${uiText(storedErrorMessage(exp.sales.error))}</p>` : '')}
         ${renderHTML(write ? `<button class="btn btn-secondary btn-sm" id="expImport">${uiText(t('exp.import_now'))}</button>` : '')}
         <p class="corp-help" style="font-size:12px;margin-top:6px">${uiText(t('exp.sales_hint'))}</p>` : '')}
       ${renderHTML(usesCsv && write ? `<div style="margin-top:12px"><label style="font-size:13px" for="expCsvFile">${uiText(t('exp.csv_upload'))}</label>
@@ -429,7 +431,7 @@ async function renderDetail(app, id) {
     } catch (e) {
       const errs = (e.body && e.body.errors) || [];
       out.innerHTML = errs.length
-        ? `<ul style="margin:6px 0 0 18px;color:var(--danger)">${renderHTML(errs.map((x) => `<li>${uiText(x.row ? t('exp.csv_row', { row: x.row, message: x.message }) : x.message)}</li>`).join(''))}</ul>`
+        ? `<ul style="margin:6px 0 0 18px;color:var(--danger)">${renderHTML(errs.map((x) => `<li>${uiText(x.row ? t('exp.csv_row', { row: x.row, message: systemMessage(x.message) }) : systemMessage(x.message))}</li>`).join(''))}</ul>`
         : `<p style="color:var(--danger)">${uiText((errorMessage(e)))}</p>`;
     }
   });

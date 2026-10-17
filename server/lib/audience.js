@@ -1,4 +1,6 @@
 'use strict';
+const {reportLanguage,reportText,reportLabel,reportCsv,turkishEnergyAppendix}=require('./admin-report-i18n');
+
 
 /*
  * Audience counting (docs/audience-counting.md): how many people looked at a screen, and for how long.
@@ -365,16 +367,16 @@ function csvCell(v) {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function toCsv(rows) {
+function toCsv(rows, language='en') {
   const head = ['minute_utc', 'bucket_sec', 'device_id', 'device_name', 'item_kind', 'item_id', 'item_name', 'playlist_id',
     'people_max', 'people_avg', 'arrivals', 'impressions', ...DWELL_LABELS.map((l) => `dwell_${l}`), 'observed_sec'];
-  const lines = [head.join(',')];
+  const lines = [head.map(v=>reportLabel(language,v)).join(',')];
   for (const r of rows) {
     lines.push([new Date(r.bucket_start * 1000).toISOString(), r.bucket_sec, r.device_id, r.device_name, r.item_kind, r.item_id,
       r.item_name, r.playlist_id, r.present_max, (r.present_avg_x100 / 100).toFixed(2), r.arrivals, r.impressions,
       r.d0, r.d1, r.d2, r.d3, r.d4, r.d5, r.observed_ms == null ? '' : (r.observed_ms / 1000).toFixed(1)].map(csvCell).join(','));
   }
-  return lines.join('\n') + '\n';
+  return reportCsv(language,lines.join('\n') + '\n');
 }
 
 /* ============================== retention ============================== */

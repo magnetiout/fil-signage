@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
 
 import { getLocale, message as t, messageCount as tn } from '../i18n.js';
@@ -170,8 +171,8 @@ export function renderWorkspaceSwitcher(me, remoteOrgs = []) {
      * remote org has its own organisation name too, both appear: "Acme Retail · Acme HQ Server"
      * answers "which customer" and "on which box" in one line.
      */
-    organization_name: [o.organizationName, o.serverName || `server ${String(o.nodeId).slice(0, 8)}`]
-      .filter(Boolean).join(' · ') + (o.stale ? t("ui.workspace_switcher.not_reachable_5a827e") : ''),
+    organization_name: displayList([[o.organizationName, o.serverName || `server ${String(o.nodeId).slice(0, 8)}`]
+      .filter(Boolean).join(' · '),o.stale ? t("ui.workspace_switcher.not_reachable_5a827e") : ''],''),
   }));
   const list = [...local, ...remote];
   const picked = selectedRemoteOrg();

@@ -20,7 +20,7 @@ const FRONTEND = path.join(__dirname, '..', '..', 'frontend', 'js');
 const EN = fs.readFileSync(path.join(FRONTEND, 'i18n', 'en.js'), 'utf8');
 
 // Keys defined in en.js, as written: 'some.key': '...'
-const defined = new Set([...EN.matchAll(/^\s*'([^']+)'\s*:/gm)].map(m => m[1]));
+const defined = new Set(Object.keys(require(path.join(FRONTEND,'i18n/en.js')).default));
 
 function sourceFiles(dir) {
   const out = [];
@@ -111,7 +111,7 @@ test('a locale never defines a key that English does not', () => {
   // it without speaking the language. Missing keys are the other direction - see below.
   for (const locale of ACTIVE_LOCALES) {
     const src = fs.readFileSync(path.join(FRONTEND, 'i18n', `${locale}.js`), 'utf8');
-    const keys = new Set([...src.matchAll(/^\s*'([^']+)'\s*:/gm)].map(m => m[1]));
+    const keys = new Set(Object.keys(require(path.join(FRONTEND,'i18n',`${locale}.js`)).default));
     assert.deepEqual([...keys].filter(k => !defined.has(k)), [],
       `${locale}.js defines keys that do not exist in en.js`);
   }
@@ -133,7 +133,7 @@ test('translation coverage is reported, but an untranslated string is not a buil
   // the help tips, and they have their own test above, which does fail.
   for (const locale of ACTIVE_LOCALES) {
     const src = fs.readFileSync(path.join(FRONTEND, 'i18n', `${locale}.js`), 'utf8');
-    const keys = new Set([...src.matchAll(/^\s*'([^']+)'\s*:/gm)].map(m => m[1]));
+    const keys = new Set(Object.keys(require(path.join(FRONTEND,'i18n',`${locale}.js`)).default));
     const missing = [...defined].filter(k => !keys.has(k));
     const pct = ((defined.size - missing.length) / defined.size * 100).toFixed(1);
     console.log(`      ${locale}: ${defined.size - missing.length}/${defined.size} (${pct}%)` +

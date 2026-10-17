@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import {getLocale} from '../i18n.js';
 import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
 
@@ -184,7 +185,7 @@ export async function openDeviceMoveDialog(deviceIds, { currentWorkspaceId, onMo
       const orgNotice = otherOrg ? `<div class="corp-notice corp-notice-warn">${uiText(t('move.other_org', { org: otherOrg.name }))}
           <label class="corp-check" style="display:flex;gap:8px;margin-top:8px"><input type="checkbox" id="moveOrgAck"> ${uiText(t('move.other_org_ack'))}</label></div>` : '';
       const plan = pv.plan_warning ? `<div class="corp-notice corp-notice-warn">${uiText(t('move.plan_warning', { plan: pv.plan_warning.plan, after: pv.plan_warning.devices_after, limit: pv.plan_warning.devices_limit }))}</div>` : '';
-      const storage = refused ? `<div class="corp-notice corp-notice-danger">${uiText(pv.storage_refusal.error)}</div>` : '';
+      const storage = refused ? `<div class="corp-notice corp-notice-danger">${uiText(storedErrorMessage(pv.storage_refusal.error))}</div>` : '';
       box.innerHTML = `${orgNotice}${plan}${storage}${headOfficeSummary(pv.screens)}
         ${bring.checked && hasOwn ? broughtSummary(pv.screens) : ''}${droppedSummary(pv.screens)}
         ${cui.storeTriggerImpactHtml(impact, s && s.store_triggers_under_mandate, { ackId: 'moveTrigAck' })}`;

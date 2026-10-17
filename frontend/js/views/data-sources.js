@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {storedErrorMessage} from '../api.js';
 import { renderHTML, uiText, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t, getAvailableLanguages } from '../i18n.js';
@@ -229,7 +231,7 @@ function renderDataSourceCard(ds) {
         <div><dt>${uiText(t('data_sources.source_label2'))}</dt><dd title="${esc(sourceSummary(ds))}">${uiText(sourceSummary(ds))}</dd></div>
         <div><dt>${uiText(t('data_sources.last_sync_label2'))}</dt><dd>${uiText(relTime(ds.last_fetched_at))}</dd></div>
       </dl>
-      ${renderHTML(ds.last_error ? `<div class="ds-card-error" role="alert">${uiText(ds.last_error)}</div>` : '')}
+      ${renderHTML(ds.last_error ? `<div class="ds-card-error" role="alert">${uiText(storedErrorMessage(ds.last_error))}</div>` : '')}
       <button class="ds-vars-toggle" data-act="toggle-variables" data-id="${esc(ds.id)}" aria-expanded="false" aria-controls="vars-drawer-${esc(ds.id)}">
         <span>${uiText(t('data_sources.variables_n', { n: nVars }))}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
@@ -339,7 +341,7 @@ function formHtml(type, cfg, isEdit) {
         <b>${uiText(t('data_sources.sheets_steps_title'))}</b>
         <ol><li>${uiText(t('data_sources.sheets_step1'))}</li><li>${uiText(t('data_sources.sheets_step2'))}</li><li>${uiText(t('data_sources.sheets_step3'))}</li></ol>
       </div>
-      ${renderHTML(field(t('data_sources.sheets_url') + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0" value="${v('url')}">`, `<span id="f_url_status">${uiText(t('data_sources.sheets_url_hint'))}</span>`))}
+      ${renderHTML(field(displayList([t('data_sources.sheets_url'),' *'],''), `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0" value="${v('url')}">`, `<span id="f_url_status">${uiText(t('data_sources.sheets_url_hint'))}</span>`))}
       <div class="ds-row2">
         ${renderHTML(field(t('data_sources.sheets_tab'), `<input id="f_sheet" class="input" maxlength="100" placeholder="${esc(t('data_sources.sheets_tab_ph'))}" data-fil-i18n-placeholder="${binding('data_sources.sheets_tab_ph', undefined)}" value="${v('sheet')}">`))}
         ${renderHTML(field(t('data_sources.sheets_range'), `<input id="f_range" class="input" maxlength="20" placeholder="A1:D50" value="${v('range')}">`))}
@@ -348,7 +350,7 @@ function formHtml(type, cfg, isEdit) {
     case 'rest': return `
       <div class="ds-row-url">
         ${renderHTML(field(t('data_sources.method'), `<select id="f_method" class="input">${renderHTML(opt('GET', 'GET', cfg.method || 'GET'))}${renderHTML(opt('POST', 'POST', cfg.method))}</select>`, '', 'ds-method'))}
-        ${renderHTML(field(t('data_sources.api_url') + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.example.com/v1/stats" value="${v('url')}">`))}
+        ${renderHTML(field(displayList([t('data_sources.api_url'),' *'],''), `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.example.com/v1/stats" value="${v('url')}">`))}
       </div>
       ${renderHTML(field(t('data_sources.body'), `<textarea id="f_body" class="input ds-mono" rows="3" spellcheck="false" ${translatedAttribute("placeholder", "ui.data_sources.placeholder_query_open_tickets_21b26c")}>${renderHTML(v('body'))}</textarea>`, t('data_sources.body_hint'), 'ds-post-only'))}
       <fieldset class="ds-fieldset">
@@ -377,7 +379,7 @@ function formHtml(type, cfg, isEdit) {
       ${field(esc(t('data_sources.delimiter')), `<select id="f_delim" class="input">${renderHTML([['auto', t('data_sources.delim_auto')], [',', t('data_sources.delim_comma')], [';', t('data_sources.delim_semicolon')], ['tab', t('data_sources.delim_tab')], ['|', t('data_sources.delim_pipe')]].map(([a, b]) => opt(a, b, cfg.delimiter || 'auto')).join(''))}</select>`)}
       ${tableOptions(cfg, [1, 5, 15, 60])}`;
     case 'rss': return `
-      ${renderHTML(field(t('data_sources.feed_url') + ' *', `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.githubstatus.com/history.rss" value="${v('url')}">`, t('data_sources.feed_url_hint')))}
+      ${renderHTML(field(displayList([t('data_sources.feed_url'),' *'],''), `<input id="f_url" class="input" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.githubstatus.com/history.rss" value="${v('url')}">`, t('data_sources.feed_url_hint')))}
       <div class="ds-row3">
         ${renderHTML(field(t('data_sources.max_items'), `<input id="f_items" class="input" type="number" min="1" max="50" value="${v('max_items', 10)}">`))}
         ${renderHTML(field(t('data_sources.summary_chars'), `<input id="f_chars" class="input" type="number" min="40" max="1000" step="20" value="${v('summary_chars', 200)}">`))}
@@ -404,7 +406,7 @@ function formHtml(type, cfg, isEdit) {
         <span class="ds-field-hint">${uiText(t('pos.square_token_note'))}</span>
       </div>
       <div class="ds-row2">
-        ${renderHTML(field(t('pos.square_token') + (isEdit ? '' : ' *'), `<input id="f_token" class="input" type="password" autocomplete="new-password" spellcheck="false" placeholder="${esc(isEdit ? t('data_sources.secret_saved') : 'EAAA…')}">`))}
+        ${renderHTML(field(displayList([t('pos.square_token'),isEdit ? '' : ' *'],''), `<input id="f_token" class="input" type="password" autocomplete="new-password" spellcheck="false" placeholder="${esc(isEdit ? t('data_sources.secret_saved') : 'EAAA…')}">`))}
         ${renderHTML(field(t('pos.environment'), `<select id="f_env" class="input">${renderHTML(opt('production', t('pos.env_production'), cfg.environment || 'production'))}${renderHTML(opt('sandbox', t('pos.env_sandbox'), cfg.environment))}</select>`))}
       </div>
       ${renderHTML(field(t('pos.location'), `<select id="f_location" class="input">${renderHTML(opt('', t('pos.all_locations'), cfg.location_id || ''))}${renderHTML(cfg.location_id ? opt(cfg.location_id, cfg.location_name || cfg.location_id, cfg.location_id) : '')}</select>`, t('pos.location_hint')))}
@@ -417,7 +419,7 @@ function formHtml(type, cfg, isEdit) {
         <b>${uiText(t('pos.shopify_steps_title'))}</b>
         <ol><li>${uiText(t('pos.shopify_step1'))}</li><li>${uiText(t('pos.shopify_step2'))}</li><li>${uiText(t('pos.shopify_step3'))}</li></ol>
       </div>
-      ${renderHTML(field(t('pos.store_domain') + ' *', `<input id="f_store" class="input" autocomplete="off" spellcheck="false" ${translatedAttribute("placeholder", "ui.data_sources.placeholder_my_cafe_myshopify_com_3c39b9")} value="${v('store_domain')}">`, `<span id="f_store_status">${uiText(t('pos.store_domain_hint'))}</span>`))}
+      ${renderHTML(field(displayList([t('pos.store_domain'),' *'],''), `<input id="f_store" class="input" autocomplete="off" spellcheck="false" ${translatedAttribute("placeholder", "ui.data_sources.placeholder_my_cafe_myshopify_com_3c39b9")} value="${v('store_domain')}">`, `<span id="f_store_status">${uiText(t('pos.store_domain_hint'))}</span>`))}
       <fieldset class="ds-fieldset">
         <legend>${uiText(t('pos.connect_with'))}</legend>
         <div class="ds-seg" role="radiogroup" aria-label="${esc(t('pos.connect_with'))}" data-fil-i18n-aria-label="${binding('pos.connect_with', undefined)}">
@@ -606,7 +608,7 @@ function openEditModal(ds, presetType, opts = {}) {
     else specific = formHtml(type, typeCfg, isEdit);
     body.innerHTML = `
       <div class="ds-row2">
-        ${renderHTML(field(t('data_sources.name_label2') + ' *', `<input type="text" id="dsNameInput" class="input" maxlength="80" placeholder="${esc(t(`data_sources.name_ph.${type}`) === `data_sources.name_ph.${type}` ? t('data_sources.name_placeholder') : t(`data_sources.name_ph.${type}`))}" value="${esc((ds && ds.name) || '')}">`))}
+        ${renderHTML(field(displayList([t('data_sources.name_label2'),' *'],''), `<input type="text" id="dsNameInput" class="input" maxlength="80" placeholder="${esc(t(`data_sources.name_ph.${type}`) === `data_sources.name_ph.${type}` ? t('data_sources.name_placeholder') : t(`data_sources.name_ph.${type}`))}" value="${esc((ds && ds.name) || '')}">`))}
         ${renderHTML(field(t('data_sources.slug_label'), `<input type="text" id="dsSlugInput" class="input ds-mono" maxlength="60" placeholder="${esc(t('data_sources.slug_placeholder'))}" data-fil-i18n-placeholder="${binding('data_sources.slug_placeholder', undefined)}" value="${esc((ds && ds.slug) || '')}">`, `<span id="dsSlugHint"></span>`))}
       </div>
       <div class="ds-form">${renderHTML(specific)}</div>

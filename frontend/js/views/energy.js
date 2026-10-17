@@ -1,3 +1,4 @@
+import {getLocale} from '../i18n.js';
 import {displayRegion} from '../i18n.js';
 import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
@@ -133,7 +134,7 @@ async function download(kind) {
   const range = `start=${encodeURIComponent(state.start)}&end=${encodeURIComponent(state.end)}`;
   const path = kind === 'appendix' ? `appendix?${range}&download=1` : `export?${range}${kind === 'day' ? '&by=day' : ''}`;
   try {
-    const blob = await downloadEnergyFile(path);
+    const blob = await downloadEnergyFile(path,getLocale());
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = kind === 'appendix' ? `energy-appendix-${state.start}-to-${state.end}.txt` : `energy-${state.start}-to-${state.end}${kind === 'day' ? '-daily' : ''}.csv`;
@@ -371,7 +372,7 @@ async function loadOrg(app) {
     <button type="button" class="btn btn-secondary btn-sm" id="orgCsv">${uiText(t('energy.export_org'))}</button>`;
   host.querySelector('#orgCsv').addEventListener('click', async () => {
     try {
-      const blob = await downloadEnergyFile(`org/export?start=${encodeURIComponent(state.start)}&end=${encodeURIComponent(state.end)}`);
+      const blob = await downloadEnergyFile(`org/export?start=${encodeURIComponent(state.start)}&end=${encodeURIComponent(state.end)}`,getLocale());
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob); a.download = `energy-organization-${state.start}-to-${state.end}.csv`;
       document.body.appendChild(a); a.click(); a.remove();

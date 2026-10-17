@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import {errorMessage} from '../api.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, bindText } from '../lib/i18n-bindings.js';
 
@@ -89,7 +90,7 @@ function capture() {
 function roomDetails(r) {
   return `
     <div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:12px;display:grid;gap:8px">
-      ${renderHTML(r.last_error ? `<div style="font-size:12px;color:var(--danger,#b91c1c)">⚠️ ${uiText(r.last_error)}</div>` : '')}
+      ${renderHTML(r.last_error ? `<div style="font-size:12px;color:var(--danger,#b91c1c)">⚠️ ${uiText(storedErrorMessage(r.last_error))}</div>` : '')}
       ${renderHTML(canManage ? `
       <div class="form-group" style="margin:0"><label>${uiText(t('rooms.details'))}</label>
         <select id="rdDetails" class="input" style="background:var(--bg-input)">

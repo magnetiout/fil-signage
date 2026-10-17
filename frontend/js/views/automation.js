@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
@@ -159,7 +160,7 @@ export async function render(app) {
     <h3 style="font-size:15px;margin:12px 0 8px">${uiText(t('auto.subs_title'))}</h3>
     ${renderHTML(cache.subs.length ? `<div class="table-wrap"><table class="corp-table"><thead><tr><th>${uiText(t('auto.col.event'))}</th><th>${uiText(t('auto.col.receiver'))}</th><th>${uiText(t('auto.col.delivered'))}</th><th></th></tr></thead><tbody>
       ${renderHTML(cache.subs.map((s) => `<tr data-sub="${esc(s.id)}"><td>${uiText(EVENT_LABEL()[s.event] || s.event)}</td><td>${uiText(s.target_host)}${renderHTML(s.token_name ? ` <span class="corp-help">(${uiText(s.token_name)})</span>` : '')}</td>
-        <td>${renderHTML(t('auto.delivered', { ok: (s.deliveries || {}).ok || 0, failed: (s.deliveries || {}).failed || 0, pending: (s.deliveries || {}).pending || 0 }))}${renderHTML(s.last_error ? `<div style="color:#ca8a04;font-size:12px">${uiText(s.last_error)}</div>` : '')}</td>
+        <td>${renderHTML(t('auto.delivered', { ok: (s.deliveries || {}).ok || 0, failed: (s.deliveries || {}).failed || 0, pending: (s.deliveries || {}).pending || 0 }))}${renderHTML(s.last_error ? `<div style="color:#ca8a04;font-size:12px">${uiText(storedErrorMessage(s.last_error))}</div>` : '')}</td>
         <td><button class="btn btn-secondary btn-sm" data-unsub="${esc(s.id)}" style="color:var(--danger)">${uiText(t('auto.unsubscribe'))}</button></td></tr>`).join(''))}
       </tbody></table></div>` : `<p class="corp-help" style="font-size:13px">${uiText(t('auto.subs_empty'))}</p>`)}`;
 

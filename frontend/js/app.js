@@ -1,3 +1,4 @@
+import {isMessage} from './i18n.js';
 import { renderHTML, uiText, bindAttribute, bindMessage, bindText, binding } from './lib/i18n-bindings.js';
 import { installLocalizedNumberInput } from './components/localized-number-input.js';
 
@@ -123,7 +124,7 @@ import { api, meshCapability, setErrorTranslator } from './api.js';
 import { esc } from './utils.js';
 
 // Head office (corporate) refusals arrive with a code; show them in the viewer's language.
-setErrorTranslator(translatedMessage);
+setErrorTranslator(translatedMessage,isMessage);
 
 const app = document.getElementById('app');
 const sidebar = document.querySelector('.sidebar');

@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {displayQuantity} from '../i18n.js';
 import { uiText, renderHTML, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t } from '../i18n.js';
@@ -58,7 +60,7 @@ export async function openHistoryModal(type, id, { name = '', onChanged } = {}) 
           ${renderHTML(r.published_at && !r.is_live ? `<span style="color:var(--text-muted)">${uiText(t('history.published_at', { when: when(r.published_at) }))}</span>` : '')}
           ${renderHTML(r.submission ? `<span style="color:var(--text-muted)"> · ${uiText(t('review.status.' + r.submission.status))}</span>` : '')}</span>
         </div>
-        <div style="font-size:12px;color:var(--text-muted)">${uiText(actorLabel(r))} · ${uiText(when(r.created_at))}${renderHTML(r.is_baseline ? ' · ' + t('history.baseline_hint') : '')}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${uiText(actorLabel(r))} · ${uiText(when(r.created_at))}${renderHTML(r.is_baseline ? displayList([' · ',t('history.baseline_hint')],'') : '')}</div>
         <div style="margin-top:4px;display:flex;gap:6px">
           <button class="btn btn-secondary btn-sm" data-preview="${esc(r.id)}">${uiText(t('common.preview'))}</button>
           <button class="btn btn-secondary btn-sm" data-compare="${esc(r.id)}">${uiText(compareWith === r.id ? t('history.compare_selected') : t('history.compare'))}</button>
@@ -83,7 +85,7 @@ export async function openHistoryModal(type, id, { name = '', onChanged } = {}) 
         return;
       }
       if (type === 'content') {
-        body = `<div><strong>${uiText(st.filename || '')}</strong> <span style="color:var(--text-muted)">${uiText(st.mime_type || '')} · ${renderHTML(st.file_size ? Math.round(st.file_size / 1024) + ' KB' : '')}</span></div>`;
+        body = `<div><strong>${uiText(st.filename || '')}</strong> <span style="color:var(--text-muted)">${uiText(st.mime_type || '')} · ${renderHTML(st.file_size ? displayQuantity(Math.round(st.file_size/1024),'KB') : '')}</span></div>`;
         if (rev.has_file && /^image\//.test(st.mime_type || '')) {
           try { const url = await fetchRevisionFileUrl(type, id, revId); body += `<img src="${url}" style="max-width:100%;max-height:260px;border-radius:8px;margin-top:8px">`; } catch (e) { body += `<div class="corp-notice corp-notice-danger">${uiText((errorMessage(e)))}</div>`; }
         } else if (rev.has_file && /^video\//.test(st.mime_type || '')) {

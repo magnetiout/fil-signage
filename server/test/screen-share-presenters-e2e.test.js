@@ -172,6 +172,8 @@ async function guestPage(code, name, { phone = false } = {}) {
       try { Object.defineProperty(MediaDevices.prototype, 'getDisplayMedia', { value: undefined, configurable: true }); } catch (_) { /* */ }
     });
   } else page = await browser.newPage();
+  // This capability test asserts English copy; do not depend on the browser/profile default.
+  await page.evaluateOnNewDocument(() => { if(window.top===window)localStorage.setItem('rd_lang','en'); });
   await page.goto(`${BASE}/share?code=${code.replace('-', '')}`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#shareCode');
   await waitFor(() => page.evaluate(() => document.getElementById('shareCode').value), 5000, 'the code filled in from the link');

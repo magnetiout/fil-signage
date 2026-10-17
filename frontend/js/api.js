@@ -23,10 +23,33 @@ export function browserTimezone() {
  * i18n import would drag navigator/locale state into every one of them.
  */
 let translate = null;
-export function setErrorTranslator(fn) { translate = typeof fn === 'function' ? fn : null; }
+let isTranslatedMessage=()=>false;
+export function setErrorTranslator(fn,predicate) { translate = typeof fn === 'function' ? fn : null;isTranslatedMessage=typeof predicate==='function'?predicate:()=>false; }
+
+// Only owned backend diagnostics/consent text call this adapter; never user notes/content.
+function patternedSystemMessage(value) {
+  if(!translate||typeof value!=='string')return null;
+  let m;
+  if((m=/^It may use up to ([0-9]{1,16}(?:\.[0-9]{1,6})?) (bytes|KB|MB|GB|TB) of storage on this server\.$/.exec(value)))return translate('system.storage_budget',{size:Number(m[1]),unit:m[2]==='bytes'?translate('system.unit.bytes'):m[2]});
+  if((m=/^The file has more than ([0-9]{1,10}) rows\. Upload fewer days at a time\.$/.exec(value)))return translate('system.csv.row_limit',{count:Number(m[1])});
+  if((m=/^The first row must name the columns: location, date, hour, value \(missing: ([a-z_, ]{1,100})\)\.$/.exec(value)))return translate('system.csv.missing_columns',{columns:m[1]});
+  if((m=/^"([^\r\n]{1,255})" is not one of this test's locations\.$/.exec(value)))return translate('system.csv.location_unknown',{location:m[1]});
+  if((m=/^The file is ([0-9]+)x([0-9]+); it must be at least ([0-9]+) pixels (wide|high)$/.exec(value)))return translate(m[4]==='wide'?'system.file.min_width':'system.file.min_height',{width:Number(m[1]),height:Number(m[2]),min:Number(m[3])});
+  if((m=/^The file is ([0-9]+)x([0-9]+); it must have a ([0-9.:]{1,24}) shape$/.exec(value)))return translate('system.file.aspect',{width:Number(m[1]),height:Number(m[2]),aspect:m[3]});
+  if((m=/^The video is ([0-9.]+) seconds; this form takes at most ([0-9.]+)$/.exec(value)))return translate('system.file.video_length',{seconds:Number(m[1]),max:Number(m[2])});
+  return null;
+}
+export function systemMessage(value) {
+  if(!value)return '';
+  if(isTranslatedMessage(value))return value;
+  if(!translate)return value;
+  return patternedSystemMessage(value)||translate(serverMessageKeys[value]||'system.details_unavailable');
+}
 
 export function localizeServerError(message, status = 400) {
+  if(isTranslatedMessage(message))return message;
   if (!translate) return message || 'Request failed';
+  const patterned=patternedSystemMessage(message);if(patterned)return patterned;
   const unsupported=typeof message==='string' && /^Unsupported file type \(([^\r\n]{1,255})\) — only image, video and audio files are accepted\. Nothing in this upload was added\.$/.exec(message);
   if(unsupported)return translate('api.upload.unsupported_file',{name:unsupported[1]});
   const key = serverMessageKeys[message];
@@ -37,6 +60,8 @@ export function localizeServerError(message, status = 400) {
 }
 
 // Keep technical Error.message/status/code for diagnostics and localize only its UI presentation.
+export function storedErrorMessage(value,status=400) { return value ? localizeServerError(value,status) : ''; }
+
 export function errorMessage(error) { return error?.uiMessage || localizeServerError(error?.message,error?.status); }
 
 export function requestError(status, body) {
@@ -77,6 +102,9 @@ export function getAuthHeaders() {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+
+// Explicit report locale; machine/API clients keep their default English contract.
+export function getReportHeaders(language='en') { return {...getAuthHeaders(),'Accept-Language':/^tr(?:-|$)/i.test(language)?'tr-TR':'en-US'}; }
 
 /*
  * ⚠️ WHEN A REMOTE ORG IS SELECTED, READS GO TO THAT SERVER — transparently, so a view does not
@@ -1154,15 +1182,15 @@ export const api = {
  * The store-slots compliance report as a CSV download. A bearer header cannot ride on an <a href>,
  * so it is fetched and handed to the browser as a blob.
  */
-export async function downloadSlotReportCsv(problemsOnly) {
-  const r = await fetch(`${API_BASE}/corporate/reports/slots?format=csv${problemsOnly ? '&problems=1' : ''}`, { headers: getAuthHeaders() });
+export async function downloadSlotReportCsv(problemsOnly,language='en') {
+  const r = await fetch(`${API_BASE}/corporate/reports/slots?format=csv${problemsOnly ? '&problems=1' : ''}`, { headers: getReportHeaders(language) });
   if (!r.ok) throw requestError(r.status, await r.json().catch(() => ({})));
   return r.blob();
 }
 
 /** 3.0 energy: an authenticated download (CSV / appendix text) from /api/energy/<path>, as a blob. */
-export async function downloadEnergyFile(pathAndQuery) {
-  const r = await fetch(`${API_BASE}/energy/${pathAndQuery}`, { headers: getAuthHeaders() });
+export async function downloadEnergyFile(pathAndQuery,language='en') {
+  const r = await fetch(`${API_BASE}/energy/${pathAndQuery}`, { headers: getReportHeaders(language) });
   if (!r.ok) throw requestError(r.status, await r.json().catch(() => ({})));
   return r.blob();
 }

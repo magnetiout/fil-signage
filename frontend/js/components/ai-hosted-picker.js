@@ -82,7 +82,7 @@ export async function mountHostedPicker(el) {
       </label>
       ${renderHTML(path === 'hosted' ? `
         <select id="aiModelSel" class="input" style="margin:0;padding:3px 6px;font-size:12px;max-width:380px" ${translatedAttribute("title", "ui.ai_hosted_picker.title_model_resolution_and_quality_each_row_shows_9eee63")}>
-          ${renderHTML(status.catalog.map((r) => `<option value="${esc(keyOf(r))}" ${keyOf(r) === choice ? 'selected' : ''}>${uiText(formatRow(r))}${renderHTML(keyOf(r) === hi ? ' (cheapest)' : '')}${renderHTML(status.balance < r.credits ? t('ui.ai_hosted_picker.insufficient') : '')}</option>`).join(''))}
+          ${renderHTML(status.catalog.map((r) => `<option value="${esc(keyOf(r))}" ${keyOf(r) === choice ? 'selected' : ''}>${uiText(formatRow(r))}${renderHTML(keyOf(r) === hi ? t('ai.model_lowest_cost_suffix') : '')}${renderHTML(status.balance < r.credits ? t('ui.ai_hosted_picker.insufficient') : '')}</option>`).join(''))}
         </select>
         <span style="font-size:12px;color:${afford ? 'var(--text-muted)' : 'var(--danger, #e05252)'}">
           ${renderHTML(t(status.included_remaining?'ui.ai_hosted_picker.balance_included':'ui.ai_hosted_picker.balance',{balance:status.balance,included:status.included_remaining}))}

@@ -66,8 +66,8 @@ export function formatSize(bytes) {
   if (!bytes) return '';
   if (bytes >= 1073741824) return displayQuantity((bytes / 1073741824),'GB',1);
   if (bytes >= 1048576) return displayQuantity((bytes / 1048576),'MB',1);
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${bytes} B`;
+  if (bytes >= 1024) return displayQuantity(Math.round(bytes/1024),'KB');
+  return displayQuantity(bytes,'B');
 }
 
 /** Where a no-bytes item comes from, for the line under its name. */

@@ -1,3 +1,4 @@
+import {translatedAttribute} from '../../lib/i18n-bindings.js';
 import {localizeServerError} from '../../api.js';
 import { uiText, renderHTML, attributeBinding, binding } from '../../lib/i18n-bindings.js';
 
@@ -189,7 +190,7 @@ function renderTray() {
           ${renderHTML(it.state === 'failed' ? `<button type="button" class="btn btn-secondary btn-sm" data-act="retry" data-item="${it.id}" aria-label="${esc(t('library.upload.retry_named', { name: it.file.name }))}" data-fil-i18n-aria-label="${binding('library.upload.retry_named', { name: it.file.name })}">${uiText(t('library.upload.retry'))}</button>` : '')}
           ${renderHTML(!live ? `<button type="button" class="lib-icon-btn" data-act="dismiss" data-item="${it.id}" aria-label="${esc(t('library.upload.dismiss_named', { name: it.file.name }))}" data-fil-i18n-aria-label="${binding('library.upload.dismiss_named', { name: it.file.name })}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : '')}
         </div>
-        ${renderHTML(it.state === 'uploading' || it.state === 'processing' ? `<div class="lib-progress" role="progressbar" aria-label="${esc(it.file.name)}"${attributeBinding("aria-label", it.file.name)} aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"${it.state === 'processing' ? ' aria-valuetext="' + esc(t('library.upload.processing')) + '"' : ''}><div class="lib-progress-fill${it.state === 'processing' ? ' is-indeterminate' : ''}" style="width:${it.state === 'processing' ? 100 : pct}%"></div></div>` : '')}
+        ${renderHTML(it.state === 'uploading' || it.state === 'processing' ? `<div class="lib-progress" role="progressbar" aria-label="${esc(it.file.name)}"${attributeBinding("aria-label", it.file.name)} aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"${it.state === 'processing' ? translatedAttribute('aria-valuetext','library.upload.processing') : ''}><div class="lib-progress-fill${it.state === 'processing' ? ' is-indeterminate' : ''}" style="width:${it.state === 'processing' ? 100 : pct}%"></div></div>` : '')}
         <div class="lib-tray-meta"><span class="lib-dot is-${it.state === 'ready' ? 'ok' : it.state === 'failed' ? 'bad' : it.state === 'cancelled' ? 'muted' : 'busy'}" aria-hidden="true"></span>${uiText(stateText(it))}${renderHTML(it.folderLabel ? ` · ${esc(t('library.upload.to_folder', { folder: it.folderLabel }))}` : '')}</div>
       </li>`;
     }).join(''))}</ul>`)}`;

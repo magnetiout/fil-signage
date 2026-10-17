@@ -1,3 +1,5 @@
+import {getLocale} from '../i18n.js';
+import {getReportHeaders} from '../api.js';
 import { renderHTML, uiText } from '../lib/i18n-bindings.js';
 import { localizedError, displayValue, message as t } from '../i18n.js';
 
@@ -239,7 +241,7 @@ function bars(id, data) {
 
 async function downloadCsv() {
   try {
-    const r = await fetch(`/api/audience/export.csv?${rangeQs()}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+    const r = await fetch(`/api/audience/export.csv?${rangeQs()}`, { headers:getReportHeaders(getLocale()) });
     if (!r.ok) throw localizedError(localizeServerError((await r.json().catch(() => ({}))).error) || t("ui.audience.request_failed_value0_ad6dc0", {value0: r.status}));
     const url = URL.createObjectURL(await r.blob());
     const a = document.createElement('a');

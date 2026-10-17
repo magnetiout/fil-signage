@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import { uiText, renderHTML, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
 /*
@@ -133,8 +134,8 @@ function rowsHtml(tp, f, rows) {
   const max = Number(f.max_rows) || 6;
   return `${rows.map((r, i) => `
     <div class="sign-row">
-      <input class="input sign-input" data-row-label="${i}" maxlength="60" value="${esc(r.label || '')}" placeholder="${esc(ph1)}"${attributeBinding("placeholder", ph1)} aria-label="${esc(ph1)} ${i + 1}">
-      <input class="input sign-input" data-row-value="${i}" maxlength="30" value="${esc(r.value || '')}" placeholder="${esc(ph2)}"${attributeBinding("placeholder", ph2)} aria-label="${esc(ph2)} ${i + 1}">
+      <input class="input sign-input" data-row-label="${i}" maxlength="60" value="${esc(r.label || '')}" placeholder="${esc(ph1)}"${attributeBinding("placeholder", ph1)} aria-label="${esc(displayList([ph1,i+1],' '))}"${attributeBinding('aria-label',displayList([ph1,i+1],' '))}>
+      <input class="input sign-input" data-row-value="${i}" maxlength="30" value="${esc(r.value || '')}" placeholder="${esc(ph2)}"${attributeBinding("placeholder", ph2)} aria-label="${esc(displayList([ph2,i+1],' '))}"${attributeBinding('aria-label',displayList([ph2,i+1],' '))}>
       <button type="button" class="btn btn-secondary sign-row-del" data-row-del="${i}" aria-label="${esc(t('signs.row_remove'))}" data-fil-i18n-aria-label="${binding('signs.row_remove', undefined)}" title="${esc(t('signs.row_remove'))}" data-fil-i18n-title="${binding('signs.row_remove', undefined)}">&times;</button>
     </div>`).join('')}
     ${rows.length < max ? `<button type="button" class="btn btn-secondary btn-sm" data-row-add>+ ${uiText(t('signs.row_add'))}</button>` : ''}`;

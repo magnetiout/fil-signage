@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import { renderHTML, uiText, binding } from '../lib/i18n-bindings.js';
 
 /*
@@ -320,7 +321,7 @@ export async function openScreenPreview(opts = {}) {
       ${renderHTML(targets ? `<div class="corp-row">
         <select id="corpPvScreen" class="input" style="flex:1">
           <option value="">${uiText(t('corp.preview.pick'))}</option>
-          ${renderHTML(targets.workspaces.map((w) => `<optgroup label="${esc(w.name)}">${renderHTML(w.devices.map((d) => `<option value="${esc(d.id)}">${uiText(d.name)}${renderHTML(d.wall_name ? ' — ' + t('corp.where.wall_member', { name: d.wall_name }) : '')}</option>`).join(''))}</optgroup>`).join(''))}
+          ${renderHTML(targets.workspaces.map((w) => `<optgroup label="${esc(w.name)}">${renderHTML(w.devices.map((d) => `<option value="${esc(d.id)}">${uiText(d.name)}${renderHTML(d.wall_name ? displayList([' — ',t('corp.where.wall_member', { name: d.wall_name })],'') : '')}</option>`).join(''))}</optgroup>`).join(''))}
         </select>
         ${renderHTML(opts.canDraft ? `<label class="corp-check"><input type="checkbox" id="corpPvDraft"> ${uiText(t('corp.preview.draft'))}</label>` : '')}
       </div>` : '')}
@@ -353,7 +354,7 @@ export function previewHtml(r) {
     : t('corp.preview.not_mandated');
   const skipped = (r.slots || []).filter((x) => x.outcome === 'skipped');
   return `
-    <div class="corp-help">${uiText(head)}${renderHTML(r.layout ? ' · ' + t('corp.preview.layout', { name: r.layout.name }) : '')}${renderHTML(r.draft ? ' · ' + t('corp.preview.draft_note') : '')}</div>
+    <div class="corp-help">${uiText(head)}${renderHTML(r.layout ? displayList([' · ',t('corp.preview.layout', { name: r.layout.name })],'') : '')}${renderHTML(r.draft ? displayList([' · ',t('corp.preview.draft_note')],'') : '')}</div>
     ${renderHTML((r.items || []).length ? `<ol class="corp-loop">${renderHTML(r.items.map((it) => `
       <li>${renderHTML(thumb(it))}<span class="corp-loop-name">${uiText(it.filename || t('common.unknown'))}</span>${renderHTML(tagOf(it))}<span class="corp-loop-sec">${uiText(formatSec(it.seconds != null ? it.seconds : it.duration_sec))}</span></li>`).join(''))}</ol>`
       : `<div class="corp-empty">${uiText(t('corp.preview.empty'))}</div>`)}

@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage, binding } from '../lib/i18n-bindings.js';
 
 import { errorMessage, api } from '../api.js';
@@ -80,7 +81,7 @@ function card(c) {
       ${renderHTML(stat(t('sitecache.served'), bytes(c.bytes_served)))}
       ${renderHTML(stat(t('sitecache.last_sync'), ago(c.last_sync_at)))}
     </div>
-    ${renderHTML(c.last_error ? `<div style="font-size:12px;color:#ca8a04;margin-top:8px">${uiText(c.last_error)}</div>` : '')}
+    ${renderHTML(c.last_error ? `<div style="font-size:12px;color:#ca8a04;margin-top:8px">${uiText(storedErrorMessage(c.last_error))}</div>` : '')}
     ${renderHTML(mixedContent(c) ? `<div class="corp-help" style="font-size:12px;margin-top:8px">${uiText(t('sitecache.mixed_content'))}</div>` : '')}
   </div>`;
 }

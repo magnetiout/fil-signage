@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import {builtinLayoutName, builtinZoneName} from '../lib/builtin-layout-labels.js';
 import { uiText, renderHTML, binding } from '../lib/i18n-bindings.js';
 
@@ -92,7 +93,7 @@ async function changeLayout(playlist, layoutId) {
 function zoneMapDialog(plan) {
   return new Promise((resolve) => {
     const zones = (plan.layout && plan.layout.zones) || [];
-    const option = (z, selected) => `<option value="${esc(z.id)}" ${selected ? 'selected' : ''}>${uiText(z.name)}${renderHTML(z.id === plan.main_zone_id ? ' ' + t('layoutpl.main_suffix') : '')}</option>`;
+    const option = (z, selected) => `<option value="${esc(z.id)}" ${selected ? 'selected' : ''}>${uiText(z.name)}${renderHTML(z.id === plan.main_zone_id ? displayList([' ',t('layoutpl.main_suffix')],'') : '')}</option>`;
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000';

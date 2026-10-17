@@ -1,3 +1,5 @@
+import {displayList, displayQuantity} from '../i18n.js';
+import {systemMessage} from '../api.js';
 import { messageCount as tn } from '../i18n.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding, bindText } from '../lib/i18n-bindings.js';
 
@@ -235,7 +237,7 @@ export async function render(container) {
     <div id="selfIdentity" class="settings-section"
          style="margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="color:var(--text-muted);font-size:13px">${renderHTML(t("ui.servers.this_server_is"))}</span>
-      <strong id="selfName" style="font-size:14px">${uiText(connect.nodeName || 'unnamed')}</strong>
+      <strong id="selfName" style="font-size:14px">${uiText(connect.nodeName || t('servers.unnamed'))}</strong>
       ${renderHTML(connect.nodeId ? idBadge(connect.nodeId) : '')}
       ${renderHTML(connect.nodeNameIsDefault ? `
         <span style="color:var(--text-muted);font-size:12px">
@@ -834,13 +836,13 @@ async function renderTopology(panel) {
           <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${colour};margin-right:6px"></span>${uiText(word)}</td>
         <td style="${TD}">${uiText(e.peerVersion || '—')}
           ${renderHTML(skew ? `<span class="corp-chip corp-chip-hq">${renderHTML(t("ui.servers.skew_fd1478"))}</span>` : '')}</td>
-        <td style="${TD};font-size:12px">${uiText((e.grant || []).join(', ') || 'nothing')}</td>
+        <td style="${TD};font-size:12px">${uiText((e.grant || []).length ? displayList(e.grant.map(id=>GRANTS.find(row=>row[0]===id)?.[1]||id)) : t('servers.no_grants'))}</td>
         <td style="${TD};font-size:12px">${uiText(e.transportDirection || '')}
           ${renderHTML(e.tlsVerify === false
             // ⚠️ Surfaced, not hidden. An edge with certificate checking off is a decision somebody
             // made once and nobody revisits unless a screen shows it.
             ? `<span class="corp-chip corp-chip-emergency">${renderHTML(t("ui.servers.tls_unverified_29eb25"))}</span>` : '')}</td>
-        <td style="${TD}">${uiText(e.lastSyncAt ? hhmm(e.lastSyncAt) : 'never')}</td>
+        <td style="${TD}">${uiText(e.lastSyncAt ? hhmm(e.lastSyncAt) : t('servers.last_sync_never'))}</td>
         <!-- ⚠️ The parent can end it too. The node HOLDING a copy must be able to stop holding it
              (consent from below, read from this side); waiting a year for the pairing token is
              not a control. Same retain-and-mark-stale outcome as the child's own Revoke. -->
@@ -904,7 +906,7 @@ async function renderTopology(panel) {
       if (!window.confirm(t('ui.mesh.disconnect_confirm'))) return;
       try {
         const r = await api.delete(`/mesh/links/${encodeURIComponent(nodeId)}`);
-        showToast(r.summary || t("ui.servers.disconnected_f8fa2a"), 'success');
+        showToast(systemMessage(r.summary) || t("ui.servers.disconnected_f8fa2a"), 'success');
         renderTopology(panel);
       } catch (e) { showToast(errorMessage(e), 'error'); }
     });
@@ -1026,8 +1028,7 @@ async function renderScopeBox(panel) {
 
   const list = data.workspaces || [];
   if (!list.length) {
-    box.innerHTML = '<p style="color:var(--text-muted);font-size:12px">' +
-      'You do not administer any workspaces on this server, so there is nothing you can share.</p>';
+    box.innerHTML = `<p style="color:var(--text-muted);font-size:12px">${uiText(t('servers.no_shareable_workspaces'))}</p>`;
     return;
   }
 
@@ -1098,21 +1099,21 @@ function writeGrantBlock(u, caps) {
         <input type="checkbox" data-wcat="${esc(name)}" ${granted.includes(name) ? 'checked' : ''}
                ${unavailable ? 'disabled' : ''} style="margin-top:3px">
         <span>
-          <strong>${uiText(meta.summary || name)}</strong>
+          <strong>${uiText(meta.summary ? systemMessage(meta.summary) : name)}</strong>
           ${renderHTML(unavailable ? ` <span class="corp-chip">${renderHTML(t("ui.servers.not_supported_yet_4c3b3f"))}</span>` : '')}
-          <br><span style="color:var(--text-muted);font-size:12px">${uiText(meta.consequence || '')}</span>
+          <br><span style="color:var(--text-muted);font-size:12px">${uiText(systemMessage(meta.consequence))}</span>
         </span>
       </label>`;
   }).join('');
 
   return `
     <details class="mesh-write-grant" data-edge="${esc(u.edgeId)}" style="margin-top:10px" ${granted.length ? 'open' : ''}>
-      <summary style="cursor:pointer;font-size:13px">${renderHTML(t("ui.servers.what_this_server_may_change_here_71dc27", {value2: state}))}</summary>
+      <summary style="cursor:pointer;font-size:13px">${renderHTML(t('servers.write_permissions_title'))} ${renderHTML(state)}</summary>
 
       <div style="margin-top:10px;padding:10px;border:1px solid var(--border);border-radius:6px">
         ${renderHTML(granted.length ? `
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
-            ${renderHTML((u.writeGrantExplained || []).map((line) => esc(line)).join('<br>'))}
+            ${renderHTML((u.writeGrantExplained || []).map((line) => uiText(systemMessage(line))).join('<br>'))}
             ${renderHTML(hasBudget ? `<br>${renderHTML(t('ui.servers.storage_used',{used:fmtBytes(u.writeBytesUsed),total:fmtBytes(u.writeBytesBudget),pct}))}` : '')}
           </div>` : '')}
 
@@ -1124,7 +1125,7 @@ function writeGrantBlock(u, caps) {
           ${renderHTML(t("ui.servers.storage_it_may_use_for_content_it_b3befc"))}
           <input class="input" type="number" min="1" step="1" data-wbudget
                  value="${hasBudget ? Math.max(1, Math.round(u.writeBytesBudget / (1024 ** 3))) : ''}"
-                 placeholder="e.g. 20" style="max-width:120px;margin-left:8px"> GB
+                 ${translatedAttribute('placeholder','servers.budget_placeholder')} style="max-width:120px;margin-left:8px"> GB
         </label>
         <!-- ⚠️ Says why the number is compulsory. An operator asked only "whose screens" answers
              "how much of my disk" by default, and the default would be all of it. -->
@@ -1182,10 +1183,10 @@ function writeGrantBlock(u, caps) {
 /** Bytes for humans. Mirrors grants.describeBytes on the server so both sides read the same. */
 function fmtBytes(n) {
   const v = Number(n) || 0;
-  if (v <= 0) return 'nothing';
+  if (v <= 0) return t('servers.storage_unused');
   const GB = 1024 ** 3; const MB = 1024 ** 2;
-  if (v >= GB) return `${Math.round((v / GB) * 10) / 10} GB`;
-  if (v >= MB) return `${Math.round(v / MB)} MB`;
+  if (v >= GB) return displayQuantity(Math.round((v / GB) * 10) / 10,'GB');
+  if (v >= MB) return displayQuantity(Math.round(v / MB),'MB');
   return t("ui.servers.value0_bytes_f47137", {value0: v});
 }
 
@@ -1198,7 +1199,7 @@ async function renderConnect(panel, caps) {
       <!-- ⚠️ The NAME leads and the id follows. The name is what the other side will see in its
            switcher once these two are paired, so it is the field an operator should read before
            handing a code over — not the UUID, which nobody recognises. -->
-      <p style="font-size:14px;margin:0 0 4px"><strong>${uiText(caps.nodeName || 'unnamed')}</strong></p>
+      <p style="font-size:14px;margin:0 0 4px"><strong>${uiText(caps.nodeName || t('servers.unnamed'))}</strong></p>
       <p style="color:var(--text-muted);font-size:12px">${renderHTML(t('ui.servers.identity_help'))}
         ${renderHTML(caps.nodeId ? idBadge(caps.nodeId) : `<span class="corp-chip">${renderHTML(t("ui.servers.not_assigned_yet_00c790"))}</span>`)}</p>
     </div>
@@ -1226,18 +1227,18 @@ async function renderConnect(panel, caps) {
            back off would be a way to hide an MSP relationship from the client. -->
       ${renderHTML(uplinks.map((u) => `
         <div style="padding:12px 0;border-bottom:1px solid var(--border)">
-          <div><strong>${uiText(u.parentName || `server ${String(u.parentNodeId || '').slice(0, 8)}`)}</strong>
+          <div><strong>${uiText(u.parentName || t('servers.peer_fallback',{id:String(u.parentNodeId||'').slice(0,8)}))}</strong>
             ${renderHTML(idBadge(u.parentNodeId))}
             ${renderHTML(u.revoked ? `<span class="corp-chip">${renderHTML(t("ui.servers.severed_6ea181"))}</span>` : '')}</div>
           <div style="color:var(--text-muted);font-size:12px;margin-top:4px">
             ${uiText(u.parentUrl || '')}<br>
-            ${renderHTML(t("ui.servers.shares_ed7f70", {value4: (u.sharing || []).join(', ') || 'nothing'}))}<br>
+            ${renderHTML(t("ui.servers.shares_ed7f70", {value4: (u.sharing||[]).length ? displayList(u.sharing.map(id=>GRANTS.find(row=>row[0]===id)?.[1]||id)) : t('servers.no_grants')}))}<br>
             ${renderHTML(t('nav.workspaces'))}: ${renderHTML(u.sharedWorkspaces === null || u.sharedWorkspaces === undefined
               // ⚠️ Spelled out. An empty list here would read as "nothing is shared", which is the
               // opposite of what null means.
               ? `<strong>${renderHTML(t("ui.servers.all_including_any_created_later_0e45bb"))}</strong>`
-              : esc(String(u.sharedWorkspaces.length)) + ' selected')}<br>
-            ${renderHTML(t("ui.servers.last_synced_2dcca9", {value6: u.lastSyncAt ? (hhmm(Math.floor(u.lastSyncAt / 1000))) : 'never'}))}
+              : t('servers.workspaces_selected',{n:u.sharedWorkspaces.length}))}<br>
+            ${renderHTML(t("ui.servers.last_synced_2dcca9", {value6: u.lastSyncAt ? (hhmm(Math.floor(u.lastSyncAt / 1000))) : t('servers.last_sync_never')}))}
           </div>
           ${renderHTML(u.revoked ? '' : writeGrantBlock(u, caps))}
           ${renderHTML(u.revoked ? '' :
@@ -1277,7 +1278,7 @@ async function renderConnect(panel, caps) {
     btn.addEventListener('click', async () => {
       try {
         const r = await api.delete(`/mesh/uplink/${encodeURIComponent(btn.dataset.sever)}`);
-        showToast(r.note || t("ui.servers.stopped_reporting_bcb2c4"));
+        showToast(systemMessage(r.note) || t("ui.servers.stopped_reporting_bcb2c4"));
         renderConnect(panel, await api.get('/mesh/capabilities'));
       } catch (e) { showToast(errorMessage(e), 'error'); }
     });
@@ -1325,8 +1326,8 @@ async function renderConnect(panel, caps) {
        * where the rule is enforced, so they cannot drift out of step with what was actually
        * granted — and this is the sentence the operator is agreeing to.
        */
-      showToast(r.note || t("ui.servers.saved_9d4af6"));
-      out.innerHTML = (r.consequences || []).map((c) => `<div style="font-size:12px">${uiText(c)}</div>`).join('');
+      showToast(systemMessage(r.note) || t("ui.servers.saved_9d4af6"));
+      out.innerHTML = (r.consequences || []).map((c) => `<div style="font-size:12px">${uiText(systemMessage(c))}</div>`).join('');
       renderConnect(panel, await api.get('/mesh/capabilities'));
     } catch (e) {
       out.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`;
@@ -1342,7 +1343,7 @@ async function renderConnect(panel, caps) {
       try {
         const r = await api.put(`/mesh/uplink/${encodeURIComponent(cb.dataset.shareup)}/share-upward`,
                                 { allow: cb.checked });
-        showToast(r.note || t("ui.servers.saved_9d4af6"));
+        showToast(systemMessage(r.note) || t("ui.servers.saved_9d4af6"));
       } catch (e) {
         cb.checked = !cb.checked;   // put it back: the server did not accept it
         showToast(errorMessage(e), 'error');
@@ -1368,9 +1369,9 @@ async function renderConnect(panel, caps) {
                <div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--border)">
                  <span style="flex:1">${uiText(i.filename || i.localId)}</span>
                  <span>${uiText(fmtBytes(i.bytes))}</span>
-                 <span class="corp-chip">${renderHTML(i.inUse ? t("ui.servers.in_use_096bc7") : 'unused')}</span>
+                 <span class="corp-chip">${renderHTML(i.inUse ? t("ui.servers.in_use_096bc7") : t('servers.content.unused'))}</span>
                </div>`).join(''))}</div>
-             <div style="margin-top:6px">${uiText(r.note || '')}</div>`
+             <div style="margin-top:6px">${uiText(systemMessage(r.note))}</div>`
           : `<div>${renderHTML(t("ui.servers.that_server_has_not_stored_anything_here"))}</div>`;
       } catch (e) {
         body.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`;
@@ -1389,15 +1390,15 @@ async function renderConnect(panel, caps) {
         body.innerHTML = rows.length
           ? `<div style="max-height:240px;overflow:auto">${renderHTML(rows.map((e) => `
               <div style="padding:4px 0;border-bottom:1px solid var(--border)">
-                <span class="corp-chip">${renderHTML(e.applied ? 'applied' : 'refused')}</span>
+                <span class="corp-chip">${renderHTML(e.applied ? t('servers.change.applied') : t('servers.change.refused'))}</span>
                 ${uiText(e.what)}
                 <div style="font-size:11px">${renderHTML(e.at ? esc(displayValue(new Date(e.at), "toLocaleString", undefined)) : '')}</div>
               </div>`).join(''))}</div>
-             <div style="margin-top:6px">${uiText(r.note || '')}</div>`
+             <div style="margin-top:6px">${uiText(systemMessage(r.note))}</div>`
           /* ⚠️ "Nothing yet" rather than an empty box — an empty panel reads as broken, and the
              answer "they have not changed anything" is a real and reassuring one. */
           : `<div>${renderHTML(t("ui.servers.that_server_has_not_changed_anything_here"))}</div>
-             <div style="margin-top:6px">${uiText(r.note || '')}</div>`;
+             <div style="margin-top:6px">${uiText(systemMessage(r.note))}</div>`;
       } catch (e) {
         body.innerHTML = `<span style="color:var(--danger)">${uiText((errorMessage(e)))}</span>`;
       }

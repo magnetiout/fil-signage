@@ -1,3 +1,6 @@
+import {displayList} from '../i18n.js';
+import {systemMessage} from '../api.js';
+import {storedErrorMessage} from '../api.js';
 import {getLocale} from '../i18n.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
@@ -560,9 +563,9 @@ async function loadSsoOnlyRequests() {
     <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
       <div><strong>${uiText(r.organization_name || r.organization_id)}</strong></div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
-        ${uiText(t('admin.sso_only.requested_by', { who: r.requested_by_email || 'unknown' }))}
+        ${uiText(t('admin.sso_only.requested_by', { who: r.requested_by_email || t('common.unknown') }))}
       </div>
-      ${renderHTML(r.reason ? `<div style="font-size:12px;margin-top:6px">${uiText(r.reason)}</div>` : '')}
+      ${renderHTML(r.reason ? `<div style="font-size:12px;margin-top:6px">${uiText(systemMessage(r.reason))}</div>` : '')}
       <div style="font-size:12px;color:var(--warning,#b45309);margin-top:8px">${uiText(t('admin.sso_only.effect'))}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
         <button class="btn btn-danger btn-sm" data-sso-approve="${esc(r.id)}">${uiText(t('admin.sso_only.approve'))}</button>
@@ -713,7 +716,7 @@ async function loadBranding() {
       <div class="form-group"><label>${renderHTML(t('admin.branding.bg_color'))}</label><input type="text" id="brBg" class="input" placeholder="#111827" value="${v(b.bg_color)}"></div>
       <div class="form-group" style="grid-column:1/-1"><label>${renderHTML(t('admin.branding.logo_url'))}</label><input type="text" id="brLogo" class="input" placeholder="https://…/logo.png" value="${v(b.logo_url)}"></div>
       <div class="form-group" style="grid-column:1/-1"><label>${renderHTML(t('admin.branding.favicon_url'))}</label><input type="text" id="brFavicon" class="input" placeholder="https://…/favicon.ico" value="${v(b.favicon_url)}"></div>
-      <div class="form-group" style="grid-column:1/-1"><label>${renderHTML(t('admin.branding.custom_css'))}</label><textarea id="brCss" class="input" rows="3" placeholder="/* optional */">${renderHTML(v(b.custom_css))}</textarea></div>
+      <div class="form-group" style="grid-column:1/-1"><label>${renderHTML(t('admin.branding.custom_css'))}</label><textarea id="brCss" class="input" rows="3" ${translatedAttribute('placeholder','admin.branding.css_optional')}>${renderHTML(v(b.custom_css))}</textarea></div>
       <label style="grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
         <input type="checkbox" id="brHide" ${b.hide_branding ? 'checked' : ''}> ${renderHTML(t('admin.branding.hide_branding'))}
       </label>
@@ -1062,7 +1065,7 @@ async function loadPlans() {
                 ${renderHTML(p.active ? '' : `<span style="margin-left:6px;font-size:10px;padding:1px 6px;border:1px solid var(--border);border-radius:8px;color:var(--text-muted)">${renderHTML(t('admin.plan_hidden'))}</span>`)}
               </td>
               <td style="padding:8px;text-align:right">${renderHTML(p.max_devices === -1 ? t('admin.unlimited') : p.max_devices)}</td>
-              <td style="padding:8px;text-align:right">${renderHTML(p.max_storage_mb === -1 ? t('admin.unlimited') : p.max_storage_mb >= 1024 ? (p.max_storage_mb/1024)+'GB' : p.max_storage_mb+'MB')}</td>
+              <td style="padding:8px;text-align:right">${renderHTML(p.max_storage_mb === -1 ? t('admin.unlimited') : p.max_storage_mb >= 1024 ? displayQuantity(p.max_storage_mb/1024,'GB') : displayQuantity(p.max_storage_mb,'MB'))}</td>
               <td style="padding:8px;text-align:right">${renderHTML(p.price_monthly > 0 ? displayValue(Number(p.price_monthly),'toLocaleString',{style:'currency',currency:'USD'}) : t('admin.free'))}</td>
               <td style="padding:8px;text-align:right">${renderHTML(p.price_yearly > 0 ? displayValue(Number(p.price_yearly),'toLocaleString',{style:'currency',currency:'USD'}) : '-')}</td>
               <td style="padding:8px;text-align:right${p.user_count ? ';font-weight:500' : ';color:var(--text-muted)'}">${renderHTML(p.user_count)}</td>
@@ -1486,7 +1489,7 @@ async function loadPlugins() {
       const pinBtn = p.allowlisted
         ? `<button class="btn btn-secondary btn-sm" data-plugin-unpin="${esc(p.id)}">${renderHTML(t('admin.plugins.unpin'))}</button>`
         : `<button class="btn btn-secondary btn-sm" data-plugin-pin="${esc(p.id)}">${renderHTML(t('admin.plugins.pin'))}</button>`;
-      const err = p.error ? `<div style="color:var(--danger);font-size:12px;margin-top:4px">${uiText(p.error)}</div>` : '';
+      const err = p.error ? `<div style="color:var(--danger);font-size:12px;margin-top:4px">${uiText(storedErrorMessage(p.error))}</div>` : '';
       const hash = p.allowlist_sha256 ? `<span style="font-family:monospace;font-size:11px">${uiText(p.allowlist_sha256.slice(0, 12))}…</span>` : '—';
       return `<tr>
         <td>${uiText(p.name || p.id)}${renderHTML(err)}</td>
@@ -1579,7 +1582,7 @@ async function loadPlugins() {
         });
         if (res.status === 409) {
           const e = await res.json().catch(() => ({}));
-          if (!window.confirm((e.error ? e.error + '\n\n' : '') + t('admin.plugins.replace_confirm'))) return;
+          if (!window.confirm(displayList([e.error ? e.error + '\n\n' : '',t('admin.plugins.replace_confirm')],''))) return;
           const res2 = await fetch(`/api/admin/plugins/submissions/${id}/approve`, {
             method: 'POST',
             headers: { ...headers, 'Content-Type': 'application/json' },

@@ -1,4 +1,6 @@
 'use strict';
+const {reportLanguage,reportText,reportLabel,reportCsv,turkishEnergyAppendix}=require('../lib/admin-report-i18n');
+
 
 /*
  * The hub's read-only API over mirrored state: Servers, remote screens, alerts, uptime.
@@ -588,7 +590,7 @@ module.exports = function meshRoutes(db, { requireAuth }) {
     const day = new Date(out.report.to * 1000).toISOString().slice(0, 10);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="uptime-${stem}-${day}.csv"`);
-    res.send(meshUptime.toCsv(out.report));
+    res.send(meshUptime.toCsv(out.report,reportLanguage(req,res)));
   });
 
   /**

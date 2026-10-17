@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import { uiText, renderHTML, bindMessage, attributeBinding, binding } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
@@ -218,7 +219,7 @@ export function mountPreviewAtTime(host, device) {
     const steps = sim.campaign && !sim.campaign.fallback ? sim.campaign.steps.map((s) => {
       const what = s.type === 'layout' ? t('campaign.step_layout', { name: s.label || '', zones: s.zones, items: s.items }) : (s.label || t('forecast.unnamed'));
       const reason = s.reason ? t(`forecast.item.${s.reason}`, { at: '', from: '', until: '' }) : t('forecast.item.plays');
-      return `<li class="${s.plays ? 'pat-on' : 'pat-off'}"><span class="pat-mark" aria-hidden="true">${renderHTML(s.plays ? '&#10003;' : '&#10005;')}</span><span class="pat-item-name">${uiText(what)}</span> <span class="pat-muted">${uiText(reason)}${renderHTML(s.duration_sec ? ' · ' + t('campaign.step_secs', { n: s.duration_sec }) : '')}</span></li>`;
+      return `<li class="${s.plays ? 'pat-on' : 'pat-off'}"><span class="pat-mark" aria-hidden="true">${renderHTML(s.plays ? '&#10003;' : '&#10005;')}</span><span class="pat-item-name">${uiText(what)}</span> <span class="pat-muted">${uiText(reason)}${renderHTML(s.duration_sec ? displayList([' · ',t('campaign.step_secs', { n: s.duration_sec })],'') : '')}</span></li>`;
     }).join('') : '';
     if (sim.campaign && sim.campaign.fallback) notes.push(t('campaign.forecast_fallback'));
     const triggers = (sim.triggers || []).map((tr) => `<li>${uiText(tr.name || t('forecast.unnamed'))}${renderHTML(tr.kind === 'emergency' ? ` <span class="pat-badge">${uiText(t('forecast.trigger_emergency'))}</span>` : '')}</li>`).join('');

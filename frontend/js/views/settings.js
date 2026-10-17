@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {storedErrorMessage} from '../api.js';
 import { renderHTML, uiText, translatedAttribute, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { localizedError, subscribe, displayValue, getLanguage, setLanguage, getAdminLanguages as getAvailableLanguages, message as t } from '../i18n.js';
@@ -709,7 +711,7 @@ export async function render(container) {
               <td style="padding:10px 12px">${uiText(tok.name || '')}</td>
               <td style="padding:10px 12px">${uiText(scopeLabel(tok.scope))}${
                 renderHTML(tok.scope === 'agency' && Array.isArray(tok.targets)
-                  ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${renderHTML(t('apitoken.targets_label'))} ${renderHTML(tok.targets.length ? tok.targets.map(p => esc(p.name)).join(', ') : '—')}${renderHTML(tok.auto_publish ? ' · ' + t('apitoken.auto_publish_on') : '')}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${renderHTML(t('apitoken.folder_label'))} ${renderHTML(tok.upload_folder ? esc(tok.upload_folder) : t('apitoken.folder_root'))}</div>`
+                  ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${renderHTML(t('apitoken.targets_label'))} ${renderHTML(tok.targets.length ? tok.targets.map(p => esc(p.name)).join(', ') : '—')}${renderHTML(tok.auto_publish ? displayList([' · ',t('apitoken.auto_publish_on')],'') : '')}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${renderHTML(t('apitoken.folder_label'))} ${renderHTML(tok.upload_folder ? esc(tok.upload_folder) : t('apitoken.folder_root'))}</div>`
                   : '')}</td>
               <td style="padding:10px 12px">${uiText(fmtTokenDate(tok.created_at))}</td>
               <td style="padding:10px 12px">${renderHTML(tok.last_used_at ? esc(fmtTokenDate(tok.last_used_at)) : t('apitoken.never'))}</td>
@@ -1381,7 +1383,7 @@ export async function render(container) {
                    rendered here, while the click handler wrote the live result into a second
                    element below it — so retrying showed the identical sentence twice, in two
                    different colours. The handler replaces this element's text instead. -->
-              <div id="ssoVerify-${esc(p.id)}-${di}" style="margin-top:4px;color:var(--danger,#b91c1c)">${renderHTML(d.verified ? '' : esc(d.last_error || ''))}</div>
+              <div id="ssoVerify-${esc(p.id)}-${di}" style="margin-top:4px;color:var(--danger,#b91c1c)">${renderHTML(d.verified ? '' : esc(storedErrorMessage(d.last_error || '')))}</div>
             </div>`).join(''))}
         </div>` : '')}
 

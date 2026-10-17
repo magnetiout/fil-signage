@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {getLocale} from '../i18n.js';
 import { uiText, renderHTML, binding, bindText } from '../lib/i18n-bindings.js';
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
 
@@ -272,7 +274,7 @@ async function mandateDialog(existing, playlists) {
     body: `
       <div class="form-group"><label>${uiText(t('corp.where.step_playlist'))}</label>
         <select id="mdPl" class="input" style="width:100%">
-          ${renderHTML(pickable.map((p) => `<option value="${esc(p.id)}" ${p.has_published ? '' : 'disabled'} ${existing && existing.playlist_id === p.id ? 'selected' : ''}>${uiText(p.name)}${renderHTML(p.has_published ? '' : ' — ' + t('corp.where.publish_first'))}</option>`).join(''))}
+          ${renderHTML(pickable.map((p) => `<option value="${esc(p.id)}" ${p.has_published ? '' : 'disabled'} ${existing && existing.playlist_id === p.id ? 'selected' : ''}>${uiText(p.name)}${renderHTML(p.has_published ? '' : displayList([' — ',t('corp.where.publish_first')],''))}</option>`).join(''))}
         </select>
         <label class="corp-check" style="margin-top:6px"><input type="checkbox" id="mdDark" ${existing && existing.dark ? 'checked' : ''}> ${uiText(t('corp.where.dark'))}</label>
         <div class="corp-help">${uiText(t('corp.where.dark_help'))}</div>
@@ -303,10 +305,10 @@ async function mandateDialog(existing, playlists) {
     if (k === 'org') opts = [`<option value="${esc(targets.organization_id)}">${uiText(targets.organization_name || t('corp.where.org'))}</option>`];
     else {
       opts = targets.workspaces.map((w) => {
-        if (k === 'workspace') return `<option value="${esc(w.id)}" ${w.replicated ? 'disabled' : ''}>${uiText(w.name)}${renderHTML(w.hq ? ' — ' + t('corp.where.hq_ws') : '')}${renderHTML(w.replicated ? ' — ' + t('corp.where.replicated') : '')}</option>`;
+        if (k === 'workspace') return `<option value="${esc(w.id)}" ${w.replicated ? 'disabled' : ''}>${uiText(w.name)}${renderHTML(w.hq ? displayList([' — ',t('corp.where.hq_ws')],'') : '')}${renderHTML(w.replicated ? displayList([' — ',t('corp.where.replicated')],'') : '')}</option>`;
         const list = k === 'group' ? w.groups : k === 'wall' ? w.walls : w.devices;
         if (!list.length) return '';
-        return `<optgroup label="${esc(w.name)}">${renderHTML(list.map((x) => `<option value="${esc(x.id)}" ${k === 'device' && x.wall_id ? 'disabled' : ''}>${uiText(x.name)}${renderHTML(k === 'device' && x.wall_id ? ' — ' + t('corp.where.wall_member', { name: x.wall_name || '' }) : '')}</option>`).join(''))}</optgroup>`;
+        return `<optgroup label="${esc(w.name)}">${renderHTML(list.map((x) => `<option value="${esc(x.id)}" ${k === 'device' && x.wall_id ? 'disabled' : ''}>${uiText(x.name)}${renderHTML(k === 'device' && x.wall_id ? displayList([' — ',t('corp.where.wall_member', { name: x.wall_name || '' })],'') : '')}</option>`).join(''))}</optgroup>`;
       });
     }
     targetSel.innerHTML = opts.join('') || `<option value="">${uiText(t('corp.where.no_targets'))}</option>`;
@@ -425,7 +427,7 @@ async function renderSlotsTab(host) {
   problems.addEventListener('change', loadRows);
   host.querySelector('#corpCsv').addEventListener('click', async () => {
     try {
-      const blob = await downloadSlotReportCsv(problems.checked);
+      const blob = await downloadSlotReportCsv(problems.checked,getLocale());
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'store-slots.csv';
@@ -774,7 +776,7 @@ function slotCardHtml(sl, wsId) {
         <strong class="corp-card-title">${uiText(t('corp.store.slot_title', { slot: sl.name }))}</strong>
         ${renderHTML(cui.chip(t('corp.badge.your_slot'), 'slot', t('corp.tip.your_slot', { slot: sl.name, playlist: sl.playlist_name || '' })))}
       </div>
-      <div class="corp-card-meta">${uiText(t('corp.store.in_playlist', { playlist: sl.playlist_name || '' }))} · ${uiText(cui.limitsText(lim))}${renderHTML(lim.allow_video === 0 || lim.allow_video === false ? ' · ' + t('corp.slot.no_video') : '')}${renderHTML(lim.allow_widgets === 0 || lim.allow_widgets === false ? ' · ' + t('corp.slot.no_widgets') : '')}</div>
+      <div class="corp-card-meta">${uiText(t('corp.store.in_playlist', { playlist: sl.playlist_name || '' }))} · ${uiText(cui.limitsText(lim))}${renderHTML(lim.allow_video === 0 || lim.allow_video === false ? displayList([' · ',t('corp.slot.no_video')],'') : '')}${renderHTML(lim.allow_widgets === 0 || lim.allow_widgets === false ? displayList([' · ',t('corp.slot.no_widgets')],'') : '')}</div>
       ${renderHTML(sl.help_text ? `<div class="corp-hq-note">${uiText(t('corp.store.hq_says'))} ${uiText(sl.help_text)}</div>` : '')}
       ${renderHTML(fills.length ? `<ul class="corp-levels">${renderHTML(fills.map((f) => `
         <li>
@@ -800,7 +802,7 @@ async function fillLevelDialog(sl, wsId) {
   const cov = await cui.workspaceCoverage();
   const taken = new Set((sl.fills || []).map((f) => `${f.scope_kind}:${f.scope_id}`));
   const ws = (() => { try { const me = JSON.parse(localStorage.getItem('user') || 'null'); return (me.accessible_workspaces || []).find((w) => w.id === wsId) || { name: '' }; } catch { return { name: '' }; } })();
-  const opt = (kind, id, label) => `<option value="${esc(kind)}:${esc(id)}" ${taken.has(`${kind}:${id}`) ? 'disabled' : ''}>${uiText(label)}${renderHTML(taken.has(`${kind}:${id}`) ? ' — ' + t('corp.slot.has_content') : '')}</option>`;
+  const opt = (kind, id, label) => `<option value="${esc(kind)}:${esc(id)}" ${taken.has(`${kind}:${id}`) ? 'disabled' : ''}>${uiText(label)}${renderHTML(taken.has(`${kind}:${id}`) ? displayList([' — ',t('corp.slot.has_content')],'') : '')}</option>`;
   const mandatedDevices = devices.filter((d) => cov.devices[d.id] && !d.wall_id);
   const m = cui.openModal({
     title: t('corp.slot.fill_title', { slot: sl.name }),

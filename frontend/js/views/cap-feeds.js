@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
@@ -80,7 +81,7 @@ function feedCard(f) {
           ${uiText(t('capf.summary', { sev: t(`capf.sev.${f.min_severity}`), scope: scopeSummary(f), n: f.screens_in_scope }))}
           · ${uiText(f.playlist_id ? t('capf.shows_playlist', { name: (cache.playlists.find((p) => p.id === f.playlist_id) || {}).name || '?' }) : t('capf.shows_card'))}
         </div>
-        <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(f.enabled ? t('capf.checked', { when: ago(f.last_polled_at) }) : t('capf.off_not_checked'))}${renderHTML(f.last_error ? ` · <span style="color:#ca8a04">${uiText(f.last_error)}</span>` : '')}</div>
+        <div class="corp-help" style="font-size:12px;margin-top:4px">${uiText(f.enabled ? t('capf.checked', { when: ago(f.last_polled_at) }) : t('capf.off_not_checked'))}${renderHTML(f.last_error ? ` · <span style="color:#ca8a04">${uiText(storedErrorMessage(f.last_error))}</span>` : '')}</div>
         ${renderHTML(live ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${renderHTML(f.live.map((a) => `
           <div style="font-size:13px;display:flex;gap:8px;align-items:center">${renderHTML(sevChip(a.severity))} <span>${uiText(a.headline || a.event)}</span></div>`).join(''))}</div>` : '')}
       </div>

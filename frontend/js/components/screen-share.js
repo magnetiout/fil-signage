@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import { uiText, renderHTML, bindMessage } from '../lib/i18n-bindings.js';
 
 /*
@@ -190,7 +191,7 @@ function runMulti(start, stream, name) {
       me.deviceIds = me.deviceIds.filter((id) => id !== leg.deviceId);
       // A mirror that shows one presenter at a time switched to someone else: not a fault.
       if (reason === 'spotlight_changed') { showToast(t('screen_share.multi.single', { name: leg.name || '' }), 'info', 7000); return; }
-      showToast(t('screen_share.multi.dropped', { name: leg.name || '' }) + ' ' + screenShareReasonText(reason), 'warning', 7000);
+      showToast(displayList([displayList([t('screen_share.multi.dropped', { name: leg.name || '' }),' '],''),screenShareReasonText(reason)],''), 'warning', 7000);
     },
     // Several people on the display: who is there, and (first presenter / editor) the controls.
     onRoom: (r) => { if (active !== me) return; me.rooms.set(r.room, r); paintBar(); },
@@ -429,7 +430,7 @@ export function renderScreenShareCard(host, device, opts = {}) {
       if (cb.checked && also.size >= max) { cb.checked = false; showToast(t('screen_share.reason.too_many_targets', { max: status.max_targets, count: also.size + 2 }), 'warning'); return; }
       if (cb.checked) also.add(cb.dataset.shareAlso); else also.delete(cb.dataset.shareAlso);
       const sum = host.querySelector('[data-share-also-box] summary');
-      if (sum) bindMessage(sum, t('screen_share.card.also') + (also.size ? ` (${also.size})` : ''));
+      if (sum) bindMessage(sum, displayList([t('screen_share.card.also'),also.size ? ` (${also.size})` : ''],''));
     }));
     host.querySelector('[data-share-kick-all]')?.addEventListener('click', async (e) => {
       e.currentTarget.disabled = true;

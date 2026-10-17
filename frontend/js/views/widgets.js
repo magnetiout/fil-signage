@@ -599,7 +599,7 @@ export async function render(container) {
         <div style="padding:20px;text-align:center">
           <div style="font-size:36px;margin-bottom:8px">${uiText(p.icon || '🔌')}</div>
           <div style="font-weight:600;font-size:14px">${uiText(p.label || p.type)}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${uiText(p.plugin_id || 'plugin')}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${uiText(p.plugin_id || t('common.plugin_fallback'))}</div>
         </div>`;
       card.onclick = () => {
         creatingType = p.type;

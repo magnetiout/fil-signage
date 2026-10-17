@@ -1,6 +1,7 @@
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
-import { localizedError, displayValue, message as t, getLanguage } from '../i18n.js';
+import { localizedError, displayValue, message as t, getLanguage, subscribe } from '../i18n.js';
 
 import { errorMessage, localizeServerError } from '../api.js';
 
@@ -444,7 +445,7 @@ async function renderLibrary(body, admin, refresh) {
           ${renderHTML(admin ? `<button class="btn btn-secondary btn-sm" data-refresh="${esc(c.id)}" ${lib.network_enabled && c.enabled && c.url ? '' : `disabled title="${esc(t('templates.check_now_disabled'))}"`}>${uiText(t('templates.check_now'))}</button>` : '')}
         </div>
         ${renderHTML(c.stale ? `<div class="tpl-callout tpl-callout-warn">${uiText(t('templates.stale', { date: c.expires || '' }))}</div>` : '')}
-        ${renderHTML(c.last_error ? `<div class="tpl-callout tpl-callout-error">${uiText(t('templates.last_error'))} ${uiText(c.last_error)}</div>` : '')}
+        ${renderHTML(c.last_error ? `<div class="tpl-callout tpl-callout-error">${uiText(t('templates.last_error'))} ${uiText(storedErrorMessage(c.last_error))}</div>` : '')}
         ${renderHTML(!(c.templates && c.templates.length)
     ? `<div class="tpl-meta" style="padding:8px 0 16px">${uiText(c.enabled ? t('templates.catalog_empty') : t('templates.catalog_off'))}</div>`
     : own.length
@@ -629,7 +630,7 @@ async function installMany(list, refresh) {
   bindText(m.$('#tplProgText'), 'templates.bulk_done', { ok: result.ok.length, total: list.length });
   m.$('#tplProgResult').innerHTML = result.failed.length
     ? `<div class="tpl-callout tpl-callout-error"><p><strong>${uiText(t('templates.bulk_failed', { n: result.failed.length }))}</strong></p>
-        <ul class="tpl-list">${renderHTML(result.failed.map((f) => `<li>${uiText(nameOf(f.entry))}: ${uiText(f.error)}</li>`).join(''))}</ul></div>`
+        <ul class="tpl-list">${renderHTML(result.failed.map((f) => `<li>${uiText(nameOf(f.entry))}: ${uiText(storedErrorMessage(f.error))}</li>`).join(''))}</ul></div>`
     : (skipped ? '' : `<div class="tpl-callout tpl-callout-ok">${uiText(t('templates.bulk_all_ok'))}</div>`);
   bindText(m.$('#tplProgClose'), 'templates.bulk_close', undefined);
   if (!result.failed.length) showToast(t('templates.bulk_done', { ok: result.ok.length, total: list.length }), 'success');
@@ -696,6 +697,7 @@ async function openSettingsModal(refresh) {
     try {
       [s, cats] = await Promise.all([TAPI('/templates/settings'), TAPI('/templates/catalogs')]);
     } catch (e) { bodyEl.innerHTML = `<div class="tpl-callout tpl-callout-error">${uiText((errorMessage(e)))}</div>`; return; }
+    const visibleUnsignedPhrase=t('templates.unsigned_confirmation_phrase');
     const list = cats.catalogs || [];
     bodyEl.innerHTML = `
       <div class="form-group">
@@ -709,7 +711,7 @@ async function openSettingsModal(refresh) {
         <div class="tpl-meta">${uiText(t('templates.setting_unsigned_hint'))}</div>
         <div id="tplUnsignedConfirm" class="tpl-callout tpl-callout-warn" style="display:none;margin-top:8px">
           <p>${uiText(t('templates.unsigned_type_phrase'))}</p>
-          <p><code>${uiText(UNSIGNED_PHRASE)}</code></p>
+          <p><code>${uiText(visibleUnsignedPhrase)}</code></p>
           <input type="text" class="input" id="tplUnsignedPhrase" autocomplete="off" spellcheck="false">
           <div style="display:flex;gap:8px;margin-top:8px">
             <button class="btn btn-secondary btn-sm" id="tplUnsignedCancel">${uiText(t('common.cancel'))}</button>
@@ -723,7 +725,7 @@ async function openSettingsModal(refresh) {
         <tbody>${renderHTML(list.map((c) => `<tr>
           <td><strong>${uiText(c.label)}</strong> <span class="tpl-meta">(${uiText(c.id)})</span>${renderHTML(c.builtin ? ` <span class="tpl-badge">${uiText(t('templates.builtin'))}</span>` : '')}<div class="tpl-meta tpl-break">${uiText(c.url || t('templates.no_url'))}</div></td>
           <td><code>${uiText(c.key_id || '?')}</code></td>
-          <td class="tpl-meta">${renderHTML(t('templates.last_checked'))} ${renderHTML(fmtTime(c.last_checked))}${renderHTML(c.last_error ? `<div class="tpl-warn-text">${uiText(c.last_error)}</div>` : '')}</td>
+          <td class="tpl-meta">${renderHTML(t('templates.last_checked'))} ${renderHTML(fmtTime(c.last_checked))}${renderHTML(c.last_error ? `<div class="tpl-warn-text">${uiText(storedErrorMessage(c.last_error))}</div>` : '')}</td>
           <td style="white-space:nowrap">
             <label style="display:inline-flex;gap:4px;align-items:center;cursor:pointer"><input type="checkbox" data-cat-toggle="${esc(c.id)}" ${c.enabled ? 'checked' : ''}> ${uiText(t('templates.enabled'))}</label>
             ${renderHTML(c.builtin ? '' : `<button class="btn btn-danger btn-sm" data-cat-remove="${esc(c.id)}">${uiText(t('templates.remove'))}</button>`)}
@@ -765,11 +767,14 @@ async function openSettingsModal(refresh) {
       try { await put({ unsigned_code_allowed: false }); showToast(t('templates.toast_unsigned_off'), 'success'); }
       catch (e) { uns.checked = true; showToast(errorMessage(e), 'error'); }
     });
-    phrase.addEventListener('input', () => { goBtn.disabled = phrase.value.trim() !== UNSIGNED_PHRASE; });
+    const updateUnsignedEnabled=()=>{goBtn.disabled=phrase.value.trim()!==String(visibleUnsignedPhrase)};
+    phrase.addEventListener('input',updateUnsignedEnabled);
+    m.onClose(subscribe(updateUnsignedEnabled));
     bodyEl.querySelector('#tplUnsignedCancel').addEventListener('click', () => { box.style.display = 'none'; });
     goBtn.addEventListener('click', async () => {
       try {
-        await put({ unsigned_code_allowed: true, confirm: phrase.value.trim() });
+        if(phrase.value.trim()!==String(visibleUnsignedPhrase))return;
+        await put({ unsigned_code_allowed: true, confirm: UNSIGNED_PHRASE });
         showToast(t('templates.toast_unsigned_on'), 'success');
         box.style.display = 'none';
         uns.checked = true;

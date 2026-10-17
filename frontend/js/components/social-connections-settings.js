@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage, bindText } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t } from '../i18n.js';
@@ -80,7 +81,7 @@ export async function mountSocialConnections(host) {
             <strong>${uiText(c.name)}</strong>
             <span style="font-size:12px;color:var(--text-muted)"> · ${uiText(KINDS[c.kind] ? KINDS[c.kind].label() : c.kind)}</span>
             ${renderHTML(c.token_expires_at ? `<div style="font-size:12px;color:var(--text-muted)">${renderHTML(t('social.token_expires', { date: displayValue(new Date(c.token_expires_at * 1000), "toLocaleDateString", undefined) }))}</div>` : '')}
-            ${renderHTML(c.last_error ? `<div style="font-size:12px;color:var(--danger,#b91c1c)">${uiText(c.last_error)}</div>` : '')}
+            ${renderHTML(c.last_error ? `<div style="font-size:12px;color:var(--danger,#b91c1c)">${uiText(storedErrorMessage(c.last_error))}</div>` : '')}
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn btn-secondary btn-sm" data-sc-test="${esc(c.id)}">${uiText(t('social.test'))}</button>

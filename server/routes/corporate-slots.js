@@ -1,4 +1,6 @@
 'use strict';
+const {reportLanguage,reportText,reportLabel,reportCsv,turkishEnergyAppendix}=require('../lib/admin-report-i18n');
+
 
 /*
  * /api/corporate — LOCAL SLOTS and the store content that fills them (spec Stage B, §3, §4.3, §7.5,
@@ -600,12 +602,13 @@ function register(router, h) {
     const problems = req.query && (req.query.problems === '1' || req.query.problems === 'true');
     const out = problems ? rows.filter((r) => r.state !== 'filled') : rows;
     if (req.query && req.query.format === 'csv') {
+      const language=reportLanguage(req,res);
       const esc = (v) => { const t = v === null || v === undefined ? '' : String(v); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
-      const lines = [['playlist', 'slot', 'workspace', 'screens', 'screens_filled', 'state', 'levels'].join(',')];
-      for (const r of out) lines.push([r.playlist_name, r.slot_name, r.workspace_name, r.screens, r.screens_filled, r.state, r.fills.map((f) => `${f.scope_label}: ${f.items} items/${f.seconds}s (${f.fill_state})`).join('; ')].map(esc).join(','));
+      const lines = [['playlist', 'slot', 'workspace', 'screens', 'screens_filled', 'state', 'levels'].map(v=>reportLabel(language,v)).join(',')];
+      for (const r of out) lines.push([r.playlist_name, r.slot_name, r.workspace_name, r.screens, r.screens_filled, r.state, r.fills.map((f) => reportText(language,'fill_detail',{scope:f.scope_label,items:f.items,seconds:f.seconds,state:f.fill_state})).join('; ')].map(esc).join(','));
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="store-slots.csv"');
-      return res.send(lines.join('\n') + '\n');
+      return res.send(reportCsv(language,lines.join('\n') + '\n'));
     }
     res.json({ rows: out });
   });

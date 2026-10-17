@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML } from '../lib/i18n-bindings.js';
 import { localizedError, displayValue, message as t } from '../i18n.js';
 
@@ -115,7 +116,7 @@ export async function mountServerMove(el) {
       ${renderHTML(data.exports.length ? `<div class="table-wrap"><table class="att-table">
         <thead><tr><th>${uiText(t('trust.exp.col.status'))}</th><th>${uiText(t('trust.exp.col.size'))}</th><th>${uiText(t('trust.exp.col.requested'))}</th><th></th></tr></thead>
         <tbody>${renderHTML(data.exports.map((j) => `<tr>
-          <td>${uiText(status(j))}${renderHTML(j.summary ? `<div class="trust-muted">${uiText(t('imp.server.orgs', { n: j.summary.organizations }))}</div>` : '')}${renderHTML(j.error ? `<div class="trust-muted">${uiText(j.error)}</div>` : '')}</td>
+          <td>${uiText(status(j))}${renderHTML(j.summary ? `<div class="trust-muted">${uiText(t('imp.server.orgs', { n: j.summary.organizations }))}</div>` : '')}${renderHTML(j.error ? `<div class="trust-muted">${uiText(storedErrorMessage(j.error))}</div>` : '')}</td>
           <td>${renderHTML(j.bytes ? esc(fmtBytes(j.bytes)) : '')}</td>
           <td>${uiText(when(j.created_at))}</td>
           <td>${renderHTML(j.status === 'ready' ? `<button type="button" class="btn btn-secondary btn-sm" data-dl="${esc(j.id)}">${uiText(t('trust.exp.download'))}</button>

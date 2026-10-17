@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import { uiText, renderHTML } from '../lib/i18n-bindings.js';
 
 /*
@@ -35,7 +36,7 @@ export async function mountCorporateSettings(host) {
       <div class="corp-row">
         <select id="csHq" class="input" style="min-width:220px" ${hqLocked ? 'disabled' : ''}>
           <option value="">${uiText(t('corp.settings.hq_none'))}</option>
-          ${renderHTML((s.workspaces || []).map((w) => `<option value="${esc(w.id)}" ${w.id === s.hq_workspace_id ? 'selected' : ''} ${w.replicated ? 'disabled' : ''}>${uiText(w.name)}${renderHTML(w.replicated ? ' — ' + t('corp.where.replicated') : '')}</option>`).join(''))}
+          ${renderHTML((s.workspaces || []).map((w) => `<option value="${esc(w.id)}" ${w.id === s.hq_workspace_id ? 'selected' : ''} ${w.replicated ? 'disabled' : ''}>${uiText(w.name)}${renderHTML(w.replicated ? displayList([' — ',t('corp.where.replicated')],'') : '')}</option>`).join(''))}
         </select>
         ${renderHTML(hqLocked ? '' : `<button type="button" class="btn btn-secondary btn-sm" id="csCreateHq">${uiText(t('corp.settings.hq_create'))}</button>`)}
       </div>
@@ -84,7 +85,7 @@ export async function mountCorporateSettings(host) {
         <div class="corp-notice corp-notice-warn">
           <div>${uiText(t(p === 'off' ? 'corp.settings.impact_hidden' : 'corp.settings.impact_limited', { k: impact.length, m: r.workspaces }))}</div>
           <details class="corp-details"><summary>${uiText(t('corp.settings.impact_show'))}</summary>
-            <ul class="corp-list">${renderHTML(impact.map((i) => `<li>${uiText(i.workspace_name)} — ${uiText(i.name)} (${uiText(i.mode === 'until_cleared' ? t('corp.em.mode_until_short') : t('corp.em.mode_once_short'))}${renderHTML(i.mode === 'until_cleared' && i.lease_sec ? ', ' + t('corp.sec', { n: i.lease_sec }) : '')})</li>`).join(''))}</ul>
+            <ul class="corp-list">${renderHTML(impact.map((i) => `<li>${uiText(i.workspace_name)} — ${uiText(i.name)} (${uiText(i.mode === 'until_cleared' ? t('corp.em.mode_until_short') : t('corp.em.mode_once_short'))}${renderHTML(i.mode === 'until_cleared' && i.lease_sec ? displayList([', ',t('corp.sec', { n: i.lease_sec })],'') : '')})</li>`).join(''))}</ul>
           </details>
           <label class="corp-check"><input type="checkbox" id="csAck"> ${uiText(t('corp.settings.impact_ack'))}</label>
         </div>` : `<div class="corp-help">${uiText(t('corp.settings.impact_none'))}</div>`;

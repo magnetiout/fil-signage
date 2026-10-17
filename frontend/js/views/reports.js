@@ -1,3 +1,6 @@
+import {getLocale} from '../i18n.js';
+import {requestError} from '../api.js';
+import {getReportHeaders} from '../api.js';
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText, attributeBinding } from '../lib/i18n-bindings.js';
 import { localizedError, displayQuantity, displayValue, message as t } from '../i18n.js';
@@ -75,12 +78,15 @@ export async function render(container) {
   loadReport();
   // The mesh half renders itself, and renders nothing at all when there is no mesh.
   renderUptimeReport();
-  document.getElementById('exportBtn').onclick = () => {
+  document.getElementById('exportBtn').onclick = async () => {
     const deviceId = document.getElementById('reportDevice').value;
     const start = document.getElementById('reportStart').value;
     const end = document.getElementById('reportEnd').value;
-    const token = localStorage.getItem('token');
-    window.open(`/api/reports/export?device_id=${deviceId}&start=${start}&end=${end}&token=${token}`, '_blank');
+    try {
+      const res=await fetch('/api/reports/export?'+new URLSearchParams({device_id:deviceId,start,end}),{headers:getReportHeaders(getLocale())});
+      if(!res.ok)throw requestError(res.status,await res.json().catch(()=>({})));
+      const a=document.createElement('a');a.href=URL.createObjectURL(await res.blob());a.download='proof-of-play.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+    }catch(error){showToast(errorMessage(error),'error');}
   };
 
   async function loadReport() {
@@ -330,26 +336,26 @@ async function loadUptime() {
     return;
   }
   if (r.uptimePct == null) {
-    body.innerHTML = `<div style="color:var(--text-muted);font-size:13px">${uiText(r.note || t("ui.labels.nothing_to_report_3da897"))}</div>`;
+    body.innerHTML = `<div style="color:var(--text-muted);font-size:13px">${uiText(r.note ? t('reports.export.no_sites') : t("ui.labels.nothing_to_report_3da897"))}</div>`;
     return;
   }
 
   const TDs = 'padding:8px';
   const THs = 'padding:8px;text-align:left;color:var(--text-muted)';
-  const mins = (s) => (s >= 3600 ? `${Math.round(s / 360) / 10}h` : `${Math.round(s / 60)}m`);
+  const mins = s => s >= 3600 ? t('reports.export.hours_short',{n:displayValue(Math.round(s/360)/10)}) : t('reports.export.minutes_short',{n:displayValue(Math.round(s/60))});
 
   body.innerHTML = `
     <div style="display:flex;gap:32px;flex-wrap:wrap;margin-bottom:12px">
       <div><div style="color:var(--text-muted);font-size:11px">${renderHTML(t("ui.reports.uptime"))}</div>
-           <div style="font-size:28px">${renderHTML(r.uptimePct)}%</div></div>
+           <div style="font-size:28px">${renderHTML(displayValue(r.uptimePct/100,'toLocaleString',{style:'percent',maximumFractionDigits:1}))}</div></div>
       <div><div style="color:var(--text-muted);font-size:11px">${renderHTML(t("ui.reports.coverage"))}</div>
-           <div style="font-size:28px;${r.coveragePct != null && r.coveragePct < 95 ? 'color:var(--warning,#f59e0b)' : ''}">${renderHTML(r.coveragePct == null ? '—' : r.coveragePct + '%')}</div></div>
+           <div style="font-size:28px;${r.coveragePct != null && r.coveragePct < 95 ? 'color:var(--warning,#f59e0b)' : ''}">${renderHTML(r.coveragePct == null ? '—' : displayValue(r.coveragePct/100,'toLocaleString',{style:'percent',maximumFractionDigits:1}))}</div></div>
       <div><div style="color:var(--text-muted);font-size:11px">${renderHTML(t("ui.reports.screens"))}</div>
-           <div style="font-size:28px">${renderHTML(r.deviceCount)}</div></div>
+           <div style="font-size:28px">${renderHTML(displayValue(r.deviceCount))}</div></div>
       <div><div style="color:var(--text-muted);font-size:11px">${renderHTML(t("ui.reports.incidents"))}</div>
-           <div style="font-size:28px">${renderHTML(r.incidentCount)}</div></div>
+           <div style="font-size:28px">${renderHTML(displayValue(r.incidentCount))}</div></div>
     </div>
-    <p style="color:var(--text-muted);font-size:12px">${uiText(r.coverageNote || '')} ${uiText(r.timezoneLabel || '')}</p>
+    <p style="color:var(--text-muted);font-size:12px">${uiText(r.coverageNote ? t('reports.export.coverage_note') : '')} ${uiText(r.timezoneLabel ? t('reports.export.site_time',{zone:r.timezone||'UTC'}) : '')}</p>
     <div class="table-wrap">
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:520px">
         <thead><tr style="border-bottom:1px solid var(--border)">
@@ -361,7 +367,7 @@ async function loadUptime() {
             <tr style="border-bottom:1px solid var(--border)">
               <td style="${TDs}">${uiText(i.deviceName || i.deviceId)}</td>
               <td style="${TDs}"><span class="corp-chip" title="${esc(i.originNodeId)}"${attributeBinding("title", i.originNodeId)} style="font-family:monospace">${uiText(String(i.originNodeId).slice(0, 8))}</span></td>
-              <td style="${TDs}">${uiText(String(i.alertType || '').replace(/[_-]/g, ' '))}</td>
+              <td style="${TDs}">${uiText(uptimeAlertLabel(i.alertType))}</td>
               <td style="${TDs}">${renderHTML(displayValue(new Date(i.openedAt * 1000), "toLocaleString", undefined))}</td>
               <td style="${TDs}">${renderHTML(i.ongoing ? `<strong>${renderHTML(t("ui.reports.still_down_65a8d1"))}</strong>` : esc(mins(i.downSeconds)))}</td>
             </tr>`).join('') ||
@@ -384,7 +390,7 @@ async function downloadUptimeCsv() {
   try {
     const res = await fetch(
       `/api/mesh/uptime.csv?clientId=${encodeURIComponent(uptimeState.clientId)}&from=${from}&to=${to}`,
-      { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      { headers:getReportHeaders(getLocale()) });
     if (!res.ok) throw localizedError(t("ui.reports.export_failed_value0_6dc4a6", {value0: res.status}));
     const blob = await res.blob();
     const a = document.createElement('a');
@@ -399,3 +405,5 @@ async function downloadUptimeCsv() {
     showToast(t("ui.reports.could_not_export_value0_f26ab1", {value0: errorMessage(e)}), 'error');
   }
 }
+
+function uptimeAlertLabel(code) { const labels={offline:'offline',offline_seconds:'offline',battery_low:'battery',battery_level:'battery',temperature_c:'temperature',storage_free_mb:'storage',cpu_usage:'cpu',wifi_rssi:'wifi',ram_free_mb:'ram'};return labels[code]?t(`reports.export.alert_${labels[code]}`):t('reports.export.alert_unknown',{code:code||'—'}); }

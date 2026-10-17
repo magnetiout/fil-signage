@@ -1,3 +1,4 @@
+import {systemMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t } from '../i18n.js';
@@ -70,7 +71,7 @@ export async function render(container) {
       ${renderHTML(rq ? `<div class="corp-notice" style="margin:8px 0;font-size:13px"><strong>${uiText(t('review.request_from', { name: rq.requester_name, email: rq.requester_email }))}</strong> · ${uiText(rq.ref)}<br>
         ${renderHTML(t('review.request_when', { start: rq.start_date, end: rq.end_date }))}<br>
         ${renderHTML(t('review.request_where', { where: rq.targets.map((x) => `${x.label} (${x.playlist_name || '?'})`).join(', ') }))}
-        ${renderHTML(rq.targets.filter((x) => x.problem && rq.status === 'pending').map((x) => `<div style="color:#fbbf24">${uiText(x.label)}: ${uiText(x.problem.message)}</div>`).join(''))}</div>` : '')}
+        ${renderHTML(rq.targets.filter((x) => x.problem && rq.status === 'pending').map((x) => `<div style="color:#fbbf24">${uiText(x.label)}: ${uiText(systemMessage(x.problem.message))}</div>`).join(''))}</div>` : '')}
       <div style="font-size:13px;margin:6px 0">${uiText(t('review.affects', { n: sub.affected_devices || 0 }))}</div>
       <h4 style="margin:12px 0 4px">${uiText(t('review.changes_since_live'))}</h4>${renderHTML(diffHtml(sub.diff_from_live))}
       <h4 style="margin:12px 0 4px">${uiText(t('common.preview'))}</h4><div id="reviewPreview" style="font-size:12px"></div>
@@ -84,7 +85,7 @@ export async function render(container) {
         const url = await fetchRevisionFileUrl('content', sub.resource_id, sub.revision.id).catch(() => null);
         pv.innerHTML = url ? `<img src="${url}" style="max-width:100%;max-height:240px;border-radius:8px">` : esc(t('history.bytes_gone'));
       } else if (sub.resource_type === 'playlist') {
-        pv.innerHTML = `<ol style="margin:0 0 0 18px;padding:0">${renderHTML((st.items || []).map((it) => `<li>${uiText(it.content_id ? 'content ' + it.content_id.slice(0, 8) : it.widget_id ? 'widget ' + it.widget_id.slice(0, 8) : 'playlist ' + String(it.child_playlist_id || '').slice(0, 8))} · ${uiText(String(it.duration_sec ?? ''))}s</li>`).join(''))}</ol>`;
+        pv.innerHTML = `<ol style="margin:0 0 0 18px;padding:0">${renderHTML((st.items || []).map((it) => `<li>${uiText(it.content_id ? t('history.item_content',{id:it.content_id.slice(0,8)}) : it.widget_id ? t('history.item_widget',{id:it.widget_id.slice(0,8)}) : t('history.item_playlist',{id:String(it.child_playlist_id||'').slice(0,8)}))} · ${uiText(t('history.item_duration',{seconds:it.duration_sec == null ? '' : displayValue(it.duration_sec)}))}</li>`).join(''))}</ol>`;
       } else if (sub.resource_type === 'layout') {
         pv.innerHTML = `<div style="position:relative;width:100%;aspect-ratio:${st.width || 16}/${st.height || 9};background:#111;border-radius:8px;overflow:hidden">${renderHTML((st.zones || []).map((z) => `<div style="position:absolute;left:${z.x_percent}%;top:${z.y_percent}%;width:${z.width_percent}%;height:${z.height_percent}%;border:1px solid #34d399;color:#fff;font-size:10px;padding:2px">${uiText(z.name)}</div>`).join(''))}</div>`;
       } else if (sub.resource_type === 'slide_deck') {

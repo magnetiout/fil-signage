@@ -494,6 +494,8 @@ test('store face and the compliance report', async () => {
   r = await get('admin', '/api/corporate/reports/slots?format=csv', HQ);
   assert.match(r.headers.get('content-type'), /text\/csv/);
   assert.match(r.body, /Promo/);
+  const localized=await api('/api/corporate/reports/slots?format=csv',{...J('admin',undefined,'GET',HQ),headers:{...J('admin',undefined,'GET',HQ).headers,'Accept-Language':'tr-TR'}});
+  assert.equal(localized.status,200);assert.match(localized.body,/^Oynatma listesi,Yerel içerik alanı/);assert(localized.body.includes('Promo'));assert(localized.body.includes('öğe/'));assert(localized.body.includes('fallback'),'technical state values stay canonical');
   const now = Math.floor(Date.now() / 1000);
   run('INSERT INTO play_logs (device_id, content_id, content_name, started_at, duration_sec, workspace_id) VALUES (?, ?, ?, ?, 10, ?)', dev, hqContent, 'brand', now - 60, STORE);
   r = await get('admin', '/api/corporate/reports/plays', HQ);

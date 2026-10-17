@@ -1,3 +1,4 @@
+import {displayQuantity} from '../i18n.js';
 import { renderHTML, uiText } from '../lib/i18n-bindings.js';
 import { displayValue, message as t } from '../i18n.js';
 
@@ -93,7 +94,7 @@ export async function render(container) {
               <li>${renderHTML(t('billing.lose.screens', { n: freePlan ? freePlan.max_devices : 1 }))}</li>
               ${renderHTML(freePlan && !freePlan.remote_url ? `<li>${renderHTML(t('billing.lose.remote_url'))}</li>` : '')}
               ${renderHTML(freePlan && !freePlan.remote_control ? `<li>${renderHTML(t('billing.lose.remote_control'))}</li>` : '')}
-              ${renderHTML(freePlan && freePlan.max_storage_mb !== -1 ? `<li>${renderHTML(t('billing.lose.storage', { size: freePlan.max_storage_mb >= 1024 ? (freePlan.max_storage_mb / 1024) + ' GB' : freePlan.max_storage_mb + ' MB' }))}</li>` : '')}
+              ${renderHTML(freePlan && freePlan.max_storage_mb !== -1 ? `<li>${renderHTML(t('billing.lose.storage', { size: freePlan.max_storage_mb >= 1024 ? displayQuantity(freePlan.max_storage_mb/1024,'GB') : displayQuantity(freePlan.max_storage_mb,'MB') }))}</li>` : '')}
             </ul>
           </div>
         </div>
@@ -119,7 +120,7 @@ export async function render(container) {
           </div>
           <div class="info-card">
             <div class="info-card-label">${renderHTML(t('billing.storage'))}</div>
-            <div class="info-card-value small">${renderHTML(subData.usage.storage_mb)} MB <span style="color:var(--text-secondary)">/ ${renderHTML(subData.plan.max_storage_mb === -1 ? t('billing.unlimited') : subData.plan.max_storage_mb + ' MB')}</span></div>
+            <div class="info-card-value small">${renderHTML(subData.usage.storage_mb)} MB <span style="color:var(--text-secondary)">/ ${renderHTML(subData.plan.max_storage_mb === -1 ? t('billing.unlimited') : displayQuantity(subData.plan.max_storage_mb,'MB'))}</span></div>
             ${renderHTML(subData.plan.max_storage_mb > 0 ? `
             <div class="progress-bar">
               <div class="progress-bar-fill ${subData.usage.storage_mb / subData.plan.max_storage_mb > 0.8 ? 'warning' : 'success'}"
@@ -156,7 +157,7 @@ export async function render(container) {
               ${renderHTML(p.id === recommendedId && p.id !== subData.plan.id ? `<div style="font-size:12px;color:var(--success);margin:-6px 0 8px">${renderHTML(subData.usage.devices > 0 ? t('billing.recommended_why', { n: subData.usage.devices }) : t('billing.recommended_why_new'))}</div>` : '')}
               <div style="font-size:13px;color:var(--text-secondary);line-height:2">
                 <div>${renderHTML(p.max_devices === -1 ? t('billing.unlimited') : p.max_devices)} ${renderHTML(t('billing.devices_lc'))}</div>
-                <div>${renderHTML(p.max_storage_mb === -1 ? t('billing.unlimited') : (p.max_storage_mb >= 1024 ? (p.max_storage_mb/1024) + ' GB' : p.max_storage_mb + ' MB'))} ${renderHTML(t('billing.storage_lc'))}</div>
+                <div>${renderHTML(p.max_storage_mb === -1 ? t('billing.unlimited') : (p.max_storage_mb >= 1024 ? displayQuantity(p.max_storage_mb/1024,'GB') : displayQuantity(p.max_storage_mb,'MB')))} ${renderHTML(t('billing.storage_lc'))}</div>
                 <div>${renderHTML(p.remote_control ? '&#10003;' : '&#10007;')} ${renderHTML(t('billing.feat.remote_control'))}</div>
                 <div>${renderHTML(p.remote_url ? '&#10003;' : '&#10007;')} ${renderHTML(t('billing.feat.remote_urls'))}</div>
                 <div>${renderHTML(p.priority_support ? '&#10003;' : '&#10007;')} ${renderHTML(t('billing.feat.priority_support'))}</div>

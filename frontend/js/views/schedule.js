@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { localizedError, displayDateRange } from '../i18n.js';
 import { renderHTML, uiText, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
@@ -318,7 +319,7 @@ export async function render(container) {
           <div class="form-group"><label>${renderHTML(t('schedule.playlist_override'))}</label>
             <select id="schedPlaylist" class="input" style="background:var(--bg-input)">
               <option value="">${renderHTML(t('schedule.no_playlist_override'))}</option>
-              ${renderHTML(playlists.map((p) => `<option value="${esc(p.id)}">${uiText(p.name)}${renderHTML(p.status === 'draft' ? ' ' + t('schedule.draft_suffix') : '')}</option>`).join(''))}
+              ${renderHTML(playlists.map((p) => `<option value="${esc(p.id)}">${uiText(p.name)}${renderHTML(p.status === 'draft' ? displayList([' ',t('schedule.draft_suffix')],'') : '')}</option>`).join(''))}
             </select>
           </div>
           <div class="form-group"><label>${renderHTML(t('schedule.layout_override'))}</label>
@@ -747,7 +748,7 @@ export async function render(container) {
         if (durationPx >= 34) {
           const extras = itemsOf(ev).filter((it) => it.play_from || it.play_until || (it.schedules && it.schedules.length)).slice(0, 3);
           const extraHtml = (extras.length && durationPx >= 56)
-            ? extras.map((it) => `<div class="what" style="opacity:.85">${uiText(it.filename || it.widget_name || 'item')} · ${uiText(itemWindowLabel(it))}</div>`).join('')
+            ? extras.map((it) => `<div class="what" style="opacity:.85">${uiText(it.filename || it.widget_name || t('common.unnamed_item'))} · ${uiText(itemWindowLabel(it))}</div>`).join('')
             : '';
           block.innerHTML = `<div class="who">${uiText(target.name)}</div><div class="what">${uiText(labelOf(ev))}</div>${renderHTML(corpShadowed.has(ev.id) ? `<div class="what">${uiText(t('corp.sched.paused'))}</div>` : '')}${renderHTML(extraHtml)}`;
         } else {
@@ -953,7 +954,7 @@ export async function render(container) {
     const until = ev.recurrence_end ? new Date(String(ev.recurrence_end).slice(0, 10) + 'T00:00:00') : null;
     const items = itemsOf(ev);
     const itemRows = items.length
-      ? `<div class="meta" style="margin-top:8px"><strong>${uiText(t('schedule.peek_items'))}</strong><ul style="margin:6px 0 0 16px;padding:0">${renderHTML(items.slice(0, 12).map((it) => `<li>${uiText(it.filename || it.widget_name || it.child_playlist_name || 'item')} · ${uiText(itemWindowLabel(it))}</li>`).join(''))}${renderHTML(items.length > 12 ? `<li>…</li>` : '')}</ul></div>`
+      ? `<div class="meta" style="margin-top:8px"><strong>${uiText(t('schedule.peek_items'))}</strong><ul style="margin:6px 0 0 16px;padding:0">${renderHTML(items.slice(0, 12).map((it) => `<li>${uiText(it.filename || it.widget_name || it.child_playlist_name || t('common.unnamed_item'))} · ${uiText(itemWindowLabel(it))}</li>`).join(''))}${renderHTML(items.length > 12 ? `<li>…</li>` : '')}</ul></div>`
       : '';
     const pop = openPopover(`
       <h3><span class="sw" style="background:${colorOf(ev)}"></span>${uiText(labelOf(ev))}</h3>

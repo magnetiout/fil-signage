@@ -1,3 +1,5 @@
+import {systemMessage} from '../api.js';
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, binding } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t } from '../i18n.js';
@@ -102,8 +104,8 @@ async function renderInbox(body) {
       </dl>
       <h4 style="margin:12px 0 4px">${uiText(t('creq.where'))}</h4>
       <ul style="margin:0 0 0 18px;padding:0;font-size:13px">${renderHTML(r.targets.map((x) => `<li><strong>${uiText(x.label)}</strong> → ${uiText(x.playlist_name || '?')} · ${renderHTML(t('creq.screens', { n: x.screens }))}
-        ${renderHTML(x.result ? (x.result.ok ? ` · <span style="color:#34d399">${uiText(t('creq.target_live'))}</span>` : ` · <span style="color:#f87171">${uiText(x.result.error || '')}</span>`) : '')}
-        ${renderHTML(!x.result && x.problem && r.status === 'pending' ? `<div style="color:#fbbf24;font-size:12px">${uiText(x.problem.message)}</div>` : '')}</li>`).join(''))}</ul>
+        ${renderHTML(x.result ? (x.result.ok ? ` · <span style="color:#34d399">${uiText(t('creq.target_live'))}</span>` : ` · <span style="color:#f87171">${uiText(storedErrorMessage(x.result.error || ''))}</span>`) : '')}
+        ${renderHTML(!x.result && x.problem && r.status === 'pending' ? `<div style="color:#fbbf24;font-size:12px">${uiText(systemMessage(x.problem.message))}</div>` : '')}</li>`).join(''))}</ul>
       ${renderHTML(r.status === 'pending' && !r.approval_required ? `<p style="font-size:12px;color:var(--text-muted);margin-top:12px">${uiText(t('creq.approval_off_note'))}</p>` : '')}
       <div id="creqActions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center"></div>`;
     hydrateAuthImages(detail, { eager: true });

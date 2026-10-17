@@ -69,7 +69,7 @@ Doğrulama komutları (`server/` içinden):
 
 ```sh
 npm run check:admin
-CHROME=/gercek/chrome/yolu npm test
+CHROME=/gercek/chrome/yolu CHROMIUM_BIN=/gercek/chrome/yolu CHROME_PATH=/gercek/chrome/yolu npm test
 ```
 
 `fil-admin-*` testleri iki sözlüğün anahtar/placeholder çokluğunu, güvenli geri
@@ -96,3 +96,20 @@ amacıyla kullanılan ham hata sınıflandırmaları ve günlükler bu sunumdan 
 Ad aramasında medya/klasör/çalışma alanı/üye seçicileri de etkin locale ile
 harf dönüşümü yapar; MIME, enum, slug, e-posta kaydı, tag/API kimliği ve klavye
 komutlarının kanonik kuralları değiştirilmez.
+
+
+Merkezi TR/EN katalogları 10.643 anahtar içerir. Küçük ortak rapor bölümü
+`frontend/js/i18n/reports/catalog.js` üzerinden birleştirilir; sunucu yalnızca bu
+küçük kaynağı yükler. Yeni çalışma zamanı bağımlılığı eklenmemiştir. Rapor indirme
+istekleri kimlik doğrulama başlığı ve açık dil tercihi kullanır; belirteç URL'ye yazılmaz.
+CSV başlıkları/uygulamanın ürettiği durum etiketleri ve enerji açıklama metni çevrilir;
+veri sütunlarının kanonik sayı/UTC/enum değerleri korunur. API istemcisi dil belirtmezse
+eski İngilizce çıktı devam eder. Yanıt Content-Language ve Vary: Accept-Language bildirir.
+
+Depolanan hata alanları için `storedErrorMessage`, izin ve aktarım gibi yalnızca
+sistemin ürettiği açıklamalar için `systemMessage` kullanılır. Kullanıcı notları veya
+özel içerik bu yardımcılara verilmez. `displayList` iç içe mesaj/Intl değerlerini bağlarda
+korur; dil değişiminde birleşik başlık, tooltip, gerekli alan işareti ve toast yenilenir.
+Güvenlik onayında görünen yerelleştirilmiş cümle tam eşleşmelidir; bu doğrulama sonrası
+mevcut İngilizce API onay değeri gönderilir. Dil değişimi yazılmış cümleyi değiştirmez,
+onay düğmesinin etkinliğini yeni görünür cümleye göre yeniden değerlendirir.

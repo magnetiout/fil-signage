@@ -1,4 +1,6 @@
 'use strict';
+const {reportLanguage,reportText,reportLabel,reportCsv,turkishEnergyAppendix}=require('../lib/admin-report-i18n');
+
 
 /*
  * Energy & carbon (lib/energy, docs/energy.md): estimated electricity use and CO2e of the screens,
@@ -66,34 +68,36 @@ router.get('/report', (req, res) => {
 });
 
 router.get('/export', (req, res) => {
+  const language=reportLanguage(req,res);
   if (!requireWs(req, res)) return;
   const p = period(req, res);
   if (!p) return;
   const r = energy.report(db, req.workspaceId, p);
   let csv;
   if (req.query.by === 'day') {
-    csv = 'Date,kWh,kg CO2e,kWh saved by schedules\n'
+    csv = ["Date", "kWh", "kg CO2e", "kWh saved by schedules"].map(v=>reportLabel(language,v)).join(',')+'\n'
       + r.by_day.map((d) => [csvCell(d.day), d.kwh, d.kg_co2e, d.saved_kwh].join(',')).join('\n');
   } else {
-    csv = 'Screen,Groups,Hours on,Hours off (schedule),Hours off (other),Hours offline,Share inferred,On watts,Standby watts,Watts source,gCO2e/kWh,Intensity source,Country,kWh,kg CO2e,kWh saved,kg CO2e saved\n'
+    csv = ["Screen", "Groups", "Hours on", "Hours off (schedule)", "Hours off (other)", "Hours offline", "Share inferred", "On watts", "Standby watts", "Watts source", "gCO2e/kWh", "Intensity source", "Country", "kWh", "kg CO2e", "kWh saved", "kg CO2e saved"].map(v=>reportLabel(language,v)).join(',')+'\n'
       + r.by_device.map((d) => [
-        csvCell(d.removed ? `(removed screen ${d.device_id})` : d.name), csvCell(d.groups.join('; ')),
+        csvCell(d.removed ? reportText(language,'removed_screen',{id:d.device_id}) : d.name), csvCell(d.groups.join('; ')),
         d.on_hours, d.sched_off_hours, d.panel_off_hours, d.offline_hours, d.inferred_share,
         d.on_watts, d.standby_watts, csvCell(d.watts_source), d.g_per_kwh, csvCell(d.intensity_source), csvCell(d.country || ''),
         d.kwh, d.kg_co2e, d.saved_kwh, d.saved_kg_co2e,
       ].join(',')).join('\n')
-      + `\n${csvCell('Total')},,${r.totals.on_hours},${r.totals.sched_off_hours},${r.totals.panel_off_hours},${r.totals.offline_hours},${r.totals.inferred_share},,,,,,,${r.totals.kwh},${r.totals.kg_co2e},${r.totals.saved_kwh},${r.totals.saved_kg_co2e}`;
+      + `\n${csvCell(reportLabel(language,'Total'))},,${r.totals.on_hours},${r.totals.sched_off_hours},${r.totals.panel_off_hours},${r.totals.offline_hours},${r.totals.inferred_share},,,,,,,${r.totals.kwh},${r.totals.kg_co2e},${r.totals.saved_kwh},${r.totals.saved_kg_co2e}`;
   }
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename=energy-${p.start}-to-${p.end}${req.query.by === 'day' ? '-daily' : ''}.csv`);
-  res.send(csv + '\n');
+  res.send(reportCsv(language,csv + '\n'));
 });
 
 /*
  * The ESG appendix: the period's figures and the methodology in plain prose, ready to paste into a
  * sustainability report. Text, not HTML, so nothing in it is ever rendered as markup.
  */
-function appendixText(r, wsName) {
+function appendixText(r, wsName, language='en') {
+  if(language==='tr')return turkishEnergyAppendix(r,wsName,{wattage,carbon});
   const pct = (x) => `${Math.round(x * 100)}%`;
   const src = r.watts_sources || {};
   const n = (k) => src[k] || 0;
@@ -120,6 +124,7 @@ function appendixText(r, wsName) {
 }
 
 router.get('/appendix', (req, res) => {
+  const language=reportLanguage(req,res);
   if (!requireWs(req, res)) return;
   const p = period(req, res);
   if (!p) return;
@@ -127,7 +132,7 @@ router.get('/appendix', (req, res) => {
   const ws = db.prepare('SELECT name FROM workspaces WHERE id = ?').get(req.workspaceId) || {};
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   if (req.query.download) res.setHeader('Content-Disposition', `attachment; filename=energy-appendix-${p.start}-to-${p.end}.txt`);
-  res.send(appendixText(r, ws.name || 'Workspace'));
+  res.send(appendixText(r, ws.name || reportLabel(language,'Workspace'), language));
 });
 
 function hourParam(v, dflt) {
@@ -236,16 +241,17 @@ router.get('/org', (req, res) => {
 });
 
 router.get('/org/export', (req, res) => {
+  const language=reportLanguage(req,res);
   if (!orgGate(req, res)) return;
   const p = period(req, res);
   if (!p) return;
   const r = energy.orgRollup(db, req.organizationId, p);
-  const csv = 'Workspace,Screens,kWh,kg CO2e,kWh saved,kg CO2e saved\n'
+  const csv = ["Workspace", "Screens", "kWh", "kg CO2e", "kWh saved", "kg CO2e saved"].map(v=>reportLabel(language,v)).join(',')+'\n'
     + r.workspaces.map((w) => [csvCell(w.name), w.screens, w.kwh, w.kg_co2e, w.saved_kwh, w.saved_kg_co2e].join(',')).join('\n')
-    + `\n${csvCell('Total')},${r.totals.screens},${r.totals.kwh},${r.totals.kg_co2e},${r.totals.saved_kwh},${r.totals.saved_kg_co2e}\n`;
+    + `\n${csvCell(reportLabel(language,'Total'))},${r.totals.screens},${r.totals.kwh},${r.totals.kg_co2e},${r.totals.saved_kwh},${r.totals.saved_kg_co2e}\n`;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename=energy-organization-${p.start}-to-${p.end}.csv`);
-  res.send(csv);
+  res.send(reportCsv(language,csv));
 });
 
 module.exports = router;

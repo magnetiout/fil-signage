@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {storedErrorMessage} from '../api.js';
 import { renderHTML, uiText, translatedAttribute, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { displayValue, getLocale, message as t, messageCount as tn } from '../i18n.js';
@@ -484,7 +486,7 @@ function layoutMockup(playlist) {
         ${renderHTML(zones)}
       </div>
       <div style="font-size:12px;color:var(--text-muted)">
-        <div>${uiText(layout.name || '')} · ${renderHTML(w)}×${renderHTML(h)}${renderHTML(portrait ? ' (portrait)' : '')}</div>
+        <div>${uiText(layout.name || '')} · ${renderHTML(w)}×${renderHTML(h)}${renderHTML(portrait ? t('playlist.orientation_portrait') : '')}</div>
         <div>${renderHTML(tn('playlist.zones_count', layout.zones.length))}</div>
         ${renderHTML(layout._preview_ambiguous ? `<div style="color:var(--warning)">${renderHTML(t('playlist.layout_ambiguous'))}</div>` : '')}
       </div>
@@ -831,8 +833,8 @@ function fieldPathsOf(data) {
 async function editConditionModal(ids, parsed) {
   let sources = [];
   try { sources = await api.getDataSources(); } catch { sources = []; }
-  const OPS = [['eq', '= equals'], ['neq', t("ui.playlists.not_equal_85e993")], ['gt', '> greater than'],
-    ['gte', t("ui.playlists.at_least_d34749")], ['lt', '< less than'], ['lte', t("ui.playlists.at_most_954546")], ['truthy', t("ui.playlists.is_set_true_6fbb8c")]];
+  const OPS = [['eq', t('playlist.condition.equal')], ['neq', t("ui.playlists.not_equal_85e993")], ['gt', t('playlist.condition.greater')],
+    ['gte', t("ui.playlists.at_least_d34749")], ['lt', t('playlist.condition.less')], ['lte', t("ui.playlists.at_most_954546")], ['truthy', t("ui.playlists.is_set_true_6fbb8c")]];
   const curType = (parsed && parsed.type) || (parsed && parsed.slug ? 'ds' : 'ds');
   const curOp = (parsed && parsed.op) || (curType === 'tag' ? 'has' : 'eq');
   const opts = sources.map((s) => `<option value="${esc(s.slug)}" ${parsed && parsed.slug === s.slug ? 'selected' : ''}>${uiText(s.name || s.slug)}</option>`).join('');
@@ -1313,7 +1315,7 @@ async function renderSmart(playlist) {
     return;
   }
   itemsEl.innerHTML = `
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">${renderHTML(t('smart.preview_count', { n: smart.count }))}${renderHTML(smart.count > smart.items.length ? ' · ' + t('smart.showing_first', { n: smart.items.length }) : '')}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">${renderHTML(t('smart.preview_count', { n: smart.count }))}${renderHTML(smart.count > smart.items.length ? displayList([' · ',t('smart.showing_first', { n: smart.items.length })],'') : '')}</div>
     ${renderHTML(smart.items.map((it, i) => `
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;display:flex;align-items:center;gap:12px">
       <div style="color:var(--text-muted);font-size:12px;min-width:24px;text-align:center">${renderHTML(i + 1)}</div>
@@ -1658,7 +1660,7 @@ function slotRowHtml(item, i, total) {
       <div style="color:var(--text-muted);font-size:12px;min-width:24px;text-align:center;user-select:none">${renderHTML(i + 1)}</div>
       <div style="flex:1;min-width:220px">
         <div style="font-size:14px;color:var(--text-primary)">${renderHTML(cui.chip(t('corp.badge.local_slot'), 'slot'))} ${uiText(t('corp.hq.slot_row', { name, limits: cui.limitsText(limits) }))}</div>
-        <div class="corp-help">${uiText(empty)}${renderHTML(view && view.fills ? ' · ' + tn('corp.hq.slot_levels', view.fills) : '')}${renderHTML(view && !view.live ? ' · ' + t('corp.hq.slot_not_live') : '')}</div>
+        <div class="corp-help">${uiText(empty)}${renderHTML(view && view.fills ? displayList([' · ',tn('corp.hq.slot_levels', view.fills)],'') : '')}${renderHTML(view && !view.live ? displayList([' · ',t('corp.hq.slot_not_live')],'') : '')}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${renderHTML(author ? btn('slot-settings', t('corp.hq.slot_settings')) + btn('slot-remove', t('corp.hq.remove_slot')) : '')}
@@ -1812,8 +1814,8 @@ async function mountCorporateEditor(container, playlist) {
         ${renderHTML(limits.max_items != null ? `<span class="${overItems ? 'over' : ''}">${uiText(tn('corp.slot.meter_items', limits.max_items, { used: totals.items }))}</span>` : `<span>${uiText(tn('corp.n_items', totals.items))}</span>`)}
         ${renderHTML(limits.max_total_sec != null ? `<span class="${overSec ? 'over' : ''}">${uiText(t('corp.slot.meter_sec', { s: totals.seconds, max: limits.max_total_sec }))}</span>` : `<span>${uiText(t('corp.slot.loop_sec', { s: totals.seconds }))}</span>`)}
       </div>
-      <div class="corp-help">${uiText(t('corp.slot.meter_note'))}${renderHTML(limits.allow_video === 0 || limits.allow_video === false ? ' ' + t('corp.slot.no_video') : '')}${renderHTML(limits.allow_widgets === 0 || limits.allow_widgets === false ? ' ' + t('corp.slot.no_widgets') : '')}</div>
-      ${renderHTML(pv && pv.violation ? `<div class="corp-notice corp-notice-danger" style="margin-top:8px">${uiText(pv.violation.error)}</div>` : '')}
+      <div class="corp-help">${uiText(t('corp.slot.meter_note'))}${renderHTML(limits.allow_video === 0 || limits.allow_video === false ? displayList([' ',t('corp.slot.no_video')],'') : '')}${renderHTML(limits.allow_widgets === 0 || limits.allow_widgets === false ? displayList([' ',t('corp.slot.no_widgets')],'') : '')}</div>
+      ${renderHTML(pv && pv.violation ? `<div class="corp-notice corp-notice-danger" style="margin-top:8px">${uiText(storedErrorMessage(pv.violation.error))}</div>` : '')}
       ${renderHTML(fill.fill_state === 'over_limit' ? `<div class="corp-notice corp-notice-danger" style="margin-top:8px">${uiText(t('corp.slot.over_limit'))}</div>` : '')}
       <div class="corp-card-actions">
         <button class="btn btn-secondary btn-sm" id="corpFillPreview">${uiText(t('corp.fill.preview'))}</button>
@@ -2093,7 +2095,7 @@ function showScheduleModal(item, opts = {}) {
     modal.innerHTML = `
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:580px;max-width:94vw;max-height:88vh;overflow:auto">
         <h3 style="margin:0 0 4px">${renderHTML(t('itemsched.title'))}</h3>
-        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">${uiText(item.filename || item.widget_name || 'item')}</p>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">${uiText(item.filename || item.widget_name || t('common.unnamed_item'))}</p>
         <p style="font-size:12px;color:#7dd3fc;background:#0c2a3f;border-radius:6px;padding:8px 10px;margin:0 0 16px">${renderHTML(t('itemsched.hint'))}</p>
         <div>${renderHTML(blocks.length ? blocks.map(blockRow).join('') : `<p style="font-size:13px;color:var(--text-muted);margin:0 0 10px">${renderHTML(t('itemsched.none'))}</p>`)}</div>
         <button class="btn btn-secondary btn-sm" id="schedAddBlock" style="margin-bottom:4px">${renderHTML(t('itemsched.add_block'))}</button>

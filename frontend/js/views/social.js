@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, binding } from '../lib/i18n-bindings.js';
 
 import { displayValue, message as t, messageCount as tn } from '../i18n.js';
@@ -100,7 +101,7 @@ function feedCard(f) {
         <div class="corp-help" style="font-size:12px;margin-top:4px">${renderHTML(f.sources.map((s) => esc(sourceLine(s))).join('<br>'))}</div>
         <div style="font-size:13px;margin-top:6px">${renderHTML(tn('social.n_shown', f.counts.approved))}${renderHTML(f.counts.pending ? ` · <strong>${uiText(tn('social.n_pending', f.counts.pending))}</strong>` : '')}${renderHTML(f.counts.hidden ? ` · ${esc(tn('social.n_hidden', f.counts.hidden))}` : '')}
           ${renderHTML(f.last_fetch_at ? `<span class="corp-help"> · ${renderHTML(t('social.fetched', { time: displayValue(new Date(f.last_fetch_at * 1000), "toLocaleTimeString", undefined) }))}</span>` : '')}</div>
-        ${renderHTML(errs.map((e) => `<div style="font-size:12px;color:var(--danger,#b91c1c);margin-top:2px;overflow-wrap:anywhere">${uiText(NETWORK_LABELS[e.network] ? NETWORK_LABELS[e.network]() : e.network)}${renderHTML(e.value ? ` (${esc(e.value)})` : '')}: ${uiText(e.error)}</div>`).join(''))}
+        ${renderHTML(errs.map((e) => `<div style="font-size:12px;color:var(--danger,#b91c1c);margin-top:2px;overflow-wrap:anywhere">${uiText(NETWORK_LABELS[e.network] ? NETWORK_LABELS[e.network]() : e.network)}${renderHTML(e.value ? ` (${esc(e.value)})` : '')}: ${uiText(storedErrorMessage(e.error))}</div>`).join(''))}
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
         <button class="btn btn-secondary btn-sm" data-act="queue">${uiText(t('social.posts'))}</button>

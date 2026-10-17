@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {displayValue} from '../i18n.js';
 import { localizedError, messageCount as tn } from '../i18n.js';
 import { renderHTML, uiText, translatedAttribute, bindAttribute, bindMessage, attributeBinding, binding } from '../lib/i18n-bindings.js';
 
@@ -285,7 +287,7 @@ async function renderWallEditor(container, wallId) {
           <h3 style="font-size:14px;margin:0 0 8px">${renderHTML(t('wall.playlist'))}</h3>
           <select id="wallPlaylist" class="input" style="width:300px;background:var(--bg-input)">
             <option value="">${renderHTML(t('wall.no_playlist'))}</option>
-            ${renderHTML((playlists || []).map(p => `<option value="${esc(p.id)}" ${p.id === wall.playlist_id ? 'selected' : ''}>${uiText(p.name)}${renderHTML(p.status === 'draft' ? ' (draft)' : '')}</option>`).join(''))}
+            ${renderHTML((playlists || []).map(p => `<option value="${esc(p.id)}" ${p.id === wall.playlist_id ? 'selected' : ''}>${uiText(p.name)}${renderHTML(p.status === 'draft' ? t('wall.playlist_draft_suffix') : '')}</option>`).join(''))}
           </select>
           <button class="btn btn-primary btn-sm" id="setPlaylistBtn" style="margin-left:8px">${renderHTML(t('wall.set_playlist'))}</button>
         </div>
@@ -298,7 +300,7 @@ async function renderWallEditor(container, wallId) {
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <select id="wallLayout" class="input" style="width:300px;background:var(--bg-input)">
               <option value="">${renderHTML(t('wall.no_layout'))}</option>
-              ${renderHTML(layouts.filter(l => (l.zones || []).length > 1 || l.id === wall.layout_id).map(l => `<option value="${esc(l.id)}" ${l.id === wall.layout_id ? 'selected' : ''}>${uiText(l.name)}${renderHTML(l.is_template ? ' (' + t('wall.layout_template') + ')' : '')}</option>`).join(''))}
+              ${renderHTML(layouts.filter(l => (l.zones || []).length > 1 || l.id === wall.layout_id).map(l => `<option value="${esc(l.id)}" ${l.id === wall.layout_id ? 'selected' : ''}>${uiText(l.name)}${renderHTML(l.is_template ? displayList([displayList([' (',t('wall.layout_template')],''),')'],'') : '')}</option>`).join(''))}
             </select>
             <button class="btn btn-primary btn-sm" id="setWallLayoutBtn">${renderHTML(t('wall.set_layout'))}</button>
             <button class="btn btn-sm" id="newWallLayoutBtn" title="${esc(t('wall.layout_per_screen_tip'))}" data-fil-i18n-title="${binding('wall.layout_per_screen_tip', undefined)}">${renderHTML(t('wall.layout_per_screen'))}</button>
@@ -505,7 +507,7 @@ async function renderWallEditor(container, wallId) {
     canvas.style.transform = `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`;
     positionZoneOverlay();   // its border and label are sized against the zoom
     const r = document.getElementById('zoomReadout');
-    if (r) bindMessage(r, Math.round(zoom * 100) + '%');
+    if (r) bindMessage(r, displayValue(zoom,'toLocaleString',{style:'percent',maximumFractionDigits:0}));
   }
 
   // Re-center bounds in the viewport with a small zoom-out so there's slack
@@ -1127,9 +1129,9 @@ async function renderWallEditor(container, wallId) {
     try {
       const r = await jsonOrThrow(`/walls/${wallId}/command`, { method: 'POST', body: JSON.stringify({ type }) });
       let msg = t('wall.toast.cmd_sent', { cmd: label, sent: r.sent, total: r.total });
-      if (r.offline) msg += ' ' + t('wall.toast.cmd_offline', { n: r.offline });
-      if (r.unsupported) msg += ' ' + t('wall.toast.cmd_unsupported', { n: r.unsupported });
-      if (r.refused) msg += ' ' + t('wall.toast.cmd_refused', { n: r.refused });
+      if (r.offline) msg = displayList([msg,displayList([' ',t('wall.toast.cmd_offline', { n: r.offline })],'')],'');
+      if (r.unsupported) msg = displayList([msg,displayList([' ',t('wall.toast.cmd_unsupported', { n: r.unsupported })],'')],'');
+      if (r.refused) msg = displayList([msg,displayList([' ',t('wall.toast.cmd_refused', { n: r.refused })],'')],'');
       showToast(msg, (r.offline || r.unsupported || r.refused) ? 'warning' : 'success');
     } catch (err) { showToast(errorMessage(err), 'error'); }
   });

@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {storedErrorMessage} from '../api.js';
 import { renderHTML, uiText, translatedAttribute, bindMessage, binding } from '../lib/i18n-bindings.js';
 
 import { displayQuantity, displayValue, message as t } from '../i18n.js';
@@ -140,7 +142,7 @@ function roleOf(n, kind, data) {
 }
 const ageLabel = (sec) => (sec == null ? t("ui.labels.never_85777c") : sec < 60 ? `${sec}s` : sec < 3600 ? `${Math.floor(sec / 60)}m` : sec < 86400 ? `${Math.floor(sec / 3600)}h` : `${Math.floor(sec / 86400)}d`);
 const fmtBytes = (b) => (b == null ? '—' : b >= 1 << 30 ? displayQuantity(b / (1 << 30),'GiB',1) : b >= 1 << 20 ? displayQuantity(b / (1 << 20),'MiB',1) : displayQuantity(b,'B'));
-const fmtPct = (v) => (v == null ? '—' : `${Math.round(v * 10) / 10}%`);
+const fmtPct = (v) => (v == null ? '—' : displayValue(v/100,'toLocaleString',{style:'percent',maximumFractionDigits:1}));
 const short = (id) => String(id || '').slice(0, 8);
 
 /** The caption a link earns on hover / selection: the state word, copy lag (never a number on a dead link), outbox, acked/head. */
@@ -175,7 +177,7 @@ function hostStrip(h) {
   if (!h) return '';
   const f = diskFraction(h);
   const lowDisk = f != null && f < DISK_ALERT_FRACTION;
-  const disk = h.disk_free_bytes == null ? '—' : t("ui.noc.value0_free_value1_7fbda2", {value0: fmtBytes(h.disk_free_bytes), value1: f != null ? ` (${Math.round(f * 100)}%)` : ''});
+  const disk = h.disk_free_bytes == null ? '—' : t("ui.noc.value0_free_value1_7fbda2", {value0: fmtBytes(h.disk_free_bytes), value1: f != null ? displayList([' (',displayValue(f,'toLocaleString',{style:'percent',maximumFractionDigits:0}),')'],'') : ''});
   return `<span ${translatedAttribute("title", "ui.noc.title_this_process_sampled_on_each_poll_means_ed241c")}>${renderHTML(t("ui.noc.this_server_cpu_ram_e89ee9", {value0: fmtPct(h.cpu_pct), value1: fmtBytes(h.rss_bytes)}))} </span>` +
          `<span style="${lowDisk ? `color:${ALERT};font-weight:600` : ''}" ${translatedAttribute("title", "ui.noc.title_free_space_on_the_filesystem_that_holds_d93691")}>${renderHTML(t("ui.noc.disk_c765d1", {value1: disk, value2: lowDisk ? t("ui.noc.below_10_5e80cf") : ''}))}</span>`;
 }
@@ -216,8 +218,8 @@ function draw(data) {
     const line2 = sc && sc.total > 0
       ? t("ui.noc.value0_value1_online_value2_value3_c76feb", {value0: sc.online ?? 0, value1: sc.total, value2: sc.attachedHere ? t('ui.noc.screens_here',{count:sc.attachedHere}) : '', value3: sc.attachedElsewhere ? t('ui.noc.screens_replica',{count:sc.attachedElsewhere}) : ''})
       : (sc ? t("ui.noc.no_screens_281fc0") : (kind === 'indirect' ? t("ui.noc.reached_through_a_child_209408") : t("ui.noc.no_screens_281fc0")));
-    const title = [short(n.id), roleOf(n, kind, data), (roles || []).map(roleLabel).join(', '), kind === 'self' ? t("ui.noc.this_server_086b51") : '', kind === 'indirect' ? t("ui.noc.value0_hop_s_via_value1_fbbaa1", {value0: n.hops, value1: short(n.via)}) : '']
-      .filter(Boolean).join(' · ');
+    const title = displayList([short(n.id), roleOf(n, kind, data), displayList((roles || []).map(roleLabel)), kind === 'self' ? t("ui.noc.this_server_086b51") : '', kind === 'indirect' ? t("ui.noc.value0_hop_s_via_value1_fbbaa1", {value0: n.hops, value1: short(n.via)}) : '']
+      .filter(Boolean), ' · ');
     const ring = alerts.has(n.id);
     return `
       <g class="noc-node" data-node="${esc(n.id)}" transform="translate(${p.x - BW / 2},${p.y - HB})" style="cursor:pointer">
@@ -276,10 +278,10 @@ function draw(data) {
     <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--text-muted);font-size:12px">${renderHTML(t("ui.noc.list_view"))}</summary>
       <ul style="font-size:13px">
         ${renderHTML(listItem(data.self, t("ui.noc.this_server_086b51")))}
-        ${renderHTML(parents.map((n) => listItem(n, t("ui.noc.parent_a311ec") + (n.roles || []).map(roleLabel).join(', '))).join(''))}
-        ${renderHTML(children.map((n) => listItem(n, t("ui.noc.child_c88849") + (n.capabilitiesHere || []).map(roleLabel).join(', '))).join(''))}
+        ${renderHTML(parents.map((n) => listItem(n, displayList([t("ui.noc.parent_a311ec"),displayList((n.roles || []).map(roleLabel))],''))).join(''))}
+        ${renderHTML(children.map((n) => listItem(n, displayList([t("ui.noc.child_c88849"),displayList((n.capabilitiesHere || []).map(roleLabel))],''))).join(''))}
         ${renderHTML(indirect.map((n) => listItem(n, t("ui.noc.value0_hop_s_via_value1_fbbaa1", {value0: n.hops, value1: short(n.via)}))).join(''))}
-        ${renderHTML(data.links.map((l) => `<li>${renderHTML(t("ui.noc.link_f8a830", {value0: short(l.from), value1: short(l.to), value2: edgeCaption(l), value3: l.lastError ? `, ${(l.lastError)}` : ''}))}</li>`).join(''))}
+        ${renderHTML(data.links.map((l) => `<li>${renderHTML(t("ui.noc.link_f8a830", {value0: short(l.from), value1: short(l.to), value2: edgeCaption(l), value3: l.lastError ? `, ${storedErrorMessage(l.lastError)}` : ''}))}</li>`).join(''))}
       </ul>
     </details>`;
 
@@ -357,7 +359,7 @@ function detailHtml(data) {
           <td style="${TDS}">${uiText(d.name)}</td>
           <td style="${TDS};color:${d.status === 'online' ? '#22c55e' : '#ef4444'}">${uiText(d.status)}</td>
           <td style="${TDS}" ${translatedAttribute("title", "ui.noc.title_seconds_since_the_last_heartbeat_or_device_bb2735")}>${uiText(ageLabel(d.seen_s))}</td>
-          <td style="${TDS}">${uiText(d.attached === 'here' ? 'here' : d.attached === 'primary' ? 'primary' : short(d.attached))}</td>
+          <td style="${TDS}">${uiText(d.attached === 'here' ? t('noc.attached.here') : d.attached === 'primary' ? t('noc.attached.primary') : short(d.attached))}</td>
           ${renderHTML(showCpu ? `<td style="${TDS}">${uiText(fmtPct(d.cpu_pct))}</td>` : '')}
           ${renderHTML(showMem ? `<td style="${TDS}">${uiText(fmtPct(d.mem_pct))}</td>` : '')}
           ${renderHTML(showStorage ? `<td style="${TDS}">${uiText(fmtBytes(d.storage_free_bytes))}</td>` : '')}
@@ -367,7 +369,7 @@ function detailHtml(data) {
     </table>
     ${renderHTML(sd.more ? `<p style="font-size:12px;color:var(--text-muted);margin:6px 0">${renderHTML(t('ui.noc.more_count',{n:sd.more}))} — <a href="#/devices">${renderHTML(t("ui.noc.the_displays_list"))}</a>.</p>` : '')}
     <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0">${renderHTML(t("ui.noc.stale_first_as_of_refreshes_with_the_eb2834", {value10: displayValue(new Date(sd.asOf * 1000), "toLocaleTimeString", undefined)}))}</p>`
-    : (sd ? `<p style="font-size:12px;color:var(--text-muted)">${renderHTML(sd.error ? esc(sd.error) : t("ui.noc.no_screens_on_this_node_054188"))}</p>` : `<p style="font-size:12px;color:var(--text-muted)">${renderHTML(t('devices.loading'))}</p>`);
+    : (sd ? `<p style="font-size:12px;color:var(--text-muted)">${renderHTML(sd.error ? esc(storedErrorMessage(sd.error)) : t("ui.noc.no_screens_on_this_node_054188"))}</p>` : `<p style="font-size:12px;color:var(--text-muted)">${renderHTML(t('devices.loading'))}</p>`);
   const alertRows = sd && sd.alerts && sd.alerts.length ? `
     <h4 style="margin:12px 0 4px;font-size:13px">${renderHTML(t("ui.noc.last_alerts"))}</h4>
     <ul style="font-size:12px;margin:0;padding-left:18px">${renderHTML(sd.alerts.map((a) => `<li>${uiText(a.metric)} <span style="color:var(--text-muted)">${renderHTML(t("ui.noc.ago_bb62e4", {value1: a.severity || '', value2: a.device ? `, ${(a.device)}` : '', value3: ageLabel(Math.max(0, Math.floor(Date.now() / 1000) - (a.opened_at || 0))), value4: a.closed_at ? t("ui.noc.closed_2cc035") : ''}))}</span></li>`).join(''))}</ul>` : '';

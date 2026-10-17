@@ -38,3 +38,10 @@
 |Bucket|Bucket|Depolama sağlayıcısının teknik kaynak adı; değer değiştirilmez|
 |Slide / Slide deck|Slayt / Slayt sunumu|Tek sayfa / birden çok slayt içeren içerik|
 |Publish draft / Save draft|Taslağı yayımla / Taslağı kaydet|Yayını değiştirmek ile taslağı saklamak ayrıdır|
+
+|Proof of play|Yayın kanıtı|İçeriğin belirli zamanda oynatıldığına ilişkin kayıt|
+|Uptime / downtime|Çalışma süresi / kesinti süresi|Ölçüm kapsamı ve bilinmeyen aralıklar ayrı belirtilir|
+|Read grant / write grant|Okuma izni / yazma izni|Bağlantı ile işlem yetkisi birbirine karıştırılmaz|
+|Forward / relay|İlet / üzerinden aktar|Veri veya komutun başka sunucu üzerinden geçmesi|
+|Energy estimate|Tahmini enerji kullanımı|Sayaç ölçümü gibi sunulmaz|
+|Unsigned template|İmzasız şablon|Kod incelemesi ve imza birbirinden ayrı kavramlardır|

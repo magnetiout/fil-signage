@@ -173,25 +173,18 @@ function getActionIcon(action) {
 // languages with the rest of the UI. The mapping below preserves the original
 // verb-then-noun structure of the English version.
 function formatAction(action) {
-  // Verbs
-  let s = action
-    .replace('POST /api/', t('activity.verb_created') + ' ')
-    .replace('PUT /api/', t('activity.verb_updated') + ' ')
-    .replace('DELETE /api/', t('activity.verb_deleted') + ' ');
-  // Specific endpoints
-  s = s
-    .replace('/provision/pair', t('activity.action_paired_device'))
-    .replace('/content/remote', t('activity.action_added_remote_content'))
-    .replace('/content', t('activity.noun_content'))
-    .replace('/devices/:id', t('activity.noun_device'))
-    .replace('/assignments/device/:deviceId', t('activity.noun_playlist_assignment'))
-    .replace('/assignments/:id', t('activity.noun_assignment'))
-    .replace('/layouts', t('activity.noun_layout'))
-    .replace('/widgets', t('activity.noun_widget'))
-    .replace('/schedules', t('activity.noun_schedule'))
-    .replace('/walls', t('activity.noun_video_wall'))
-    .replace('alert:device_offline', t('activity.alert_device_offline'));
-  return s;
+  const raw=String(action||'');
+  if(raw==='alert:device_offline')return t('activity.alert_device_offline');
+  const m=/^(POST|PUT|DELETE) (\/api\/[^?]*)$/.exec(raw);
+  if(m)m[2]=m[2].slice(4);
+  if(!m)return raw; // unknown action identifiers are diagnostic data, not translation keys
+  if(m[1]==='POST'&&m[2]==='/provision/pair')return t('activity.action_paired_device');
+  if(m[1]==='POST'&&m[2]==='/content/remote')return t('activity.action_added_remote_content');
+  const resources=[['/assignments/device/:deviceId','activity.noun_playlist_assignment'],['/assignments/:id','activity.noun_assignment'],['/content','activity.noun_content'],['/devices/:id','activity.noun_device'],['/layouts','activity.noun_layout'],['/widgets','activity.noun_widget'],['/schedules','activity.noun_schedule'],['/walls','activity.noun_video_wall']];
+  const resource=resources.find(([path])=>m[2]===path||m[2].startsWith(path+'/'));
+  if(!resource)return raw;
+  const keys={POST:'activity.operation_created',PUT:'activity.operation_updated',DELETE:'activity.operation_deleted'};
+  return t(keys[m[1]],{resource:t(resource[1])});
 }
 
 export function cleanup() {}

@@ -1,6 +1,6 @@
 # Ekran ve durum envanteri
 
-Kaynak envanteri: 53 yönetim görünümü; merkezi tr/en kaynaklarında 10.387 anahtar.
+Kaynak envanteri: 53 yönetim görünümü; merkezi tr/en kaynaklarında 10.643 anahtar.
 Her iki sözlükte anahtar/placeholder çokluğu, boş değer, UTF-8 ve yinelenen tanımlar otomatik kontrol edilir.
 Bu sayılar tek başına ekran veya akış kabulü olarak kullanılmaz.
 
@@ -88,6 +88,9 @@ tarafından yayımlanabilen veri olarak korunur; panel etiketleri ile karıştı
 | Türkçe İ/i I/ı arama/sıralama, tarih/sayı/yüzde, virgüllü sayı girişi | PASS | fil-admin-locale; content-search-filter-sort; fil-admin-language-e2e |
 | Gerçek Chrome %200 yakınlaştırma, dar ekran, klavye/diyalog odağı | PASS | fil-admin-zoom-e2e |
 | Önbellek sürümü ve oynatıcı/medya önbelleklerinin korunması | PASS | fil-admin-cache |
+| CSV: yayın kanıtı, cihaz/gün/kuruluş enerjisi, izleyici, kurumsal alanlar ve ağ çalışma süresi; enerji açıklama metni | PASS | fil-admin-report-e2e; mesh-uptime-report; corporate-slots-routes |
+| İzin kapsamı ve olumsuzluklar, iç içe metin/attribute bağları; kaydedilmemiş yetki seçimleri | PASS | fil-admin-system-messages; fil-admin-system-e2e |
+| İmzasız şablon onayında yerelleştirilmiş tam eşleşme ve değişmeyen backend onay sözleşmesi | PASS | fil-admin-system-e2e; templates-security-api |
 | Gerçek tablet / TV / TV box | NOT RUN | Fiziksel cihaz yok; yazılım testleri yerine sayılmaz |
 
 ## Sınırlar ve denetim yöntemi
@@ -109,3 +112,23 @@ Görsel örnekler izole test verisiyle gerçek Chrome üzerinden alındı: medya
 cihazlar, listeler, ayarlar, yardım ve %200 diyalog. Çeviriler ekran bağlamı ve terim
 sözlüğü ile ayrıca dil kontrolünden geçirildi. Canlı dağıtım durumu ve commit, özel
 HANDOFF belgesinde ayrı izlenir; bu matristeki PASS canlıya dağıtım kanıtı değildir.
+
+
+Son kapsam denetiminde template metinleri ile normal/HTML içeren JavaScript sabitleri
+ayrı tarandı. HTML metin taramasındaki 20 adayın yanında, doğrudan UI yardımcılarına
+verilen 9 sabit de bağlamıyla kontrol edildi: UTC, HTTP/UDP ve ürün adları gibi teknik
+değerlerdir. Karışık tooltip metinleri ve erişilebilir adlar ayrıca incelendi.
+Terminal komutları/çıktıları, API onay tokenları, örnek yayın verileri ve kullanıcının
+notları sistem açıklaması gibi çevrilmez. Güvenlik onayının görünen cümlesi ise
+Türkçeleştirilir; yalnızca tam eşleşmeden sonra mevcut kanonik API değeri gönderilir.
+
+Sunucunun bilinen sabit izin/aktarım açıklamaları ve dosya/CSV koşulları, yalnızca
+ilgili sistem alanlarının sunum sınırında anahtara dönüştürülür. Bilinmeyen teknik
+hata ve ayrıntılar güvenli genel mesaj kullanır; kullanıcı notlarına bu işlem uygulanmaz.
+Kritik izin olumsuzlukları gerçek izin ekranında TR/EN ayrıca okundu; metin uzaması,
+HTML kaçışı ve aynı input düğümlerinin korunması gerçek Chrome ile denetlendi.
+
+Raporların İngilizce varsayılan API çıktısı korunur. Panel, etkin dili Accept-Language
+ile gönderir. Türkçe CSV başında Excel/UTF-8 uyumu için BOM bulunur; CSV veri sayıları,
+UTC zamanları, kullanıcı adları ve formül enjeksiyonu koruması değişmez. Dış entegrasyonun
+gerçek hesabı/cihazı olmadan üçüncü taraf işlemi kabul edilmiş sayılmaz.

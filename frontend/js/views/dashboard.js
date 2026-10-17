@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, bindAttribute, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { displayQuantity, displayValue, getLocale, message as t, messageCount as tn } from '../i18n.js';
@@ -384,13 +385,13 @@ function renderWallCard(wall) {
           : `<div class="wall-card-grid" style="grid-template-columns:repeat(${wall.grid_cols},1fr);grid-template-rows:repeat(${wall.grid_rows},1fr)">${renderHTML(cells.join(''))}</div>`)}
         <div class="device-card-status">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-          <span>${renderHTML(t("ui.dashboard.wall_7bd67d", {value3: (wall.devices || []).length ? (wall.devices.length + '-panel') : wall.grid_cols + '×' + wall.grid_rows}))}</span>
+          <span>${renderHTML(t("ui.dashboard.wall_7bd67d", {value3: (wall.devices || []).length ? (t('dashboard.wall_panel_layout',{n:wall.devices.length})) : wall.grid_cols + '×' + wall.grid_rows}))}</span>
         </div>
       </div>
       <div class="device-card-body">
         <div class="device-card-name">${uiText(wall.name)}</div>
         <div class="device-card-meta">
-          <div class="meta-item">${renderHTML(members.length)} ${renderHTML(members.length === 1 ? 'tile' : 'tiles')}</div>
+          <div class="meta-item">${renderHTML(tn('dashboard.wall_tile_count',members.length))}</div>
           <div class="meta-item" style="color:${allUp ? 'var(--success)' : 'var(--danger, #e5484d)'}">${renderHTML(allUp ? t('ui.dashboard.all_online') : t("ui.dashboard.value0_value1_online_a2308f", {value0: onlineCount, value1: members.length}))}</div>
         </div>
         <!-- #235: a wall replaces its members' cards, so without this strip one dead panel of a
@@ -399,7 +400,7 @@ function renderWallCard(wall) {
         <div class="wall-card-members" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
           ${renderHTML(members.map(d => `
             <a class="wall-card-member" href="#/device/${esc(d.device_id)}" data-member-device-id="${esc(d.device_id)}" onclick="event.stopPropagation()"
-               title="${esc(d.device_name)} — ${esc(d.device_status || 'unknown')}. Open device info & controls"
+               ${translatedAttribute('title','ui.dashboard.value0_value1_open_device_info_controls_c0f9c1',{value0:d.device_name,value1:livenessBadge({status:d.device_status},{short:true}).label})}
                style="display:inline-flex;align-items:center;gap:4px;max-width:120px;padding:1px 6px;border:1px solid var(--border);border-radius:10px;font-size:10px;color:var(--text-secondary);text-decoration:none">
               <span class="status-dot ${esc(d.device_status || 'offline')}" style="display:inline-block;flex-shrink:0"></span>
               <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${uiText(d.device_name)}</span>
@@ -454,7 +455,7 @@ function renderGroupSection(group, devices, playlists) {
           ${renderHTML(devices.length > 0 ? `
           ${renderHTML(corpGroupCovered(group) ? '' : `<select class="input group-playlist-select" data-group-id="${group.id}" data-group-name="${esc(group.name)}" style="width:160px;padding:4px 8px;font-size:12px;background:var(--bg-input)">
             <option value="">${renderHTML(t('dashboard.set_playlist_placeholder'))}</option>
-            ${renderHTML((playlists || []).map(p => `<option value="${esc(p.id)}">${uiText(p.name)}${renderHTML(p.status === 'draft' ? ' ' + t('dashboard.draft_suffix') : '')}</option>`).join(''))}
+            ${renderHTML((playlists || []).map(p => `<option value="${esc(p.id)}">${uiText(p.name)}${renderHTML(p.status === 'draft' ? displayList([' ',t('dashboard.draft_suffix')],'') : '')}</option>`).join(''))}
           </select>`)}
           <select class="input group-cmd-select" data-group-id="${group.id}" data-group-name="${esc(group.name)}" data-device-count="${devices.length}" style="width:150px;padding:4px 8px;font-size:12px;background:var(--bg-input)">
             <option value="">${renderHTML(t('dashboard.send_command_placeholder'))}</option>
@@ -667,7 +668,7 @@ export function render(container) {
       onConfirm: async (url) => {
         const r = await api.sendWorkspaceCommand(ws.id, 'set_server_url', { url });
         let msg = t('dashboard.toast.command_sent', { cmd: t('dashboard.cmd.set_server_url'), sent: r.sent, total: r.total });
-        if (r.unsupported > 0) msg += ' ' + t('dashboard.toast.command_unsupported_n', { n: r.unsupported });
+        if (r.unsupported > 0) msg = displayList([msg,displayList([' ',t('dashboard.toast.command_unsupported_n', { n: r.unsupported })],'')],'');
         showToast(msg, r.unsupported > 0 || r.offline > 0 ? 'warning' : 'success');
       },
     });
@@ -1595,7 +1596,7 @@ function attachGroupHandlers(groupsWithDevices) {
     const g = corpCoverage && corpCoverage.groups[btn.dataset.groupId];
     if (!g) return;
     cui.explainLocked({
-      text: t('corp.err.CORPORATE_OVERRIDE', { name: g.playlist_name || '' }) + ' ' + t('corp.group.why_detail', { target: g.target_label || '' }),
+      text: displayList([displayList([t('corp.err.CORPORATE_OVERRIDE', { name: g.playlist_name || '' }),' '],''),t('corp.group.why_detail', { target: g.target_label || '' })],''),
       actions: corpCoverage.is_admin ? [{ label: t('corp.dev.change_in_corporate'), primary: true, onClick: () => { window.location.hash = '#/corporate/where'; } }] : [],
     });
   }));
@@ -1652,7 +1653,7 @@ function attachGroupHandlers(groupsWithDevices) {
       try {
         const updated = await api.updateGroup(groupId, { sync_backend: chosen });
         if (updated?.sync_downgraded && updated?.sync_reason) {
-          showToast(t('dashboard.group_sync.toast_downgraded') + ' ' + updated.sync_reason, 'warning');
+          showToast(displayList([displayList([t('dashboard.group_sync.toast_downgraded'),' '],''),updated.sync_reason],''), 'warning');
         } else {
           showToast(t('dashboard.group_sync.toast_backend'), 'success');
         }
@@ -1727,13 +1728,13 @@ function attachGroupHandlers(groupsWithDevices) {
           ? t('dashboard.toast.command_sent_with_offline', { cmd: cmdLabel, sent: result.sent, total: result.total, offline: result.offline })
           : t('dashboard.toast.command_sent', { cmd: cmdLabel, sent: result.sent, total: result.total });
         if (result.unsupported > 0) {
-          msg += ' ' + t('dashboard.toast.command_unsupported_n', { n: result.unsupported });
+          msg = displayList([msg,displayList([' ',t('dashboard.toast.command_unsupported_n', { n: result.unsupported })],'')],'');
         }
         // Screens head office's playlist drives refuse the gated commands: say how many, and why.
         const refused = Number(result.refused) || 0;
         if (refused > 0) {
           const why = (result.results || []).find((r) => r && r.status === 'refused');
-          msg += ' ' + tn('corp.group.cmd_refused', refused) + ' ' + (why && why.error ? why.error : t('corp.group.cmd_refused_why'));
+          msg = displayList([msg,displayList([displayList([displayList([' ',tn('corp.group.cmd_refused', refused)],''),' '],''),why && why.error ? why.error : t('corp.group.cmd_refused_why')],'')],'');
         }
         showToast(msg, refused > 0 && !result.sent ? 'error' : (result.offline > 0 || result.unsupported > 0 || refused > 0) ? 'warning' : 'success');
       } catch (err) {
@@ -1836,12 +1837,12 @@ async function toggleBroadcast(btn) {
     const client = new BroadcastTalkClient(descriptorPath, {});
     await client.start();
     activeBroadcast = { key, client, btn, label, scope };
-    bindMessage(btn, '⏹ ' + t('dashboard.talk.end'));
+    bindMessage(btn, displayList(['⏹ ',t('dashboard.talk.end')],''));
     btn.classList.add('btn-danger');
     showToast(t('dashboard.talk.on_air'), 'info');
   } catch (e) {
     try { stopGroupTalk(scope); } catch (_) {}
-    showToast(t('dashboard.talk.failed') + (e && (errorMessage(e)) ? ': ' + (errorMessage(e)) : ''), 'error');
+    showToast(displayList([t('dashboard.talk.failed'),e && (errorMessage(e)) ? ': ' + (errorMessage(e)) : ''],''), 'error');
   } finally {
     btn.disabled = false;
   }

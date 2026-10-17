@@ -1,3 +1,4 @@
+import {displayList} from '../i18n.js';
 import {builtinLayoutName, builtinZoneName} from '../lib/builtin-layout-labels.js';
 import {translatedAttribute} from '../lib/i18n-bindings.js';
 import { renderHTML, uiText, bindMessage, binding } from '../lib/i18n-bindings.js';
@@ -119,7 +120,7 @@ function renderLayoutCard(layout, isTemplate) {
       </div>
       <div class="content-item-body">
         <div class="content-item-name">${uiText(builtinLayoutName(layout))}</div>
-        <div class="content-item-size">${renderHTML(zonesText)}${renderHTML(isTemplate ? ' • ' + t('layout.template_label') : '')}</div>
+        <div class="content-item-size">${renderHTML(zonesText)}${renderHTML(isTemplate ? displayList([' • ',t('layout.template_label')],'') : '')}</div>
       </div>
       <div class="content-item-actions">
         ${renderHTML(isTemplate
@@ -484,7 +485,7 @@ async function renderEditor(container, layoutId, wallId = null) {
         border:1px solid ${selectedZone === i ? 'var(--accent)' : 'var(--border)'};border-radius:var(--radius);
         margin-bottom:4px;cursor:pointer;font-size:13px" data-zone-idx="${i}">
         <div style="font-weight:500">${uiText(builtinZoneName(layout,z))}</div>
-        <div style="font-size:11px;color:var(--text-muted)">${renderHTML(Math.round(z.width_percent))}% x ${renderHTML(Math.round(z.height_percent))}% • ${uiText(z.zone_type)}${renderHTML(Number(z.is_main) === 1 ? ' • ' + t('layoutpl.main_zone') : '')}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${renderHTML(Math.round(z.width_percent))}% x ${renderHTML(Math.round(z.height_percent))}% • ${uiText(z.zone_type)}${renderHTML(Number(z.is_main) === 1 ? displayList([' • ',t('layoutpl.main_zone')],'') : '')}</div>
       </div>
     `).join('');
 

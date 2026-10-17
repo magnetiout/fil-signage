@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, bindMessage, bindText } from '../lib/i18n-bindings.js';
 
 import { localizedError, displayList, displayQuantity, displayValue, message as t, messageCount as tn } from '../i18n.js';
@@ -313,7 +314,7 @@ function drawJob() {
     // In the guide, "carry on" leaves the import running on the server: the rest of the guide goes on.
     inner = progressHtml(j) + `<div class="mig-actions"><button type="button" class="btn btn-secondary" data-act="cancel">${uiText(t('migrate.cancel'))}</button>${renderHTML(guide() ? `<button type="button" class="btn btn-primary" data-act="continue">${uiText(t('migrate.guide.carry_on'))}</button>` : '')}</div>`;
   } else {
-    inner = (j.error ? `<div class="corp-notice ${j.status === 'failed' ? 'corp-notice-danger' : ''}">${uiText(j.error)}</div>` : '')
+    inner = (j.error ? `<div class="corp-notice ${j.status === 'failed' ? 'corp-notice-danger' : ''}">${uiText(storedErrorMessage(j.error))}</div>` : '')
       + (j.report ? reportHtml(j) : '')
       + (j.can_resume || j.needs_credentials ? resumeHtml(j, v) : '')
       + (guide() && j.status === 'done' && j.report && j.report.created && j.report.created.screens ? `<p class="mig-muted">${uiText(t('migrate.guide.screens_later'))}</p>` : '')

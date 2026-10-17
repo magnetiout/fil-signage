@@ -804,7 +804,7 @@ function renderEditor(container) {
     state.tab = b.dataset.tab; paintTabs(container); renderProps(container);
   }));
   container.querySelector('#tools').innerHTML = Object.entries(KINDS).map(([k, v]) =>
-    `<button class="btn btn-secondary" data-add="${k}" title="Add ${v.label}"
+    `<button class="btn btn-secondary" data-add="${k}" ${translatedAttribute('title','slides.add_element_label',{element:v.label})}
        style="padding:0;aspect-ratio:1;display:grid;place-items:center">${renderHTML(v.icon)}</button>`).join('');
   container.querySelector('#tools').addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-add]'); if (!b) return;

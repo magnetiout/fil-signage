@@ -1,3 +1,5 @@
+import {displayList} from '../i18n.js';
+import {storedErrorMessage} from '../api.js';
 import { uiText, renderHTML, translatedAttribute, bindMessage, binding, bindText } from '../lib/i18n-bindings.js';
 
 import { errorMessage, api } from '../api.js';
@@ -43,8 +45,8 @@ function card(c) {
           ${renderHTML(c.enabled ? '' : `<span class="corp-help" style="font-size:12px">${uiText(t('alerts.off'))}</span>`)}</div>
         <div class="corp-help" style="font-size:12px;margin-top:4px;word-break:break-all">${uiText(target(c))}</div>
         <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">${uiText(t('alerts.summary', {
-          events: c.events.map((e) => t(`alerts.ev.${e}`)).join(', '), n: c.offline_minutes, scope: scopeSummary(c) }))}</div>
-        <div class="corp-help" style="font-size:12px;margin-top:4px">${renderHTML(t('alerts.last_sent', { when: ago(c.last_sent_at) }))}${renderHTML(c.last_error ? ` · <span style="color:#ca8a04">${uiText(c.last_error)}</span>` : '')}</div>
+          events: displayList(c.events.map((e) => t(`alerts.ev.${e}`))), n: c.offline_minutes, scope: scopeSummary(c) }))}</div>
+        <div class="corp-help" style="font-size:12px;margin-top:4px">${renderHTML(t('alerts.last_sent', { when: ago(c.last_sent_at) }))}${renderHTML(c.last_error ? ` · <span style="color:#ca8a04">${uiText(storedErrorMessage(c.last_error))}</span>` : '')}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
         <button class="btn btn-secondary btn-sm" data-act="test">${uiText(t('alerts.send_test'))}</button>

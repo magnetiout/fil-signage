@@ -1,3 +1,4 @@
+const {reportLanguage,reportText,reportLabel,reportCsv,turkishEnergyAppendix}=require('../lib/admin-report-i18n');
 const express = require('express');
 const playReport = require('../lib/play-report');   // raw + rollup, one series across the seam
 const router = express.Router();
@@ -232,6 +233,7 @@ router.get('/kiosk-sessions', (req, res) => {
 // filter at all - any authenticated user could export the entire platform's
 // play_logs. The added WHERE clause closes that pre-existing cross-tenant leak.
 router.get('/export', (req, res) => {
+  const language=reportLanguage(req,res);
   const { device_id, start, end } = req.query;
   const range = resolveRange(req, res, { defaultStart: () => 0, defaultEnd: () => Math.floor(Date.now() / 1000) });
   if (!range) return;
@@ -245,16 +247,16 @@ router.get('/export', (req, res) => {
 
   const rows = db.prepare(sql).all(...params);
 
-  const header = 'Device,Content,Started,Ended,Duration (sec),Completed\n';
+  const header = ['Device','Content','Started','Ended','Duration (sec)','Completed'].map(v=>reportLabel(language,v)).join(',')+'\n';
   const csv = header + rows.map(r => {
     const started = new Date(r.started_at * 1000).toISOString();
     const ended = r.ended_at ? new Date(r.ended_at * 1000).toISOString() : '';
-    return `${csvCell(r.device_name)},${csvCell(r.content_name)},"${started}","${ended}",${r.duration_sec || ''},${r.completed ? 'Yes' : 'No'}`;
+    return `${csvCell(r.device_name)},${csvCell(r.content_name)},"${started}","${ended}",${r.duration_sec || ''},${reportLabel(language,r.completed ? 'Yes' : 'No')}`;
   }).join('\n');
 
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename=proof-of-play.csv');
-  res.send(csv);
+  res.send(reportCsv(language,csv));
 });
 
 // ⚠️ Uptime still scopes by the device's CURRENT workspace: device_telemetry has no snapshotted

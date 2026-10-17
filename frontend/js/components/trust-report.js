@@ -1,3 +1,4 @@
+import {storedErrorMessage} from '../api.js';
 import {localizedError} from '../i18n.js';
 import { uiText, renderHTML } from '../lib/i18n-bindings.js';
 import { displayQuantity, displayValue, displayList, hasMessage, message as t } from '../i18n.js';
@@ -221,7 +222,7 @@ export async function mountExports(el, { canOrg = false } = {}) {
         <thead><tr><th>${uiText(t('trust.exp.col.what'))}</th><th>${uiText(t('trust.exp.col.status'))}</th><th>${uiText(t('trust.exp.col.size'))}</th><th>${uiText(t('trust.exp.col.requested'))}</th><th></th></tr></thead>
         <tbody>${renderHTML(jobs.map((j) => `<tr>
           <td>${uiText(j.kind === 'org' ? t('trust.exp.kind_org') : t('trust.exp.kind_user'))}</td>
-          <td>${uiText(status(j))}${renderHTML(j.error ? `<div class="trust-muted">${uiText(j.error)}</div>` : '')}</td>
+          <td>${uiText(status(j))}${renderHTML(j.error ? `<div class="trust-muted">${uiText(storedErrorMessage(j.error))}</div>` : '')}</td>
           <td>${renderHTML(j.bytes ? esc(fmtBytes(j.bytes)) : '')}</td>
           <td>${uiText(when(j.created_at))}${renderHTML(j.expires_at && j.status === 'ready' ? `<div class="trust-muted">${uiText(t('trust.exp.until', { when: when(j.expires_at) }))}</div>` : '')}</td>
           <td>${renderHTML(j.status === 'ready' ? `<button type="button" class="btn btn-secondary btn-sm" data-download="${esc(j.id)}">${uiText(t('trust.exp.download'))}</button>` : '')}</td>

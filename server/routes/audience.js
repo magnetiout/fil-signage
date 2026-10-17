@@ -1,4 +1,6 @@
 'use strict';
+const {reportLanguage,reportText,reportLabel,reportCsv,turkishEnergyAppendix}=require('../lib/admin-report-i18n');
+
 
 /*
  * Audience counting — settings, per-screen switches and the report (lib/audience.js).
@@ -161,7 +163,7 @@ router.get('/export.csv', (req, res) => {
   if (!r) return;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="audience.csv"');
-  res.send(audience.toCsv(audience.exportRows(req.workspaceId, r)));
+  res.send(audience.toCsv(audience.exportRows(req.workspaceId, r),reportLanguage(req,res)));
 });
 
 module.exports = router;

@@ -1,3 +1,6 @@
+import {displayList} from '../i18n.js';
+import {systemMessage} from '../api.js';
+import {storedErrorMessage} from '../api.js';
 import {isMessage} from '../i18n.js';
 import { uiText, renderHTML, bindMessage, bindAttribute, attributeBinding, binding, bindText } from '../lib/i18n-bindings.js';
 
@@ -654,7 +657,7 @@ function renderResults() {
   grid.tabIndex = -1;
   const filtering = !!state.q || filtersActive();
   if (state.error && !state.items.length) {
-    grid.innerHTML = `<div class="lib-state" role="alert"><h2>${uiText(t('content.failed_to_load'))}</h2><p>${uiText(state.error)}</p>
+    grid.innerHTML = `<div class="lib-state" role="alert"><h2>${uiText(t('content.failed_to_load'))}</h2><p>${uiText(storedErrorMessage(state.error))}</p>
       <button type="button" class="btn btn-secondary" data-retry>${uiText(t('library.retry'))}</button></div>`;
     grid.querySelector('[data-retry]').addEventListener('click', () => loadContent());
     return;
@@ -897,7 +900,7 @@ async function deleteDialog(items) {
     const ids = items.map((c) => c.id);
     const r = ids.length === 1 ? await api.deleteContent(ids[0]) : await api.batchDeleteContent(ids);
     const devices = (r && r.affectedDevices) ? r.affectedDevices.length : 0;
-    showToast(t(ids.length === 1 ? 'library.delete.done_one' : 'library.delete.done_other', { count: ids.length }) + (devices ? ' ' + t('library.delete.devices', { count: devices }) : ''), 'success');
+    showToast(displayList([t(ids.length === 1 ? 'library.delete.done_one' : 'library.delete.done_other', { count: ids.length }),devices ? displayList([' ',t('library.delete.devices', { count: devices })],'') : ''],''), 'success');
     if (inspector.openId && ids.includes(inspector.openId)) inspector.close({ force: true });
     for (const id of ids) state.selected.delete(id);
     afterBulk(false);
@@ -1021,7 +1024,7 @@ async function playlistDialog(items) {
         const rd = openDialog({
           title: t('library.playlist.partial_title', { added, playlist: pl.name }),
           html: `<p>${uiText(t('library.playlist.partial_text', { count: skipped.length }))}</p>
-            <ul class="lib-confirm-list">${renderHTML(skipped.map((s) => `<li><strong>${uiText((byId.get(s.content_id) || {}).filename || s.content_id)}</strong> — ${uiText(s.reason)}</li>`).join(''))}</ul>
+            <ul class="lib-confirm-list">${renderHTML(skipped.map((s) => `<li><strong>${uiText((byId.get(s.content_id) || {}).filename || s.content_id)}</strong> — ${uiText(s.code ? localizeServerError(s.reason) : systemMessage(s.reason))}</li>`).join(''))}</ul>
             <div class="lib-dialog-actions"><button type="button" class="btn btn-primary" data-ok>${uiText(t('common.close'))}</button></div>`,
         });
         rd.root.querySelector('[data-ok]').addEventListener('click', () => rd.close());
