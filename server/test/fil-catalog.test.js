@@ -23,3 +23,9 @@ test('catalog asset iterator remains bounded and refuses a changed byte count',(
  let changed=0;
  assert.throws(()=>render.entries(m,function*(){changed++;yield ['first',{...asset,data:'x'.repeat(changed*10)}]}),/changed/);
 });
+
+test('Android operator server field suggests the permanent FILSign origin',()=>{
+ const activity=fs.readFileSync(path.join(__dirname,'../../android/app/src/main/java/com/remotedisplay/player/MainActivity.kt'),'utf8');
+ assert(activity.includes('hint = "https://signage.filteknoloji.com"'));
+ assert(!activity.includes('hint = "https://screentinker.com"'));
+});
