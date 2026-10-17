@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Power BI on a TV Screen and Digital Signage (2026) | ScreenTinker</title>
+  <title>Power BI on a TV Screen and Digital Signage (2026) | FILSign</title>
   <meta name="description" content="Put live Power BI reports on digital signage with your own service principal, rotating pages. Or use Publish to web for public data.">
   <meta name="keywords" content="power bi digital signage, power bi on tv, power bi on tv screen, power bi dashboard wall, power bi publish to web, power bi embed signage, power bi kiosk display">
   <meta name="robots" content="index, follow">
@@ -15,7 +15,7 @@
   <meta property="og:title" content="Power BI on a TV Screen and Digital Signage (2026)">
   <meta property="og:description" content="Put live Power BI reports on digital signage with your own service principal, rotating pages. Or use Publish to web for public data.">
   <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Power BI on a TV Screen and Digital Signage (2026)">
@@ -33,7 +33,7 @@
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -62,12 +62,12 @@
     <p class="lead">Show the reports your teams already rely on, live, on lobby and office screens. The BI Dashboard widget embeds a Power BI report with your own Entra app, so private data stays private, and it can rotate through report pages on its own.</p>
 
     <h2>How it works</h2>
-    <p>ScreenTinker uses Power BI&rsquo;s <strong>App owns data</strong> embedding with your own Entra ID app, a service principal. An organization owner or admin adds the connection once, in <strong>Settings &rarr; BI dashboards</strong>, and editors pick a report from it.</p>
+    <p>FILSign uses Power BI&rsquo;s <strong>App owns data</strong> embedding with your own Entra ID app, a service principal. An organization owner or admin adds the connection once, in <strong>Settings &rarr; BI dashboards</strong>, and editors pick a report from it.</p>
     <ul>
       <li><strong>Credentials stay on the server.</strong> The app secret is encrypted and never sent to a screen.</li>
       <li><strong>Screens get a view-only token</strong> for one report, which expires within the hour. The screen fetches a new one before it does.</li>
       <li><strong>Pages rotate.</strong> List the pages you want, or tick <strong>Rotate through all visible pages</strong>, and set how long each one shows.</li>
-      <li><strong>Sandboxed.</strong> Every dashboard page runs with an isolated origin, so the report can&rsquo;t reach anyone&rsquo;s ScreenTinker session.</li>
+      <li><strong>Sandboxed.</strong> Every dashboard page runs with an isolated origin, so the report can&rsquo;t reach anyone&rsquo;s FILSign session.</li>
     </ul>
 
     <h2 id="setup">Set it up</h2>
@@ -75,7 +75,7 @@
       <li><strong>In Entra ID</strong>, register an application and add a client secret. It needs no Microsoft Graph or Power BI API permissions.</li>
       <li><strong>In the Power BI admin portal</strong>, under Tenant settings &rarr; Developer settings, turn on <strong>Service principals can use Fabric APIs</strong> (in older tenants, &ldquo;Allow service principals to use Power BI APIs&rdquo;). You can limit it to a security group that contains the app.</li>
       <li><strong>In each Power BI workspace</strong> whose reports you want on screens, add the app (or that group) as a Viewer or higher.</li>
-      <li><strong>In ScreenTinker</strong>, open Settings &rarr; BI dashboards &rarr; Add a connection &rarr; Power BI, and enter the tenant ID, the client ID and the secret. <strong>Test</strong> signs in and counts the workspaces the app can see.</li>
+      <li><strong>In FILSign</strong>, open Settings &rarr; BI dashboards &rarr; Add a connection &rarr; Power BI, and enter the tenant ID, the client ID and the secret. <strong>Test</strong> signs in and counts the workspaces the app can see.</li>
       <li><strong>Add a BI Dashboard widget</strong>, choose the connection, <strong>Browse</strong> for a report, and set page rotation and <strong>Refresh every</strong> if the dataset refreshes on a schedule.</li>
       <li>Put the widget in a playlist and assign it to a screen.</li>
     </ol>
@@ -125,7 +125,7 @@
 
     <div class="cta">
       <h2>Put your Power BI reports on a screen</h2>
-      <p>Connect your Entra app once and every editor can pick a report. Start a 14-day Pro trial on hosted ScreenTinker: up to 15 screens, every feature, no credit card.</p>
+      <p>Connect your Entra app once and every editor can pick a report. Start a 14-day Pro trial on hosted FILSign: up to 15 screens, every feature, no credit card.</p>
       <p><a href="/app#/login" class="btn btn-primary" style="padding:14px 28px;font-size:16px">Start your free trial</a></p>
       <p class="cta-alt">Or host it yourself, free and open source: <a href="/guides/self-hosted-digital-signage.html">self-hosting guide</a> &middot; <a href="https://github.com/screentinker/screentinker" target="_blank" rel="noopener">GitHub</a></p>
     </div>

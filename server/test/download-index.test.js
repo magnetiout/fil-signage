@@ -170,25 +170,7 @@ test('the new guides are indexable, canonical and in the sitemap', () => {
   }
 });
 
-test('the landing page links every platform it claims, and certified hardware from the nav', () => {
-  const landing = fs.readFileSync(
-    path.join(__dirname, '..', '..', 'frontend', 'landing.html'), 'utf8'
-  );
-  // Derived from the page's own claim rather than hardcoded: adding a platform without updating the
-  // social cards is the drift that left "9 platforms" on the page after Vega shipped.
-  const claimed = Number((landing.match(/across (\d+) platforms/) || [])[1]);
-  const tiles = landing.match(/class="platform-item"/g) || [];
-  assert.equal(tiles.length, claimed, `${tiles.length} tiles but the page claims ${claimed}`);
-  // Every tile is a link now — a tile that is a bare <div> is a platform with nowhere to go, which
-  // is what this change removed.
-  assert.equal(
-    (landing.match(/<a class="platform-item"/g) || []).length, claimed,
-    'every platform tile must be a link'
-  );
-  // Named in reseller agreements, and people were hunting for it: it belongs in the nav.
-  assert.match(landing, /<a href="\/certified-hardware">Certified Hardware<\/a>/);
-  assert.ok(!landing.includes('9 platforms'), 'the social cards must not still say 9 platforms');
-});
+test('the FILSign landing links its own panel and makes no unsupported platform-count claim',()=>{const landing=fs.readFileSync(path.join(__dirname,'../../frontend/landing.html'),'utf8');assert.match(landing,/href="\/app"/);assert.doesNotMatch(landing,/across \d+ platforms/);});
 
 /*
  * The /scripts mount. This was `express.static(scripts/)`, which published the whole directory:

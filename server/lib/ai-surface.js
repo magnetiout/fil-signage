@@ -34,15 +34,15 @@ function apiCatalog(base) {
     linkset: [{
       anchor: `${base}/api`,
       'service-desc': [{ href: `${base}/openapi.yaml`, type: 'application/yaml',
-        title: 'ScreenTinker Public API — OpenAPI 3 description' }],
+        title: "FILSign Public API — OpenAPI 3 description" }],
       'service-doc': [{ href: `${base}/docs`, type: 'text/html',
-        title: 'ScreenTinker Public API reference' }],
+        title: "FILSign Public API reference" }],
       'service-meta': [{ href: `${base}/auth.md`, type: 'text/markdown',
-        title: 'How to authenticate against the ScreenTinker API' }],
+        title: "How to authenticate against the FILSign API" }],
       // The MCP endpoint is part of this API's surface, so it belongs in the catalogue an agent reads
       // first rather than only in prose.
       related: [{ href: `${base}/mcp`, type: 'application/json',
-        title: 'ScreenTinker MCP server — manage signage from an AI client' }],
+        title: "FILSign MCP server — manage signage from an AI client" }],
       author: [{ href: 'https://github.com/screentinker/screentinker' }],
     }],
   };
@@ -61,28 +61,28 @@ function aiCatalog(base) {
   return {
     specVersion: '1.0',
     host: {
-      displayName: 'ScreenTinker',
+      displayName: "FILSign",
       identifier: base,
       description: 'Open-source digital signage: manage screens, playlists and schedules.',
     },
     entries: [
       {
         identifier: `${base}/mcp`,
-        displayName: 'ScreenTinker MCP server',
+        displayName: "FILSign MCP server",
         description: `Model Context Protocol endpoint. ${require('./mcp/tools').TOOLS.length} tools, filtered by the token's scope.`,
         type: 'application/json',
         url: `${base}/.well-known/mcp/server-card.json`,
       },
       {
         identifier: `${base}/openapi.yaml`,
-        displayName: 'ScreenTinker Public API',
+        displayName: "FILSign Public API",
         description: 'OpenAPI 3 description of the REST API the MCP server is a client of.',
         type: 'application/yaml',
         url: `${base}/openapi.yaml`,
       },
       {
         identifier: `${base}/.well-known/agent-skills/index.json`,
-        displayName: 'ScreenTinker agent skills',
+        displayName: "FILSign agent skills",
         description: 'Skill documents describing how to operate a screen estate.',
         type: 'application/json',
         url: `${base}/.well-known/agent-skills/index.json`,
@@ -115,7 +115,7 @@ function aiCatalog(base) {
 function protectedResourceMetadata(base) {
   return {
     resource: base,
-    resource_name: 'ScreenTinker Public API',
+    resource_name: "FILSign Public API",
     scopes_supported: [...SCOPES],
     bearer_methods_supported: ['header'],
     resource_documentation: `${base}/auth.md`,
@@ -140,13 +140,13 @@ function authMarkdown(base) {
    * ScreenTinker API") reads as a page that happens to be about auth rather than as the document
    * the convention defines. The descriptive title survives as the line under it.
    */
-  return `# ScreenTinker auth.md
+  return `# FILSign auth.md
 
-*How an automated client authenticates with this ScreenTinker instance.*
+*How an automated client authenticates with this FILSign instance.*
 
-**Audience:** AI agents, MCP clients and scripts acting on behalf of a ScreenTinker user.
+**Audience:** AI agents, MCP clients and scripts acting on behalf of a FILSign user.
 
-ScreenTinker uses **scoped personal access tokens**. There is no OAuth flow, no client registration,
+FILSign uses **scoped personal access tokens**. There is no OAuth flow, no client registration,
 and no way for an agent to obtain a token on its own — a human creates one in the dashboard and gives
 it to you. If you do not have one, stop here and ask for one.
 
@@ -214,7 +214,7 @@ never shown a tool that writes.
 
 ## Self-hosted instances
 
-ScreenTinker is open source and commonly self-hosted, so this document describes **this** instance at
+FILSign is open source and commonly self-hosted, so this document describes **this** instance at
 ${base}. Another deployment may be a different version with a different set of endpoints; read its own
 \`${base}/openapi.yaml\` rather than assuming ours.
 `;

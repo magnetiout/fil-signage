@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Canva Digital Signage: Import and Sync Designs | ScreenTinker</title>
+  <title>Canva Digital Signage: Import and Sync Designs | FILSign</title>
   <meta name="description" content="Import Canva designs as images or video and keep them in sync. When a design changes in Canva, your screens pick up the new version.">
   <meta name="keywords" content="canva digital signage, canva on tv, canva tv display, canva slideshow signage, canva menu board, canva integration signage, canva sync screens">
   <meta name="robots" content="index, follow">
@@ -15,7 +15,7 @@
   <meta property="og:title" content="Canva Digital Signage: Import and Sync Designs">
   <meta property="og:description" content="Import Canva designs as images or video and keep them in sync. When a design changes in Canva, your screens pick up the new version.">
   <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Canva Digital Signage: Import and Sync Designs">
@@ -33,7 +33,7 @@
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -63,7 +63,7 @@
 
     <h2>How it works</h2>
     <ol>
-      <li><strong>Connect your Canva account.</strong> In Content, the Canva card says <strong>Connect Canva</strong>. Each person connects their own account, and ScreenTinker sees only the designs that account can see.</li>
+      <li><strong>Connect your Canva account.</strong> In Content, the Canva card says <strong>Connect Canva</strong>. Each person connects their own account, and FILSign sees only the designs that account can see.</li>
       <li><strong>Add from Canva.</strong> Pick a design, choose its pages and a format:
         <ul>
           <li><strong>Images, one per page</strong>: best for menus, posters and slides</li>
@@ -76,18 +76,18 @@
 
     <h2>Keeping designs in sync</h2>
     <ul>
-      <li>ScreenTinker checks linked designs every 30 minutes. When a design has changed, it exports the linked pages again and replaces the files. <strong>Sync now</strong> on an item checks straight away.</li>
+      <li>FILSign checks linked designs every 30 minutes. When a design has changed, it exports the linked pages again and replaces the files. <strong>Sync now</strong> on an item checks straight away.</li>
       <li>A replacement works exactly like <strong>Replace file</strong>: screens download the new version, history keeps the old one, and if your workspace requires approval the new version waits as a draft until it is approved.</li>
       <li>An unchanged design isn&rsquo;t exported again.</li>
       <li>If the person who imported a design disconnects or loses access to it, the item keeps its last version and shows <strong>last sync failed</strong> with the reason.</li>
     </ul>
 
     <h2 id="setup">Set it up</h2>
-    <p>ScreenTinker talks to Canva through a Canva integration, an app you create once in the Canva Developer Portal. Bring your own: it belongs to your organization.</p>
+    <p>FILSign talks to Canva through a Canva integration, an app you create once in the Canva Developer Portal. Bring your own: it belongs to your organization.</p>
     <ol>
       <li>In the <a href="https://www.canva.com/developers/integrations/connect-api" rel="noopener">Canva Developer Portal</a>, create a <strong>Connect API</strong> integration.</li>
       <li>Enable the scopes <code>design:meta:read</code>, <code>design:content:read</code> and <code>profile:read</code>.</li>
-      <li>Add the redirect URL that ScreenTinker&rsquo;s Settings shows (<code>https://your-server/api/canva/callback</code>).</li>
+      <li>Add the redirect URL that FILSign&rsquo;s Settings shows (<code>https://your-server/api/canva/callback</code>).</li>
       <li>An organization owner or admin pastes the client ID and secret into <strong>Settings &rarr; Canva integration</strong> and presses <strong>Test</strong>. On a self-hosted server, an operator can instead set <code>CANVA_CLIENT_ID</code> and <code>CANVA_CLIENT_SECRET</code> for every organization.</li>
       <li>Each person presses <strong>Connect Canva</strong> in Content and imports designs.</li>
     </ol>
@@ -97,7 +97,7 @@
     <ul>
       <li>Canva tokens and the integration secret are stored encrypted. No API response includes them.</li>
       <li>Connecting uses OAuth 2.0 with PKCE, tied to the browser that started it.</li>
-      <li>A ScreenTinker API token can&rsquo;t use someone&rsquo;s Canva connection; the Canva endpoints accept a signed-in dashboard session only.</li>
+      <li>A FILSign API token can&rsquo;t use someone&rsquo;s Canva connection; the Canva endpoints accept a signed-in dashboard session only.</li>
       <li>A sync can only change what the importer could change by hand. Media head office plays in a corporate playlist is only updated by someone allowed to change it.</li>
     </ul>
 
@@ -135,7 +135,7 @@
 
     <div class="cta">
       <h2>Send your Canva designs to a screen</h2>
-      <p>Connect Canva and import your first design. Start a 14-day Pro trial on hosted ScreenTinker: up to 15 screens, every feature, no credit card.</p>
+      <p>Connect Canva and import your first design. Start a 14-day Pro trial on hosted FILSign: up to 15 screens, every feature, no credit card.</p>
       <p><a href="/app#/login" class="btn btn-primary" style="padding:14px 28px;font-size:16px">Start your free trial</a></p>
       <p class="cta-alt">Or host it yourself, free and open source: <a href="/guides/self-hosted-digital-signage.html">self-hosting guide</a> &middot; <a href="https://github.com/screentinker/screentinker" target="_blank" rel="noopener">GitHub</a></p>
     </div>

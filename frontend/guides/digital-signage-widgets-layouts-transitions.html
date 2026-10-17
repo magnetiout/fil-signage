@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Widgets, Layouts and Transitions in ScreenTinker | ScreenTinker</title>
+  <title>Widgets, Layouts and Transitions in FILSign | FILSign</title>
   <meta name="description" content="Split a screen into zones, add a clock, weather or a news ticker, and give each zone its own transition. With real screenshots, and what each player draws.">
   <meta name="keywords" content="digital signage widgets, digital signage layouts, multi-zone layout, signage transitions, news ticker signage, clock widget, screentinker how to">
   <meta name="robots" content="index, follow">
@@ -12,13 +12,13 @@
 
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://screentinker.com/guides/digital-signage-widgets-layouts-transitions.html">
-  <meta property="og:title" content="Widgets, layouts and transitions in ScreenTinker">
+  <meta property="og:title" content="Widgets, layouts and transitions in FILSign">
   <meta property="og:description" content="How zones, widgets and transitions fit together: make a layout, put widgets in its zones through a playlist, and place a transition in the zone it should affect.">
   <meta property="og:image" content="https://screentinker.com/assets/guides/widgets-layouts-transitions/four-zones-wiping.webp">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Widgets, layouts and transitions in ScreenTinker">
+  <meta name="twitter:title" content="Widgets, layouts and transitions in FILSign">
   <meta name="twitter:description" content="How zones, widgets and transitions fit together: make a layout, put widgets in its zones through a playlist, and place a transition in the zone it should affect.">
   <meta name="twitter:image" content="https://screentinker.com/assets/guides/widgets-layouts-transitions/four-zones-wiping.webp">
 
@@ -33,7 +33,7 @@
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -59,7 +59,7 @@
     </nav>
 
     <h1>Widgets, layouts and transitions</h1>
-    <p class="lead">A layout splits the screen into zones. Widgets are the live parts you put in them: a clock, the weather, a news ticker. A transition is a widget too, and it works in the zone you put it in. This guide shows how the three fit together, using a real ScreenTinker 3.0 server. The café in the pictures is invented.</p>
+    <p class="lead">A layout splits the screen into zones. Widgets are the live parts you put in them: a clock, the weather, a news ticker. A transition is a widget too, and it works in the zone you put it in. This guide shows how the three fit together, using a real FILSign 3.0 server. The café in the pictures is invented.</p>
 
     <p>In short:</p>
     <ol>
@@ -91,7 +91,7 @@
       <li>Choose <strong>Save</strong>.</li>
     </ol>
     <figure>
-      <img src="/assets/guides/widgets-layouts-transitions/layout-editor.webp" width="1188" height="1240" loading="lazy" decoding="async" alt="The ScreenTinker layout editor showing a layout called Café counter with four zones named Main, Clock, Specials and Ticker. The Main zone is selected and its properties show 75 percent width, 85 percent height, Fit set to Cover and the Main zone box ticked.">
+      <img src="/assets/guides/widgets-layouts-transitions/layout-editor.webp" width="1188" height="1240" loading="lazy" decoding="async" alt="The FILSign layout editor showing a layout called Café counter with four zones named Main, Clock, Specials and Ticker. The Main zone is selected and its properties show 75 percent width, 85 percent height, Fit set to Cover and the Main zone box ticked.">
       <figcaption>A four-zone layout made from the L-Bar template: Main for pictures, Clock and Specials down the side, Ticker along the bottom.</figcaption>
     </figure>
     <p><strong>Layer</strong> decides which zone draws on top where two overlap (picture in picture). <strong>Type</strong> (Content or Widget) is a label for you: it does not stop you putting a widget in a content zone, or the other way round.</p>
@@ -111,13 +111,13 @@
     </figure>
 
     <h3>The weather</h3>
-    <p>Choose <strong>Weather</strong> and type a <strong>Location</strong> (a city, like &ldquo;Springfield&rdquo;). Pick <strong>Units</strong>, <strong>Layout</strong> (Stacked or Side by side) and whether to show the city name. The widget shows live conditions for that place from an online weather service, so your ScreenTinker server needs to reach the internet for it to fill in.</p>
+    <p>Choose <strong>Weather</strong> and type a <strong>Location</strong> (a city, like &ldquo;Springfield&rdquo;). Pick <strong>Units</strong>, <strong>Layout</strong> (Stacked or Side by side) and whether to show the city name. The widget shows live conditions for that place from an online weather service, so your FILSign server needs to reach the internet for it to fill in.</p>
     <figure class="narrow">
       <img src="/assets/guides/widgets-layouts-transitions/widget-weather.webp" width="560" height="781" loading="lazy" decoding="async" alt="The New Weather form with a Location field, Units set to Imperial, Font Size, Color, Layout set to Stacked and a Show the city name box.">
     </figure>
 
     <h3>A news ticker</h3>
-    <p>Choose <strong>News Ticker</strong>. Paste a news site or a feed address into <strong>Website or feed address</strong> and choose <strong>Find feeds</strong>. ScreenTinker looks for the site&rsquo;s feeds, lets you pick one, and shows its latest headlines so you can check it is the right one. Under <strong>Look</strong>, <em>Scrolling ticker</em> runs the headlines along a strip, and <em>Headlines with pictures</em> shows one story at a time. A ticker belongs in a wide, short zone.</p>
+    <p>Choose <strong>News Ticker</strong>. Paste a news site or a feed address into <strong>Website or feed address</strong> and choose <strong>Find feeds</strong>. FILSign looks for the site&rsquo;s feeds, lets you pick one, and shows its latest headlines so you can check it is the right one. Under <strong>Look</strong>, <em>Scrolling ticker</em> runs the headlines along a strip, and <em>Headlines with pictures</em> shows one story at a time. A ticker belongs in a wide, short zone.</p>
     <figure class="narrow">
       <img src="/assets/guides/widgets-layouts-transitions/widget-news-ticker.webp" width="560" height="1158" loading="lazy" decoding="async" alt="The New News Ticker form after Find feeds: one feed found, Larkspur Café news, with its four latest headlines listed, Look set to Scrolling ticker and Font Size 34.">
       <figcaption>The feed here is the invented café&rsquo;s own. The server reads the feed, not the screens.</figcaption>
@@ -146,10 +146,10 @@
       <img src="/assets/guides/widgets-layouts-transitions/web-player-four-zones.webp" width="1400" height="788" loading="lazy" decoding="async" alt="The playlist playing in the web player: a poster for a flat white fills the main zone, a clock reading 6:45 PM and a loyalty card offer fill the right-hand column, and a news ticker scrolls along the bottom.">
       <figcaption>The same playlist on a screen: the web player in a browser tab, paired like any other screen.</figcaption>
     </figure>
-    <p>Before a publish, ScreenTinker checks for things that will be hard to read on the screen. When it first published this playlist, it warned that the clock&rsquo;s date was too small to read from 3&nbsp;m away, and said how much bigger to make it.</p>
+    <p>Before a publish, FILSign checks for things that will be hard to read on the screen. When it first published this playlist, it warned that the clock&rsquo;s date was too small to read from 3&nbsp;m away, and said how much bigger to make it.</p>
 
     <h2 id="transitions">Transitions</h2>
-    <p>A transition is how one item gives way to the next: a dissolve, a sweep, a glitch. In ScreenTinker it is a <strong>widget</strong> that you add to the playlist like any other. It never appears on the screen as an item of its own. It changes how the other items in its zone arrive.</p>
+    <p>A transition is how one item gives way to the next: a dissolve, a sweep, a glitch. In FILSign it is a <strong>widget</strong> that you add to the playlist like any other. It never appears on the screen as an item of its own. It changes how the other items in its zone arrive.</p>
 
     <h3 id="make-transition">Make a transition</h3>
     <ol>
@@ -192,7 +192,7 @@
     </figure>
 
     <h3 id="bulk">The Transition button on selected items</h3>
-    <p>In a playlist, tick some items and choose <strong>Transition</strong> in the bar above them. A box lists your transition widgets by number; type the number (or the name). ScreenTinker then adds that transition directly above each item you ticked, in that item&rsquo;s zone. Use it with an <em>Only the next item</em> transition to give just those items that effect. With an <em>Every item</em> transition, the result is the same as adding it once to each of those zones. If you have no transition widgets yet, it says &ldquo;No transition widgets in this workspace&rdquo;.</p>
+    <p>In a playlist, tick some items and choose <strong>Transition</strong> in the bar above them. A box lists your transition widgets by number; type the number (or the name). FILSign then adds that transition directly above each item you ticked, in that item&rsquo;s zone. Use it with an <em>Only the next item</em> transition to give just those items that effect. With an <em>Every item</em> transition, the result is the same as adding it once to each of those zones. If you have no transition widgets yet, it says &ldquo;No transition widgets in this workspace&rdquo;.</p>
 
     <h3 id="fullscreen">Full screen</h3>
     <figure>
@@ -245,13 +245,13 @@
       <li><strong>The screen is not playing this playlist.</strong> A schedule, a screen group or a head office playlist may be showing something else. The screen&rsquo;s page says what it is playing.</li>
       <li><strong>The layout is not the one you think.</strong> With <em>Each screen&rsquo;s own layout</em>, a screen with no layout of its own plays every item full screen, one after another.</li>
       <li><strong>It is cut off.</strong> Widget text is sized in screen pixels. Make the font smaller or the zone bigger, and check with <strong>Preview</strong>.</li>
-      <li><strong>A news ticker or weather widget is empty.</strong> Your ScreenTinker server fetches the feed or the weather, so it needs to reach that address. On a self-hosted server behind a firewall, allow it out.</li>
+      <li><strong>A news ticker or weather widget is empty.</strong> Your FILSign server fetches the feed or the weather, so it needs to reach that address. On a self-hosted server behind a firewall, allow it out.</li>
       <li><strong>On a Roku,</strong> widgets are still pictures that the server draws and refreshes on a timer, so nothing in them moves. (Clocks are the exception: the Roku draws those itself.)</li>
     </ul>
 
     <div class="cta">
       <h2>Try it on your own screens</h2>
-      <p>Start a 14-day Pro trial on hosted ScreenTinker: up to 15 screens, no credit card. Every widget, layout and transition here is included.</p>
+      <p>Start a 14-day Pro trial on hosted FILSign: up to 15 screens, no credit card. Every widget, layout and transition here is included.</p>
       <a href="/app#/login" class="btn btn-primary" style="padding:14px 28px;font-size:16px">Start your free trial</a>
       <a href="https://github.com/screentinker/screentinker" target="_blank" rel="noopener" class="btn btn-outline" style="padding:14px 28px;font-size:16px;margin-left:12px">View on GitHub</a>
       <p class="cta-alt">Or <a href="/guides/self-hosted-digital-signage.html">self-host it</a> on your own server, free for any number of screens.</p>
@@ -299,12 +299,12 @@
   {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    "name": "Put widgets and transitions in the zones of a ScreenTinker layout",
+    "name": "Put widgets and transitions in the zones of a FILSign layout",
     "description": "Make a layout, make widgets, place them in zones through a playlist, and place a transition widget in the zone it should affect.",
     "image": "https://screentinker.com/assets/guides/widgets-layouts-transitions/four-zones-wiping.webp",
     "totalTime": "PT20M",
     "tool": [
-      { "@type": "HowToTool", "name": "A ScreenTinker account" },
+      { "@type": "HowToTool", "name": "A FILSign account" },
       { "@type": "HowToTool", "name": "A paired screen" }
     ],
     "step": [

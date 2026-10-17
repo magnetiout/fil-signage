@@ -223,8 +223,8 @@ test('F14: the lapse email names the plan they lapsed FROM, and an in-grace "unp
     assert.equal(read(lapsed).plan_id, 'free');
     const toLapsed = sent.filter((m) => m.to === `${lapsed}@t.local`);
     assert.equal(toLapsed.length, 1);
-    assert.match(toLapsed[0].text, /ScreenTinker Pro plan did not go through/);
-    assert.doesNotMatch(toLapsed[0].text, /ScreenTinker Free plan/, 'they were never on a Free plan that could fail to pay');
+    assert.match(toLapsed[0].text, /FILSign Pro plan did not go through/);
+    assert.doesNotMatch(toLapsed[0].text, /FILSign Free plan/, 'they were never on a Free plan that could fail to pay');
 
     assert.equal(read(inGrace).plan_id, 'pro');
     assert.equal(sent.filter((m) => m.to === `${inGrace}@t.local`).length, 0,

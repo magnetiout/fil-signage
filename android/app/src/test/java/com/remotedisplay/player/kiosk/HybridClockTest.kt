@@ -25,4 +25,17 @@ class HybridClockTest {
         val c=HybridClock(60000,10000);c.touch(0);c.video(true,50000);c.video(false,51000)
         assertEquals(KioskIdle.Action.Warn(10),c.tick(110000));assertEquals(KioskIdle.Action.Reset,c.tick(120000))
     }
+    @Test fun `presentation profile resets after 20 plus 5 seconds and supports 100 clean sessions`() {
+        val c=HybridClock(20000,5000)
+        for (i in 0..99) {
+            val start=i*100000L
+            assertEquals(KioskIdle.Action.Started,c.touch(start))
+            assertEquals(KioskIdle.Action.Warn(5),c.tick(start+20000))
+            assertEquals(KioskIdle.Action.Resumed,c.touch(start+21000))
+            assertEquals(KioskIdle.Action.None,c.tick(start+40999))
+            assertEquals(KioskIdle.Action.Warn(5),c.tick(start+41000))
+            assertEquals(KioskIdle.Action.Reset,c.tick(start+46000))
+            c.end()
+        }
+    }
 }

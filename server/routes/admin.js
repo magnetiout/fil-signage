@@ -534,7 +534,7 @@ router.put('/branding', requirePlatformAdmin, (req, res) => {
       VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       PLATFORM_DEFAULT_ID, req.user.id,
-      req.body.brand_name || 'ScreenTinker',
+      req.body.brand_name || 'FILSign',
       req.body.logo_url || null, req.body.favicon_url || null,
       req.body.primary_color || '#3B82F6', req.body.secondary_color || '#1E293B', req.body.bg_color || '#111827',
       req.body.custom_css || null, req.body.hide_branding ? 1 : 0

@@ -21,7 +21,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ScreenTinker — player check</title>
+<title>FILSign — player check</title>
 <style>
   body { margin: 0; padding: 3vw 4vw; background: #0f172a; color: #f1f5f9; font-family: Arial, Helvetica, sans-serif; font-size: 2.2vw; line-height: 1.35; }
   h1 { margin: 0 0 1vw; font-size: 4vw; color: #93c5fd; }
@@ -36,7 +36,7 @@
 </style>
 </head>
 <body>
-<h1>ScreenTinker player check</h1>
+<h1>FILSign player check</h1>
 <div id="verdict" class="verdict bad">Checking… (if this text stays, the browser could not run even this page's script)</div>
 <div class="ua" id="ua"></div>
 <div class="cols"><div class="col"><table id="t1"></table></div><div class="col"><table id="t2"></table></div></div>
@@ -95,7 +95,7 @@
     verdict.innerHTML = 'Too old for the normal player, but it can run the legacy one: use <u>' + esc(base()) + '/player/legacy</u>';
   } else {
     verdict.className = 'verdict bad';
-    verdict.innerHTML = 'This browser is too old for both web players. Please send a photo of this page to your ScreenTinker contact.';
+    verdict.innerHTML = 'This browser is too old for both web players. Please send a photo of this page to your FILSign contact.';
   }
 
   var rows = '';

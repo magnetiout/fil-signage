@@ -1,8 +1,8 @@
 {
-  "name": "ScreenTinker",
-  "short_name": "ScreenTinker",
-  "description": "Digital Signage Management",
-  "start_url": "/",
+  "name": "FILSign",
+  "short_name": "FILSign",
+  "description": "Dijital yayın ve etkileşimli kiosk yönetimi",
+  "start_url": "/app",
   "display": "standalone",
   "background_color": "#111827",
   "theme_color": "#3B82F6",

@@ -40,8 +40,8 @@ function lookup(key) {
 function brandName() {
   try {
     const n = typeof window !== 'undefined' && window.__ST_BRAND_NAME;
-    return (typeof n === 'string' && n.trim()) ? n.trim() : 'ScreenTinker';
-  } catch (e) { return 'ScreenTinker'; }
+    return (typeof n === 'string' && n.trim()) ? n.trim() : "FILSign";
+  } catch (e) { return "FILSign"; }
 }
 
 function format(s, vars) {

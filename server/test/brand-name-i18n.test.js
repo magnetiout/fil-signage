@@ -3,7 +3,7 @@
 /*
  * White-label substitution in user-facing strings (#292).
  *
- * A partner reselling this platform found their customers still being shown "ScreenTinker" in a
+ * A partner reselling this platform found their customers still being shown "FILSign" in a
  * dozen places the White Label settings never reached — setup instructions, the empty-dashboard
  * hint, onboarding, sign-in errors. Their only workaround was CSS that could hide a section but
  * could not change a sentence.
@@ -41,7 +41,7 @@ const localeFiles = () => fs.readdirSync(I18N_DIR).filter((f) => f.endsWith('.js
 /*
  * ⚠️ DELIBERATELY NOT IN THE LIST ABOVE.
  *
- * settings.hide_branding used to read 'Hide "ScreenTinker" branding', and substituting the brand
+ * settings.hide_branding used to read 'Hide "FILSign" branding', and substituting the brand
  * turned it into 'Hide "Acme" branding' on Acme's own instance — which is backwards: the toggle
  * hides the PLATFORM's attribution, not the operator's own name. The reporter of #292 asked for
  * generic wording instead, so this string names nobody at all.
@@ -53,7 +53,7 @@ test('no locale hardcodes the product name in a white-labelled string', () => {
   for (const file of localeFiles()) {
     const src = fs.readFileSync(path.join(I18N_DIR, file), 'utf8');
     for (const line of src.split('\n')) {
-      if (!line.includes('ScreenTinker')) continue;
+      if (!line.includes('FILSign')) continue;
       if (BRANDED_KEYS.some((k) => line.includes(`'${k}'`) || line.includes(`"${k}"`))) {
         offences.push(`${file}: ${line.trim().slice(0, 90)}`);
       }
@@ -64,7 +64,7 @@ test('no locale hardcodes the product name in a white-labelled string', () => {
 });
 
 test('the English strings carry the placeholder rather than having simply lost the name', () => {
-  // Guards the lazy fix: deleting "ScreenTinker" would satisfy the test above and leave a sentence
+  // Guards the lazy fix: deleting "FILSign" would satisfy the test above and leave a sentence
   // reading "Install the app on your TV", with nothing identifying what to install.
   const src = fs.readFileSync(path.join(I18N_DIR, 'en.js'), 'utf8');
   for (const key of BRANDED_KEYS) {
@@ -116,18 +116,18 @@ test('the interpolation resolves, and falls back to the product name', async () 
   const { t } = await import(`file://${mod}`);
 
   const unbranded = t('settings.setup_step_1');
-  assert.ok(unbranded.includes('ScreenTinker'),
+  assert.ok(unbranded.includes('FILSign'),
     `an un-branded install must read as before, got: ${unbranded}`);
   assert.ok(!unbranded.includes('{brandName}'), 'the placeholder must not leak to the screen');
 
   globalThis.window.__ST_BRAND_NAME = 'BoldSignage';
   const branded = t('settings.setup_step_1');
   assert.ok(branded.includes('BoldSignage'), `expected the brand, got: ${branded}`);
-  assert.ok(!branded.includes('ScreenTinker'), 'the upstream name must be gone once branded');
+  assert.ok(!branded.includes('FILSign'), 'the upstream name must be gone once branded');
 
   // Whitespace-only is not a brand.
   globalThis.window.__ST_BRAND_NAME = '   ';
-  assert.ok(t('settings.setup_step_1').includes('ScreenTinker'));
+  assert.ok(t('settings.setup_step_1').includes('FILSign'));
   delete globalThis.window;
   delete globalThis.localStorage;
   if (!priorNavigator) delete globalThis.navigator;
@@ -140,7 +140,7 @@ test('the hide-branding toggle names nobody', () => {
     const src = fs.readFileSync(path.join(I18N_DIR, file), 'utf8');
     const line = src.split('\n').find((l) => l.includes(`'${GENERIC_KEY}'`));
     if (!line) continue;
-    assert.ok(!line.includes('ScreenTinker'), `${file}: ${GENERIC_KEY} still names the product`);
+    assert.ok(!line.includes('FILSign'), `${file}: ${GENERIC_KEY} still names the product`);
     assert.ok(!line.includes('{brandName}'), `${file}: ${GENERIC_KEY} should be generic wording`);
   }
 });

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Signage on a Mac, iPad or iPhone | ScreenTinker</title>
-  <meta name="description" content="Run a sign on a Mac mini or iMac with the native macOS player, or on an iPad or iPhone with the ScreenTinker app, and keep it up unattended.">
+  <title>Digital Signage on a Mac, iPad or iPhone | FILSign</title>
+  <meta name="description" content="Run a sign on a Mac mini or iMac with the native macOS player, or on an iPad or iPhone with the FILSign app, and keep it up unattended.">
   <meta name="keywords" content="mac digital signage, mac mini digital signage, ipad digital signage, ipad kiosk signage, iphone digital signage, macos signage player">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://screentinker.com/guides/mac-ipad-digital-signage.html">
@@ -13,13 +13,13 @@
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://screentinker.com/guides/mac-ipad-digital-signage.html">
   <meta property="og:title" content="Digital Signage on a Mac, iPad or iPhone">
-  <meta property="og:description" content="The native macOS player for a Mac mini or iMac, and the ScreenTinker app for iPad and iPhone.">
+  <meta property="og:description" content="The native macOS player for a Mac mini or iMac, and the FILSign app for iPad and iPhone.">
   <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Digital Signage on a Mac, iPad or iPhone">
-  <meta name="twitter:description" content="The native macOS player for a Mac mini or iMac, and the ScreenTinker app for iPad and iPhone.">
+  <meta name="twitter:description" content="The native macOS player for a Mac mini or iMac, and the FILSign app for iPad and iPhone.">
   <meta name="twitter:image" content="https://screentinker.com/assets/dashboard-preview.png">
 
   <meta name="theme-color" content="#111827">
@@ -33,7 +33,7 @@
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -58,28 +58,28 @@
     </nav>
 
     <h1>Digital signage on a Mac, iPad or iPhone</h1>
-    <p class="lead">A Mac mini behind a TV, or an iPad on a wall mount, makes a good sign. ScreenTinker has a native player for macOS and an app for iPad and iPhone. Both are new: treat them as beta, and try one screen before you roll out a fleet.</p>
+    <p class="lead">A Mac mini behind a TV, or an iPad on a wall mount, makes a good sign. FILSign has a native player for macOS and an app for iPad and iPhone. Both are new: treat them as beta, and try one screen before you roll out a fleet.</p>
 
     <h2>Which one?</h2>
     <ul>
       <li><strong>A Mac</strong> (Mac mini, iMac, MacBook, macOS 12 or later) runs the <strong>native player</strong>, the same engine as the Raspberry Pi and Windows players. It plays from its own offline cache, does zones, transitions, video walls, LAN triggers and the remote terminal.</li>
-      <li><strong>An iPad or iPhone</strong> (iPadOS / iOS 16 or later) runs the <strong>ScreenTinker app</strong>, which shows the <a href="/player">web player</a> full screen with the screen kept awake. It needs the network to start: iOS does not let an app's web view keep an offline media cache for a server it does not know in advance.</li>
+      <li><strong>An iPad or iPhone</strong> (iPadOS / iOS 16 or later) runs the <strong>FILSign app</strong>, which shows the <a href="/player">web player</a> full screen with the screen kept awake. It needs the network to start: iOS does not let an app's web view keep an offline media cache for a server it does not know in advance.</li>
       <li><strong>Apple TV</strong> cannot run a player — tvOS has no web view. <a href="/guides/apple-tv-digital-signage.html">Why, and what to use instead.</a></li>
     </ul>
 
     <h2 id="mac">Set up a Mac</h2>
     <ol>
-      <li>Download <code>ScreenTinker-&lt;version&gt;.dmg</code> from your instance's <a href="/download/">downloads page</a>, open it and drag ScreenTinker to Applications.</li>
+      <li>Download <code>ScreenTinker-&lt;version&gt;.dmg</code> from your instance's <a href="/download/">downloads page</a>, open it and drag FILSign to Applications.</li>
       <li>The first launch: Control-click the app and choose <strong>Open</strong>, unless your administrator distributed a notarized build.</li>
       <li>Start it at login, pointed at your server. In Terminal:
-        <pre><code>/Applications/ScreenTinker.app/Contents/MacOS/ScreenTinker --install-autostart --server https://your-server</code></pre>
+        <pre><code>/Applications/ScreenTinker.app/Contents/MacOS/FILSign --install-autostart --server https://your-server</code></pre>
         It restarts the player if it ever crashes; <em>Exit player</em> on the on-screen menu leaves it stopped until the next login.</li>
       <li>Allow <strong>Local Network</strong> access when macOS asks, if your server or trigger senders are on the LAN.</li>
     </ol>
 
     <h2 id="ipad">Set up an iPad or iPhone</h2>
     <ol>
-      <li>Install the ScreenTinker app your organisation distributes (TestFlight or your device-management system).</li>
+      <li>Install the FILSign app your organisation distributes (TestFlight or your device-management system).</li>
       <li>Open it, type your server address and tap <strong>Connect</strong>. Pick an orientation lock if the device is mounted.</li>
       <li>For a screen the public can touch, lock the device into the app: <strong>Guided Access</strong> (Settings &rarr; Accessibility) on one device, or <strong>Single App Mode</strong> from device management for a fleet.</li>
     </ol>

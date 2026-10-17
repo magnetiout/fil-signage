@@ -440,8 +440,8 @@ const WINDOWS_TERMINAL_PRESETS = [
   { label: t("ui.labels.storage_9e092d"), cmd: 'Get-PSDrive C' },
   { label: t("ui.labels.network_53ebc5"), cmd: 'Get-NetIPAddress -AddressFamily IPv4 | Select InterfaceAlias,IPAddress' },
   { label: t("ui.labels.helper_service_eef95f"), cmd: 'Get-Service ScreenTinkerHelper' },
-  { label: t("ui.labels.player_process_c37007"), cmd: 'Get-Process ScreenTinker*' },
-  { label: t("ui.labels.player_events_30e5c6"), cmd: "Get-WinEvent -LogName Application -MaxEvents 30 | ? ProviderName -like '*ScreenTinker*'" },
+  { label: t("ui.labels.player_process_c37007"), cmd: "Get-Process FILSign*" },
+  { label: t("ui.labels.player_events_30e5c6"), cmd: "Get-WinEvent -LogName Application -MaxEvents 30 | ? ProviderName -like '*FILSign*'" },
   { label: t("ui.labels.whoami_d16912"), cmd: 'whoami /all' },
 ];
 

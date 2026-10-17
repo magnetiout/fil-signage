@@ -21,7 +21,7 @@
 const PLATFORM_DEFAULT_ID = 'platform-default';
 
 const HARDCODED_BRANDING = {
-  brand_name: 'ScreenTinker',
+  brand_name: 'FILSign',
   logo_url: null,
   favicon_url: null,
   primary_color: '#3B82F6',

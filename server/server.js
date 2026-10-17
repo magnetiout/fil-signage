@@ -407,7 +407,7 @@ app.get('/api', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=3600');
   res.setHeader('Link', aiSurface.linkHeader(base));
   res.json({
-    name: 'ScreenTinker Public API',
+    name: "FILSign Public API",
     description: 'Token-scoped REST API for digital signage: displays, content, playlists, layouts, schedules and reports.',
     openapi: `${base}/openapi.yaml`,
     documentation: `${base}/docs`,
@@ -469,7 +469,7 @@ app.get('/.well-known/mcp/server-card.json', (req, res) => {
     endpoint: `${base}/mcp`,
     authentication: {
       type: 'bearer',
-      description: 'A scoped ScreenTinker API token, issued by a human in the dashboard. '
+      description: "A scoped FILSign API token, issued by a human in the dashboard. "
         + 'There is no programmatic registration.',
       documentation: `${base}/auth.md`,
     },
@@ -593,7 +593,7 @@ app.use((req, res, next) => {
 // internal deployments that don't want the public marketing page. 302 (not
 // 301) so flipping the var back later isn't hard-cached by browsers.
 app.get('/', (req, res) => {
-  if (config.disableHomepage) return res.redirect(302, '/app');
+  if (config.disableHomepage) return res.status(302).location('/app').type('html').send(fs.readFileSync(path.join(config.frontendDir, 'landing.html'), 'utf8'));
   res.sendFile(path.join(config.frontendDir, 'landing.html'));
 });
 
@@ -3295,7 +3295,7 @@ const otaDownloadState = otaDownloadGuard.prodState();   // #146 P3.8: shared si
  * another one. Only characters that are safe in both a filename and a header survive.
  */
 function apkDownloadName(req) {
-  let brand = 'ScreenTinker';
+  let brand = "FILSign";
   try {
     // ⚠️ Required HERE, matching the other call sites in this file — it is not a module-scope
     // import. Referencing it as a free variable throws a ReferenceError that this very try/catch
@@ -3437,17 +3437,17 @@ app.get(['/webos', '/webos/'], (req, res) => {
   const ipk = ipkCache.get();
   const base = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><title>ScreenTinker on LG webOS Signage</title>'
+  res.send("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>FILSign on LG webOS Signage</title>"
     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<style>body{font-family:-apple-system,system-ui,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:40px 20px;line-height:1.6}'
     + '.w{max-width:640px;margin:0 auto}h1{color:#34d399}code{background:#1e293b;padding:2px 8px;border-radius:4px;font-size:14px}'
     + 'ol{padding-left:20px}li{margin:8px 0}.mut{color:#94a3b8;font-size:14px}.pill{display:inline-block;background:#1e293b;border-radius:20px;padding:4px 12px;font-size:13px;color:#94a3b8}a{color:#3b82f6}</style></head>'
-    + '<body><div class="w"><h1>ScreenTinker \u2014 LG webOS Signage</h1>'
+    + "<body><div class=\"w\"><h1>FILSign — LG webOS Signage</h1>"
     + (ipk.exists ? `<p class="pill">Ready \u00b7 v${ipk.version} \u00b7 ${(ipk.size / 1024 / 1024).toFixed(2)} MB</p>` : '<p class="pill">No .ipk hosted yet</p>')
     + `<p>Download <a href="${base}/webos/ScreenTinker.ipk">ScreenTinker.ipk</a> and install it on the panel:</p>`
     + '<ol><li><b>USB:</b> copy the file to a USB stick, plug it into the panel, open <b>Settings \u2192 General \u2192 Install App</b> (the exact path varies by webOS version), and pick it.</li>'
     + '<li><b>SI server:</b> host the file and point the panel\u2019s SI Server setting at it.</li>'
-    + `<li>Launch ScreenTinker, enter <code>${base}</code>, and claim the pairing code in your dashboard.</li></ol>`
+    + `<li>Launch FILSign, enter <code>${base}</code>, and claim the pairing code in your dashboard.</li></ol>`
     + `<p class="mut">The app checks <code>${base}/webos/version.json</code> and installs a newer build itself when the panel\u2019s SCAP library is present. Without it (or from a browser) the web player runs at <a href="${base}/player">${base}/player</a>.</p>`
     + '</div></body></html>');
 });
@@ -3458,16 +3458,16 @@ app.get(['/tizen', '/tizen/'], (req, res) => {
   const base = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
   const ready = wgt.exists;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><title>ScreenTinker on Samsung (Tizen)</title>'
+  res.send("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>FILSign on Samsung (Tizen)</title>"
     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<style>body{font-family:-apple-system,system-ui,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:40px 20px;line-height:1.6}'
     + '.w{max-width:640px;margin:0 auto}h1{color:#34d399}code{background:#1e293b;padding:2px 8px;border-radius:4px;font-size:14px}'
     + 'ol{padding-left:20px}li{margin:8px 0}.mut{color:#94a3b8;font-size:14px}.pill{display:inline-block;background:#1e293b;border-radius:20px;padding:4px 12px;font-size:13px;color:#94a3b8}</style></head>'
-    + '<body><div class="w"><h1>ScreenTinker — Samsung Signage (Tizen)</h1>'
+    + "<body><div class=\"w\"><h1>FILSign — Samsung Signage (Tizen)</h1>"
     + (ready ? `<p class="pill">Ready · v${wgt.version} · ${(wgt.size/1024/1024).toFixed(2)} MB</p>` : '<p class="pill">No signed .wgt hosted yet</p>')
     + '<p>On the Samsung signage panel, go to <b>URL Launcher / Custom App</b> and enter:</p>'
     + `<p><code>${base}/tizen</code></p>`
-    + '<p>The panel installs the ScreenTinker player as a native app, then shows a 6-digit pairing code to claim in your dashboard.</p>'
+    + "<p>The panel installs the FILSign player as a native app, then shows a 6-digit pairing code to claim in your dashboard.</p>"
     + '<p class="mut">Requires a Samsung Partner-signed build on retail panels. No signed build? Point URL Launcher at '
     + `<code>${base}/player</code> to run the web player instead.</p>`
     + '</div></body></html>');
@@ -3501,7 +3501,7 @@ const ASSET_EXTENSION = /\.(m?js|css|map|json|wasm|png|jpe?g|gif|svg|ico|webp|av
 const NOT_FOUND_PAGE = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
   + '<meta name="viewport" content="width=device-width,initial-scale=1">'
   + '<meta name="robots" content="noindex">'
-  + '<title>Page not found | ScreenTinker</title>'
+  + "<title>Page not found | FILSign</title>"
   + '<style>body{font-family:-apple-system,system-ui,sans-serif;display:flex;justify-content:center;'
   + 'align-items:center;min-height:100vh;margin:0;background:#0f172a;color:#e2e8f0}'
   + 'div{text-align:center;max-width:460px;padding:32px 24px}h1{font-size:22px;margin:0 0 8px}'
@@ -3599,7 +3599,7 @@ if (hasSsl) {
 server.listen(listenPort, config.bindHost, () => {
   console.log(`
 ╔══════════════════════════════════════════════════╗
-║       ScreenTinker Server v${VERSION.padEnd(22).slice(0, 22)}║
+║       FILSign Server v${VERSION.padEnd(22).slice(0, 22)}║
 ║──────────────────────────────────────────────────║
 ║  Dashboard: ${protocol}://localhost:${String(listenPort).padEnd(5)}              ║
 ║  API:       ${protocol}://localhost:${String(listenPort).padEnd(5)}/api          ║

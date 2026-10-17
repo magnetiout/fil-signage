@@ -225,7 +225,7 @@ module.exports = {
   graphClientId: process.env.GRAPH_CLIENT_ID || '',
   graphClientSecret: process.env.GRAPH_CLIENT_SECRET || '',
   graphSenderEmail: process.env.GRAPH_SENDER_EMAIL || '',
-  graphSenderName: process.env.GRAPH_SENDER_NAME || 'ScreenTinker',
+  graphSenderName: process.env.GRAPH_SENDER_NAME || "FILSign",
   // Dev safety net: comma-separated allow-list of recipient emails. When set,
   // sends to any address NOT in the list are suppressed (logged but not posted
   // to Graph). Intended for local dev that pulls fresh prod DB copies - keeps

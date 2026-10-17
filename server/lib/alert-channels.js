@@ -238,7 +238,7 @@ function describe(event, device, { minutes, dashboardUrl, check, reason }) {
   if (event === 'device_online') {
     return { title: `Back online: ${name}`, text: `The screen "${name}" is back online${minutes ? ` after ${minutes} minute${minutes === 1 ? '' : 's'}` : ''}.`, severity: 'info' };
   }
-  return { title: 'ScreenTinker test alert', text: 'This is a test from ScreenTinker. Alerts for this channel will look like this.', severity: 'info' };
+  return { title: "FILSign test alert", text: 'This is a test from ScreenTinker. Alerts for this channel will look like this.', severity: 'info' };
 }
 
 /**
@@ -252,11 +252,11 @@ function buildMessage(channel, ctx) {
   const ws = ctx.workspace ? ctx.workspace.name : '';
   switch (channel.kind) {
     case 'email':
-      return { kind: 'email', to: cfg.emails || [], subject: d.title, text: `${d.text}${ws ? `\n\nWorkspace: ${ws}` : ''}${link ? `\n\n${link}` : ''}\n\n- ScreenTinker` };
+      return { kind: 'email', to: cfg.emails || [], subject: d.title, text: `${d.text}${ws ? `\n\nWorkspace: ${ws}` : ''}${link ? `\n\n${link}` : ''}\n\n- FILSign` };
     case 'slack':
       return { kind: 'http', url: cfg.url, body: {
         text: `${d.severity === 'error' ? ':red_circle:' : d.severity === 'warning' ? ':large_yellow_circle:' : ':large_green_circle:'} ${d.title}`,
-        blocks: [{ type: 'section', text: { type: 'mrkdwn', text: `*${slackEsc(d.title)}*\n${slackEsc(d.text)}${ws ? `\n_${slackEsc(ws)}_` : ''}${link ? `\n<${link}|Open in ScreenTinker>` : ''}` } }],
+        blocks: [{ type: 'section', text: { type: 'mrkdwn', text: `*${slackEsc(d.title)}*\n${slackEsc(d.text)}${ws ? `\n_${slackEsc(ws)}_` : ''}${link ? `\n<${link}|Open in FILSign>` : ''}` } }],
       } };
     case 'teams':
       // Teams "Workflows" incoming webhooks take an Adaptive Card wrapped in a message.
@@ -269,7 +269,7 @@ function buildMessage(channel, ctx) {
             { type: 'TextBlock', text: d.text, wrap: true },
             ...(ws ? [{ type: 'TextBlock', text: ws, isSubtle: true, spacing: 'None', wrap: true }] : []),
           ],
-          ...(link ? { actions: [{ type: 'Action.OpenUrl', title: 'Open in ScreenTinker', url: link }] } : {}),
+          ...(link ? { actions: [{ type: 'Action.OpenUrl', title: "Open in FILSign", url: link }] } : {}),
         } }],
       } };
     case 'pagerduty':
@@ -277,14 +277,14 @@ function buildMessage(channel, ctx) {
       return { kind: 'http', url: PAGERDUTY_URL, body: (ctx.event === 'device_online' || ctx.event === 'screen_ok')
         ? { routing_key: cfg.routing_key, event_action: 'resolve', dedup_key: ctx.dedupKey }
         : { routing_key: cfg.routing_key, event_action: 'trigger', dedup_key: ctx.dedupKey,
-            payload: { summary: d.title, source: (ctx.device && ctx.device.name) || 'ScreenTinker', severity: ctx.event === 'test' ? 'info' : (d.severity === 'warning' ? 'warning' : 'error'),
+            payload: { summary: d.title, source: (ctx.device && ctx.device.name) || "FILSign", severity: ctx.event === 'test' ? 'info' : (d.severity === 'warning' ? 'warning' : 'error'),
               component: 'screen', group: ws || undefined, timestamp: ctx.nowIso, custom_details: { message: d.text, device_id: ctx.device && ctx.device.id } },
-            ...(link ? { links: [{ href: link, text: 'Open in ScreenTinker' }] } : {}) } };
+            ...(link ? { links: [{ href: link, text: "Open in FILSign" }] } : {}) } };
     case 'telegram': {
       // Bot API sendMessage with HTML formatting: only &, < and > need escaping (plus " inside the
       // link's href). The URL carries the token, so this message is a credential like a Slack one.
       const icon = d.severity === 'error' ? '\u{1F534}' : d.severity === 'warning' ? '\u{1F7E1}' : '\u{1F7E2}';
-      const text = `${icon} <b>${htmlEsc(d.title)}</b>\n${htmlEsc(d.text)}${ws ? `\n<i>${htmlEsc(ws)}</i>` : ''}${link ? `\n<a href="${htmlEsc(link)}">Open in ScreenTinker</a>` : ''}`;
+      const text = `${icon} <b>${htmlEsc(d.title)}</b>\n${htmlEsc(d.text)}${ws ? `\n<i>${htmlEsc(ws)}</i>` : ''}${link ? `\n<a href="${htmlEsc(link)}">Open in FILSign</a>` : ''}`;
       return { kind: 'http', service: 'telegram', url: `${TELEGRAM_API}/bot${cfg.bot_token}/sendMessage`, body: {
         chat_id: cfg.chat_id, text, parse_mode: 'HTML', disable_web_page_preview: true,
         // Info-level events only (back online, screen OK, scheduled sleep); problems always ring,

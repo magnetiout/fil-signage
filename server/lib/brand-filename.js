@@ -19,7 +19,7 @@
  * @param {string} fallback used when the brand is empty or sanitises away to nothing
  * @returns {string} a bare filename stem — no extension, no separators, no quotes
  */
-function brandToFilenameStem(brand, fallback = 'ScreenTinker') {
+function brandToFilenameStem(brand, fallback = "FILSign") {
   const stripped = String(brand == null ? '' : brand)
     // Decompose accents so "Café" yields "Cafe" rather than "Caf".
     .normalize('NFKD')

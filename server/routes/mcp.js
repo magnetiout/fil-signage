@@ -152,7 +152,7 @@ async function callTool(name, args, authorization, scope, clientIp) {
   }
 }
 
-const INSTRUCTIONS = `ScreenTinker manages digital signage: screens ("displays"), the media library,
+const INSTRUCTIONS = `FILSign manages digital signage: screens ("displays"), the media library,
 playlists and schedules.
 
 Typical flow to change what a screen shows: find the display with list_displays, add or find media
@@ -213,7 +213,7 @@ router.post('/', parseBody, async (req, res) => {
     res.set('WWW-Authenticate', `${wwwAuthenticate(req)}, error="invalid_token"`);
     return res.status(401).json(protocol.rpcError(
       req.body && req.body.id, protocol.ERR.INVALID_REQUEST,
-      'A ScreenTinker API token is required. Create one in the dashboard under Settings -> API tokens and send it as: Authorization: Bearer st_...'
+      "A FILSign API token is required. Create one in the dashboard under Settings -> API tokens and send it as: Authorization: Bearer st_..."
     ));
   }
 

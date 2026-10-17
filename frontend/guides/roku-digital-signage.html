@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ScreenTinker on Roku: what works and what does not | ScreenTinker</title>
-  <meta name="description" content="The ScreenTinker player for Roku: what it plays, and what a Roku cannot do as a sign (no autostart, no reboot, no screenshots, no tall H.264).">
+  <title>FILSign on Roku: what works and what does not | FILSign</title>
+  <meta name="description" content="The FILSign player for Roku: what it plays, and what a Roku cannot do as a sign (no autostart, no reboot, no screenshots, no tall H.264).">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://screentinker.com/guides/roku-digital-signage.html">
   <link rel="alternate" type="text/markdown" href="https://screentinker.com/guides/roku-digital-signage.md">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://screentinker.com/guides/roku-digital-signage.html">
-  <meta property="og:title" content="ScreenTinker on Roku: what works and what does not">
-  <meta property="og:description" content="A native Roku player for ScreenTinker, and the limits a Roku puts on a sign. Read them before you buy one.">
+  <meta property="og:title" content="FILSign on Roku: what works and what does not">
+  <meta property="og:description" content="A native Roku player for FILSign, and the limits a Roku puts on a sign. Read them before you buy one.">
   <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ScreenTinker on Roku: what works and what does not">
-  <meta name="twitter:description" content="A native Roku player for ScreenTinker, and the limits a Roku puts on a sign. Read them before you buy one.">
+  <meta name="twitter:title" content="FILSign on Roku: what works and what does not">
+  <meta name="twitter:description" content="A native Roku player for FILSign, and the limits a Roku puts on a sign. Read them before you buy one.">
   <meta name="twitter:image" content="https://screentinker.com/assets/dashboard-preview.png">
   <meta name="theme-color" content="#111827">
   <link rel="icon" href="/assets/icon-192.png">
@@ -29,7 +29,7 @@
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -54,7 +54,7 @@
       <span>Roku</span>
     </nav>
 
-    <h1>ScreenTinker on Roku</h1>
+    <h1>FILSign on Roku</h1>
     <p class="lead">A native player for Roku streaming sticks and Roku TVs. It plays your playlists, schedules and layouts well. But a Roku was built for watching TV, not for running a sign unattended, and some things it will never do. They are listed below so you can decide before you buy one.</p>
 
     <h2>Where it stands</h2>
@@ -68,13 +68,13 @@
     <h2>What you need</h2>
     <ul>
       <li><strong>Roku OS 15.1 or later.</strong> Roku's store requires it for new apps, so older Rokus that cannot update to 15.1 cannot install it. Check under <em>Settings &gt; System &gt; About</em>.</li>
-      <li><strong>A ScreenTinker server newer than 2.5.1.</strong> The Roku support is in the server as well as the app. If you self-host, the server also needs Chromium installed to draw web content for the Roku (see <em>Web content is a picture</em> below).</li>
-      <li>A ScreenTinker account, on screentinker.com or your own server.</li>
+      <li><strong>A FILSign server newer than 2.5.1.</strong> The Roku support is in the server as well as the app. If you self-host, the server also needs Chromium installed to draw web content for the Roku (see <em>Web content is a picture</em> below).</li>
+      <li>A FILSign account, on screentinker.com or your own server.</li>
     </ul>
 
     <h2>Setting it up</h2>
     <ol>
-      <li>Add ScreenTinker to the Roku account the device is signed into: open <a href="https://my.roku.com/account/add/Screentinker" rel="noopener">my.roku.com/account/add/Screentinker</a> and sign in. It installs on that account's Rokus within a day, or at once from <em>Settings &gt; System &gt; System update &gt; Check now</em>. You can also find it by searching the Roku Channel Store for ScreenTinker.</li>
+      <li>Add FILSign to the Roku account the device is signed into: open <a href="https://my.roku.com/account/add/Screentinker" rel="noopener">my.roku.com/account/add/Screentinker</a> and sign in. It installs on that account's Rokus within a day, or at once from <em>Settings &gt; System &gt; System update &gt; Check now</em>. You can also find it by searching the Roku Channel Store for ScreenTinker.</li>
       <li>Open it. Keep <code>https://screentinker.com</code>, or type your own server's address, then choose <strong>Connect</strong>. You can change the server later with the options (<strong>*</strong>) key.</li>
       <li>A pairing code appears. In your dashboard, add a display and enter the code.</li>
       <li>Change these Roku settings, or the sign will not last the day:
@@ -98,10 +98,10 @@
     <h2>What a Roku cannot do</h2>
     <p>None of these is something we can fix in the app. They are how Roku works.</p>
     <ul>
-      <li><strong>It does not start by itself.</strong> After a power cut, a reboot or a Roku update, the Roku goes to its home screen and stays there. Roku does not let any app start on its own. Someone has to open the app again, or an always-on device on the same network can do it with one request to Roku's network control: <code>POST http://&lt;roku-address&gt;:8060/launch/&lt;app id&gt;</code>, allowed under <em>Settings &gt; System &gt; Advanced system settings &gt; Control by mobile apps</em>. ScreenTinker does not send that for you yet. If the screen must come back without anyone, use another player.</li>
+      <li><strong>It does not start by itself.</strong> After a power cut, a reboot or a Roku update, the Roku goes to its home screen and stays there. Roku does not let any app start on its own. Someone has to open the app again, or an always-on device on the same network can do it with one request to Roku's network control: <code>POST http://&lt;roku-address&gt;:8060/launch/&lt;app id&gt;</code>, allowed under <em>Settings &gt; System &gt; Advanced system settings &gt; Control by mobile apps</em>. FILSign does not send that for you yet. If the screen must come back without anyone, use another player.</li>
       <li><strong>No remote reboot, volume, screenshots or live view.</strong> Apps cannot reboot a Roku, change its volume, or capture the screen, so the dashboard cannot show you what a Roku is displaying.</li>
       <li><strong>No control of the TV.</strong> No power on or off, and no switching inputs. Power schedules blank the picture instead.</li>
-      <li><strong>Web content is a picture.</strong> A Roku has no web browser. Widgets, web pages and slides are drawn by your ScreenTinker server and sent as images, refreshed on a timer. They are correct but still: no animation, no video inside a web page, nothing to touch. A self-hosted server needs Chromium for this.</li>
+      <li><strong>Web content is a picture.</strong> A Roku has no web browser. Widgets, web pages and slides are drawn by your FILSign server and sent as images, refreshed on a timer. They are correct but still: no animation, no video inside a web page, nothing to touch. A self-hosted server needs Chromium for this.</li>
       <li><strong>No tall H.264 video.</strong> A Roku cannot decode H.264 that is more than 1080 pixels tall, which rules out portrait 1080 x 1920 phone and AI clips. The size of the zone makes no difference, because decoding comes first. The screen tells you which video failed. Upload a copy no bigger than 1920 x 1080, for example: <code>ffmpeg -i in.mp4 -vf "scale=-2:1080" -c:v libx264 -crf 20 -c:a copy out.mp4</code></li>
       <li><strong>The screensaver is not blocked.</strong> Roku's store rules forbid an app from keeping the screensaver away, so over still images it can start. That is why the setup step above sets its wait time to the longest.</li>
       <li><strong>No video walls or group sync.</strong> A Roku can be one screen of its own, not part of a synchronised wall.</li>

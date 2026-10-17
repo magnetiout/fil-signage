@@ -77,7 +77,7 @@ async function checkOfflineDevices(io) {
 
       const offlineMinutes = Math.floor((now - device.overdue_since) / 60);
       const subject = `Display Offline: ${device.name}`;
-      const body = `Your display "${device.name}" has been offline for ${offlineMinutes} minutes.\n\nLast heartbeat: ${new Date(device.last_heartbeat * 1000).toLocaleString()}\n\nCheck your device and network connection.\n\n- ScreenTinker`;
+      const body = `Your display "${device.name}" has been offline for ${offlineMinutes} minutes.\n\nLast heartbeat: ${new Date(device.last_heartbeat * 1000).toLocaleString()}\n\nCheck your device and network connection.\n\n- FILSign`;
 
       // Sequential await: Microsoft Graph imposes a MailboxConcurrency limit
       // (429 ApplicationThrottled when fanning out ~20+ parallel sends from
@@ -118,7 +118,7 @@ async function checkOfflineDevices(io) {
 // previously inlined in the webhook payload at sendEmailAlert.
 function buildAlertHtml(recipientName, subject, body) {
   return `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
-    <h2 style="color:#3b82f6">ScreenTinker Alert</h2>
+    <h2 style="color:#3b82f6">FILSign Alert</h2>
     <p>Hi ${escapeHtml(recipientName || 'there')},</p>
     <div style="background:#f1f5f9;padding:16px;border-radius:8px;margin:16px 0">
       <strong>${escapeHtml(subject)}</strong><br><br>

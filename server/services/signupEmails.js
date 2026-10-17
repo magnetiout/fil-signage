@@ -51,7 +51,7 @@ function welcomeText(name) {
 
 Thanks for signing up for ScreenTinker. Glad you're here.
 
-One thing worth knowing up front. ScreenTinker is run by one person, me.
+One thing worth knowing up front. FILSign is run by one person, me.
 There's no support queue or ticket robot. If you hit reply to this email,
 it comes straight to me and I'll answer.
 
@@ -74,14 +74,14 @@ Want to ask a human or see what others are building? Discord's here:
 Just hit reply if anything's unclear or not working. I read every email.
 
 - Dan
-ScreenTinker`;
+FILSign`;
 }
 
 function welcomeHtml(name) {
   return `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.6;color:#222;max-width:560px">
 <p>Hi ${htmlEscape(name)},</p>
 <p>Thanks for signing up for ScreenTinker. Glad you're here.</p>
-<p>One thing worth knowing up front. ScreenTinker is run by one person, me. There's no support queue or ticket robot. If you hit reply to this email, it comes straight to me and I'll answer.</p>
+<p>One thing worth knowing up front. FILSign is run by one person, me. There's no support queue or ticket robot. If you hit reply to this email, it comes straight to me and I'll answer.</p>
 <p>The fastest way to see it work is to put something on a screen. You can turn any browser into a display in about a minute with the web player:</p>
 <p><a href="${LINKS.player}" style="font-weight:600">Open the web player</a></p>
 <p>Open that on whatever you want to use as a screen, pair it from your dashboard, and you're live.</p>
@@ -93,7 +93,7 @@ function welcomeHtml(name) {
 </ul>
 <p>Want to ask a human or see what others are building? <a href="${LINKS.discord}">Discord's here</a>.</p>
 <p>Just hit reply if anything's unclear or not working. I read every email.</p>
-<p>- Dan<br>ScreenTinker</p>
+<p>- Dan<br>FILSign</p>
 </div>`;
 }
 
@@ -110,7 +110,7 @@ function fmtCentral(unixSec) {
 }
 
 function adminText({ name, email, orgName, signupUnix, ip, country, userAgent }) {
-  return `New ScreenTinker signup.
+  return `New FILSign signup.
 
 Name:       ${name}
 Email:      ${email}
@@ -152,9 +152,9 @@ function sendSignupEmails(user, req) {
     (async () => {
       const w = await sendEmail({
         to: email,
-        fromName: 'Dan at ScreenTinker',
+        fromName: "Dan at FILSign",
         rawSubject: true,
-        subject: 'Welcome to ScreenTinker',
+        subject: "Welcome to FILSign",
         text: welcomeText(name),
         html: welcomeHtml(name),
       });
@@ -190,13 +190,13 @@ function sendSignupEmails(user, req) {
 function verifyEmailBody(name, url) {
   const text = `Hi ${name},
 
-Confirm your email address to finish setting up your ScreenTinker account:
+Confirm your email address to finish setting up your FILSign account:
 
 ${url}
 
 This link expires in 24 hours. If you didn't create this account, you can ignore this email.`;
   const html = `<p>Hi ${htmlEscape(name)},</p>
-<p>Confirm your email address to finish setting up your ScreenTinker account:</p>
+<p>Confirm your email address to finish setting up your FILSign account:</p>
 <p><a href="${htmlEscape(url)}" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Verify my email</a></p>
 <p style="color:#666;font-size:13px">Or paste this link into your browser:<br>${htmlEscape(url)}<br><br>This link expires in 24 hours. If you didn't create this account, you can ignore this email.</p>`;
   return { text, html };
@@ -210,7 +210,7 @@ async function sendVerificationEmail(user, token, req) {
   const base = require('../lib/public-origin').publicOrigin(req);
   const url = `${base}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
   const { text, html } = verifyEmailBody(user.name || user.email, url);
-  return sendEmail({ to: user.email, subject: 'Verify your email for ScreenTinker', text, html });
+  return sendEmail({ to: user.email, subject: "Verify your email for FILSign", text, html });
 }
 
 function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -227,17 +227,17 @@ async function sendPasswordResetEmail(user, token, req) {
   const who = user.name || user.email;
   const text = `Hi ${who},
 
-Someone asked to reset the password for your ScreenTinker account.
+Someone asked to reset the password for your FILSign account.
 
 Open this link to choose a new password (valid for 1 hour, and usable once):
 ${url}
 
 If this wasn't you, you can ignore this email — your password has not changed.`;
   const html = `<p>Hi ${escapeHtml(who)},</p>
-<p>Someone asked to reset the password for your ScreenTinker account.</p>
+<p>Someone asked to reset the password for your FILSign account.</p>
 <p><a href="${escapeHtml(url)}">Choose a new password</a> &mdash; the link is valid for 1 hour and can be used once.</p>
 <p style="color:#666">If this wasn't you, you can ignore this email &mdash; your password has not changed.</p>`;
-  return sendEmail({ to: user.email, subject: 'Reset your ScreenTinker password', text, html });
+  return sendEmail({ to: user.email, subject: "Reset your FILSign password", text, html });
 }
 
 /*
@@ -253,16 +253,16 @@ async function sendAccountDeletedEmail(user, req) {
   const contact = config.selfHosted ? 'the administrator of this server' : 'support@screentinker.com';
   const text = `Hi ${who},
 
-Your ScreenTinker account (${user.email}) and the data that belonged only to it have been deleted, as you asked.
+Your FILSign account (${user.email}) and the data that belonged only to it have been deleted, as you asked.
 
 Copies of deleted data remain in backups until those backups expire. More: ${base}/delete-account
 
 If you did not delete your account, contact ${contact} straight away.`;
   const html = `<p>Hi ${escapeHtml(who)},</p>
-<p>Your ScreenTinker account (${escapeHtml(user.email)}) and the data that belonged only to it have been deleted, as you asked.</p>
+<p>Your FILSign account (${escapeHtml(user.email)}) and the data that belonged only to it have been deleted, as you asked.</p>
 <p>Copies of deleted data remain in backups until those backups expire. <a href="${escapeHtml(base)}/delete-account">What was deleted</a>.</p>
 <p style="color:#666">If you did not delete your account, contact ${escapeHtml(contact)} straight away.</p>`;
-  return sendEmail({ to: user.email, subject: 'Your ScreenTinker account has been deleted', text, html });
+  return sendEmail({ to: user.email, subject: "Your FILSign account has been deleted", text, html });
 }
 
 module.exports = { sendSignupEmails, sendVerificationEmail, sendPasswordResetEmail, sendAccountDeletedEmail };

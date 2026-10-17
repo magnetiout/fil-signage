@@ -54,7 +54,7 @@ function cachedUser() {
   try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
 }
 function brandName() {
-  return (document.getElementById('brandName')?.textContent || 'ScreenTinker').trim();
+  return (document.getElementById('brandName')?.textContent || "FILSign").trim();
 }
 function online(d) { return d && d.status === 'online'; }
 

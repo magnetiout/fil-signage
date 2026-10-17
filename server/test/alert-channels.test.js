@@ -300,7 +300,7 @@ test('telegram message: sendMessage with HTML, dynamic parts escaped, link and w
   assert.match(t, /<b>Offline: Lobby &lt;b&gt;&amp;&lt;\/b&gt; &quot;Bar&quot;<\/b>/, 'the title is bold and its HTML escaped');
   assert.match(t, /has been offline for 7 minutes/);
   assert.match(t, /<i>Store &lt;1&gt; &amp; co<\/i>/);
-  assert.match(t, /<a href="https:\/\/st\.example\/app#\/device\/d1">Open in ScreenTinker<\/a>/);
+  assert.match(t, /<a href="https:\/\/st\.example\/app#\/device\/d1">Open in FILSign<\/a>/);
   assert.ok(!/<(?!\/?(b|i|a)[ >])/.test(t), 'no tag but the ones we wrote');
 
   const problem = ch.buildMessage(tgChannel(), { ...base, device: { id: 'd1', name: 'Lobby' }, event: 'screen_problem', check: 'frozen' });
@@ -308,7 +308,7 @@ test('telegram message: sendMessage with HTML, dynamic parts escaped, link and w
   const back = ch.buildMessage(tgChannel(), { ...base, event: 'device_online' });
   assert.match(back.body.text, /Back online/);
   const test = ch.buildMessage(tgChannel(), { event: 'test', device: null, workspace: { name: 'Store 1' }, dashboardUrl: null, nowIso: base.nowIso });
-  assert.match(test.body.text, /<b>ScreenTinker test alert<\/b>/);
+  assert.match(test.body.text, /<b>FILSign test alert<\/b>/);
   assert.ok(!test.body.text.includes('<a '), 'no device, no link');
 });
 

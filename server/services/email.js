@@ -145,7 +145,7 @@ function buildGraphPayload(to, subject, html, fromName) {
       from: {
         emailAddress: {
           address: config.graphSenderEmail,
-          name: fromName || config.graphSenderName || 'ScreenTinker',
+          name: fromName || config.graphSenderName || "FILSign",
         },
       },
     },
@@ -267,7 +267,7 @@ async function sendEmail({ to, subject, text, html, fromName, rawSubject, unsubs
       return { sent: false, reason: 'dev_restricted' };
     }
   }
-  const finalSubject = rawSubject ? subject : `[ScreenTinker] ${subject}`;
+  const finalSubject = rawSubject ? subject : `[FILSign] ${subject}`;
   const unsub = unsubscribeParts(unsubscribeUserId, unsubscribeList || 'alerts');
   const baseHtml = html || `<pre style="font-family:sans-serif">${escapeHtml(text || '')}</pre>`;
   const finalHtml = baseHtml + unsub.footerHtml;

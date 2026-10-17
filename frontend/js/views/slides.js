@@ -658,7 +658,7 @@ function renderEditor(container) {
         <span id="aiStatus" style="font-size:12px;color:var(--text-muted);margin-left:4px"></span>
         <span data-private-ai-badge></span>
       </div>
-      <!-- Hosted AI (ScreenTinker credits). Stays hidden unless the server has a platform image
+      <!-- Hosted AI (FILSign credits). Stays hidden unless the server has a platform image
            provider configured; then "Generate background" follows whichever path is picked here. -->
       <div id="aiHostedRow" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"></div>
     </div>

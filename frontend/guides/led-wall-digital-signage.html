@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LED Video Wall Digital Signage | ScreenTinker</title>
+  <title>LED Video Wall Digital Signage | FILSign</title>
   <meta name="description" content="Run a large LED video wall with ScreenTinker. The processor hands the wall's native resolution to the player over EDID — and why streaming sticks cannot.">
   <meta name="keywords" content="led wall digital signage, led video wall software, colorlight signage, led wall raspberry pi, led wall cms, non standard resolution signage">
   <meta name="robots" content="index, follow">
@@ -12,13 +12,13 @@
 
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://screentinker.com/guides/led-wall-digital-signage.html">
-  <meta property="og:title" content="LED Video Walls with ScreenTinker">
+  <meta property="og:title" content="LED Video Walls with FILSign">
   <meta property="og:description" content="Run a large LED video wall with ScreenTinker. The processor hands the wall's native resolution to the player over EDID — and why streaming sticks cannot.">
   <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="LED Video Walls with ScreenTinker">
+  <meta name="twitter:title" content="LED Video Walls with FILSign">
   <meta name="twitter:description" content="Run a large LED video wall with ScreenTinker. The processor hands the wall's native resolution to the player over EDID — and why streaming sticks cannot.">
   <meta name="twitter:image" content="https://screentinker.com/assets/dashboard-preview.png">
 
@@ -33,7 +33,7 @@
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -58,7 +58,7 @@
     </nav>
 
     <h1>LED video walls</h1>
-    <p class="lead">ScreenTinker runs on large LED video walls with no special configuration. The LED processor handles the wall geometry and presents itself to the player as an ordinary HDMI display &mdash; so a 2808&times;648 wall is, from here, a screen with an unusual aspect ratio.</p>
+    <p class="lead">FILSign runs on large LED video walls with no special configuration. The LED processor handles the wall geometry and presents itself to the player as an ordinary HDMI display &mdash; so a 2808&times;648 wall is, from here, a screen with an unusual aspect ratio.</p>
 
     <p class="lead" style="font-size:15px;color:var(--muted)"><strong>Status:</strong> community verified.
     <strong>Contributed by</strong> <a href="https://www.watterott.com" rel="noopener">Watterott electronic</a>
@@ -74,7 +74,7 @@
     player for this category. This is tested, not theoretical: Watterott tried the streaming sticks first.</p>
 
     <h2 id="setup">The signal chain</h2>
-    <pre><code>ScreenTinker player (Raspberry Pi)
+    <pre><code>FILSign player (Raspberry Pi)
         |  HDMI / DVI
         v
 LED processor (e.g. Colorlight X4 / X8)
@@ -86,7 +86,7 @@ Receiving cards
 LED modules</code></pre>
     <p>The processor is configured once with the native resolution of the wall. It then <strong>advertises
     that resolution to the player over EDID</strong>, and the player picks it up on boot as if a monitor with
-    that native mode had been plugged in. Nothing is configured on the Pi, and ScreenTinker needs no LED-wall
+    that native mode had been plugged in. Nothing is configured on the Pi, and FILSign needs no LED-wall
     feature at all &mdash; which is why walls of essentially any geometry already work.</p>
 
     <h2>Tested configuration</h2>
@@ -117,7 +117,7 @@ LED modules</code></pre>
       roughly double.</li>
     </ul>
     <p>For most installs, native is better. Design content to the wall&rsquo;s actual dimensions in
-    ScreenTinker and skip the scaler &mdash; a multi-zone layout built at the wall&rsquo;s real aspect ratio
+    FILSign and skip the scaler &mdash; a multi-zone layout built at the wall&rsquo;s real aspect ratio
     beats stretching a 16:9 design across it.</p>
 
     <h2>Off hours</h2>
@@ -126,7 +126,7 @@ LED modules</code></pre>
     opening hours without building a black image into the timetable. If you want the wall to physically power
     down rather than show black, that is a separate job for the processor.</p>
 
-    <h2>What ScreenTinker does not control</h2>
+    <h2>What FILSign does not control</h2>
     <p>Brightness, colour calibration and gamma belong to the LED processor and the receiving cards. We send
     the picture; the processor decides how hard to drive the diodes. Content designed on a monitor often looks
     blown out on a wall at full brightness &mdash; prefer bright type on a dark background over the reverse.</p>
@@ -193,7 +193,7 @@ LED modules</code></pre>
   {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    "name": "Run a LED video wall with ScreenTinker",
+    "name": "Run a LED video wall with FILSign",
     "description": "Run a large LED video wall with ScreenTinker. The processor hands the wall's native resolution to the player over EDID — and why streaming sticks cannot.",
     "totalTime": "PT30M",
     "tool": [
@@ -207,7 +207,7 @@ LED modules</code></pre>
       },
       {
         "@type": "HowToTool",
-        "name": "A ScreenTinker account"
+        "name": "A FILSign account"
       }
     ],
     "step": [

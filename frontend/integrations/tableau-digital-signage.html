@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tableau Dashboards on Digital Signage and TV | ScreenTinker</title>
+  <title>Tableau Dashboards on Digital Signage and TV | FILSign</title>
   <meta name="description" content="Show live Tableau Cloud, Tableau Server or Tableau Public views on office screens, rotating through sheets. Uses your own connected app.">
   <meta name="keywords" content="tableau digital signage, tableau dashboard on tv, tableau wall display, tableau kiosk mode, tableau cloud embed signage, tableau public on screen">
   <meta name="robots" content="index, follow">
@@ -15,7 +15,7 @@
   <meta property="og:title" content="Tableau Dashboards on Digital Signage and TV">
   <meta property="og:description" content="Show live Tableau Cloud, Tableau Server or Tableau Public views on office screens, rotating through sheets. Uses your own connected app.">
   <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Tableau Dashboards on Digital Signage and TV">
@@ -33,7 +33,7 @@
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -62,16 +62,16 @@
     <p class="lead">Put the numbers your team watches where everyone can see them. The BI Dashboard widget shows a live Tableau view on a screen, signed in with your own connected app, and can rotate through a workbook&rsquo;s sheets on its own.</p>
 
     <h2>How it works</h2>
-    <p>An organization owner or admin adds a Tableau connection once, in <strong>Settings &rarr; BI dashboards</strong>. Editors then pick a view for each widget. The connection uses a Tableau <strong>connected app with direct trust</strong>, and the credentials stay on the ScreenTinker server, encrypted. A screen only ever receives a five-minute token that can do nothing but embed views.</p>
-    <p>The widget loads Tableau&rsquo;s own embedding script from your Tableau host, so the view looks and behaves as it does in Tableau. Every dashboard page runs in a sandbox with an isolated origin, so a script it loads can&rsquo;t reach anyone&rsquo;s ScreenTinker session.</p>
+    <p>An organization owner or admin adds a Tableau connection once, in <strong>Settings &rarr; BI dashboards</strong>. Editors then pick a view for each widget. The connection uses a Tableau <strong>connected app with direct trust</strong>, and the credentials stay on the FILSign server, encrypted. A screen only ever receives a five-minute token that can do nothing but embed views.</p>
+    <p>The widget loads Tableau&rsquo;s own embedding script from your Tableau host, so the view looks and behaves as it does in Tableau. Every dashboard page runs in a sandbox with an isolated origin, so a script it loads can&rsquo;t reach anyone&rsquo;s FILSign session.</p>
     <p>No credentials at all? A <strong>Tableau Public</strong> view works as a public link.</p>
 
     <h2 id="setup">Set it up</h2>
     <ol>
       <li><strong>In Tableau</strong>, go to Settings &rarr; Connected Apps, create a connected app (direct trust), generate a secret and enable the app. Note the client ID, secret ID and secret value.</li>
-      <li><strong>Allow your ScreenTinker address</strong> in the connected app&rsquo;s domain allowlist.</li>
+      <li><strong>Allow your FILSign address</strong> in the connected app&rsquo;s domain allowlist.</li>
       <li><strong>Choose a dedicated Tableau user</strong> for screens, one that can see only the dashboards meant for screens.</li>
-      <li><strong>In ScreenTinker</strong>, open Settings &rarr; BI dashboards &rarr; Add a connection &rarr; Tableau. Enter the Tableau address, the site&rsquo;s content URL (empty for the default site), the three connected-app values and the user. <strong>Test</strong> signs in to Tableau to check them.</li>
+      <li><strong>In FILSign</strong>, open Settings &rarr; BI dashboards &rarr; Add a connection &rarr; Tableau. Enter the Tableau address, the site&rsquo;s content URL (empty for the default site), the three connected-app values and the user. <strong>Test</strong> signs in to Tableau to check them.</li>
       <li><strong>Add a BI Dashboard widget.</strong> Paste the view&rsquo;s address, or type <code>Workbook/Sheet</code>. Optionally tick <strong>Rotate through the workbook&rsquo;s sheets</strong> and set <strong>Refresh every</strong> to re-query the data.</li>
       <li>Put the widget in a playlist and assign it to a screen.</li>
     </ol>
@@ -79,7 +79,7 @@
 
     <h2>Limits</h2>
     <ul>
-      <li><strong>Hosted ScreenTinker needs Tableau Cloud.</strong> On a hosted instance the Tableau address must be on <code>online.tableau.com</code>, because the widget loads Tableau&rsquo;s script from it. For Tableau Server, self-host ScreenTinker, or ask a platform administrator to add the connection.</li>
+      <li><strong>Hosted FILSign needs Tableau Cloud.</strong> On a hosted instance the Tableau address must be on <code>online.tableau.com</code>, because the widget loads Tableau&rsquo;s script from it. For Tableau Server, self-host FILSign, or ask a platform administrator to add the connection.</li>
       <li><strong>Tableau Server 2023.3 or later</strong> for sign-in by connected app.</li>
       <li><strong>Treat the screen user as public.</strong> Anyone who can open a widget&rsquo;s page can get a token that embeds views as that user, so give it nothing else.</li>
       <li><strong>Live data needs the network.</strong> The page is cached for offline use, but a live view needs a connection, and screens must be able to reach your Tableau host.</li>
@@ -92,10 +92,10 @@
     <p>Yes. Add a Tableau connection in Settings, then a BI Dashboard widget with the view&rsquo;s address, and put it in a playlist. The screen shows the live view and can rotate through the workbook&rsquo;s sheets.</p>
 
     <h3>Does it work with Tableau Server?</h3>
-    <p>Yes, version 2023.3 or later, with a self-hosted ScreenTinker. On hosted ScreenTinker the address must be Tableau Cloud, unless a platform administrator adds the connection.</p>
+    <p>Yes, version 2023.3 or later, with a self-hosted ScreenTinker. On hosted FILSign the address must be Tableau Cloud, unless a platform administrator adds the connection.</p>
 
     <h3>Are our Tableau credentials sent to the screens?</h3>
-    <p>No. They are encrypted on the ScreenTinker server and never shown again. A screen receives only a five-minute token that can embed views.</p>
+    <p>No. They are encrypted on the FILSign server and never shown again. A screen receives only a five-minute token that can embed views.</p>
 
     <h3>Can I use Tableau Public instead?</h3>
     <p>Yes. Choose A public link in the widget and paste the public.tableau.com view. Anyone with that link can see it, so use it only for public data.</p>
@@ -113,7 +113,7 @@
 
     <div class="cta">
       <h2>Put your Tableau views on a screen</h2>
-      <p>Connect Tableau once and every editor can pick a dashboard. Start a 14-day Pro trial on hosted ScreenTinker: up to 15 screens, every feature, no credit card.</p>
+      <p>Connect Tableau once and every editor can pick a dashboard. Start a 14-day Pro trial on hosted FILSign: up to 15 screens, every feature, no credit card.</p>
       <p><a href="/app#/login" class="btn btn-primary" style="padding:14px 28px;font-size:16px">Start your free trial</a></p>
       <p class="cta-alt">Or host it yourself, free and open source: <a href="/guides/self-hosted-digital-signage.html">self-hosting guide</a> &middot; <a href="https://github.com/screentinker/screentinker" target="_blank" rel="noopener">GitHub</a></p>
     </div>
@@ -178,7 +178,7 @@
         "name": "Does it work with Tableau Server?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, version 2023.3 or later, with a self-hosted ScreenTinker. On hosted ScreenTinker the address must be Tableau Cloud, unless a platform administrator adds the connection."
+          "text": "Yes, version 2023.3 or later, with a self-hosted ScreenTinker. On hosted FILSign the address must be Tableau Cloud, unless a platform administrator adds the connection."
         }
       },
       {
@@ -186,7 +186,7 @@
         "name": "Are our Tableau credentials sent to the screens?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. They are encrypted on the ScreenTinker server and never shown again. A screen receives only a five-minute token that can embed views."
+          "text": "No. They are encrypted on the FILSign server and never shown again. A screen receives only a five-minute token that can embed views."
         }
       },
       {

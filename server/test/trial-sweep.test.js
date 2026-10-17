@@ -146,7 +146,7 @@ test('expiry email: sent once after the downgrade, says which screens stopped', 
   assert.ok(r.expiredSent >= 1);
   const m = mailsTo(id);
   assert.equal(m.length, 1);
-  assert.equal(m[0].subject, 'Your ScreenTinker Pro trial has ended');
+  assert.equal(m[0].subject, 'Your FILSign Pro trial has ended');
   assert.match(m[0].text, /1 of your 2 screens is now showing a "Trial Expired" card/);
   assert.match(m[0].text, /Nothing was deleted/);
   assert.ok(row(id).trial_expired_email_sent_at);

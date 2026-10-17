@@ -96,13 +96,13 @@ function endingSoonText({ name, daysLeft, screens, free, paid }) {
     : `Your ${screens === 0 ? 'account' : plural(screens, 'screen')} will keep working on the Free plan (${free.max_devices} ${plural(free.max_devices, 'screen')}, ${free.max_storage_mb} MB of content).`;
   return `Hi ${name},
 
-Your ScreenTinker Pro trial ends in ${d}. After that your account moves
+Your FILSign Pro trial ends in ${d}. After that your account moves
 to the Free plan.
 
 ${screensLine}
 Nothing gets deleted: your content, playlists and layouts all stay.
 
-If ScreenTinker is doing its job for you, keeping everything running is
+If FILSign is doing its job for you, keeping everything running is
 one click here:
 
   -> ${BILLING_URL}
@@ -111,7 +111,7 @@ If it isn't quite there yet, hit reply and tell me what's missing. It
 comes straight to me. The Discord is here too: ${DISCORD_URL}
 
 - Dan
-ScreenTinker`;
+FILSign`;
 }
 function endingSoonHtml({ name, daysLeft, screens, free, paid }) {
   const d = `${daysLeft} ${plural(daysLeft, 'day')}`;
@@ -120,13 +120,13 @@ function endingSoonHtml({ name, daysLeft, screens, free, paid }) {
     : `Your ${screens === 0 ? 'account' : plural(screens, 'screen')} will keep working on the Free plan (${free.max_devices} ${plural(free.max_devices, 'screen')}, ${free.max_storage_mb} MB of content).`;
   return `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.6;color:#222;max-width:560px">
 <p>Hi ${htmlEscape(name)},</p>
-<p>Your ScreenTinker Pro trial ends in <b>${d}</b>. After that your account moves to the Free plan.</p>
+<p>Your FILSign Pro trial ends in <b>${d}</b>. After that your account moves to the Free plan.</p>
 <p>${screensLine} Nothing gets deleted: your content, playlists and layouts all stay.</p>
-<p>If ScreenTinker is doing its job for you, keeping everything running is one click:</p>
+<p>If FILSign is doing its job for you, keeping everything running is one click:</p>
 <p><a href="${BILLING_URL}" style="font-weight:600">Choose a plan</a></p>
 ${ladderHtml(paid)}
 <p>If it isn't quite there yet, hit reply and tell me what's missing. It comes straight to me. The <a href="${DISCORD_URL}">Discord</a> is here too.</p>
-<p>- Dan<br>ScreenTinker</p>
+<p>- Dan<br>FILSign</p>
 </div>`;
 }
 
@@ -139,7 +139,7 @@ function expiredText({ name, screens, free, paid }) {
     : `Your ${screens === 0 ? 'account' : plural(screens, 'screen')} keeps working on the Free plan (${free.max_devices} ${plural(free.max_devices, 'screen')}, ${free.max_storage_mb} MB of content).`;
   return `Hi ${name},
 
-Your ScreenTinker Pro trial has ended and your account is now on the
+Your FILSign Pro trial has ended and your account is now on the
 Free plan.
 
 ${screensLine}
@@ -150,11 +150,11 @@ To bring every screen back and keep all the features, pick a plan here:
 
   -> ${BILLING_URL}
 ${paid.length ? '\n' + ladderText(paid) + '\n' : ''}
-If you decided ScreenTinker isn't for you, no hard feelings, and I'd
+If you decided FILSign isn't for you, no hard feelings, and I'd
 genuinely like to know why. Hit reply, it comes straight to me.
 
 - Dan
-ScreenTinker`;
+FILSign`;
 }
 function expiredHtml({ name, screens, free, paid }) {
   const blocked = Math.max(0, screens - free.max_devices);
@@ -163,13 +163,13 @@ function expiredHtml({ name, screens, free, paid }) {
     : `Your ${screens === 0 ? 'account' : plural(screens, 'screen')} keeps working on the Free plan (${free.max_devices} ${plural(free.max_devices, 'screen')}, ${free.max_storage_mb} MB of content).`;
   return `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.6;color:#222;max-width:560px">
 <p>Hi ${htmlEscape(name)},</p>
-<p>Your ScreenTinker Pro trial has ended and your account is now on the Free plan.</p>
+<p>Your FILSign Pro trial has ended and your account is now on the Free plan.</p>
 <p>${screensLine} Nothing was deleted: your content, playlists and layouts are all still there.</p>
 <p>To bring every screen back and keep all the features, pick a plan:</p>
 <p><a href="${BILLING_URL}" style="font-weight:600">Choose a plan</a></p>
 ${ladderHtml(paid)}
-<p>If you decided ScreenTinker isn't for you, no hard feelings, and I'd genuinely like to know why. Hit reply, it comes straight to me.</p>
-<p>- Dan<br>ScreenTinker</p>
+<p>If you decided FILSign isn't for you, no hard feelings, and I'd genuinely like to know why. Hit reply, it comes straight to me.</p>
+<p>- Dan<br>FILSign</p>
 </div>`;
 }
 
@@ -266,9 +266,9 @@ async function runTrialExpirySweep({ io = null } = {}) {
     const ctx = { name: displayName(u), daysLeft, screens: u.screens, ...facts };
     const r = await emailSvc.sendEmail({
       to: u.email,
-      fromName: 'Dan at ScreenTinker',
+      fromName: "Dan at FILSign",
       rawSubject: true,
-      subject: `Your ScreenTinker Pro trial ends in ${daysLeft} ${plural(daysLeft, 'day')}`,
+      subject: `Your FILSign Pro trial ends in ${daysLeft} ${plural(daysLeft, 'day')}`,
       text: endingSoonText(ctx),
       html: endingSoonHtml(ctx),
       unsubscribeUserId: u.id,
@@ -282,9 +282,9 @@ async function runTrialExpirySweep({ io = null } = {}) {
     const ctx = { name: displayName(u), screens: u.screens, ...facts };
     const r = await emailSvc.sendEmail({
       to: u.email,
-      fromName: 'Dan at ScreenTinker',
+      fromName: "Dan at FILSign",
       rawSubject: true,
-      subject: 'Your ScreenTinker Pro trial has ended',
+      subject: "Your FILSign Pro trial has ended",
       text: expiredText(ctx),
       html: expiredHtml(ctx),
       unsubscribeUserId: u.id,

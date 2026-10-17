@@ -346,7 +346,7 @@ test('mergeIntervals is a union, and drops empty spans', () => {
 test('Turkish CSV localizes owned report labels while English default, client/screen names, IDs and UTC dates stay intact',()=>{
  const db=freshDb();try{
   seed(db,{devices:1});const r=report(db);r.clientName='Özgün IĞDIR & client';r.devices[0].name='=USER_VALUE';
-  const en=toCsv(r),tr=toCsv(r,'tr');assert.equal(toCsv(r,'en'),en);assert(tr.startsWith('\ufeffScreenTinker çalışma süresi raporu'));
+  const en=toCsv(r),tr=toCsv(r,'tr');assert.equal(toCsv(r,'en'),en);assert(tr.startsWith('\ufeffFILSign çalışma süresi raporu'));
   assert(tr.includes('Müşteri,Özgün IĞDIR & client'));assert(tr.includes("'=USER_VALUE"),'formula neutralization is retained');
   assert(tr.includes(new Date(r.from*1000).toISOString()));assert(tr.includes('Çalışma süresi (%)'));assert(tr.includes('Gözlem kapsamı (%)'));assert(tr.includes('yalnızca bu sunucunun'));
   assert(!tr.includes('Uptime is measured only'));assert.equal(r.clientName,'Özgün IĞDIR & client');assert.equal(r.devices[0].name,'=USER_VALUE');

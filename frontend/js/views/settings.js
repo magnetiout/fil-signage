@@ -131,7 +131,7 @@ export async function render(container) {
       <div id="brandKitHost" class="bk-settings"></div>
     </div>
 
-    <!-- 3.0 switch to ScreenTinker (views/migrate.js). The page itself says so to a view-only member. -->
+    <!-- 3.0 switch to FILSign (views/migrate.js). The page itself says so to a view-only member. -->
     <div class="settings-section" id="migrateCard">
       <h3>${uiText(t('migrate.title'))}</h3>
       <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">${uiText(t('migrate.subtitle'))}</p>
@@ -321,7 +321,7 @@ export async function render(container) {
       <div id="whiteLabelForm">
         <p style="color:var(--text-muted);font-size:12px;margin-bottom:16px">${renderHTML(t('settings.white_label_desc'))}</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="form-group"><label>${renderHTML(t('settings.brand_name'))}</label><input type="text" id="wlBrandName" class="input" placeholder="ScreenTinker"></div>
+          <div class="form-group"><label>${renderHTML(t('settings.brand_name'))}</label><input type="text" id="wlBrandName" class="input" placeholder="FILSign"></div>
           <div class="form-group"><label>${renderHTML(t('settings.logo_url'))}</label><input type="text" id="wlLogoUrl" class="input" placeholder="https://..."></div>
           <div class="form-group"><label>${renderHTML(t('settings.primary_color'))}</label><input type="color" id="wlPrimaryColor" class="input" value="#3B82F6"></div>
           <div class="form-group"><label>${renderHTML(t('settings.bg_color'))}</label><input type="color" id="wlBgColor" class="input" value="#111827"></div>
@@ -418,7 +418,7 @@ export async function render(container) {
     <div class="settings-section">
       <h3>${renderHTML(t('settings.about'))}</h3>
       <div style="color:var(--text-secondary);font-size:13px">
-        <p><strong>${uiText(window.__ST_BRAND_NAME || 'ScreenTinker')}</strong>${renderHTML(appVersion ? ` v${esc(appVersion)}` : '')}</p>
+        <p><strong>${uiText(window.__ST_BRAND_NAME || "FILSign")}</strong>${renderHTML(appVersion ? ` v${esc(appVersion)}` : '')}</p>
         <p style="margin-top:4px">${renderHTML(t('settings.about_tagline'))}</p>
         ${renderHTML(user.self_hosted ? `<p style="margin-top:8px"><a href="${SPONSOR_URL}" target="_blank" rel="noopener" style="color:var(--accent)">♥ ${renderHTML(t('sponsor.about_link'))}</a></p>` : '')}
         <!-- The permanent home for the release notes the dashboard panel links to. Populated

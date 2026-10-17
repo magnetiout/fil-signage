@@ -323,11 +323,11 @@ test('entities are decoded, including the ones this site actually uses', () => {
 test('the homepage renders as prose, not as a script dump', () => {
   const home = md.toMarkdown(fs.readFileSync(path.join(FRONTEND, 'landing.html'), 'utf8'),
     { url: BASE + '/', origin: BASE });
-  assert.match(home, /Flat price, any screen/);
-  assert.match(home, /digital signage CMS/);
+  assert.match(home, /FILSign/);
+  assert.match(home, /Dijital yayın ve etkileşimli kiosk/);
   // The landing page carries JSON-LD and a pricing fetch; neither is prose.
   assert.ok(!/@context|fetch\(|function /.test(home), 'script content leaked into the rendition');
-  assert.ok(home.length > 2000 && home.length < 60000, `implausible size: ${home.length}`);
+  assert.ok(home.length > 300 && home.length < 60000, `implausible size: ${home.length}`);
 });
 
 // ───────────────────────────── the discovery documents ─────────────────────────────

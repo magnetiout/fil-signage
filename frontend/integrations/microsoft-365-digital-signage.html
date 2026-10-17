@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SharePoint &amp; Microsoft 365 Digital Signage | ScreenTinker</title>
+  <title>SharePoint &amp; Microsoft 365 Digital Signage | FILSign</title>
   <meta name="description" content="Show PowerPoint, Word and Excel files on screens, and sync a SharePoint or OneDrive folder of media to playlists. Uses your own Entra app.">
   <meta name="keywords" content="microsoft 365 digital signage, sharepoint digital signage, onedrive digital signage, powerpoint on digital signage, powerpoint on tv screen, excel dashboard on tv, office 365 signage">
   <meta name="robots" content="index, follow">
@@ -15,7 +15,7 @@
   <meta property="og:title" content="SharePoint &amp; Microsoft 365 Digital Signage">
   <meta property="og:description" content="Show PowerPoint, Word and Excel files on screens, and sync a SharePoint or OneDrive folder of media to playlists. Uses your own Entra app.">
   <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SharePoint &amp; Microsoft 365 Digital Signage">
@@ -33,7 +33,7 @@
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -73,7 +73,7 @@
     </table>
     </div>
     <p><strong>Cloud document widget.</strong> The screen shows Microsoft's own viewer, so the file looks the way it does in Office, and edits reach the screen without re-uploading anything. Word and Excel files reload every 5 minutes by default, so a rota or a sales sheet stays current. All players can show it: Android, Fire TV, Raspberry Pi, Windows and Samsung Tizen load the page directly, and the web player (also used on BrightSign and LG webOS) frames it.</p>
-    <p><strong>Folder sync.</strong> Point ScreenTinker at a folder and it keeps the folder's media in your content library:</p>
+    <p><strong>Folder sync.</strong> Point FILSign at a folder and it keeps the folder's media in your content library:</p>
     <ul>
       <li>a new file is added, like an upload</li>
       <li>a changed file is replaced in place, so playlists keep it and screens fetch the new version</li>
@@ -85,14 +85,14 @@
     <h3>Show one Office file</h3>
     <ol>
       <li>Open the file in Office for the web and choose <strong>File &rarr; Share &rarr; Embed</strong>.</li>
-      <li>In ScreenTinker, open <strong>Content &rarr; Google &amp; Microsoft documents</strong>, paste the embed code or the link inside it, and press <strong>Add document</strong>.</li>
+      <li>In FILSign, open <strong>Content &rarr; Google &amp; Microsoft documents</strong>, paste the embed code or the link inside it, and press <strong>Add document</strong>.</li>
       <li>Put the new item in a playlist and assign it to a screen.</li>
     </ol>
     <h3>Sync a SharePoint or OneDrive folder</h3>
     <ol>
       <li><strong>Register an app in your tenant</strong> (a Microsoft Entra admin, once per organization): a single-tenant app registration, with the Microsoft Graph application permission <strong>Sites.Selected</strong> (recommended: the app reads only the sites you grant it) or <strong>Files.Read.All</strong> (simpler, but it can read every file in the tenant). Grant admin consent and create a client secret.</li>
       <li><strong>Connect it.</strong> An organization owner or admin opens <strong>Settings &rarr; Microsoft 365</strong> and enters the tenant ID, the client ID and the secret. The connection is tested straight away.</li>
-      <li><strong>Add a folder.</strong> In SharePoint or OneDrive, choose <strong>Share &rarr; Copy link</strong> on the folder. In ScreenTinker, open <strong>Content &rarr; SharePoint &amp; OneDrive folders</strong>, add the folder and paste the link.</li>
+      <li><strong>Add a folder.</strong> In SharePoint or OneDrive, choose <strong>Share &rarr; Copy link</strong> on the folder. In FILSign, open <strong>Content &rarr; SharePoint &amp; OneDrive folders</strong>, add the folder and paste the link.</li>
       <li>Syncs run every 15 minutes by default (anything from 5 to 1440). Any workspace editor can press <strong>Sync now</strong>, pause the folder or change how often it syncs.</li>
     </ol>
     <p>The full walkthrough, including the Graph call that grants one site to the app, is in <a href="https://github.com/screentinker/screentinker/blob/main/docs/cloud-documents.md">docs/cloud-documents.md</a>.</p>
@@ -114,7 +114,7 @@
       <li><strong>A SharePoint embed needs an "anyone" link.</strong> A screen can't sign in to Microsoft, so a file only shows if it can be viewed without signing in. If your tenant doesn't allow those links, use a folder sync and export the slides as images or a video.</li>
       <li><strong>Folder sync takes media only.</strong> Images, videos and audio sync. PowerPoint, Word, Excel and PDF files in a folder are skipped and counted; show those with the Cloud document widget.</li>
       <li><strong>Up to 500 media files per folder.</strong> While a folder holds more, the sync adds and updates what it saw but removes nothing, and says so. Split a larger folder.</li>
-      <li><strong>PowerPoint plays in Microsoft&rsquo;s viewer.</strong> ScreenTinker sets the timing for Google Slides, but not for PowerPoint. For a deck that must advance on its own, export it as a video or images and sync it from a folder.</li>
+      <li><strong>PowerPoint plays in Microsoft&rsquo;s viewer.</strong> FILSign sets the timing for Google Slides, but not for PowerPoint. For a deck that must advance on its own, export it as a video or images and sync it from a folder.</li>
       <li><strong>Cloud documents need the internet.</strong> The screen loads Microsoft's viewer live, so a Cloud document doesn't play offline. Synced folder media does.</li>
       <li><strong>Storage counts.</strong> Synced files count against your plan's storage, and a file larger than the server's upload limit is skipped.</li>
       <li><strong>Secrets expire.</strong> Entra client secrets have an end date. Set a reminder for the date Entra shows.</li>
@@ -125,7 +125,7 @@
     <h3>Can I show a PowerPoint on a digital signage screen?</h3>
     <p>Yes. Open the deck in PowerPoint for the web, choose File, Share, Embed, and paste the embed code into Content &rarr; Google &amp; Microsoft documents. The deck shows in Microsoft&rsquo;s own viewer, and your edits reach the screen without re-uploading. For a deck that must advance and loop unattended, export it as a video into a synced SharePoint folder instead.</p>
 
-    <h3>Do I need to give ScreenTinker access to our whole tenant?</h3>
+    <h3>Do I need to give FILSign access to our whole tenant?</h3>
     <p>No. For folder sync, use the Sites.Selected permission and grant the app only the SharePoint sites you choose. Files.Read.All also works but is much broader. A single embedded Office file needs no app at all.</p>
 
     <h3>Who can add a SharePoint folder?</h3>
@@ -151,7 +151,7 @@
 
     <div class="cta">
       <h2>Put your Microsoft 365 content on a screen</h2>
-      <p>Connect a folder, paste an embed link, and watch it play. Start a 14-day Pro trial on hosted ScreenTinker: up to 15 screens, every feature, no credit card.</p>
+      <p>Connect a folder, paste an embed link, and watch it play. Start a 14-day Pro trial on hosted FILSign: up to 15 screens, every feature, no credit card.</p>
       <p><a href="/app#/login" class="btn btn-primary" style="padding:14px 28px;font-size:16px">Start your free trial</a></p>
       <p class="cta-alt">Or host it yourself, free and open source: <a href="/guides/self-hosted-digital-signage.html">self-hosting guide</a> &middot; <a href="https://github.com/screentinker/screentinker" target="_blank" rel="noopener">GitHub</a></p>
     </div>
@@ -213,7 +213,7 @@
       },
       {
         "@type": "Question",
-        "name": "Do I need to give ScreenTinker access to our whole tenant?",
+        "name": "Do I need to give FILSign access to our whole tenant?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "No. For folder sync, use the Sites.Selected permission and grant the app only the SharePoint sites you choose. Files.Read.All also works but is much broader. A single embedded Office file needs no app at all."

@@ -73,7 +73,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 function failedText({ name, planName, graceDays }) {
   return `Hi ${name},
 
-We tried to take payment for your ScreenTinker ${planName} plan and the card was declined.
+We tried to take payment for your FILSign ${planName} plan and the card was declined.
 
 Nothing has changed yet — your screens are playing and your account is untouched. Stripe will try
 the card again over the next few days, and if it goes through this sorts itself out and you can
@@ -93,7 +93,7 @@ Dan`;
 function failedHtml(ctx) {
   return `<div style="font-family:-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#111">
 <p>Hi ${esc(ctx.name)},</p>
-<p>We tried to take payment for your ScreenTinker <strong>${esc(ctx.planName)}</strong> plan and the card was declined.</p>
+<p>We tried to take payment for your FILSign <strong>${esc(ctx.planName)}</strong> plan and the card was declined.</p>
 <p><strong>Nothing has changed yet</strong> — your screens are playing and your account is untouched. Stripe will try the
 card again over the next few days, and if it goes through this sorts itself out and you can ignore this.</p>
 <p>If it does not, we will move the account to the Free plan in ${ctx.graceDays} days. Nothing is deleted when that
@@ -110,7 +110,7 @@ const lapsedWhat = (planName) => (planName ? `${planName} plan` : 'subscription'
 function lapsedText({ name, planName, screens }) {
   return `Hi ${name},
 
-The payment for your ScreenTinker ${lapsedWhat(planName)} did not go through, so the account has moved to
+The payment for your FILSign ${lapsedWhat(planName)} did not go through, so the account has moved to
 the Free plan.
 
 Nothing has been deleted. Your playlists, content and settings are exactly as you left them${screens ? `, and ${screens} screen${screens === 1 ? '' : 's'} ${screens === 1 ? 'is' : 'are'} affected by the Free limit` : ''}.
@@ -126,7 +126,7 @@ Dan`;
 function lapsedHtml(ctx) {
   return `<div style="font-family:-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#111">
 <p>Hi ${esc(ctx.name)},</p>
-<p>The payment for your ScreenTinker ${ctx.planName ? `<strong>${esc(ctx.planName)}</strong> plan` : 'subscription'} did not go through, so the account has
+<p>The payment for your FILSign ${ctx.planName ? `<strong>${esc(ctx.planName)}</strong> plan` : 'subscription'} did not go through, so the account has
 moved to the Free plan.</p>
 <p><strong>Nothing has been deleted.</strong> Your playlists, content and settings are exactly as you left them.
 Putting a working card on the account restores everything immediately.</p>
@@ -157,9 +157,9 @@ async function sendPaymentFailedEmail(userId) {
   const ctx = { name: displayName(u), planName: planNameOf(u.plan_id), graceDays: subscriptions.GRACE_DAYS };
   const r = await emailSvc.sendEmail({
     to: u.email,
-    fromName: 'Dan at ScreenTinker',
+    fromName: "Dan at FILSign",
     rawSubject: true,
-    subject: 'Your ScreenTinker payment did not go through',
+    subject: "Your FILSign payment did not go through",
     text: failedText(ctx),
     html: failedHtml(ctx),
   });
@@ -331,9 +331,9 @@ async function runDunningSweep({ io = null } = {}) {
     const ctx = { name: displayName(u), planName: lapsedFrom.get(u.id) || null, screens: screenCountOf(u.id) };
     const r = await emailSvc.sendEmail({
       to: u.email,
-      fromName: 'Dan at ScreenTinker',
+      fromName: "Dan at FILSign",
       rawSubject: true,
-      subject: 'Your ScreenTinker plan has moved to Free',
+      subject: "Your FILSign plan has moved to Free",
       text: lapsedText(ctx),
       html: lapsedHtml(ctx),
     });

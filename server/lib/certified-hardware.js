@@ -23,7 +23,7 @@ const DATA = path.join(ROOT, 'certified-hardware.json');
 const OUT = path.join(ROOT, 'frontend', 'certified-hardware.html');
 
 const URL = 'https://screentinker.com/certified-hardware';
-const TITLE = 'Certified Hardware | ScreenTinker';
+const TITLE = 'Upstream Hardware Reports | FILSign';
 const DESCRIPTION =
   'Device models tested with ScreenTinker, what each one actually does, and which are not '
   + 'supported. Certified Hardware under ScreenTinker reseller agreements.';
@@ -239,7 +239,7 @@ function render(data) {
   <meta property="og:title" content="Certified Hardware">
   <meta property="og:description" content="${esc(DESCRIPTION)}">
   <meta property="og:image" content="https://screentinker.com/assets/dashboard-preview.png">
-  <meta property="og:site_name" content="ScreenTinker">
+  <meta property="og:site_name" content="FILSign">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Certified Hardware">
@@ -306,7 +306,7 @@ function render(data) {
       <div class="nav-logo">
         <a href="/" style="display:flex;align-items:center;gap:10px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span class="nav-logo-text">ScreenTinker</span>
+          <span class="nav-logo-text">FILSign</span>
         </a>
       </div>
       <div class="nav-links">
@@ -330,7 +330,7 @@ function render(data) {
     </nav>
 
     <h1>Certified Hardware</h1>
-    <p class="lead">The device models ScreenTinker has tested with ScreenTinker, what each one actually
+    <p class="lead">Upstream ScreenTinker test records; these are not FILSign physical acceptance results.</p><p class="lead">The device models ScreenTinker has tested with ScreenTinker, what each one actually
       does, and which ones to avoid.</p>
     <p class="updated">Last updated ${esc(data.last_updated)}. ${certifiedCount} device${certifiedCount === 1 ? '' : 's'} currently certified.</p>
 
