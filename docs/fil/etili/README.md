@@ -44,6 +44,8 @@ node scripts/fil/etili/import.cjs /home/kado/filsign/private/etili-source --conf
 
 Bu komutlar çalışan kurulumun yeniden kurulması değildir. `crawl/download` önbelleği kullanır; yeniden kaynak güncellemesi için önce manifest sürümü ve kaynak değişikliği değerlendirilir. `image-sources.json` keşfedilmiş gerçek URL envanteridir. Araçlar mevcut Node22/Sharp/QRCode ve FFmpeg kullanır. `brand-ui/brand-surfaces.cjs` tek seferlik kaynak geçiş araçlarıdır; normal içerik güncellemesinde çalıştırılmaz; gerekiyorsa Acorn modülü `FIL_ACORN` ile sağlanır. Uygulama bağımlılıkları değişmez.
 
+Yayın listeleri için aynı kaynaklardan 11 yüksek çözünürlüklü sunum kartı da hazırlanır: portre6, yatay5. Kartlar gerçek 1080×1920/1920×1080 sahne çıktılarından JPEG90/4:4:4 olarak üretilir; katalogdaki küçük önizlemeler TV yayını yerine kullanılmaz. Kartların kaynak ilişkisi storyboard sahne numarasıyla manifestte korunur.
+
 Filmler: 12×6s=72s, 1080×1920 ve1920×1080, 24fps, MP4/H.264/yuv420p, ses akışı yok; hafif yakınlaşma ve krem zemin geçişi. Yatayda oranı korunan seri mekânı ve gerçek ürün yüzeyi yan yana; portrede dokunma çağrısı, TV sürümünde dokunma çağrısı yok. `films/storyboard.json` kaynak ilişkileri, `commands.jsonl` gerçek üretim komutlarıdır. Başlangıç/orta/son/geçiş kareleri ve tam decode ayrıca doğrulanır.
 
 ## Marka ve uyumluluk sınırları

@@ -7,7 +7,16 @@
     "name": "Etili Seramik — Sunum Demosu"
   },
   "cms_menu": null,
-  "cms_playlists": {},
+  "cms_playlists": {
+    "portrait": {
+      "id": "cc302255-b185-41e7-8246-a948da2e8e77",
+      "name": "Etili Seramik — Tablet Portre Demo"
+    },
+    "landscape": {
+      "id": "9befd1ad-f515-479a-a34d-3db0143a22f5",
+      "name": "Etili Seramik — Yatay Signage Demo"
+    }
+  },
   "source_records": [
     {
       "source_id": 9595,
@@ -54929,7 +54938,196 @@
       "missing_reason": "HTTP200 returned HTML, not a PDF"
     }
   ],
-  "generated_films": {},
+  "generated_films": {
+    "portrait": {
+      "id": "d20632e5-70e0-4481-ad4e-55b9de20b0a0",
+      "sha256": "a578ae6963dceb469a9550d703b23ff3240d6a3de28ad1d0a187a23b3ba1364f",
+      "bytes": 6099299
+    },
+    "landscape": {
+      "id": "3377723d-e793-4c8b-aa8e-59e9a21002c1",
+      "sha256": "d066a4d7af6eaa1610c5ac9143f25102a7a2d963796b950a7db29bbeafd102a7",
+      "bytes": 5575304
+    }
+  },
+  "generated_slides": {
+    "portrait": {
+      "1": {
+        "id": "c07c2403-40af-4686-8473-836faeb7f967",
+        "sha256": "90cb13bf787c8e7caedb8db0e91959730cb0c0606b1c5d9374676cc9e945645b",
+        "bytes": 213617,
+        "scene": 1
+      },
+      "2": {
+        "id": "5e53d002-3e7a-4512-9f96-829611d31cc3",
+        "sha256": "e4b18defa4a30a78ca1c548a13cde44cc99c6d9cde15d84333f23678792868fc",
+        "bytes": 259652,
+        "scene": 2
+      },
+      "3": {
+        "id": "1f0920ac-d05f-40b3-9043-cb31cbf0f0d7",
+        "sha256": "5d2f4ccc90dc6352e96aeac3318bc3c594afaee9bb5f15c712987396c82a7ad3",
+        "bytes": 226356,
+        "scene": 3
+      },
+      "4": {
+        "id": "af318c03-528c-44ac-9c84-1db92d86c17d",
+        "sha256": "f98781236c43a78fef7b0c303b761806b02ea6f7e2d06c04922b2b29b9988f65",
+        "bytes": 289626,
+        "scene": 4
+      },
+      "5": {
+        "id": "ac236f5b-5405-459f-a2f5-211e282a801e",
+        "sha256": "0602874f61e2b375208232ff46bee04ac181dd6e81510d5b7d09bc6af0d5ea75",
+        "bytes": 197977,
+        "scene": 5
+      },
+      "6": {
+        "id": "81f5c1c2-ef58-4bfa-9d55-39f7482cf1d5",
+        "sha256": "8f5d413ab55e57c09dafca6ef5bba9452a430b7bd009dc3765a6ee30dd505542",
+        "bytes": 289760,
+        "scene": 6
+      }
+    },
+    "landscape": {
+      "1": {
+        "id": "efb490f5-cf16-49fc-90b1-3cd0fb9ed3f4",
+        "sha256": "abbf26a53d4bbeffe27f59ff9b6f0b6e375c27e5a1bdd6d0aeb0d3e5140af8f2",
+        "bytes": 205239,
+        "scene": 1
+      },
+      "3": {
+        "id": "3b1cc5b6-a798-411a-a4f9-97db9cb1fd97",
+        "sha256": "c210fd7cf51f082483008b8cf5139e84d1f355508d42dd1a1194f48341de2433",
+        "bytes": 238187,
+        "scene": 3
+      },
+      "5": {
+        "id": "83e9ae2e-04eb-457f-a1ce-9ca5d89fa215",
+        "sha256": "80e7c22152995ec1d2b3e9556d5d92db8e8b6af059c61acc6fcf3a6c7fefc81b",
+        "bytes": 213016,
+        "scene": 5
+      },
+      "7": {
+        "id": "efe6847a-b3e0-4345-aaaf-a1562a477357",
+        "sha256": "b206ce89f1c30bdfcd0ac1a2f70bdff26af31606962b4e81243313d40f2b1cb3",
+        "bytes": 163362,
+        "scene": 7
+      },
+      "9": {
+        "id": "5d45964d-4c44-40a5-bcf3-ee0e7d6868ad",
+        "sha256": "6a5153a2d7e6f917bdb6d2ae0ad1d84361995c3834551cc1fadf207d2dfc3c08",
+        "bytes": 178160,
+        "scene": 9
+      }
+    }
+  },
+  "storyboard": [
+    {
+      "title": "Etili Seramik",
+      "subtitle": "Ürünleri keşfedin",
+      "url": "https://etiliseramik.com/media/seriler/alanya_serisi-scaled.jpg",
+      "source": "https://etiliseramik.com/series/alanya/",
+      "kind": "room_application",
+      "series": 69,
+      "opening": true
+    },
+    {
+      "title": "Alanya",
+      "subtitle": "Mekân uygulaması",
+      "url": "https://etiliseramik.com/media/seriler/alanya_serisi-scaled.jpg",
+      "source": "https://etiliseramik.com/series/alanya/",
+      "kind": "room_application",
+      "series": 69
+    },
+    {
+      "title": "Alanya Kahve 30×60 Parlak 7,5mm",
+      "subtitle": "Duvar Karosu",
+      "url": "https://etiliseramik.com/media/urunler/alanya_kahve_30x60_parlak_75mm.jpg",
+      "source": "https://etiliseramik.com/product/alanya/alanya-kahve-30x60-parlak-75mm/",
+      "kind": "product_surface",
+      "product_id": 7958,
+      "series": 69
+    },
+    {
+      "title": "Ahşap",
+      "subtitle": "Mekân uygulaması",
+      "url": "https://etiliseramik.com/media/seriler/ahsap_serisi-scaled.jpg",
+      "source": "https://etiliseramik.com/series/ahsap/",
+      "kind": "room_application",
+      "series": 129
+    },
+    {
+      "title": "Ahşap Bej 45×45 Mat 7,5mm",
+      "subtitle": "Porselen",
+      "url": "https://etiliseramik.com/media/urunler/ahsap_bej_45x45_mat_75mm.jpg",
+      "source": "https://etiliseramik.com/product/ahsap/ahsap-bej-45x45-mat-75mm/",
+      "kind": "product_surface",
+      "product_id": 8157,
+      "series": 129
+    },
+    {
+      "title": "Arya",
+      "subtitle": "Mekân uygulaması",
+      "url": "https://etiliseramik.com/media/seriler/arya_serisi-scaled.jpg",
+      "source": "https://etiliseramik.com/series/arya/",
+      "kind": "room_application",
+      "series": 133
+    },
+    {
+      "title": "Arya Gri 30×60 Parlak 9mm",
+      "subtitle": "Duvar Karosu",
+      "url": "https://etiliseramik.com/media/urunler/arya_gri_30x60_parlak_9mm.jpg",
+      "source": "https://etiliseramik.com/product/arya/arya-gri-30x60-parlak-9mm/",
+      "kind": "product_surface",
+      "product_id": 8006,
+      "series": 133
+    },
+    {
+      "title": "Athena",
+      "subtitle": "Mekân uygulaması",
+      "url": "https://etiliseramik.com/media/seriler/athena_serisi-scaled.jpg",
+      "source": "https://etiliseramik.com/series/athena/",
+      "kind": "room_application",
+      "series": 153
+    },
+    {
+      "title": "Athena Gri 60×120 Full Lappato 9mm",
+      "subtitle": "Porselen",
+      "url": "https://etiliseramik.com/media/urunler/athena_gri_60x120_full_lappato_9mm.jpg",
+      "source": "https://etiliseramik.com/product/athena/athena-gri-60x120-full-lappato-9mm/",
+      "kind": "product_surface",
+      "product_id": 8463,
+      "series": 153
+    },
+    {
+      "title": "Ayazma",
+      "subtitle": "Mekân uygulaması",
+      "url": "https://etiliseramik.com/media/seriler/ayazma_serisi-scaled.jpg",
+      "source": "https://etiliseramik.com/series/ayazma/",
+      "kind": "room_application",
+      "series": 156
+    },
+    {
+      "title": "Ayazma Beyaz 60×120 Mat 9mm",
+      "subtitle": "Porselen",
+      "url": "https://etiliseramik.com/media/urunler/ayazma_beyaz_60x120_mat_9mm.jpg",
+      "source": "https://etiliseramik.com/product/ayazma/ayazma-beyaz-60x120-mat-9mm/",
+      "kind": "product_surface",
+      "product_id": 8455,
+      "series": 156
+    },
+    {
+      "title": "Etili Seramik",
+      "subtitle": "Ürün kataloğu",
+      "url": "https://etiliseramik.com/media/seriler/alanya_serisi-scaled.jpg",
+      "source": "https://etiliseramik.com/series/alanya/",
+      "kind": "room_application",
+      "series": 69,
+      "opening": true,
+      "closing": true
+    }
+  ],
   "counts": {
     "source_records": 761,
     "series": 168,
