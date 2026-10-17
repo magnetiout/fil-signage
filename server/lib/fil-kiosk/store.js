@@ -40,16 +40,18 @@ function validate(page, menu) {
 }
 function build(page) {
   const menu = validate(page, JSON.parse(page.config));
-  const assets = {}; let bytes = 0;
-  for (const id of new Set(menu.items.flatMap(x => x.media || []))) {
-    const c = db.prepare('SELECT * FROM content WHERE id = ? AND workspace_id = ?').get(id, page.workspace_id);
-    const file = path.join(config.contentDir, path.basename(c.filepath));
-    const stat = fs.statSync(file); bytes += stat.size;
-    if (bytes > 20 * 1024 * 1024) throw new Error('Çevrimdışı menü medya sınırı 20 MB. Daha kısa videolar kullanın.');
-    const data = fs.readFileSync(file);
-    assets[id] = { mime: c.mime_type, data: `data:${c.mime_type};base64,${data.toString('base64')}` };
+  function* entries() {
+    let bytes = 0;
+    for (const id of new Set(menu.items.flatMap(x => x.media || []))) {
+      const c = db.prepare('SELECT * FROM content WHERE id = ? AND workspace_id = ?').get(id, page.workspace_id);
+      const file = path.join(config.contentDir, path.basename(c.filepath));
+      const stat = fs.statSync(file); bytes += stat.size;
+      if (bytes > 20 * 1024 * 1024) throw new Error('Çevrimdışı menü medya sınırı 20 MB. Daha kısa videolar kullanın.');
+      const data = fs.readFileSync(file);
+      yield [id, { mime: c.mime_type, data: `data:${c.mime_type};base64,${data.toString('base64')}` }];
+    }
   }
-  return render(menu, assets);
+  return menu.presentation === 'catalog' ? render.entries(menu, entries) : render(menu, Object.fromEntries(entries()));
 }
 function publish(page) {
   init();
